@@ -500,9 +500,31 @@ def demo():
 
     print("===========================================")
 
+def tom_demo():
+    print("== Test of Matrix Generation =========")
+    def max_row_requirement(mat, max_rows):
+        return sp.shape(mat)[0] <= max_rows
+
+    def max_row_requirement(mat, max_rows):
+        return sp.shape(mat)[0] <= max_rows
+
+
+
+    mat_gen = generate_viable_vertex_match_matrices(
+        M=5,
+        k=2,
+        #yield_matrix = partial(max_row_requirement, max_rows=4),
+        go_deeper = partial(max_row_requirement, max_rows=3),
+        ) 
+
+    for i, mat in enumerate(mat_gen):
+        print(i, mat)
 
 
 
 if __name__ == "__main__":
     demo()
+    tom_demo()
+
+
 

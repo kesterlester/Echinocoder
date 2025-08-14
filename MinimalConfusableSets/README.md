@@ -60,3 +60,18 @@ The (multi)sets $E$ and $O$ have even and odd sums of the elements of $B$:
 $E=\{ \vec 0, \vec q_1 + \vec q_2, \cdots \}$
 $O=\{  \vec q_1, \vec q_2, \cdots, \vec q_2 + \vec q_5 + \vec q_9, \cdots \}$
 ```
+# Integration Lester -- Ruane
+
+```
+from ruane import factory_something
+
+checker_func = factory_something(M=M, k=k, ...)
+
+# checker_func will be a function that can be called with a sympy matrix L and other things specified by Tom but which already "knows" it will be used with M and k so that are not supplied.
+
+# Lester will use
+for L in some_matrices_L(M=M, k=k):
+	tom_answer = checker_func(L, ... other switches) # in tom_answer ideally somewherte is a statement about whether (a) there is collapse to "nothing" (or not) at the alpha,beta,gamma level, (b) [for future] at the L -integer level one can have inconsitent L , so some info on this might come out.
+	do_stuf_with(tom_answer) 
+```
+
