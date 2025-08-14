@@ -1,0 +1,54 @@
+***Need to change process, as the target is evenly spaced B, not D. So need to generate evenly spaced B and then work in reverse to find D??***
+Or, the issue may be helped by 1) scrambling D before finding B and by 2) scrambling sign of normals. 
+
+The decider function, f(k,L, etc.) needs to carry out the following role: 
+(1) Generate a set D of m 'evenly spaced out' projection vectors in k dimensions [sobol, gaussian, electrostatic]
+(2) Generate B of size M from D [generate_B]
+(3) Check whether the matches defined by L collapse O and E [collapse_checker_basic, collapse_checker_random]
+[(4) - optional] Minimise the chance of floating point errors by eg repeating (1),(2),(3) with a different 
+                 method in (1) and comparing results
+(5) Return a result (for testing/debugging purposes) [if (4): tester_f_multi, if no (4): tester_f, non-function form: tester]
+
+Methodology notes----------------------------------------------------------------------------------------------------------------------
+
+(1) can be achieved using many different methods. Each method works best for some (m,k) range. 
+Some methods more reliably space out the vectors but are more computationally expensive and vice versa. 
+I will write seperate code files for each method I investigate for now. Maybe in future, the program could
+decide what method to use given the size of (m,k).
+
+(2) is a standard and easy procedure. Maybe best added to (3) if need be since (3) is standard, but (1) can have many different approaches.
+
+(3) should be a standardised method, unless particularily lage/small (m,k) call for different approaches. My current approach forms a 
+matrix A from L and B. The nullspace of A then contains the vector (alpha, beta, gamma,..., zeta). So we need to check whether the nullspace 
+of A contains a vector with no zero components. This is easy if nullity = 1. This is harder if nullity  > 1 as we must check if any linear 
+combination of basis vectors yields a vector with no zero entries. Need to either find a quick but robust way to do this 
+(would random sapling suffice.....maybe - how 'dense' is the space of totally non-zero nullspace vectors?) OR only investigate A with nullity = 1, 
+as for nullity > 1 we have too much freedom anyway ie we're potentially not maximising the number of matches we could find. 
+
+In (3), collapse_checker_basic only works for nullity = 1 and is flawed for nullity > 1. collapse_checker_random uses random linear 
+combinations of nullspace basis vectors to search for a totally non-zero nullspace vector. 
+
+Probs computationally inefficient to normalise the vectors in both steps (1) and (2)
+
+Notes on f library for (1) --------------------------------------------------------------------------------------------------------------
+
+Maybe need to come up with a metric to compare (i) the speed and (ii) the 'even-ness' of the spacing of the m vectors for each method. 
+
+QUESTION: what (m,k) are we typically looking at, so I don't code useless things eg a Thomson problem that only really works for small (m,k). 
+ANSWER around (at a minimum for k) (25, 4). So Thomson is viable. 
+
+ISSUE: sobol_1 and sobol_2 only generate vectors with all positive entries as sobol samples [0,1] hypercube. 
+FIX:
+(i) use linear transformation 2*v - 1 [sobol_1L, sobol_2L]
+(ii) use sobol points to sample an inverse gaussian distribution [sobol_1G, sobol_2G]
+*** I dont want to create too many files, so just toggle between lin and gauss in sobol file ***
+
+Tried: 
+Sobol 
+Gaussian (very simple) 
+
+To do: 
+Fibbonacci for k=3
+More low discrep seq? Halton Leaped is debatably better than sobol. https://dl.acm.org/doi/pdf/10.1145/264029.264064
+Electrostatic repulsion?? Slow but reliable. (m,k) approx (6-8,100-500) is very approximate limit? Barnes-Hut?
+
