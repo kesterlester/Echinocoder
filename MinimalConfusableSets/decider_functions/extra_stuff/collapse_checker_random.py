@@ -1,3 +1,5 @@
+#CAUTION: THIS IS AN OLDER, SLOWER, LESS ROBUST VERSION THAN THE FUNC IN decider_function.py
+
 import numpy as np
 import sympy as sp
 from scipy.linalg import null_space

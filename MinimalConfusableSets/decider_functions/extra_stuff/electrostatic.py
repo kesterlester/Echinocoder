@@ -1,3 +1,5 @@
+#CAUTION: THIS IS AN OLDER, SLOWER, LESS ROBUST VERSION THAN THE FUNC IN decider_function.py
+
 import numpy as np
 from gaussian import generate_gaussian
 
