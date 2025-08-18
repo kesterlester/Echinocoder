@@ -11,6 +11,16 @@ def test():
     assert tracker.number_of_even_vertices_present() == 2**(M-1)
 
     print()
+    m0 = (0,0,0,-1,0)
+    print("remembering {m0}:")
+    tracker.remember_match(m0)
+    print(tracker)
+    assert tracker.number_of_even_vertices_present() == 0 # Even is Odd if an vector is zeroed!
+    assert tracker.number_of_odd_vertices_present() == 0 # Even is Odd if an vector is zeroed!
+    tracker.forget_match(m0)
+    assert tracker.number_of_even_vertices_present() == 16
+
+    print()
     m1 = (-1,0,1,0,1)
     z1 = sum(1 for i in m1 if i==0)
     print("remembering {m1}:")
@@ -59,15 +69,32 @@ def test():
     assert tracker.number_of_even_vertices_present() == 2**(M-1)
 
     print("remembering {m1, m2 and m3}:")
+    assert tracker.number_of_even_vertices_present() == 16
     tracker.remember_match(m1)
+    assert tracker.number_of_even_vertices_present() == 12
     tracker.remember_match(m2)
     tracker.remember_match(m3)
     print(tracker)
 
     print("forgetting {m1, m2 and m3}:")
-    tracker.remember_match(m3)
-    tracker.remember_match(m2)
-    tracker.remember_match(m1)
+    tracker.forget_match(m3)
+    tracker.forget_match(m2)
+    assert tracker.number_of_even_vertices_present() == 12
+    tracker.forget_match(m1)
     print(tracker)
     assert tracker.number_of_even_vertices_present() == 16
-    assert tracker.number_of_even_vertices_present() == 2**(M-1)
+
+    print("remembering {m1, m2 and m3}:")
+    assert tracker.number_of_even_vertices_present() == 16
+    tracker.remember_match(m1)
+    assert tracker.number_of_even_vertices_present() == 12
+    tracker.remember_match(m2)
+    tracker.remember_match(m3)
+    print(tracker)
+
+    print("forgetting {m1, m2 and m3} in a different order:")
+    tracker.forget_match(m2)
+    tracker.forget_match(m1)
+    tracker.forget_match(m3)
+    print(tracker)
+    assert tracker.number_of_even_vertices_present() == 16
