@@ -78,8 +78,6 @@ def construct_A(L, B):
     A = L_rep * BT_rep                          # elementwise
     return A
 
-    return A
-
 """
 def check_collapse_random(A,num_trials=1000,tol=1e-12,):
     ns_basis = null_space(A, rcond=tol)
