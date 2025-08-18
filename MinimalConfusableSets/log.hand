@@ -1,0 +1,8 @@
+There were 6883 found for M=7 and k=2.
+The smallest confusable set was found for ev:27, M=7, k=2, smallest_set_mat = Matrix([[-1, -1, -1, 0, 0, 0, 0], [-1, 0, 0, -1, -1, 0, 0], [0, -1, 0, 0, 0, -1, -1]])
+
+THIS LOOKS WRONG:
+
+There were 2 found for M=3 and k=1.
+The smallest confusable set was found for ev:3, M=3, k=1, smallest_set_mat = Matrix([[-1, -1, -1]])
+

@@ -1,7 +1,8 @@
 from itertools import combinations
+import sympy as sp
 
 class Match_Tracker:
-    def __init__(self, M: int):
+    def __init__(self, M: int, match_matrix : sp.Matrix = None):
         """
         e_to_o is a dict for which the KEYS are tuples like (1,0,0,1,0) represeting and
         even vertex (even number of ones!) and the VALUES are a count of the number of times
@@ -11,6 +12,18 @@ class Match_Tracker:
         self.e_present = self.o_present = 2**(M-1)
         self.e_to_o = { e:0 for e in Match_Tracker.even_or_odd_weight_tuples(M,even=True) }
         self.o_to_e = { o:0 for o in Match_Tracker.even_or_odd_weight_tuples(M,even=False) } # TODO: get rid of o_to_e in the long term, as e_to_o should be sufficient. Just here for check in short term.
+
+        if match_matrix is not None:
+            self.remember_match_matrix(match_matrix)
+
+    def remember_match_matrix(self, match_matrix):
+        n_rows, n_cols = sp.shape(match_matrix)
+        assert n_cols == self.M
+        for r in range(n_rows):
+                row = tuple(x for x in match_matrix.row(r))
+                for x in row:
+                    assert int(x) == x
+                self.remember_match(row)
 
     def get_e_tup_from(match):
         #print(f"Getting e_tup from {match}")

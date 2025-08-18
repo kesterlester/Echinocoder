@@ -3,12 +3,7 @@ from functools import partial
 from vertex_matches import generate_viable_vertex_match_matrices
 from sympy_tools import strip_zero_rows, some_row_causes_collapse
 import decider_functions.decider_function as df
-
-
-
-
-
-
+from Match_Tracker import Match_Tracker
 
 
 #########################################################
@@ -81,7 +76,11 @@ def demo(M_and_k_tuple=None):
         ):
         print()
         print()
+        size_of_smallest_confusable_set_constructed_so_far = 2**(M-1)
+        smallest_set_mat = sp.Matrix()
         print( "====================================================================")
+        print(f"For M={M} and k={k} the initial E and O sets have size {size_of_smallest_confusable_set_constructed_so_far}.")
+        print( "--------------------------------------------------------------------")
         print(f"For M={M} and k={k} the not obviously bad vertex match matrices are:")
         print( "--------------------------------------------------------------------")
 
@@ -89,6 +88,7 @@ def demo(M_and_k_tuple=None):
 
         collapse_checker = Decider(M=M, k=k, debug=debug)
         collapse_checking_function = collapse_checker.function_factory()
+
 
         mat_gen = generate_viable_vertex_match_matrices(
             M=M,
@@ -105,10 +105,21 @@ def demo(M_and_k_tuple=None):
        
         number_enumerated = 0
         for i, (mat,rre) in enumerate(mat_gen):
-            print(f"    {i} raw={mat}, rre={rre}")
+            tracker = Match_Tracker(M, mat)
+            e_vertices = tracker.number_of_even_vertices_present()
+            print(f"    {i} ev:{e_vertices},  raw={mat}, rre={rre}")
+            if (
+               e_vertices < size_of_smallest_confusable_set_constructed_so_far or 
+               e_vertices <= size_of_smallest_confusable_set_constructed_so_far and (sp.shape(mat)[0])<(sp.shape(smallest_set_mat)[0])
+               ): # better, or as good but with fewer rows
+                size_of_smallest_confusable_set_constructed_so_far = e_vertices
+                smallest_set_mat = mat
+                print(f"SET ABOVE WAS SMALLEST CONFUSABLE SET SO FAR FOUND: ev:{e_vertices}, M={M}, k={k}")
+
             number_enumerated += 1
 
         print(f"There were {number_enumerated} found for M={M} and k={k}.")
+        print(f"The smallest confusable set was found for ev:{size_of_smallest_confusable_set_constructed_so_far}, M={M}, k={k}, smallest_set_mat = {smallest_set_mat}")
         print("====================================================================")
 
 if __name__ == "__main__":
