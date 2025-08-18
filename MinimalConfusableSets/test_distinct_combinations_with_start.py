@@ -40,30 +40,5 @@ def test_things():
                  print(f"{i}:         {lesters} {'==' if lesters==itertoolss else '!='} {itertoolss}")
                  assert lesters==itertoolss
 
-
-### def test_order():
-###     """ The tuples shall be rendered in numerical order. Here we test this ordering. """
-### 
-###     
-###     for gen in (
-###           distinct_permutations("Spain"),
-###           distinct_permutations_with_leftovers("hello"),
-###           distinct_permutations("Spain", r=3),
-###           distinct_permutations_with_leftovers("hello", r=3),
-###           distinct_permutations("Spain", r=-3),
-###           distinct_permutations_with_leftovers("hello", r=-3),
-###           ):
-###         print(f"\nNew Order Test")
-###         last_perm = None,
-###         first = True
-###         for perm in gen:
-###             print(f"order test saw perm={perm}")
-###             # Only check_order progression when within a given signature:
-###             if not first:
-###                 # Check_order!
-###                 assert last_perm < perm
-###             last_perm = perm
-###             first = False
-
 if __name__ == "__main__":
     test_things()
