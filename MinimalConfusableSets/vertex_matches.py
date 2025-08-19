@@ -488,7 +488,6 @@ def alpha_attacking_matrix(
                 bat_matrix : sp.Matrix, # M rows, and k columns, so that each row is a bat vector.
                 ) -> sp.Matrix :
     """
-    Modified from the Tom Ruane version in decider_function.
     This method generates the matrix A for which the solns of A.(vec of alphas) are the same as the solutions to L.(alpha1 w1, alpha2 w2, ... , alphaM, wM) where w1 is the first bat (i.e. first row of bat matrix) and w2 the second, and so on.
     """
 
