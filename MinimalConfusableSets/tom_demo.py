@@ -105,21 +105,22 @@ def demo(M_and_k_tuple=None):
        
         number_enumerated = 0
         for i, (mat,rre) in enumerate(mat_gen):
-            tracker = Match_Tracker(M, mat)
-            e_vertices = tracker.number_of_even_vertices_present()
-            print(f"    {i} ev:{e_vertices},  raw={mat}, rre={repr(rre)}")
-            if (
-               e_vertices < size_of_smallest_confusable_set_constructed_so_far or 
-               e_vertices <= size_of_smallest_confusable_set_constructed_so_far and (sp.shape(mat)[0])<(sp.shape(smallest_set_mat)[0])
-               ): # better, or as good but with fewer rows
-                size_of_smallest_confusable_set_constructed_so_far = e_vertices
-                smallest_set_mat = mat
-                print(f"SET ABOVE WAS SMALLEST CONFUSABLE SET SO FAR FOUND: ev:{e_vertices}, M={M}, k={k}")
+            #tracker = Match_Tracker(M, mat)
+            #e_vertices = tracker.number_of_even_vertices_present()
+            #print(f"    {i} ev:{e_vertices},  raw={mat}, rre={repr(rre)}")
+            print(f"    {i}  raw={mat}, rre={repr(rre)}")
+            ### if (
+            ###    e_vertices < size_of_smallest_confusable_set_constructed_so_far or 
+            ###    e_vertices <= size_of_smallest_confusable_set_constructed_so_far and (sp.shape(mat)[0])<(sp.shape(smallest_set_mat)[0])
+            ###    ): # better, or as good but with fewer rows
+            ###     size_of_smallest_confusable_set_constructed_so_far = e_vertices
+            ###     smallest_set_mat = mat
+            ###     print(f"SET ABOVE WAS SMALLEST CONFUSABLE SET SO FAR FOUND: ev:{e_vertices}, M={M}, k={k}")
 
             number_enumerated += 1
 
         print(f"There were {number_enumerated} found for M={M} and k={k}.")
-        print(f"The smallest confusable set was found for ev:{size_of_smallest_confusable_set_constructed_so_far}, M={M}, k={k}, smallest_set_mat = {smallest_set_mat}")
+        #print(f"The smallest confusable set was found for ev:{size_of_smallest_confusable_set_constructed_so_far}, M={M}, k={k}, smallest_set_mat = {smallest_set_mat}")
         print("====================================================================")
 
 if __name__ == "__main__":

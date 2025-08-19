@@ -483,6 +483,30 @@ def generate_viable_vertex_match_matrices(
     # Start with no prefix and no lower bound
     yield from dfs([], None)
 
+def alpha_attacking_matrix(
+                L_matrix : sp.Matrix,  # Any number of rows, but M columns.
+                bat_matrix : sp.Matrix, # M rows, and k columns, so that each row is a bat vector.
+                ) -> sp.Matrix :
+    """
+    Modified from the Tom Ruane version in decider_function.
+    This method generates the matrix A for which the solns of A.(vec of alphas) are the same as the solutions to L.(alpha1 w1, alpha2 w2, ... , alphaM, wM) where w1 is the first bat (i.e. first row of bat matrix) and w2 the second, and so on.
+    """
+
+    R, M = L_matrix.shape
+    M_B, k = bat_matrix.shape 
+
+    assert M == M_B, "L and B must work with the same no. of vectors"
+
+    effective_row = 0
+    ans = sp.zeros(R*k, M)
+    for i in range(R):
+        for kk in range(k):
+            for j in range(M):
+                ans[effective_row, j] = L_matrix[i,j]*bat_matrix[j,kk]
+            effective_row += 1
+
+    return ans
+
 def demo():
     M=10
     print(f"All ***SIGNATURES*** given M={M} bad bats are:")

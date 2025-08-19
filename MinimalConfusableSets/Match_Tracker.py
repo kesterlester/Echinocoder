@@ -82,6 +82,7 @@ class Match_Tracker:
         assert match_count == 2**len(z_positions)
 
     def remember_match(self, match):
+        raise NotImplementedError() # Beause method is WRONG!!!
         """
         A match is a tuple comprising an n even number of 1s and an odd number of minus ones, others zero.
         """
@@ -110,6 +111,7 @@ class Match_Tracker:
         assert self.e_present == self.o_present
 
     def forget_match(self, match):
+        raise NotImplementedError() # Beause method is WRONG!!!
         #print(f"FOG MATCH {match}")
         """
         A match is a tuple comprising an n even number of 1s and an odd number of minus ones, others zero.
@@ -143,12 +145,14 @@ class Match_Tracker:
         return result
 
     def number_of_even_vertices_present(self):
+        raise NotImplementedError() # Beause method is WRONG!!!
         assert self.e_present == self.o_present
         assert 2**(self.M-1) - sum(1 for count in self.e_to_o.values() if count) == self.e_present
         assert 2**(self.M-1) - sum(1 for count in self.o_to_e.values() if count) == self.o_present
         return self.e_present
 
     def number_of_odd_vertices_present(self):
+        raise NotImplementedError() # Beause method is WRONG!!!
         assert self.e_present == self.o_present
         assert 2**(self.M-1) - sum(1 for count in self.e_to_o.values() if count) == self.e_present
         assert 2**(self.M-1) - sum(1 for count in self.o_to_e.values() if count) == self.o_present
