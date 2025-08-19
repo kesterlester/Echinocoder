@@ -81,6 +81,7 @@ Hence a necessary condition for "non-collapse" is
 """
 
 import sympy as sp
+import math
 
 def strip_zero_rows(M: sp.Matrix) -> sp.Matrix:
     """
@@ -90,11 +91,26 @@ def strip_zero_rows(M: sp.Matrix) -> sp.Matrix:
     nonzero_rows = [i for i in range(M.rows) if any(M[i, j] != 0 for j in range(M.cols))]
     return M[nonzero_rows, :]
 
-def max_RRE_matrix_pivot_positions(M, k, number_of_pivots):
-    p(r) <= M - (R-r)k - 1     for 0 <= r < R.     (*)
-    return 
+def max_pivot_positions_for_viable_stripped_RRE_matrix(RRE_matrix_shape, k,):
+    # Assumes RRE matrix has been stripped of rows with all zeros.
+    # RRE matrix has R rows and M columns.
+    # k is the number of dimensions of space.
+    #
+    # p(r) <= M - (R-r)k - 1     for 0 <= r < R.   See (*) in docstring at top of this file.
+   
+    R, M = RRE_matrix_shape
 
-def max_height_for_viable_RRE_matrix_without_zero_rows(M, k):
+    return (M - (R-r)*k - 1 for r in range(R))
+
+def pivot_positions_are_all_viable_for_stripped_RRE_matrix(RRE_matrix_shape, pivot_positions, k,):
+    # Assumes RRE matrix has been stripped of rows with all zeros.
+    # k is the number of dimensions of space.
+    
+    max_pivot_positions = max_pivot_positions_for_viable_stripped_RRE_matrix(RRE_matrix_shape, k)
+
+    return all( pivot_pos <= max_pivot_pos for pivot_pos, max_pivot_pos in zip(pivot_positions, max_pivot_positions))
+
+def max_rows_for_viable_stripped_RRE_matrix(M, k):
     """
     This is the maximum number of rows that an RRE matrix (with zero rows stripped!)
     can have if it is to be viable.

@@ -1,0 +1,140 @@
+import sympy_tools as spt
+import sympy as sp
+
+def test_strip_zero_rows(): #(M: sp.Matrix) -> sp.Matrix:
+    assert spt.strip_zero_rows(sp.Matrix([[0,1],[4,2]])) == sp.Matrix([[0,1],[4,2]])
+    assert spt.strip_zero_rows(sp.Matrix([[0,0],[4,2]])) == sp.Matrix([[4,2]])
+    assert spt.strip_zero_rows(sp.Matrix([[0,1],[0,0]])) == sp.Matrix([[0,1]])
+    assert spt.strip_zero_rows(sp.Matrix([[0,0],[0,0]])) == sp.Matrix(0,2, [])
+
+def test_max_pivot_positions_for_viable_stripped_RRE_matrix(): #(RRE_matrix_shape, k,):
+    pass
+
+def test_pivot_positions_are_all_viable_for_stripped_RRE_matrix(): #(RRE_matrix_shape, pivot_positions, k,):
+    short = spt.pivot_positions_are_all_viable_for_stripped_RRE_matrix
+
+    assert short(RRE_matrix_shape=(3,7), k=2, pivot_positions=(0,2,4))
+                            # [1,0,0,0,0,0,0,],
+                            # [0,0,1,0,0,0,0,],
+                            # [0,0,0,0,1,0,0,],
+
+    assert not short(RRE_matrix_shape=(3,6), k=2, pivot_positions=(0,2,4))
+                            # [1,0,0,0,0,0,],
+                            # [0,0,1,0,0,0,],
+                            # [0,0,0,0,1,0,],
+
+    assert short(RRE_matrix_shape=(3,7), k=2, pivot_positions=(0,2,3))
+                            # [1,0,0,0,0,0,0,],
+                            # [0,0,1,0,0,0,0,],
+                            # [0,0,0,1,0,0,0,],
+
+    assert not short(RRE_matrix_shape=(3,7), k=2, pivot_positions=(1,2,4))
+                            # [0,1,0,0,0,0,0,],
+                            # [0,0,1,0,0,0,0,],
+                            # [0,0,0,0,1,0,0,],
+
+def test_max_rows_for_viable_stripped_RRE_matrix(): #(M, k):
+    short = spt.max_rows_for_viable_stripped_RRE_matrix
+
+    assert short(M=6, k=2) == 2
+                 # 01x0x.
+                 # 0001xx
+                 # -----------
+                 # 123456
+
+    assert short(M=7, k=2) == 3
+                 # 1x0x0..
+                 # 001x0x.
+                 # 00001xx
+                 # -----------
+                 # 1234567
+
+    assert short(M=8, k=2) == 3
+                 # 01x0x0..
+                 # 0001x0x.
+                 # 000001xx
+                 # -----------
+                 # 12345678
+
+    assert short(M=9, k=2) == 4
+                 # 1x0x0.0..
+                 # 001x0x0..
+                 # 00001x0x.
+                 # 0000001xx
+                 # -----------
+                 # 123456789
+
+    assert short(M=10, k=2) == 4
+                 # 01x0x0.0..
+                 # 0001x0x0..
+                 # 000001x0x.
+                 # 00000001xx
+                 # -----------
+                 # 123456789a
+
+    assert short(M=11, k=2) == 5
+                 # 1x0x0.0.0..
+                 # 001x0x0.0..
+                 # 00001x0x0..
+                 # 0000001x0x.
+                 # 000000001xx
+                 # -----------
+                 # 123456789ab
+
+    assert short(M=6, k=3) == 1
+                 # 001xxx
+                 # ------
+                 # 123456
+
+    assert short(M=7, k=3) == 2
+                 # 1xx0x..
+                 # 0001xxx
+                 # -------
+                 # 1234567
+
+    assert short(M=8, k=3) == 2
+                 # 01xx0x..
+                 # 00001xxx
+                 # --------
+                 # 12345678
+
+    assert short(M=9, k=3) == 2
+                 # 001xx0x..
+                 # 000001xxx
+                 # ---------
+                 # 123456789
+
+    assert short(M=10, k=3) == 3
+                 # 1xx0x.0...
+                 # 0001xx0x..
+                 # 0000001xxx
+                 # ----------
+                 # 123456789a
+
+    assert short(M=11, k=3) == 3
+                 # 01xx0x.0...
+                 # 00001xx0x..
+                 # 00000001xxx
+                 # -----------
+                 # 123456789ab
+
+def test_some_row_causes_collapse(): #(mat: sp.Matrix, k: int):
+    short = spt.some_row_causes_collapse
+
+    assert not short(sp.Matrix([[0,2,3],[2,4,6]]), k=1) 
+    assert not short(sp.Matrix([[0,2,3],[2,4,0]]), k=1) 
+    assert not short(sp.Matrix([[3,2,3],[2,4,0]]), k=1) 
+    assert not short(sp.Matrix([[0,2,3],[2,0,6]]), k=1) 
+    assert not short(sp.Matrix([[2,2,3],[2,4,6]]), k=1) 
+
+    assert     short(sp.Matrix([[0,2,3],[2,4,6]]), k=2) 
+    assert     short(sp.Matrix([[0,2,3],[2,4,0]]), k=2) 
+    assert     short(sp.Matrix([[3,2,3],[2,4,0]]), k=2) 
+    assert     short(sp.Matrix([[0,2,3],[2,0,6]]), k=2) 
+    assert not short(sp.Matrix([[2,2,3],[2,4,6]]), k=2) 
+
+    assert     short(sp.Matrix([[0,2,3],[2,4,6]]), k=3) 
+    assert     short(sp.Matrix([[0,2,3],[2,4,0]]), k=3) 
+    assert     short(sp.Matrix([[3,2,3],[2,4,0]]), k=3) 
+    assert     short(sp.Matrix([[0,2,3],[2,0,6]]), k=3) 
+    assert     short(sp.Matrix([[2,2,3],[2,4,6]]), k=3) 

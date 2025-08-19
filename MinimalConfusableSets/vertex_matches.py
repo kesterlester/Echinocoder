@@ -5,7 +5,7 @@ from distinct_partitions_with_start import distinct_partitions_with_start as dis
 from bi_range import bi_range_with_maxes
 from equivalent_places import Equivalent_Places
 from functools import partial
-from sympy_tools import some_row_causes_collapse, strip_zero_rows
+import sympy_tools
 
 """
 Vertex matches have an even number of +1 and and odd number of -1 entries, and others zero. Their total number of entries is M, the numnber of bad bats.
@@ -403,7 +403,7 @@ def generate_viable_vertex_match_matrices(
 
     def calc_rre(mat):
         rre, pivots = mat.rref()
-        stripped = strip_zero_rows(rre)
+        stripped = sympy_tools.strip_zero_rows(rre)
         #print(f"{pivots},{repr(rre)}")
         return stripped
 
@@ -421,7 +421,7 @@ def generate_viable_vertex_match_matrices(
  
             if remove_obvious_collapses:
                 assert calculate_rre_early
-                if some_row_causes_collapse(rre, k):
+                if sympy_tools.some_row_causes_collapse(rre, k):
                     if debug: print(f"VETO as row collapse in {rre}")
                     # Some row causes collapse!
                     # Skip deeper evaluation or return of it!
