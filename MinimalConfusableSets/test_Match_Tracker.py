@@ -1,4 +1,5 @@
 import Match_Tracker
+import sympy as sp
 
 Match_Tracker = Match_Tracker.Match_Tracker
 
@@ -98,3 +99,26 @@ def test():
     tracker.forget_match(m3)
     print(tracker)
     assert tracker.number_of_even_vertices_present() == 16
+
+def test2():
+    M=6
+    tracker=Match_Tracker(M=M)
+    m = (-1, -1, -1, -1, -1, 0)
+    tracker.remember_match(m)
+    print(tracker) 
+
+def test3():
+    M=6
+    mat = sp.Matrix([[-1, -1, -1, -1, -1, 0]])
+    tracker=Match_Tracker(M=M, match_matrix=mat)
+    print(tracker) 
+
+def test4():
+    M=6
+    tracker=Match_Tracker(M=M)
+    m1 = (-1, -1, -1, -1, -1, 0)
+    m2 = (-1, -1, 0, 0, 0, -1)
+    tracker.remember_match(m1)
+    tracker.remember_match(m2)
+    print(tracker) 
+

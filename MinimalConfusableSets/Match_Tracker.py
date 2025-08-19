@@ -85,19 +85,32 @@ class Match_Tracker:
         """
         A match is a tuple comprising an n even number of 1s and an odd number of minus ones, others zero.
         """
+        #print("State is", self," and ", f"{self.e_present}, {self.o_present} when asked to remember {match}.")
         for e_vtx, o_vtx in Match_Tracker.get_vertices_matched_by(match):
-            if self.e_to_o[e_vtx] == 0: # No match yet exists for this vertex, so the match here will remoce this vertex!
+            #print(f"   matching vertices: e,o = {e_vtx},{o_vtx}")
+            if self.e_to_o[e_vtx] == 0: # No match yet exists for this vertex, so the match here will remove this vertex!
+                #print("            NEW")
                 self.e_present -= 1
+            else:
+                #print("       OLD")
+                pass
+       
 
             if self.o_to_e[o_vtx] == 0: # No match yet exists for this vertex, so the match here will remove this vertex! TODO: get rid of o_to_e long term.
+                #print("            NEW")
                 self.o_present -= 1
+            else:
+                #print("       OLD")
+                pass
 
             self.e_to_o[e_vtx] += 1
             self.o_to_e[o_vtx] += 1 # TODO: Get rid of o_to_e long term as just check
 
+        #print(f" {self.e_present}, {self.o_present}")
         assert self.e_present == self.o_present
 
     def forget_match(self, match):
+        #print(f"FOG MATCH {match}")
         """
         A match is a tuple comprising an n even number of 1s and an odd number of minus ones, others zero.
         """
@@ -142,10 +155,19 @@ class Match_Tracker:
         return self.o_present
 
     def __str__(self):
-        return (f"Match_Tracker(M={self.M},\n"
+        ans =  (f"Match_Tracker(M={self.M},\n"
                 f"e_present, o_present = {self.e_present, self.o_present},\n"
                 f"e_to_o={self.e_to_o},\n"
-                f"o_to_e={self.o_to_e}")
+                f"o_to_e={self.o_to_e}"
+                )
+
+        #for key,val in self.e_to_o.items():
+        #    ans += f"E-to-O  {key} : {'   ' if val else ''}{val}\n"
+
+        #for key,val in self.o_to_e.items():
+        #    ans += f"O-to-E  {key} : {'   ' if val else ''}{val}\n"
+
+        return ans
 
 def demo():
     match_tracker = Match_Tracker(6)

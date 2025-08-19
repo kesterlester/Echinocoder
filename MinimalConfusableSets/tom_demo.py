@@ -8,26 +8,26 @@ from Match_Tracker import Match_Tracker
 
 #########################################################
 
-def demo():
-    print("== Test of Matrix Generation =========")
-
-    def max_row_requirement(mat, max_rows):
-        return sp.shape(mat)[0] <= max_rows
-
-    def f(mat):
-        return sp.shape(mat)[0] <= 4 # True if mat has 4 or fewer rows.
-
-    mat_gen = generate_viable_vertex_match_matrices(
-        M=M,
-        k=k,
-        # All of the next three lines have the same effect, but different pros/cons.
-        # Try changing which one(s) is(are) commented out.
-        #yield_matrix = partial(max_row_requirement, max_rows=4),
-        #go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
-        yield_matrix = f,
-        )
-
-    return(mat_gen)
+### def old_demo():
+###     print("== Test of Matrix Generation =========")
+### 
+###     def max_row_requirement(mat, max_rows):
+###         return sp.shape(mat)[0] <= max_rows
+### 
+###     def f(mat):
+###         return sp.shape(mat)[0] <= 4 # True if mat has 4 or fewer rows.
+### 
+###     mat_gen = generate_viable_vertex_match_matrices(
+###         M=M,
+###         k=k,
+###         # All of the next three lines have the same effect, but different pros/cons.
+###         # Try changing which one(s) is(are) commented out.
+###         #yield_matrix = partial(max_row_requirement, max_rows=4),
+###         #go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+###         yield_matrix = f,
+###         )
+### 
+###     return(mat_gen)
 
 
 class Decider:
@@ -107,7 +107,7 @@ def demo(M_and_k_tuple=None):
         for i, (mat,rre) in enumerate(mat_gen):
             tracker = Match_Tracker(M, mat)
             e_vertices = tracker.number_of_even_vertices_present()
-            print(f"    {i} ev:{e_vertices},  raw={mat}, rre={rre}")
+            print(f"    {i} ev:{e_vertices},  raw={mat}, rre={repr(rre)}")
             if (
                e_vertices < size_of_smallest_confusable_set_constructed_so_far or 
                e_vertices <= size_of_smallest_confusable_set_constructed_so_far and (sp.shape(mat)[0])<(sp.shape(smallest_set_mat)[0])

@@ -402,8 +402,10 @@ def generate_viable_vertex_match_matrices(
     hashable_rre_seen = set()
 
     def calc_rre(mat):
-        rre, _ = mat.rref()
-        return strip_zero_rows(rre)
+        rre, pivots = mat.rref()
+        stripped = strip_zero_rows(rre)
+        #print(f"{pivots},{repr(rre)}")
+        return stripped
 
     # TODO: consider making prefix a SymPy matrix natively, so that we are not always converting, and can more easily get different views. Maybe this would speed somet hings up??
     def dfs(prefix, start_row):
