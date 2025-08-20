@@ -19,6 +19,17 @@ from _vertex_matches import (
 from equivalent_places import Equivalent_Places
 from itertools import zip_longest
 
+def test_versions():
+
+    import numpy as np
+    np_version_string = np.__version__
+    np_ver_tup = tuple(int(x) for x in np_version_string.split("."))
+    print(f"Numpy version {np_ver_tup}")
+
+    assert np_ver_tup[0:2] >= (2,3), "Needed to fix https://github.com/numpy/numpy/pull/29223 and https://github.com/numpy/numpy/issues/28687 ."
+
+
+
 # Vertex matches have an even number of +1 and and odd number of -1 entries, and others zero. Their total number of entries is M, the numnber of bad bats.
 # The "signature" of a vertex match is how many ones, minus ones and zeros it contains.
 # "Useful" vertex matches have at least k+1 non-zero entries (because all sums of <=k linearly dependent non-zero things in k-dimes are non-zero).
