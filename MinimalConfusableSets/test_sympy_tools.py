@@ -198,6 +198,13 @@ def test_rows_are_points_in_general_position():
                       [0,0,1,0],
                    ]))
 
+    assert False == gen_pos(sp.Matrix([
+                      [0,0,1,0],
+                      [2,0,0,0], # R1
+                      [0,2,0,0], # R2
+                      [1,1,0,0], # R3 is on line between R1 and R2.
+                   ]))
+
     assert True == gen_pos(sp.Matrix([
                       [1,0,0,0],
                       [0,1,0,0],
