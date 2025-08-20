@@ -26,7 +26,7 @@ def test_versions():
     np_ver_tup = tuple(int(x) for x in np_version_string.split("."))
     print(f"Numpy version {np_ver_tup}")
 
-    assert np_ver_tup[0:2] >= (2,3), "Needed to fix https://github.com/numpy/numpy/pull/29223 and https://github.com/numpy/numpy/issues/28687 ."
+    assert np_ver_tup[0:3] >= (2,3,1), "Needed to fix https://github.com/numpy/numpy/pull/29223 and https://github.com/numpy/numpy/issues/28687 ."
 
 
 
