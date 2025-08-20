@@ -212,6 +212,13 @@ def test_rows_are_points_in_general_position():
                       [0,0,1,0],
                    ]))
 
+    assert False == gen_pos(sp.Matrix([
+                      [3,0,0,1],
+                      [0,3,0,1],
+                      [0,0,3,1],
+                      [1,1,1,1], # R3 is in triangle with corners at R0, R1 and R2
+                   ]))
+
 def test_rows_are_vectors_in_general_position():
     
     gen_pos = spt.rows_are_vectors_in_general_position
