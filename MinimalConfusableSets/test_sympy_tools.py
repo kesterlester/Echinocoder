@@ -162,6 +162,10 @@ def test_rows_are_points_in_general_position():
     gen_pos = spt.rows_are_points_in_general_position
 
     assert True == gen_pos(sp.Matrix([
+                      [0,0,0], # Nothing wrong with having a point at the origin.
+                   ]))
+
+    assert True == gen_pos(sp.Matrix([
                       [2,3,4],
                       [3,4,5],
                    ]))
@@ -222,6 +226,10 @@ def test_rows_are_points_in_general_position():
 def test_rows_are_vectors_in_general_position():
     
     gen_pos = spt.rows_are_vectors_in_general_position
+
+    assert False == gen_pos(sp.Matrix([
+                      [0,0,0], # This is not a valid basis vector.
+                   ]))
 
     assert True == gen_pos(sp.Matrix([
                       [2,3,4],

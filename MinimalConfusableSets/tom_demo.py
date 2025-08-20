@@ -1,7 +1,7 @@
 import sympy as sp
 from functools import partial
 from vertex_matches import generate_viable_vertex_match_matrices, alpha_attacking_matrix
-from sympy_tools import strip_zero_rows, some_row_causes_collapse
+import sympy_tools as spt
 import decider_functions.decider_function as df
 from Match_Tracker import Match_Tracker
 
@@ -26,26 +26,26 @@ class Old_Decider:
         return lambda mat : self.matrix_does_not_collapse(mat)
 
 class Rational_Decider:
-    def __init__(self, M, k, debug=False, seed=0):
+    def __init__(self, M, k, debug=False, seed=0, starting_sigma=1):
         self.M = M
         self.k = k
         self.debug = debug
 
         # Prepare bad bats.
-        self.bat_matrix = spt.general_position_integer_bat_matrix(M=M, k=k, seed=seed)
+        self.bat_matrix = spt.general_position_integer_bat_matrix(M=M, k=k, seed=seed, starting_sigma=starting_sigma)
 
 
     def matrix_does_not_collapse(self, L_matrix : sp.Matrix):
 
         big_mat = alpha_attacking_matrix(L_matrix, self.bat_matrix)
 
-        null_space big_mat.nullspace()
+        null_space = big_mat.nullspace()
 
-        print("---------------------------------"
+        print("---------------------------------")
         print(f"L_matrix   = {L_matrix}")
         print(f"big_mat    = {big_mat}")
         print(f"null space = {null_space}")
-        print("---------------------------------"
+        print("---------------------------------")
 
         return True
 
@@ -64,8 +64,6 @@ def demo(M_and_k_tuple=None):
 
     def f(mat: sp.Matrix):
         return sp.shape(mat)[0] <= 5 # True if mat has 4 or fewer rows.
-
-
 
     for M,k in (() if M_and_k_tuple is None else (M_and_k_tuple,)) + (
             #(5,4),
@@ -89,8 +87,8 @@ def demo(M_and_k_tuple=None):
 
         debug = False
 
-        collapse_checker_1 = Decider(M=M, k=k, debug=debug)
-        collapse_checker_2 = Decider(M=M, k=k, debug=debug)
+        collapse_checker_1 = Rational_Decider(M=M, k=k, debug=debug, seed=10, starting_sigma=1)
+        collapse_checker_2 = Rational_Decider(M=M, k=k, debug=debug, seed=0, starting_sigma=100)
         collapse_checking_function_1 = collapse_checker_1.function_factory()
         collapse_checking_function_2 = collapse_checker_2.function_factory()
 
