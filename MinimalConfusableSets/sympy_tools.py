@@ -277,11 +277,8 @@ def general_position_integer_bat_matrix(
             warn(f"Warning, {seed} attempts at making a general position integer bat matrix. (sympy_tools.py)")
         sigma *= sigma_growth_factor # Exponential growth makes matrices tend to have small entries, only growing large when really needed.
 
-    warn(f"seed={seed}, sigma={sigma}")
+    #warn(f"seed={seed}, sigma={sigma}")
     return trial_matrix
-        
-
-    
 
 def demo():
     rows=3
