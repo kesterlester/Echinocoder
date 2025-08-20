@@ -374,8 +374,10 @@ def generate_viable_vertex_match_matrices(
     M, # M = number of bad bats. 
     k, # k=dimension of space.
     remove_obvious_collapses = True, # Discards matrices whose RRE form have a row with betwen 1 and k non-zero elements. (Nb: ihis setting forces rre to be calcualted.)
+    debug_test_max_rows = True,
     return_mat = False,
     return_rre = False,
+    return_rre_pivots = False,
     return_hashable_rre = False,
     remove_duplicates_via_hash = False, # Making this true could crash your program via memory usage. Beware!  This setting forces rre to be calculated -- so no harm in also choosing to return it.
     go_deeper    = None, # If present, then the branch topped by matrix "mat" is only explored more deeply if go_deeper(mat) is True. Does not affect whether mat itself is yielded.
@@ -393,11 +395,13 @@ def generate_viable_vertex_match_matrices(
     It is far better to kill a branch before generating its daughter matrixes than to kill a branch by killing/vetoing each daughter matrix.  This, if it is possible to do so, it is far better to use "go_deeper" (with or without  "yield_matrix") to kill a whole branch in one test, than to use only "yield_matrix".
     """
 
+    max_rows = sympy_tools.max_rows_for_viable_stripped_RRE_matrix(M=M, k=k)
+
     calculate_hashable_rre_early = remove_duplicates_via_hash
     calculate_hashable_rre_late = return_hashable_rre and not calculate_hashable_rre_early
 
     calculate_rre_early = calculate_hashable_rre_early or remove_obvious_collapses
-    calculate_rre_late = return_rre and not calculate_rre_early
+    calculate_rre_late = (return_rre or return_rre_pivots) and not calculate_rre_early
 
     hashable_rre_seen = set()
 
@@ -405,7 +409,7 @@ def generate_viable_vertex_match_matrices(
         rre, pivots = mat.rref()
         stripped = sympy_tools.strip_zero_rows(rre)
         #print(f"{pivots},{repr(rre)}")
-        return stripped
+        return stripped, pivots
 
     # TODO: consider making prefix a SymPy matrix natively, so that we are not always converting, and can more easily get different views. Maybe this would speed somet hings up??
     def dfs(prefix, start_row):
@@ -417,12 +421,17 @@ def generate_viable_vertex_match_matrices(
             mat = sp.Matrix(prefix)
 
             if calculate_rre_early:
-                rre = calc_rre(mat)
+                rre, rre_pivots = calc_rre(mat)
  
             if remove_obvious_collapses:
                 assert calculate_rre_early
                 if sympy_tools.some_row_causes_collapse(rre, k):
-                    if debug: print(f"VETO as row collapse in {rre}")
+                    if debug: print(f"VETO as row collapse in {rre} with k={k}.")
+                    # Some row causes collapse!
+                    # Skip deeper evaluation or return of it!
+                    return
+                if not sympy_tools.pivot_positions_are_all_viable_for_stripped_RRE_matrix(rre.shape, rre_pivots, k):
+                    if debug: print(f"VETO as bad pivot positions in {rre} for k={k}.")
                     # Some row causes collapse!
                     # Skip deeper evaluation or return of it!
                     return
@@ -448,7 +457,7 @@ def generate_viable_vertex_match_matrices(
 
             # At this point we know we have to return things, so finish any late computations, if required:
             if calculate_rre_late:
-                rre = calc_rre(mat)
+                rre, rre_pivots = calc_rre(mat)
             if calculate_hashable_rre_late:
                 hashable_rre = sp.ImmutableMatrix(rre)
 
@@ -457,17 +466,28 @@ def generate_viable_vertex_match_matrices(
                 ans.append(mat)
             if return_rre:
                 ans.append(rre)
+            if return_rre_pivots:
+                ans.append(rre_pivots)
             if return_hashable_rre:
                 ans.append(hashable_rre)
-
+            
+            # Now we pass all our outputs to the caller:
             user_aborted_this_branch = (yield ans)
 
-            if user_aborted_this_branch or (go_deeper is not None and not go_deeper(mat)):
+            # Don't go deeper if caller says not to, or for any other reason:
+            if (
+                user_aborted_this_branch
+                or
+                (remove_obvious_collapses and debug_test_max_rows and rre.shape[0]>=max_rows) # We are alreay as tall as we ever can be!
+                or
+                (go_deeper is not None and not go_deeper(mat))
+               ):
                 return  # Skip deeper exploration
 
             columns_of_mat_as_tuples = [tuple(mat.col(i)) for i in range(mat.cols)]  # as tuples so that they will be hashable and thus usable as dictionary keys
             e_places = Equivalent_Places(exemplar = columns_of_mat_as_tuples)
         else:
+            assert not prefix
             e_places = Equivalent_Places(size=M, all_equivalent=True)
 
         # Start the rows at the given start_row:

@@ -89,7 +89,6 @@ def demo(M_and_k_tuple=None):
         collapse_checker = Decider(M=M, k=k, debug=debug)
         collapse_checking_function = collapse_checker.function_factory()
 
-
         mat_gen = generate_viable_vertex_match_matrices(
             M=M,
             k=k,
@@ -101,14 +100,42 @@ def demo(M_and_k_tuple=None):
             # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
             # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
             debug = debug,
+            debug_test_max_rows=True,
+            )
+
+        mat_gen_slow = generate_viable_vertex_match_matrices(
+            M=M,
+            k=k,
+            return_mat = True,
+            return_hashable_rre = True,
+            remove_duplicates_via_hash = True,
+            yield_matrix = collapse_checking_function,
+            # yield_matrix = partial(max_row_requirement, max_rows=4),
+            # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+            # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
+            debug = debug,
+            debug_test_max_rows=False,
             )
        
         number_enumerated = 0
-        for i, (mat,rre) in enumerate(mat_gen):
+        ((last_mat,last_rre), (last_mat_slow,last_rre_slow)) = ((None,None),(None,None))
+        #for i, (mat,rre) in enumerate(mat_gen):
+        for i, ((mat,rre), (mat_slow,rre_slow)) in enumerate(zip(mat_gen, mat_gen_slow)):
             #tracker = Match_Tracker(M, mat)
             #e_vertices = tracker.number_of_even_vertices_present()
             #print(f"    {i} ev:{e_vertices},  raw={mat}, rre={repr(rre)}")
-            print(f"    {i}  raw={mat}, rre={repr(rre)}")
+            pr = False
+            mismatch = ((mat != mat_slow) or (rre != rre_slow))
+            if mismatch:
+                print(f"(Pre){i-1} FAST raw={mat     }, rre={repr(rre)     }")
+                print(f"(pre){i-1} SLOW raw={mat_slow}, rre={repr(rre_slow)}")
+                pr = True
+            if i % 500 == 0 or pr:
+                print(f"     {i  } FAST raw={mat     }, rre={repr(rre)     }")
+                print(f"     {i  } SLOW raw={mat_slow}, rre={repr(rre_slow)}")
+            ((last_mat,last_rre), (last_mat_slow,last_rre_slow)) = ((mat,rre), (mat_slow,rre_slow)) 
+            if mismatch:
+                 assert False, "Stopping after mismatch"
             ### if (
             ###    e_vertices < size_of_smallest_confusable_set_constructed_so_far or 
             ###    e_vertices <= size_of_smallest_confusable_set_constructed_so_far and (sp.shape(mat)[0])<(sp.shape(smallest_set_mat)[0])
