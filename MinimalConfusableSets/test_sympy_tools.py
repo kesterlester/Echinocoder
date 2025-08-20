@@ -150,3 +150,11 @@ def test_normal_int_matrix():
                            [-2, 0, -1, -1, -1, 0],
                         ])
 
+    mat = spt.normal_int_matrix(rows, cols, seed=1, sigma=100)
+    assert mat == sp.Matrix([
+                           [ 35,  82,  33, -130, 91,  45],
+                           [-54,  58,  36,   29,  3,  55],
+                           [-74, -16, -48,   60,  4, -29],
+                        ])
+
+

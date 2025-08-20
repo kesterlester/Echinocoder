@@ -204,6 +204,9 @@ def demo():
     print(f"Here is a random normal int {rows}x{cols} matrix:")
     print(repr(mat))
 
+    mat = normal_int_matrix(rows, cols, seed=1, sigma=100)
+    print(f"Here is a random normal int {rows}x{cols} matrix:")
+    print(repr(mat))
 
 if __name__ == "__main__":
     demo()
