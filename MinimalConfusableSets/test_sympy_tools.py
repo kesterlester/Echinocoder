@@ -157,4 +157,87 @@ def test_normal_int_matrix():
                            [-74, -16, -48,   60,  4, -29],
                         ])
 
+def test_rows_are_points_in_general_position():
+    
+    gen_pos = spt.rows_are_points_in_general_position
+
+    assert True == gen_pos(sp.Matrix([
+                      [2,3,4],
+                      [3,4,5],
+                   ]))
+
+    assert True == gen_pos(sp.Matrix([
+                      [2,3,4], # R0
+                      [4,6,8], # R1 is parallel to R0 -- but this is not what we are testing!
+                   ]))
+
+    assert False == gen_pos(sp.Matrix([
+                      [2,3,4], # R0
+                      [2,3,4], # R1 is R0.
+                   ]))
+
+    assert False == gen_pos(sp.Matrix([
+                      [2,3,4], # R0
+                      [1,3,4],
+                      [2,9,4],
+                      [2,9,8],
+                      [2,3,4], # R4 is R0.
+                   ]))
+
+    assert True == gen_pos(sp.Matrix([
+                      [1,0,0,0], # R0
+                      [0,1,0,0], # R1
+                      [2,2,0,0], # R2 is in plane spanned by R0 and R1, but that is not what we are testing.
+                      [0,0,1,0],
+                   ]))
+
+    assert False == gen_pos(sp.Matrix([
+                      [2,0,0,0], # R0
+                      [0,2,0,0], # R1
+                      [1,1,0,0], # R2 is on line between R0 and R1.
+                      [0,0,1,0],
+                   ]))
+
+    assert True == gen_pos(sp.Matrix([
+                      [1,0,0,0],
+                      [0,1,0,0],
+                      [0,0,0,1],
+                      [0,0,1,0],
+                   ]))
+
+def test_rows_are_vectors_in_general_position():
+    
+    gen_pos = spt.rows_are_vectors_in_general_position
+
+    assert True == gen_pos(sp.Matrix([
+                      [2,3,4],
+                      [3,4,5],
+                   ]))
+
+    assert False == gen_pos(sp.Matrix([
+                      [2,3,4], # R0
+                      [4,6,8], # R1 is parallel to R0.
+                   ]))
+
+    assert False == gen_pos(sp.Matrix([
+                      [1,0,0,0], # R0
+                      [0,1,0,0], # R1
+                      [2,2,0,0], # R2 is in plane spanned by R0 and R1.
+                      [0,0,1,0],
+                   ]))
+
+    assert False == gen_pos(sp.Matrix([
+                      [2,0,0,0], # R0
+                      [0,2,0,0], # R1
+                      [1,1,0,0], # R2 is in plane spanned by R0 and R1.
+                      [0,0,1,0],
+                   ]))
+
+    assert True == gen_pos(sp.Matrix([
+                      [1,0,0,0],
+                      [0,1,0,0],
+                      [0,0,0,1],
+                      [0,0,1,0],
+                   ]))
+
 

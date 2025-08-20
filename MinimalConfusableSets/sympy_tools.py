@@ -196,6 +196,77 @@ def normal_int_matrix(
     rounded = rounded.astype(int)
     return ImmutableMatrix(rounded.tolist())
 
+import itertools
+from sympy import Matrix
+
+def rows_are_vectors_in_general_position(B: Matrix) -> bool:
+    """
+    Check if the rows of B (vectors) are in general linear position.
+    That means every subset of up to d vectors is linearly independent.
+    This is not the same thing as them being POINTS in general position
+    (see implementation of rows_are_points_in_general_position(B: Matrix) -> bool:).
+
+    Args:
+        B: sympy Matrix of shape (R, d), entries in rationals or integers
+
+    Returns:
+        True if points are vectors in general position, False otherwise.
+    """
+    R, d = B.shape
+    max_k = min(R, d)
+    
+    for k in range(1, max_k + 1):
+        for indices in itertools.combinations(range(R), k):
+            subset = B[list(indices), :]  # k x d
+            if subset.rank() < k:
+                return False
+    return True
+
+
+def rows_are_points_in_general_position(B: Matrix) -> bool:
+    """
+    Check if the rows of matrix B (points in d-dimensional space)
+    are point in general linear position. This is the *affine* notion:
+    no k points lie in a (k-2)-dimensional affine flat, for k=2..d+1.
+
+    Note this is not the same
+    thing as vectors in general position. See other implementation, 
+    i.e. implementation of rows_are_vectors_in_general_position(B: Matrix) -> bool.
+
+    Args:
+        B: sympy Matrix of shape (R, d), entries in rationals or integers
+
+    Returns:
+        True if points are in general position, False otherwise.
+    """
+    R, d = B.shape
+
+    # Check subsets of size k = 2 ... min(d+1, R)
+    for k in range(2, min(d+1, R) + 1):
+        for indices in itertools.combinations(range(R), k):
+            subset = B[list(indices), :]   # k x d
+            base = subset[0, :]            # (1, d)
+            rest = subset[1:, :]           # (k-1, d)
+            # replicate base row to shape (k-1, d)
+            base_repeated = Matrix.vstack(*([base] * (rest.rows)))
+            diffs = rest - base_repeated   # (k-1, d)
+            if diffs.rank() < k - 1:
+                return False
+
+    return True
+
+def general_position_integer_bat_matrix(
+                                        M: int, # Number of bats
+                                        k: int, # Dimension of each bat
+                                        ) -> ImmutableMatrix:
+    """
+    Gives an Mxk matrix, each row is a bat vector having k dims.
+    Has the special requirement that every k of the bats be in general position.
+    """
+
+    trial = normal_int_matrix(rows=M, cols=k, seed=0)
+
+    
 
 def demo():
     rows=3
