@@ -116,7 +116,7 @@ def demo(M_and_k_tuple=None):
             # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
             # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
             debug = debug,
-            debug_test_max_rows=False,
+            debug_test_max_rows=True,
             )
        
         number_enumerated = 0
@@ -129,12 +129,15 @@ def demo(M_and_k_tuple=None):
             pr = False
             mismatch = ((mat != mat_slow) or (rre != rre_slow))
             if mismatch:
-                print(f"(Pre){i-1} FAST raw={mat     }, rre={repr(rre)     }")
-                print(f"(pre){i-1} SLOW raw={mat_slow}, rre={repr(rre_slow)}")
+                print()
+                print(f"(Pre){i-1} FAST raw={last_mat     }, rre={repr(last_rre)     }")
+                print(f"(pre){i-1} SLOW raw={last_mat_slow}, rre={repr(last_rre_slow)}")
+                print()
                 pr = True
             if i % 500 == 0 or pr:
                 print(f"     {i  } FAST raw={mat     }, rre={repr(rre)     }")
                 print(f"     {i  } SLOW raw={mat_slow}, rre={repr(rre_slow)}")
+                print()
             ((last_mat,last_rre), (last_mat_slow,last_rre_slow)) = ((mat,rre), (mat_slow,rre_slow)) 
             if mismatch:
                  assert False, "Stopping after mismatch"
