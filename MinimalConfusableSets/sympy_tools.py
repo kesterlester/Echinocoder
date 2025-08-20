@@ -142,3 +142,68 @@ def some_row_causes_collapse(mat: sp.Matrix, k: int):
             # This row was good, so try the next row.
         # We finished trying rows, so if we got here all rows are good!
         return False
+
+
+from typing import Optional, Literal, Union
+import numpy as np
+from sympy import ImmutableMatrix
+
+def normal_int_matrix(
+    rows: int,
+    cols: int,
+    sigma: float = 1.0,
+    mean: float = 0.0,
+    seed: Optional[Union[int, np.random.SeedSequence]] = None,
+    rng: Optional[Union[np.random.Generator, np.random.RandomState]] = None,
+    rounding: Literal["half_to_even", "half_away_from_zero"] = "half_to_even",
+) -> ImmutableMatrix:
+    """
+    Create an rows x cols sympy.ImmutableMatrix of integers sampled by:
+      1) draw from Normal(mean, sigma)
+      2) round to nearest integer
+    RNG control:
+      - Pass `seed` to get a fresh reproducible generator.
+      - Pass an existing `rng` (numpy Generator/RandomState) to control/statefully reuse it.
+      - Pass neither for non-deterministic draws.
+
+    Rounding:
+      - "half_to_even" uses NumPy's rint (banker's rounding).
+      - "half_away_from_zero" rounds 0.5 magnitudes up, preserving sign.
+
+    Raises:
+      ValueError if sigma <= 0 or rows/cols not positive.
+    """
+    if rows <= 0 or cols <= 0:
+        raise ValueError("rows and cols must be positive integers.")
+    if sigma <= 0:
+        raise ValueError("sigma must be > 0.")
+
+    # Choose the random number generator
+    if rng is None:
+        rng = np.random.default_rng(seed)  # seed=None -> non-deterministic; seed=int -> reproducible
+
+    # Sample
+    samples = rng.normal(loc=mean, scale=sigma, size=(rows, cols))
+
+    # Round
+    if rounding == "half_to_even":
+        rounded = np.rint(samples)               # ties to even
+    elif rounding == "half_away_from_zero":
+        rounded = np.sign(samples) * np.floor(np.abs(samples) + 0.5)
+    else:
+        raise ValueError("rounding must be 'half_to_even' or 'half_away_from_zero'.")
+
+    rounded = rounded.astype(int)
+    return ImmutableMatrix(rounded.tolist())
+
+
+def demo():
+    rows=3
+    cols=6
+    mat = normal_int_matrix(rows, cols, seed=0)
+    print(f"Here is a random normal int {rows}x{cols} matrix:")
+    print(repr(mat))
+
+
+if __name__ == "__main__":
+    demo()

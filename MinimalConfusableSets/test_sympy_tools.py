@@ -138,3 +138,15 @@ def test_some_row_causes_collapse(): #(mat: sp.Matrix, k: int):
     assert     short(sp.Matrix([[3,2,3],[2,4,0]]), k=3) 
     assert     short(sp.Matrix([[0,2,3],[2,0,6]]), k=3) 
     assert     short(sp.Matrix([[2,2,3],[2,4,6]]), k=3) 
+
+
+def test_normal_int_matrix():
+    rows=3
+    cols=6
+    mat = spt.normal_int_matrix(rows, cols, seed=0)
+    assert mat == sp.Matrix([
+                           [ 0, 0,  1,  0, -1, 0],
+                           [ 1, 1, -1, -1, -1, 0],
+                           [-2, 0, -1, -1, -1, 0],
+                        ])
+
