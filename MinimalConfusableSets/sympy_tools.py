@@ -259,6 +259,7 @@ from warnings import warn
 def general_position_integer_bat_matrix(
                                         M: int, # Number of bats
                                         k: int, # Dimension of each bat
+                                        seed = 0,
                                         starting_sigma: float = 1,
                                         sigma_growth_factor: float = 1.05, # Must be > 1.0
                                         ) -> ImmutableMatrix:
@@ -267,7 +268,6 @@ def general_position_integer_bat_matrix(
     Has the special requirement that every k of the bats be in general position.
     """
 
-    seed = 0
     sigma = starting_sigma 
     trial_matrix = normal_int_matrix(rows=M, cols=k, seed=seed, sigma=sigma)
     while  not rows_are_vectors_in_general_position(trial_matrix):

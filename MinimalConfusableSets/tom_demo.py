@@ -1,36 +1,11 @@
 import sympy as sp
 from functools import partial
-from vertex_matches import generate_viable_vertex_match_matrices
+from vertex_matches import generate_viable_vertex_match_matrices, alpha_attacking_matrix
 from sympy_tools import strip_zero_rows, some_row_causes_collapse
 import decider_functions.decider_function as df
 from Match_Tracker import Match_Tracker
 
-
-#########################################################
-
-### def old_demo():
-###     print("== Test of Matrix Generation =========")
-### 
-###     def max_row_requirement(mat, max_rows):
-###         return sp.shape(mat)[0] <= max_rows
-### 
-###     def f(mat):
-###         return sp.shape(mat)[0] <= 4 # True if mat has 4 or fewer rows.
-### 
-###     mat_gen = generate_viable_vertex_match_matrices(
-###         M=M,
-###         k=k,
-###         # All of the next three lines have the same effect, but different pros/cons.
-###         # Try changing which one(s) is(are) commented out.
-###         #yield_matrix = partial(max_row_requirement, max_rows=4),
-###         #go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
-###         yield_matrix = f,
-###         )
-### 
-###     return(mat_gen)
-
-
-class Decider:
+class Old_Decider:
     def __init__(self, M, k, debug=False, method="electrostatic", iters = 500, learning_rate = 0.01, power = 2.0, sample = 'rr', spread = 'gauss'):
         self.M = M
         self.k = k
@@ -46,6 +21,34 @@ class Decider:
              if not ans:
                 print(f"VETO by TOM (float) {L_matrix}")
          return ans
+
+    def function_factory(self):
+        return lambda mat : self.matrix_does_not_collapse(mat)
+
+class Rational_Decider:
+    def __init__(self, M, k, debug=False, seed=0):
+        self.M = M
+        self.k = k
+        self.debug = debug
+
+        # Prepare bad bats.
+        self.bat_matrix = spt.general_position_integer_bat_matrix(M=M, k=k, seed=seed)
+
+
+    def matrix_does_not_collapse(self, L_matrix : sp.Matrix):
+
+        big_mat = alpha_attacking_matrix(L_matrix, self.bat_matrix)
+
+        null_space big_mat.nullspace()
+
+        print("---------------------------------"
+        print(f"L_matrix   = {L_matrix}")
+        print(f"big_mat    = {big_mat}")
+        print(f"null space = {null_space}")
+        print("---------------------------------"
+
+        return True
+
 
     def function_factory(self):
         return lambda mat : self.matrix_does_not_collapse(mat)
