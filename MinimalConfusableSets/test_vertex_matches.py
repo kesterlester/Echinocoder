@@ -821,3 +821,21 @@ def test_alpha_attacking_matrix():
     assert effective_row > 0 or rows==0 or k==0 or M==0
 
 
+    L = sp.Matrix([[ 3, 4, 2],
+                   [-7, 8, 5]])
+    B = sp.Matrix([[ 3, 1],
+                   [ 2, 9],
+                   [-8, 6]])
+
+    assert (
+
+       sp.Matrix([
+         [ L[0,0]*B[0,0], L[0,1]*B[1,0], L[0,2]*B[2,0], ],
+         [ L[0,0]*B[0,1], L[0,1]*B[1,1], L[0,2]*B[2,1], ],
+         [ L[1,0]*B[0,0], L[1,1]*B[1,0], L[1,2]*B[2,0], ],
+         [ L[1,0]*B[0,1], L[1,1]*B[1,1], L[1,2]*B[2,1], ],
+       ]) == alpha_attacking_matrix( L, B )
+
+    )
+
+
