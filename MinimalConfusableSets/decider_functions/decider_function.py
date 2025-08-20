@@ -3,6 +3,7 @@ import numpy as np
 from scipy.stats import qmc, norm
 from scipy.linalg import null_space
 import sympy as sp 
+import itertools
 
 def generate_gaussian(M,k):
 
@@ -78,27 +79,6 @@ def construct_A(L, B):
     A = L_rep * BT_rep                          # elementwise
     return A
 
-"""
-def check_collapse_random(A,num_trials=1000,tol=1e-12,):
-    ns_basis = null_space(A, rcond=tol)
-
-    if ns_basis.shape[1] == 0:
-        return False
-    
-    if ns_basis.shape[1] == 1:
-        alpha = ns_basis[:, 0]
-        return np.all(np.abs(alpha) > tol)
-    
-    n = ns_basis.shape[1]
-    coeffs = np.random.randn(n, num_trials)          # (n, T)
-    candidates = ns_basis @ coeffs                   # (M, T)
-    good = (np.abs(candidates) > tol).all(axis=0)    # (T,)
-    return bool(good.any())
-"""
-# POTENTIAL FIXES TO MATMUL ERROR (may be overcompensation): 
-# nullspace should be dense with vectors with no non-zero entries, so 1000 trials is EXCESSIVE, but we /n
-# want a high degree of certainty 
-
 def check_collapse_random(A, num_trials=1000, tol=1e-12):
 
     ns_basis = null_space(A, rcond=tol)  # shape (M, n)
@@ -109,15 +89,15 @@ def check_collapse_random(A, num_trials=1000, tol=1e-12):
     # remove any ns basis vectors with non-finite entries (NaN or inf)
     finite_checker = np.all(np.isfinite(ns_basis), axis=0)   # length n
     if not finite_checker.all():
-        num_inf = int((~finite_checker).sum()) # note 2 self ~ flips bool value
+        num_inf = int((~finite_checker).sum())
         print(f"Warning: {num_inf} nullspace basis vector(s) contained NaN/Inf, so were removed")
-        ns_basis = ns_basis[:, finite_checker]  # take all rows but only finite cols 
+        ns_basis = ns_basis[:, finite_checker]
 
     # if everything was removed
     if ns_basis.shape[1] == 0:
         return False
 
-    # normalize cols and remove near-zero columns
+    # normalize columns and remove near-zero columns
     col_norms = np.linalg.norm(ns_basis, axis=0)
     good_norm = col_norms >= 1e-18
     if not good_norm.all():
@@ -125,64 +105,70 @@ def check_collapse_random(A, num_trials=1000, tol=1e-12):
         print(f"Warning: {num_bad} near-zero nullspace basis vector(s) → removed")
         ns_basis = ns_basis[:, good_norm]
         col_norms = col_norms[good_norm]
-    
-    # if everything was removed
+
     if ns_basis.shape[1] == 0:
         return False
 
-    ns_basis = ns_basis / col_norms  
+    ns_basis = ns_basis / col_norms  # column-normalize
 
-    # if dim=1 the calculation is simple 
     if ns_basis.shape[1] == 1:
         alpha = ns_basis[:, 0]
         # absolute tolerance based on size of largest alpha value 
         tol_abs = max(tol, 1e-12 * np.max(np.abs(alpha)))
         return np.all(np.abs(alpha) > tol_abs)
-    
-    # if dim > 1 use random comb of nullspace basis vectors to seek one with no non-zero entries
-    n = ns_basis.shape[1] # n is number of vectors in nullspace basis (n>1)
+
+    n = ns_basis.shape[1]
     coeffs = np.random.randn(n, num_trials)        # (n, trials)
     candidates = ns_basis @ coeffs                 # (M, trials)
 
-    # absolute tolerance based on largest alpha value (experimental)
-    scales = np.max(np.abs(candidates), axis=0) + 1e-18 # check 1e-18 is reasonable 
-    tol_abs = np.maximum(tol, 1e-12 * scales) 
+    # absolute tolerance based on largest alpha value 
+    scales = np.max(np.abs(candidates), axis=0) + 1e-18
+    tol_abs = np.maximum(tol, 1e-12 * scales)
 
     good = (np.abs(candidates) > tol_abs).all(axis=0)
     return bool(good.any())
 
+            
+def is_all_kwise_lin_ind(B, k, tol=1e-12):
+    M = B.shape[0]
+    for combo in itertools.combinations(range(M), k):
+        matrix = B[list(combo), :]  # shape (k, k)
+        det = np.linalg.det(matrix)
+        if abs(det) < tol:
+            return False
+    return True
 
-def prepare_B(k, M, method, iters, learning_rate, power, sample, spread):
+def prepare_B(k, M, method, iters, learning_rate, power, sample, spread, tol=1e-12):
     """
     method: 
-        - electrostatic [RECOMMENDED] (slower, well spaced out bad bats, lower k (0-8), lower M (0-100)):
-            
-            -> iters (default=500++ faster than I thought): number of charged particle movement steps towards eqm
+        - electrostatic [RECOMMENDED] (slow, well spaced out bad bats, lower k (0-8), lower M (0-100)):
+            -> iters (default=500): number of charged particle movement steps towards eqm
             -> learning_rate (=0.01): strength of response of charge to its neighbours (low for high mass charge)
             -> power (=2): 2 for coulomb's law
-        
         - sobol (fast, less well spaced out bad bats, higher k, higher M):  
-             
-                If m is a power of 2, it uses Sobol's well balanced random_base2 method. 
-             Else: 
-                 -> sample = std: uses STANDARD sobol random(m) method, which may reduce balance
-                 -> sample = rr: uses random_base2 method to generate 2^q ≥ m vectors,
-                              then RANDOMLY REMOVES excess vectors to obtain exactly m.
-                     
-             We need the unit vectors to be spaced out on the unit sphere, not the positive
-             orthant: 
-                   -> spread = lin: uses a LINEAR function 2 * vectors - 1. Bias towards 
-                                 (hyper)cube corners
-                   -> spread = gauss: uses a GAUSSIAN function. Hypothesised less bias. 
-                                       
+            If m is a power of 2, it uses Sobol's well balanced random_base2 method. 
+            Else: 
+                -> sample = std: uses STANDARD sobol random(m) method, which may reduce balance
+                -> sample = rr: uses random_base2 method to generate 2^q ≥ m vectors,
+                                then RANDOMLY REMOVES excess vectors to obtain exactly m.
+            We need the unit vectors to be spaced out on the unit sphere, not the positive
+            orthant: 
+                -> spread = lin: uses a LINEAR function 2 * vectors - 1. Bias towards 
+                                (hyper)cube corners
+                -> spread = gauss: uses a GAUSSIAN function. Hypothesised less bias. 
     """
-    
-    if method == "sobol":
-        B = generate_sobol(M, k, sample, spread)
-    elif method == "electrostatic":
-        B = generate_electrostatic(M, k, iters, learning_rate, power)
-    else:
-        raise ValueError(f"unknown method='{method}' (use 'sobol' or 'electrostatic')")
+    while True:
+        if method == "sobol":
+            B = generate_sobol(M, k, sample, spread)
+        elif method == "electrostatic":
+            B = generate_electrostatic(M, k, iters, learning_rate, power)
+        else:
+            raise ValueError(f"unknown method='{method}' (use 'sobol' or 'electrostatic')")
+        
+        if is_all_kwise_lin_ind(B, k, tol):
+            break
+        else:
+            print("Bad bats ere regenerated as were not k-wise lin ind")
     return B
 
 
@@ -192,26 +178,26 @@ def decide_collapse(L: sp.Matrix, B: np.ndarray, num_trials, tol) -> bool:
     False if collapse or nullity=0 (so no need to find nullspace).
     """
     A = construct_A(L, B)
-    return check_collapse_random(A, num_trials, tol)
+    return bool(check_collapse_random(A, num_trials, tol))
 
 
 
-    
-    
- 
 
 
-        
-        
-        
-        
-        
-        
-        
-        
 
-   
- 
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
