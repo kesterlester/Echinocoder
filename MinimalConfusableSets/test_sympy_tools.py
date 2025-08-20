@@ -244,7 +244,7 @@ def test_rows_are_vectors_in_general_position():
     assert False == gen_pos(sp.Matrix([
                       [1,0,0,0], # R0
                       [0,1,0,0], # R1
-                      [2,2,0,0], # R2 is in plane spanned by R0 and R1.
+                      [2,3,0,0], # R2 is in plane spanned by R0 and R1.
                       [0,0,1,0],
                    ]))
 
