@@ -86,8 +86,10 @@ def demo(M_and_k_tuple=None):
 
         debug = False
 
-        collapse_checker = Decider(M=M, k=k, debug=debug)
-        collapse_checking_function = collapse_checker.function_factory()
+        collapse_checker_1 = Decider(M=M, k=k, debug=debug)
+        collapse_checker_2 = Decider(M=M, k=k, debug=debug)
+        collapse_checking_function_1 = collapse_checker_1.function_factory()
+        collapse_checking_function_2 = collapse_checker_2.function_factory()
 
         mat_gen = generate_viable_vertex_match_matrices(
             M=M,
@@ -95,7 +97,7 @@ def demo(M_and_k_tuple=None):
             return_mat = True,
             return_hashable_rre = True,
             remove_duplicates_via_hash = True,
-            yield_matrix = collapse_checking_function,
+            yield_matrix = collapse_checking_function_1,
             # yield_matrix = partial(max_row_requirement, max_rows=4),
             # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
             # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
@@ -109,7 +111,7 @@ def demo(M_and_k_tuple=None):
             return_mat = True,
             return_hashable_rre = True,
             remove_duplicates_via_hash = True,
-            yield_matrix = collapse_checking_function,
+            yield_matrix = collapse_checking_function_2,
             # yield_matrix = partial(max_row_requirement, max_rows=4),
             # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
             # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
