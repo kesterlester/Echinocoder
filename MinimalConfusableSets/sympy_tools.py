@@ -255,16 +255,31 @@ def rows_are_points_in_general_position(B: Matrix) -> bool:
 
     return True
 
+from warnings import warn
 def general_position_integer_bat_matrix(
                                         M: int, # Number of bats
                                         k: int, # Dimension of each bat
+                                        starting_sigma: float = 1,
+                                        sigma_growth_factor: float = 1.05, # Must be > 1.0
                                         ) -> ImmutableMatrix:
     """
     Gives an Mxk matrix, each row is a bat vector having k dims.
     Has the special requirement that every k of the bats be in general position.
     """
 
-    trial = normal_int_matrix(rows=M, cols=k, seed=0)
+    seed = 0
+    sigma = starting_sigma 
+    trial_matrix = normal_int_matrix(rows=M, cols=k, seed=seed, sigma=sigma)
+    while  not rows_are_vectors_in_general_position(trial_matrix):
+        seed += 1
+        trial_matrix = normal_int_matrix(rows=M, cols=k, seed=seed, sigma=sigma)
+        if (seed % 1000) == 0:
+            warn(f"Warning, {seed} attempts at making a general position integer bat matrix. (sympy_tools.py)")
+        sigma *= sigma_growth_factor # Exponential growth makes matrices tend to have small entries, only growing large when really needed.
+
+    warn(f"seed={seed}, sigma={sigma}")
+    return trial_matrix
+        
 
     
 
