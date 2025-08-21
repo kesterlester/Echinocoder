@@ -173,11 +173,6 @@ class Rational_Decider:
         print(f"Decider can be reconstructed like this:\n{repr(self)}\n")
         print("Consider this unit test case:")
         print(self.__collapse_test_case(L_matrix, votes_for_collapse))
-        #print("Bat matrix list was:")
-        #print(f"{self.bat_matrices}")
-        #for i, bm in enumerate(self.bat_matrices):
-        #    print(f"  ({i}): {repr(bm)}")
-
        
         raise RuntimeError()
         assert False, "Implementation of matrix_collapse function seems to be broken."
@@ -273,6 +268,7 @@ class Rational_Decider:
             # Try next cpt
         # OK - we tried all components but didn't find one that had zero in every basis vector,
         # so this matrix does admit solns with all alphai non-zero, i.e. the matrix does not collapse.
+        # See proof in "OneNote -> Research -> Symmetries -> Non collapsing null space".
         return False
 
     def function_factory(self):
