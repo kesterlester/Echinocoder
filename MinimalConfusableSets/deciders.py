@@ -123,28 +123,28 @@ class Rational_Decider:
 
     def __collapse_test_case(self, L_matrix : sp.Matrix, votes_for_collapse : tuple) -> str:
         return f"""
-
-
-##################################
-import deciders
-from sympy import Matrix
-
-L_matrix = {repr(L_matrix)}
-bat_matrices = {self.bat_matrices}
-decider = deciders.Rational_Decider(M={self.M}, k={self.k}, bat_matrices=bat_matrices)
-
-votes_for_collapse = decider.votes_for_collapse(L_matrix)
-print("votes_for_collapse are: ",votes_for_collapse)
-
-# Expect votes_for_collapse={votes_for_collapse} 
-
-has_True = True in votes_for_collapse
-has_False = True in votes_for_collapse
-
-assert not ( has_True and has_False )
-##################################
-
-
+    
+    
+    ##################################
+    import deciders
+    from sympy import Matrix
+    
+    L_matrix = {repr(L_matrix)}
+    bat_matrices = {self.bat_matrices}
+    decider = deciders.Rational_Decider(M={self.M}, k={self.k}, bat_matrices=bat_matrices)
+    
+    votes_for_collapse = decider.votes_for_collapse(L_matrix)
+    print("votes_for_collapse are: ",votes_for_collapse)
+    
+    # Expect votes_for_collapse={votes_for_collapse} 
+    
+    has_True = True in votes_for_collapse
+    has_False = True in votes_for_collapse
+    
+    assert not ( has_True and has_False )
+    ##################################
+    
+    
 """
         
     def votes_for_collapse(self, L_matrix : sp.Matrix) -> tuple:
