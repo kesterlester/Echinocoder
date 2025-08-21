@@ -121,19 +121,28 @@ class Rational_Decider:
     def __repr__(self):
         return f"Rational_Decider(M={self.M}, k={self.k}, bat_matrices={self.bat_matrices})"
 
-    def __collapse_test_case(self, L_matrix : sp.Matrix) -> str:
+    def __collapse_test_case(self, L_matrix : sp.Matrix, votes_for_collapse : tuple) -> str:
         return f"""
 
+
+##################################
 import deciders
 from sympy import Matrix
+
 L_matrix = {repr(L_matrix)}
 bat_matrices = {self.bat_matrices}
 decider = deciders.Rational_Decider(M={self.M}, k={self.k}, bat_matrices=bat_matrices)
+
 votes_for_collapse = decider.votes_for_collapse(L_matrix)
 print("votes_for_collapse are: ",votes_for_collapse)
+
+# Expect votes_for_collapse={votes_for_collapse} 
+
 has_True = True in votes_for_collapse
 has_False = True in votes_for_collapse
+
 assert not ( has_True and has_False )
+##################################
 
 
 """
@@ -162,8 +171,8 @@ assert not ( has_True and has_False )
         print(f"\n\nFor L_matrix = {L_matrix},")
         print(f"votes_for_collapse are {votes_for_collapse}.")
         print(f"Decider can be reconstructed like this:\n{repr(self)}\n")
-        print("Consider this unit test case")
-        print(self.__collapse_test_case(L_matrix))
+        print("Consider this unit test case:")
+        print(self.__collapse_test_case(L_matrix, votes_for_collapse))
         #print("Bat matrix list was:")
         #print(f"{self.bat_matrices}")
         #for i, bm in enumerate(self.bat_matrices):
