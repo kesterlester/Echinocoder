@@ -31,6 +31,10 @@ def test_M5_k2():
     print("votes_for_collapse are: ",votes_for_collapse)
     has_True = True in votes_for_collapse
     has_False = True in votes_for_collapse
+    # The following assertion is not strictly KNOWN to be true, but rather
+    # reflects uncertainty as to how the algorithm is supposed to work.
+    # I.e. I currently "feel" like it should be true, but see that it is not
+    # always true, and don't understandy why it is not always true.
     assert not ( has_True and has_False )
 
 
