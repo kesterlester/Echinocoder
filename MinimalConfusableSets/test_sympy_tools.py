@@ -262,4 +262,43 @@ def test_rows_are_vectors_in_general_position():
                       [0,0,1,0],
                    ]))
 
+def test_int_tuple_without_zeros():
+
+    print()
+
+    dim=40
+    vec = spt.int_tuple_without_zeros(dim) # Should have only ones and minus ones in.
+    print(f"int vec without zeros {vec}")
+    assert all( type(x)==int for x in vec)
+    assert all( int(x)==x for x in vec)
+    assert all( (x==+1 or x==-1) for x in vec)
+    assert len(vec)==dim
+
+    dim=40
+    lam = 0
+    vec = spt.int_tuple_without_zeros(dim, lam=lam) # Should have only ones and minus ones in.
+    print(f"int vec without zeros {vec}")
+    assert all( type(x)==int for x in vec)
+    assert all( int(x)==x for x in vec)
+    assert all( (x==+1 or x==-1) for x in vec)
+    assert len(vec)==dim
+
+    dim=40
+    lam = 1
+    vec = spt.int_tuple_without_zeros(dim, lam=lam) #  May have bigger magnitude numbers inside.
+    print(f"int vec without zeros {vec}")
+    assert all( type(x)==int for x in vec)
+    assert all( int(x)==x for x in vec)
+    assert all( (x>=1 or x<=-1) for x in vec)
+    assert len(vec)==dim
+
+    dim=40
+    lam = 10
+    vec = spt.int_tuple_without_zeros(dim, lam=lam) # Should have at least one number bigger than one, probabilistically.
+    print(f"int vec without zeros {vec}")
+    assert all( type(x)==int for x in vec)
+    assert all( int(x)==x for x in vec)
+    assert all( (x>=1 or x<=-1) for x in vec)
+    assert any( (x>1 or x<-1) for x in vec) # Technically this could fail, but only with probability of order (1/10)^40 which we ought to be able to ignore!
+    assert len(vec)==dim
 

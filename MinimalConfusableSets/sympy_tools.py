@@ -148,6 +148,21 @@ from typing import Optional, Literal, Union
 import numpy as np
 from sympy import ImmutableMatrix
 
+def int_tuple_without_zeros(size: int,
+                            lam: float = 0,
+                            ) -> tuple:
+    """
+    Create a tuple of length "size" containing only non-zero integers whose closeness to zero is controlled by the parameter "lam".
+    """
+
+    if size < 0:
+        raise ValueError(f"Vector's length must be a non-negative integer, not {size}.")
+
+    if lam<0:
+        raise ValueError(f"Length scale lam must be >=0, not {la,}.")
+
+    return tuple( int(np.random.choice( (-1,+1) )*(poisson+1)) for poisson in np.random.poisson(lam=lam, size=size) )
+
 def normal_int_matrix(
     rows: int,
     cols: int,
