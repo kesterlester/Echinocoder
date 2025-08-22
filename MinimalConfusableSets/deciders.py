@@ -67,7 +67,13 @@ class Rational_Decider:
 
     Issue (1) would be addressed if it were possible to show that all
     nonzero P agree for a given match matrix.  We do not currently
-    know if this is true, though.
+    know if this is true, though.  AFTERTHOUGHT: We know that a non-
+    collapsing soln MUST lead to AT LEAST the matches specified in
+    the L-matrix .... and if MORE matches can be achieved, then they
+    could be DEMANDED by an L-matrix deeper in the hierarchy. So it
+    does not matter if (for a given L-matrix) we don't get the largest
+    number of matches possible -- we only need to show that the matches
+    which it REQUIRES can be achieved.
 
     Issue (2) could be stochastically addressed (i.e. to any level of
     desired precision) by trying multiple bat matrices simultaneously
