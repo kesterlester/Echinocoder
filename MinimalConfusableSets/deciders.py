@@ -121,7 +121,7 @@ class Rational_Decider:
     def __repr__(self):
         return f"Rational_Decider(M={self.M}, k={self.k}, bat_matrices={self.bat_matrices})"
 
-    def __collapse_test_case(self, L_matrix : sp.Matrix, votes_for_collapse : tuple) -> str:
+    def __collapse_test_case(self, L_matrix : sp.Matrix, votes_for_collapse : tuple, null_spaces, null_space_dimensions,) -> str:
         return f"""
     
     
@@ -133,54 +133,105 @@ class Rational_Decider:
     bat_matrices = {self.bat_matrices}
     decider = deciders.Rational_Decider(M={self.M}, k={self.k}, bat_matrices=bat_matrices)
     
-    votes_for_collapse = decider.votes_for_collapse(L_matrix)
+    votes_for_collapse, null_spaces = decider.votes_for_collapse_and_null_spaces(L_matrix)
+    null_space_dimensions = tuple(len(null_space) for null_space in null_spaces)
+
     print("votes_for_collapse are: ",votes_for_collapse)
-    
     # Expect votes_for_collapse={votes_for_collapse} 
+
+    print("null space lengths are: ",null_space_dimensions)
+    # Expect null_space_dimensions={null_space_dimensions} 
+    
+    print("null spaces are: ",null_spaces)
+    # Expect null_spaces={null_spaces} 
     
     has_True = True in votes_for_collapse
     has_False = True in votes_for_collapse
-    
-    assert not ( has_True and has_False )
+
+    null_spaces_have_different_dimensions = max(null_space_dimensions) != min(null_space_dimensions)
+
+    assert True # or something else of your choice.
     ##################################
     
     
 """
         
-    def votes_for_collapse(self, L_matrix : sp.Matrix) -> tuple:
-        return tuple(self.__matrix_collapses(L_matrix, bat_matrix) for bat_matrix in self.bat_matrices)
+    def votes_for_collapse_and_null_spaces(self, L_matrix : sp.Matrix) -> tuple:
+        votes_for_collapse, null_spaces = map(tuple, zip(*(
+           self.__matrix_collapse_data(L_matrix, bat_matrix) for bat_matrix in self.bat_matrices
+        )))
+        #return tuple(self.__matrix_collapses(L_matrix, bat_matrix) for bat_matrix in self.bat_matrices) 
+        return votes_for_collapse, null_spaces
+
         
     def matrix_does_not_collapse(self, L_matrix : sp.Matrix) -> bool:
         return not self.matrix_collapses(L_matrix)
 
     def matrix_collapses(self, L_matrix : sp.Matrix) -> bool:
-        votes_for_collapse = self.votes_for_collapse(L_matrix)
+        votes_for_collapse, null_spaces = self.votes_for_collapse_and_null_spaces(L_matrix)
 
-        if not False in votes_for_collapse:
-            # All votes are True so all agree on collapse:
-            print(".", end="")
-            return True
+        null_space_dimensions = tuple( len(null_space) for null_space in null_spaces )
 
-        if not True in votes_for_collapse:
-            # All votes are False, so all agree on non collapse:
-            print(".", end="")
+        max_null_space_dimension = max(null_space_dimensions)
+        min_null_space_dimension = min(null_space_dimensions)
+
+        if max_null_space_dimension != min_null_space_dimension:
+            # Oh dear. We had convinced ourselves that this should not happen!
+            # The principle on which method is based is fully understood.
+            print("Matrix_collapse function seems to be broken (Type 1) as null space dimensions did not agree.")
+            print("Consider this unit test case:")
+            print(self.__collapse_test_case(L_matrix, votes_for_collapse, null_spaces, null_space_dimensions))
+            raise RuntimeError()
+            assert False, "Implementation of matrix_collapse function seems to be broken. Type 1."
+            
+        assert max_null_space_dimension == min_null_space_dimension
+
+        null_space_dimension = max_null_space_dimension
+        assert 0 <= null_space_dimension <= self.M
+
+        # We believe that a non-trivial null space should mean that there exists some 
+        # bad bat direction(s) in which non-collapse will be achieved, and that the places
+        # where this happens are dense. So, although we do not expect ALL votes to be in 
+        # favour, we expect that at least one is in favour. This relies on us using
+        # quite a few bad-bat tests to make sure that we don't hit only one bad case.
+        from warnings import warn
+        warn("deciders.py relies on a stochastic test -- enough bad bats")
+        if len(self.bat_matrices)<4:
+            assert False
+     
+        if null_space_dimension == 0:
+            return True # The L-matrix collapses this even-odd latice when using any bat configuratios. Report collapse!
+
+        assert 1 <= null_space_dimension <= self.M
+
+        # At this point we believe that the L-matrix will not colapse an even-odd lattice for SOME bats.
+        # However, to be sure, we now check that at least one vote agrees.
+
+        if False in votes_for_collapse:
+            # At least one bat_matrix was found to NOT cause collapse. So report the expected NON-collapse.
             return False
 
-        # Oh dear, some votes are True and some are False. This should not happen if
-        # the principle on which method is based is fully understood.
-        print(f"\n\nFor L_matrix = {L_matrix},")
-        print(f"votes_for_collapse are {votes_for_collapse}.")
-        print(f"Decider can be reconstructed like this:\n{repr(self)}\n")
+        assert all(vote == True for vote in votes_for_collapse)
+        # All votes were for collapse. We did not expect that as the null_space_dimension was bigger than zero.
+
+        # Oh dear. We had convinced ourselves that this should not happen!
+        # The principle on which method is based is fully understood.
+        print("Matrix_collapse function seems to be broken (Type 2) as null space dimensions did not agree.")
         print("Consider this unit test case:")
-        print(self.__collapse_test_case(L_matrix, votes_for_collapse))
-       
+        print(self.__collapse_test_case(L_matrix, votes_for_collapse, null_spaces, null_space_dimensions))
         raise RuntimeError()
-        assert False, "Implementation of matrix_collapse function seems to be broken."
+        assert False, "Implementation of matrix_collapse function seems to be broken. Type 2."
 
-    def __matrix_does_not_collapse(self, L_matrix : sp.Matrix, bat_matrix : sp.Matrix) -> bool:
-        return not self.matrix_collapses(L_matrix, bat_matrix)
+    def __matrix_collapse_data(self, L_matrix : sp.Matrix, bat_matrix : sp.Matrix):
+        """
+        Currently this returns a two-element tuple (i.e. pair).
 
-    def __matrix_collapses(self, L_matrix : sp.Matrix, bat_matrix : sp.Matrix) -> bool:
+        First element is bool, and used to be called a "vote for collapse". It used to be true if the
+        L_matrix collapsed an even-odd lattice using the bad_bats supplied. However, more recently
+        we have realised that this is not quite what we want/need so that may change in future.
+
+        Second element is the null-space.
+        """
 
         big_mat = alpha_attacking_matrix(L_matrix, bat_matrix)
 
@@ -239,13 +290,13 @@ class Rational_Decider:
         if null_space_dimension == 0:
             # The null-space is 0-dimensional, i.e. the only soln has all alphas equal to zero.
             # This is the strongest form of collapse we can have!
-            return True
+            return True, null_space
 
         if null_space_dimension == self.M:
             # The null-space is M-dimensional. There are only M alphas, so it is capable of spanning to 
             # (alpha1, alpha2, .... ) = (1, 1, ... ).
             # So no collapse here!
-            return False
+            return False, null_space
 
         # OK - the shortcuts didn't work, so fall back to the default method that would always work.
         # Namely, for the reasons set out in "OneNote -> Research -> Symmetries -> Non collapsing null space"
@@ -264,12 +315,12 @@ class Rational_Decider:
                 # There are zeros in every basis vector at this cpt,
                 # so there is no soln with every alphai nonzero, 
                 # so this matrix collapses:
-                return True
+                return True, null_space
             # Try next cpt
         # OK - we tried all components but didn't find one that had zero in every basis vector,
         # so this matrix does admit solns with all alphai non-zero, i.e. the matrix does not collapse.
         # See proof in "OneNote -> Research -> Symmetries -> Non collapsing null space".
-        return False
+        return False, null_space
 
     def function_factory(self):
         return lambda mat : self.matrix_does_not_collapse(mat)

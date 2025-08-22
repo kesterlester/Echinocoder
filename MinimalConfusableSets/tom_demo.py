@@ -37,8 +37,8 @@ def demo(M_and_k_tuple=None):
 
         debug = False
 
-        collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=10, starting_sigma=1)
-        collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=0, starting_sigma=100)
+        collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, voting_copies=30, seed=10, starting_sigma=1)
+        collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, voting_copies=30, seed=0, starting_sigma=100)
         collapse_checking_function_1 = collapse_checker_1.function_factory()
         collapse_checking_function_2 = collapse_checker_2.function_factory()
 
