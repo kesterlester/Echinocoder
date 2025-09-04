@@ -5,8 +5,6 @@ def find_lambda(u, v):
     Given two vectors u, v (SymPy Matrix, column or row),
     find the smallest integer lambda such that
     w = u + lambda*v has zeros only where both u and v are zero.
-    
-    If positive_only=True, restrict lambda to positive integers only.
     """
     # Ensure both are column vectors for consistency
     u, v = Matrix(u), Matrix(v)
@@ -26,7 +24,7 @@ def find_lambda(u, v):
         if candidate_lambda not in forbidden:
             return candidate_lambda
 
-        # We will escape the while True in finite time as forbidden has finite length:
+        # We will escape the "while True" in a finite time as "forbidden" has finite length:
         assert 2*abs(candidate_lambda) <= len(forbidden)+1
 
         # Advance candidate_lambda in following sequence:
@@ -47,6 +45,7 @@ def combine_many(vectors):
     """
     Given a list of vectors, return a tuple of coefficients
     such that the combined vector has zeros only where all inputs have zeros.
+    Also returns the combined vector.
     
     Uses iterative pairwise growth.
     """
