@@ -155,6 +155,15 @@ def demo():
     B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3]])
     E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = True)
 
+    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3]])
+    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = False)
+
+    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3], [2,2]])
+    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = True)
+
+    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3], [2,2]])
+    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = False)
+
 if __name__ == "__main__":
     demo()
 
