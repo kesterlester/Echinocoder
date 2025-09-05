@@ -1,17 +1,20 @@
 import sympy as sp
 
+def size_of_confusable_multiset_formed_from(B_scaled, # B_scaled is a SCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are these rows
+                              ):
+    E, O, C, EE, OO = analyze_B(B_scaled, plot_if_2d=False)
+
+    assert len(E) == len(O)
+    assert len(EE) == len(OO)
+    assert len(C) + len(EE) == len(E)
+
+    return len(EE)
+
 def scaled_bad_bat_matrix(B_unscaled, # B_unscaled is an UNSCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are scaled versions of these rows.  The lengths of these vectors are yet to be scaled by the alphas which are calculated from the null space of an L-vertex-match-matrix which has been appropriatley transformed to act on the alphas -- hence "unscaled"
                           vector_of_alphas, # vector_of_alphas is an m-dimensional vector, whose first component tells us how much to scale the first row of B, and whose second component tells us how much to scale the second row of B, and so on
                           ):
 
     return scale_rows(B_unscaled, vector_of_alphas)
-
-def confusable_multisets_given(B_scaled, # B_scaled is a SCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are these rows
-                              ):
-    pass
-
-
-
 
 def scale_rows(M: sp.Matrix, a) -> sp.Matrix:
     """
@@ -126,7 +129,7 @@ def plot_with_rings(counter, color, label, double_count = False):
                                 edgecolor=color, linewidth=1.2, alpha=0.8)
             plt.gca().add_patch(circle)
 
-def analyze_B(B: Matrix, plot_if_2d=True, show_C_if_plotting = False):
+def analyze_B(B: Matrix, plot_if_2d = True, show_C_if_plotting = False):
     """Compute and summarize E,O,C,EE,OO. If k=2, also make scatter plot."""
     E, O, C, EE, OO = mitm_compute_E_O_C_EE_OO(B)
 
