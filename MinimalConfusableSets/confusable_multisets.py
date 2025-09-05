@@ -155,16 +155,17 @@ def plot_with_rings(counter, color, label, double_count = False):
                                 edgecolor=color, linewidth=1.2, alpha=0.8)
             plt.gca().add_patch(circle)
 
-def analyze_B(B: Matrix, plot_if_2d = True, show_C_if_plotting = False):
+def analyze_B(B: Matrix, debug=False, plot_if_2d = True, show_C_if_plotting = False):
     """Compute and summarize E,O,C,EE,OO. If k=2, also make scatter plot."""
     E, O, C, EE, OO = mitm_compute_E_O_C_EE_OO(B)
 
-    print(f"Matrix B: {B.shape[0]}x{B.shape[1]}")
-    print(f"  Distinct |E|={len(E)}, |O|={len(O)}")
-    print(f"  Multiset sizes: sum(E)={sum(E.values())}, sum(O)={sum(O.values())}")
-    print(f"  |C|={sum(C.values())}, |EE|={sum(EE.values())}, |OO|={sum(OO.values())}")
-    print(f"  Sanity: |EE|+|OO|+2|C| = {sum(EE.values())+sum(OO.values())+2*sum(C.values())} "
-          f"should equal sum(E)+sum(O) = {sum(E.values())+sum(O.values())}")
+    if debug:
+        print(f"Matrix B: {B.shape[0]}x{B.shape[1]}")
+        print(f"  Distinct |E|={len(E)}, |O|={len(O)}")
+        print(f"  Multiset sizes: sum(E)={sum(E.values())}, sum(O)={sum(O.values())}")
+        print(f"  |C|={sum(C.values())}, |EE|={sum(EE.values())}, |OO|={sum(OO.values())}")
+        print(f"  Sanity: |EE|+|OO|+2|C| = {sum(EE.values())+sum(OO.values())+2*sum(C.values())} "
+              f"should equal sum(E)+sum(O) = {sum(E.values())+sum(O.values())}")
 
     # Plot only if 2D
     if plot_if_2d and B.shape[1] == 2:

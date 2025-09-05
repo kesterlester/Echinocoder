@@ -42,11 +42,12 @@ def demo(M_and_k_tuple=None):
         collapse_checking_function_1 = collapse_checker_1.function_factory()
         collapse_checking_function_2 = collapse_checker_2.function_factory()
 
-        mat_gen = generate_viable_vertex_match_matrices(
+        mat_gen_fast = generate_viable_vertex_match_matrices(
             M=M,
             k=k,
             return_mat = True,
             return_hashable_rre = True,
+            return_confusable_sets = True,
             remove_duplicates_via_hash = True,
             confusable_sets_or_None_function = collapse_checking_function_1,
             # yield_matrix = partial(max_row_requirement, max_rows=4),
@@ -61,6 +62,7 @@ def demo(M_and_k_tuple=None):
             k=k,
             return_mat = True,
             return_hashable_rre = True,
+            return_confusable_sets = True,
             remove_duplicates_via_hash = True,
             confusable_sets_or_None_function = collapse_checking_function_2,
             # yield_matrix = partial(max_row_requirement, max_rows=4),
@@ -69,42 +71,30 @@ def demo(M_and_k_tuple=None):
             debug = debug,
             debug_test_max_rows=True,
             )
-       
-        number_enumerated = 0
-        ((last_mat,last_rre), (last_mat_slow,last_rre_slow)) = ((None,None),(None,None))
-        #for i, (mat,rre) in enumerate(mat_gen):
-        for i, ((mat,rre), (mat_slow,rre_slow)) in enumerate(zip(mat_gen, mat_gen_slow)):
-            #tracker = Match_Tracker(M, mat)
-            #e_vertices = tracker.number_of_even_vertices_present()
-            #print(f"    {i} ev:{e_vertices},  raw={mat}, rre={repr(rre)}")
-            pr = False
-            mismatch = ((mat != mat_slow) or (rre != rre_slow))
-            if mismatch:
-                print()
-                print(f"(Pre){i-1} FAST raw={last_mat     }, rre={repr(last_rre)     }")
-                print(f"(pre){i-1} SLOW raw={last_mat_slow}, rre={repr(last_rre_slow)}")
-                print()
+      
+
+        for name, mat_gen in (("FAST",mat_gen_fast),("SLOW", mat_gen_slow)):
+
+            print("")
+            print("=================================")
+            print(f"STARTING {name}")
+            print("=================================")
+
+            number_enumerated = 0
+
+            for i, (mat,rre,(EE,OO)) in enumerate(mat_gen):
+
+                #print(f"    {i} ev:{e_vertices},  raw={mat}, rre={repr(rre)}")
                 pr = True
-            if i % 500 == 0 or pr:
-                print(f"     {i  } FAST raw={mat     }, rre={repr(rre)     }")
-                print(f"     {i  } SLOW raw={mat_slow}, rre={repr(rre_slow)}")
-                print()
-            ((last_mat,last_rre), (last_mat_slow,last_rre_slow)) = ((mat,rre), (mat_slow,rre_slow)) 
-            if mismatch:
-                 assert False, "Stopping after mismatch"
-            ### if (
-            ###    e_vertices < size_of_smallest_confusable_set_constructed_so_far or 
-            ###    e_vertices <= size_of_smallest_confusable_set_constructed_so_far and (sp.shape(mat)[0])<(sp.shape(smallest_set_mat)[0])
-            ###    ): # better, or as good but with fewer rows
-            ###     size_of_smallest_confusable_set_constructed_so_far = e_vertices
-            ###     smallest_set_mat = mat
-            ###     print(f"SET ABOVE WAS SMALLEST CONFUSABLE SET SO FAR FOUND: ev:{e_vertices}, M={M}, k={k}")
+                if i % 500 == 0 or pr:
+                    print(f"{name}:     {i}:  raw={mat}, rre={repr(rre)}, len(EE)={len(EE)}, len(OO)={len(OO)}     ")
+                    print()
 
-            number_enumerated += 1
+                number_enumerated += 1
 
-        print(f"There were {number_enumerated} found for M={M} and k={k}.")
-        #print(f"The smallest confusable set was found for ev:{size_of_smallest_confusable_set_constructed_so_far}, M={M}, k={k}, smallest_set_mat = {smallest_set_mat}")
-        print("====================================================================")
+            print(f"{name}: There were {number_enumerated} found for M={M} and k={k}.")
+            #print(f"The smallest confusable set was found for ev:{size_of_smallest_confusable_set_constructed_so_far}, M={M}, k={k}, smallest_set_mat = {smallest_set_mat}")
+            print("====================================================================")
 
 def ddd():
     import sys
