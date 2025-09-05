@@ -536,10 +536,10 @@ def alpha_attacking_matrix(
     This method generates the matrix A for which the solns of A.(vec of alphas) are the same as the solutions to L.(alpha1 w1, alpha2 w2, ... , alphaM, wM) where w1 is the first bat (i.e. first row of bat matrix) and w2 the second, and so on.
     """
 
-    R, M = L_matrix.shape
-    M_B, k = bat_matrix.shape 
+    M, k = bat_matrix.shape 
+    R, M_L = L_matrix.shape
 
-    assert M == M_B, "L and B must work with the same no. of vectors"
+    assert M == M_L, f"L and B must work with the same no. of vectors. Wanted M({M}) == M_L({M_L})"
 
     effective_row = 0
     ans = sp.zeros(R*k, M)
