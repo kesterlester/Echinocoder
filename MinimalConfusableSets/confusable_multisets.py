@@ -2,6 +2,32 @@ import sympy as sp
 
 def size_of_confusable_multiset_formed_from(B_scaled, # B_scaled is a SCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are these rows
                               ):
+    """
+    This algorithm is basically the same as "size_of_EE_multiset_formed_from" except that
+    it throws rather than return 0. The reason is that the EE/OO construction always gives
+    a multiset, but CONFUSABLE multisets are non-empty by definition, so if the caller
+    asked us for a CONFUSABLE mutltiset size and we returned the size of EE we cannot be
+    giving the caller what he/she wanted. Presumably this means that the caller gave us the
+    wrong kind of B_scaled. Hence rather than return 0 we raise an exception.
+    """
+
+    ans = size_of_EE_multiset_formed_from(B_scaled)
+
+    if ans>0:
+        return ans
+    else:
+        raise ValueError(f"The Even/Odd construction resulted in total cancelation (and so no confusable multiset) when supplied with scaled bat matrix {B_scaled}.")
+
+def size_of_EE_multiset_formed_from(B_scaled, # B_scaled is a SCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are these rows
+                              ):
+    """
+    E are the points with even numbers of edges from B.
+    O are the points with odd numbers of edged from B.
+    C are the points in their intersection.
+    EE are the points just in E.
+    OO are the points just in O.
+    """
+
     E, O, C, EE, OO = analyze_B(B_scaled, plot_if_2d=False)
 
     assert len(E) == len(O)
