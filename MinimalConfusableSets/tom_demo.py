@@ -73,7 +73,10 @@ def demo(M_and_k_tuple=None):
             )
       
 
-        for name, mat_gen in (("FAST",mat_gen_fast),("SLOW", mat_gen_slow)):
+        for name, mat_gen in (
+                ("SLOW", mat_gen_slow),
+                ("FAST",mat_gen_fast),
+                ):
 
             print("")
             print("=================================")
@@ -81,19 +84,25 @@ def demo(M_and_k_tuple=None):
             print("=================================")
 
             number_enumerated = 0
+            smallest_siz_so_far = None
 
             for i, (mat,rre,(EE,OO)) in enumerate(mat_gen):
 
-                #print(f"    {i} ev:{e_vertices},  raw={mat}, rre={repr(rre)}")
-                pr = True
-                if i % 500 == 0 or pr:
-                    print(f"{name}:     {i}:  raw={mat}, rre={repr(rre)}, len(EE)={len(EE)}, len(OO)={len(OO)}     ")
+                pr = False
+                siz = EE.total()
+
+                if smallest_siz_so_far == None or siz < smallest_siz_so_far:
+                    smallest_siz_so_far, smallest_EE, smallest_OO = siz, EE, OO
+                    pr = True
+
+                if i % 10000 == 0 or pr:
+                    print(f"{name}:     {i}:  raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}     ")
+                    print(f"{name}: The smallest confusable sets so far have {smallest_siz_so_far}=={smallest_EE.total()} points and are {smallest_EE} and {smallest_OO}.")
                     print()
 
                 number_enumerated += 1
 
-            print(f"{name}: There were {number_enumerated} found for M={M} and k={k}.")
-            #print(f"The smallest confusable set was found for ev:{size_of_smallest_confusable_set_constructed_so_far}, M={M}, k={k}, smallest_set_mat = {smallest_set_mat}")
+            print(f"{name}:  M={M} and k={k} smallest confusable set was size {smallest_siz_so_far} and was found after checking {number_enumerated} match matrices.")
             print("====================================================================")
 
 def ddd():

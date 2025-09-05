@@ -183,7 +183,9 @@ class Rational_Decider:
 
         scaled_bat_matrix = confusable_multisets.scaled_bad_bat_matrix(self.bat_matrix, point_in_null_space)
 
-        E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bat_matrix, show_C_if_plotting = False)
+        E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bat_matrix, plot_if_2d=False, show_C_if_plotting = False)
+
+        assert EE.total() == OO.total(), f"Must have {EE.total()}=={OO.total()} when scaled_bat_matrix = {scaled_bat_matrix}"
 
         return (EE, OO)
 

@@ -140,6 +140,11 @@ def mitm_compute_E_O_C_EE_OO(B: Matrix):
         cc = C.get(key, 0)
         if co > cc:
             OO[key] = co - cc
+
+    assert E.total() == O.total()
+    assert EE.total() == OO.total()
+    assert E.total() == EE.total() + C.total()
+
     return E, O, C, EE, OO
 
 def plot_with_rings(counter, color, label, double_count = False):

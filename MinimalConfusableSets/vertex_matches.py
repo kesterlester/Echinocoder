@@ -421,8 +421,12 @@ def generate_viable_vertex_match_matrices(
         # "prefix" is a list or rows, each of which is a tuple. 
         # "mat" is a Sympy representation of prefix.
 
-        # Yield the current matrix (if prefix is non-empty)
-        if prefix:
+        # Yield the current matrix
+        yield_the_first_matrix = True
+        yield_the_matrix = prefix or yield_the_first_matrix
+
+        if yield_the_matrix:
+
             mat = sp.Matrix(prefix)
 
             if calculate_rre_early:
@@ -470,9 +474,8 @@ def generate_viable_vertex_match_matrices(
                 assert len(confusable_sets_or_None) == 2
                 # Let's extract the confusable sets:
                 EE, OO = confusable_sets_or_None
-                assert len(EE)==len(OO)
-                assert len(EE)>0
-                print(f"CONFUSABLE SET SIZE WAS {len(EE)}")
+                assert EE.total()==OO.total(), f"Mismatch failure ({EE.total()} != {OO.total()}) when mat={mat}"
+                assert EE.total()>0
 
             # At this point we know we have to return things, so finish any late computations, if required:
             if calculate_rre_late:
@@ -492,8 +495,8 @@ def generate_viable_vertex_match_matrices(
             if return_confusable_sets:
                 assert EE != None
                 assert OO != None
-                assert len(EE)==len(OO)
-                assert len(EE)>0
+                assert EE.total()==OO.total()
+                assert EE.total()>0
                 ans.append( (EE, OO) )
             
             # Now we pass all our outputs to the caller:
@@ -509,10 +512,11 @@ def generate_viable_vertex_match_matrices(
                ):
                 return  # Skip deeper exploration
 
+        if prefix:
             columns_of_mat_as_tuples = [tuple(mat.col(i)) for i in range(mat.cols)]  # as tuples so that they will be hashable and thus usable as dictionary keys
+
             e_places = Equivalent_Places(exemplar = columns_of_mat_as_tuples)
         else:
-            assert not prefix
             e_places = Equivalent_Places(size=M, all_equivalent=True)
 
         # Start the rows at the given start_row:
@@ -539,7 +543,7 @@ def alpha_attacking_matrix(
     M, k = bat_matrix.shape 
     R, M_L = L_matrix.shape
 
-    assert M == M_L, f"L and B must work with the same no. of vectors. Wanted M({M}) == M_L({M_L})"
+    assert M == M_L or R==0, f"L and B must work with the same no. of vectors. Wanted M({M}) == M_L({M_L})"
 
     effective_row = 0
     ans = sp.zeros(R*k, M)

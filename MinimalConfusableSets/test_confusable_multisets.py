@@ -21,3 +21,12 @@ def test():
         assert False
     except:
         assert True
+
+def test2():
+
+    scaled_bat_matrix = sp.Matrix([[-2, -1], [0, -1], [1, 1], [-2, 1], [-1, 3], [1, -1]])
+    E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bat_matrix, plot_if_2d=False, show_C_if_plotting = False)
+
+    assert EE.total() == OO.total()
+    assert len(EE) != len(OO) # This surprising result is because EE and OO are objects of type collection.Counterv !
+     
