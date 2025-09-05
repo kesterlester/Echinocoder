@@ -39,8 +39,10 @@ def demo(M_and_k_tuple=None):
 
         collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=10, starting_sigma=1)
         collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=0, starting_sigma=100)
+        collapse_checker_3 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=100, starting_sigma=10000)
         collapse_checking_function_1 = collapse_checker_1.function_factory()
         collapse_checking_function_2 = collapse_checker_2.function_factory()
+        collapse_checking_function_3 = collapse_checker_3.function_factory()
 
         mat_gen_fast = generate_viable_vertex_match_matrices(
             M=M,
@@ -72,8 +74,24 @@ def demo(M_and_k_tuple=None):
             debug_test_max_rows=True,
             )
       
+        mat_gen_very_slow = generate_viable_vertex_match_matrices(
+            M=M,
+            k=k,
+            return_mat = True,
+            return_hashable_rre = True,
+            return_confusable_sets = True,
+            remove_duplicates_via_hash = True,
+            confusable_sets_or_None_function = collapse_checking_function_3,
+            # yield_matrix = partial(max_row_requirement, max_rows=4),
+            # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+            # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
+            debug = debug,
+            debug_test_max_rows=True,
+            )
+      
 
         for name, mat_gen in (
+                ("VSLW", mat_gen_very_slow),
                 ("SLOW", mat_gen_slow),
                 ("FAST",mat_gen_fast),
                 ):
