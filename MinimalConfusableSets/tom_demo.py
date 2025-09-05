@@ -37,8 +37,8 @@ def demo(M_and_k_tuple=None):
 
         debug = False
 
-        collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, voting_copies=30, seed=10, starting_sigma=1)
-        collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, voting_copies=30, seed=0, starting_sigma=100)
+        collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=10, starting_sigma=1)
+        collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=0, starting_sigma=100)
         collapse_checking_function_1 = collapse_checker_1.function_factory()
         collapse_checking_function_2 = collapse_checker_2.function_factory()
 
@@ -48,7 +48,7 @@ def demo(M_and_k_tuple=None):
             return_mat = True,
             return_hashable_rre = True,
             remove_duplicates_via_hash = True,
-            yield_matrix = collapse_checking_function_1,
+            confusable_sets_or_None_function = collapse_checking_function_1,
             # yield_matrix = partial(max_row_requirement, max_rows=4),
             # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
             # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
@@ -62,7 +62,7 @@ def demo(M_and_k_tuple=None):
             return_mat = True,
             return_hashable_rre = True,
             remove_duplicates_via_hash = True,
-            yield_matrix = collapse_checking_function_2,
+            confusable_sets_or_None_function = collapse_checking_function_2,
             # yield_matrix = partial(max_row_requirement, max_rows=4),
             # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
             # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),

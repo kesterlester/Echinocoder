@@ -379,9 +379,11 @@ def generate_viable_vertex_match_matrices(
     return_rre = False,
     return_rre_pivots = False,
     return_hashable_rre = False,
+    return_confusable_sets = False,
     remove_duplicates_via_hash = False, # Making this true could crash your program via memory usage. Beware!  This setting forces rre to be calculated -- so no harm in also choosing to return it.
     go_deeper    = None, # If present, then the branch topped by matrix "mat" is only explored more deeply if go_deeper(mat) is True. Does not affect whether mat itself is yielded.
-    yield_matrix = None, # If present, then the matrix "mat" is only yielded if if yield_matrix(mat) is True.  If not yielded, further branch exploration is suppressed. Note that, other things being equal, and if it is physically possibl, it is better to use "go_deeper" (with or without yield_matrix) than "yield_matrix" alone.
+    old_yield_matrix = None, # If present, then the matrix "mat" is only yielded if old_yield_matrix(mat) is True.  If not yielded, further branch exploration is suppressed. Note that, other things being equal, and if it is physically possible, it is better to use "go_deeper" (with or without old_yield_matrix) than "old_yield_matrix" alone.
+    confusable_sets_or_None_function = None, # Like old_yield_matrix, except that confusable_sets_or_None(mat) is assumed to return either None or a  tuple containing a two confusable multisets. And if there ARE confusable multisets (rather than None) it is assumed that the user would like these to be yielded. So none None her acts like old_yield_matrix == True.
     debug = False,
     ):
     """
@@ -394,6 +396,9 @@ def generate_viable_vertex_match_matrices(
 
     It is far better to kill a branch before generating its daughter matrixes than to kill a branch by killing/vetoing each daughter matrix.  This, if it is possible to do so, it is far better to use "go_deeper" (with or without  "yield_matrix") to kill a whole branch in one test, than to use only "yield_matrix".
     """
+
+    if return_confusable_sets and confusable_sets_or_None_function == None:
+        raise ValueError("You cannot ask to return confusable sets unless you also supply a confusable_sets_or_None_function.")
 
     max_rows = sympy_tools.max_rows_for_viable_stripped_RRE_matrix(M=M, k=k)
 
@@ -452,8 +457,22 @@ def generate_viable_vertex_match_matrices(
 
             # Our own standard checks are complete! Now allow external user checks on mat. (TODO -- allow user to check RRE too?)
 
-            if yield_matrix is not None and not yield_matrix(mat):
+            if old_yield_matrix is not None and not old_yield_matrix(mat):
                 return # Skip deeper exploration without yielding mat as the user's pre-yield test is not passed.
+
+
+            EE, OO = None, None
+            if confusable_sets_or_None_function is not None:
+                confusable_sets_or_None = confusable_sets_or_None_function(mat)
+                if confusable_sets_or_None == None:
+                    return # Skip deeper exploration without yielding mat as the user's pre-yield test is not passed.
+
+                assert len(confusable_sets_or_None) == 2
+                # Let's extract the confusable sets:
+                EE, OO = confusable_sets_or_None
+                assert len(EE)==len(OO)
+                assert len(EE)>0
+                print(f"CONFUSABLE SET SIZE WAS {len(EE)}")
 
             # At this point we know we have to return things, so finish any late computations, if required:
             if calculate_rre_late:
@@ -470,6 +489,12 @@ def generate_viable_vertex_match_matrices(
                 ans.append(rre_pivots)
             if return_hashable_rre:
                 ans.append(hashable_rre)
+            if return_confusable_sets:
+                assert EE != None
+                assert OO != None
+                assert len(EE)==len(OO)
+                assert len(EE)>0
+                ans.append( (EE, OO) )
             
             # Now we pass all our outputs to the caller:
             user_aborted_this_branch = (yield ans)
@@ -478,7 +503,7 @@ def generate_viable_vertex_match_matrices(
             if (
                 user_aborted_this_branch
                 or
-                (remove_obvious_collapses and debug_test_max_rows and rre.shape[0]>=max_rows) # We are alreay as tall as we ever can be!
+                (remove_obvious_collapses and debug_test_max_rows and rre.shape[0]>=max_rows) # We are already as tall as we ever can be!
                 or
                 (go_deeper is not None and not go_deeper(mat))
                ):

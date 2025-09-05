@@ -745,7 +745,7 @@ def test_matrice_some_other_way():
         mat_gen_slow = generate_viable_vertex_match_matrices(
             M=M,
             k=k,
-            yield_matrix = partial(max_row_requirement, max_rows=4),
+            old_yield_matrix = partial(max_row_requirement, max_rows=4),
             )
 
         mat_gen_fast = generate_viable_vertex_match_matrices(

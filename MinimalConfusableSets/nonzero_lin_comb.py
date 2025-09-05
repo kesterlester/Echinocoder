@@ -6,8 +6,6 @@ def find_lambda(u, v):
     find the smallest integer lambda such that
     w = u + lambda*v has zeros only where both u and v are zero.
     """
-    # Ensure both are column vectors for consistency
-    u, v = Matrix(u), Matrix(v)
     assert u.shape == v.shape, "Vectors must have same shape"
     
     # Build forbidden set F = {-u_i/v_i : u_i and v_i both nonzero}

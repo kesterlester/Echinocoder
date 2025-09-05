@@ -4,27 +4,7 @@ from vertex_matches import generate_viable_vertex_match_matrices, alpha_attackin
 import sympy_tools as spt
 import decider_functions.decider_function as df
 from Match_Tracker import Match_Tracker
-
-class Old_Decider:
-    def __init__(self, M, k, debug=False, method="electrostatic", iters = 500, learning_rate = 0.01, power = 2.0, sample = 'rr', spread = 'gauss'):
-        self.M = M
-        self.k = k
-        self.debug = debug
-
-        # prepare bad bats once. Arguments explained in decider_function
-        self.B = df.prepare_B(k=k, M=M, method=method, iters = iters, learning_rate = learning_rate, power = power, sample = sample, spread = spread)
-
-    def matrix_does_not_collapse(self, L_matrix : sp.Matrix):
-         # The decide_collapse function below returns False on Collapse, True otherwise.
-         ans = df.decide_collapse(L_matrix, self.B, num_trials=1000, tol=1e-12)
-         if self.debug:
-             if not ans:
-                print(f"VETO by TOM (float) {L_matrix}")
-         return ans
-
-    def function_factory(self):
-        return lambda mat : self.matrix_does_not_collapse(mat)
-
+from collections import namedtuple
 
 class Rational_Decider:
 
@@ -99,147 +79,128 @@ class Rational_Decider:
 
     def __init__(self, M, k,
                  debug=False, 
-                 seed=0, starting_sigma=1, voting_copies=4,
-                 bat_matrices = None,
+                 seed=0, starting_sigma=1,
+                 bat_matrix = None,
                  ):
         self.M = M
         self.k = k
         self.debug = debug
 
-        if bat_matrices is not None:
-            self.bat_matrices = bat_matrices
-            # Check that they are consistent with supplied M and k
-            if any((bat_matrix.shape != (M,k)) for bat_matrix in bat_matrices):
-                raise ValueError(f"In Rational_Decider constructor, bat matrix {bat_matrix} in {bat_matrices} does not have expected shape {(M,k)}.")
+        if bat_matrix is not None:
+            self.bat_matrix = bat_matrix
+            # Check that it is consistent with supplied M and k
+            if bat_matrix.shape != (M,k):
+                raise ValueError(f"In Rational_Decider constructor, bat matrix {bat_matrix} does not have expected shape {(M,k)}.")
 
-            # All the shapes were good, so we are done constructing:
+            # The shapes were good, so we are done constructing:
             return
 
-        # User did not supply bat matrices, so it is now our job to make them given the supplied parameters.
-        assert bat_matrices == None
-        assert voting_copies >= 1
+        # User did not supply a bat matrix, so it is now our job to make one given the supplied parameters.
+        assert bat_matrix == None
 
         # Prepare bad bats
-        self.bat_matrices = []
-        for i in range(voting_copies):
-            self.bat_matrices.append(spt.general_position_integer_bat_matrix(M=M, k=k, seed=seed*1234567*i, starting_sigma=starting_sigma))
+        self.bat_matrix = spt.general_position_integer_bat_matrix(M=M, k=k, seed=seed, starting_sigma=starting_sigma)
 
     def __repr__(self):
-        return f"Rational_Decider(M={self.M}, k={self.k}, bat_matrices={self.bat_matrices})"
+        return f"Rational_Decider(M={self.M}, k={self.k}, bat_matrix={self.bat_matrix})"
 
-    def __collapse_test_case(self, L_matrix : sp.Matrix, votes_for_collapse : tuple, null_spaces, null_space_dimensions,) -> str:
-        return f"""
-    
-    
-    ##################################
-    import deciders
-    from sympy import Matrix
-    
-    L_matrix = {repr(L_matrix)}
-    bat_matrices = {self.bat_matrices}
-    decider = deciders.Rational_Decider(M={self.M}, k={self.k}, bat_matrices=bat_matrices)
-    
-    votes_for_collapse, null_spaces = decider.votes_for_collapse_and_null_spaces(L_matrix)
-    null_space_dimensions = tuple(len(null_space) for null_space in null_spaces)
-
-    print("votes_for_collapse are: ",votes_for_collapse)
-    # Expect votes_for_collapse={votes_for_collapse} 
-
-    print("null space lengths are: ",null_space_dimensions)
-    # Expect null_space_dimensions={null_space_dimensions} 
-    
-    print("null spaces are: ",null_spaces)
-    # Expect null_spaces={null_spaces} 
-    
-    has_True = True in votes_for_collapse
-    has_False = True in votes_for_collapse
-
-    null_spaces_have_different_dimensions = max(null_space_dimensions) != min(null_space_dimensions)
-
-    assert True # or something else of your choice.
-    ##################################
-    
-    
-"""
+###    def __collapse_test_case(self, L_matrix : sp.Matrix, votes_for_collapse : tuple, null_spaces, null_space_dimensions,) -> str:
+###        return f"""
+###    
+###    
+###    ##################################
+###    import deciders
+###    from sympy import Matrix
+###    
+###    L_matrix = {repr(L_matrix)}
+###    bat_matrices = {self.bat_matrices}
+###    decider = deciders.Rational_Decider(M={self.M}, k={self.k}, bat_matrices=bat_matrices)
+###    
+###    votes_for_collapse, null_spaces = decider.votes_for_collapse_and_null_spaces(L_matrix)
+###    null_space_dimensions = tuple(len(null_space) for null_space in null_spaces)
+###
+###    print("votes_for_collapse are: ",votes_for_collapse)
+###    # Expect votes_for_collapse={votes_for_collapse} 
+###
+###    print("null space lengths are: ",null_space_dimensions)
+###    # Expect null_space_dimensions={null_space_dimensions} 
+###    
+###    print("null spaces are: ",null_spaces)
+###    # Expect null_spaces={null_spaces} 
+###    
+###    has_True = True in votes_for_collapse
+###    has_False = True in votes_for_collapse
+###
+###    null_spaces_have_different_dimensions = max(null_space_dimensions) != min(null_space_dimensions)
+###
+###    assert True # or something else of your choice.
+###    ##################################
+###    
+###    
+###"""
         
-    def votes_for_collapse_and_null_spaces(self, L_matrix : sp.Matrix) -> tuple:
-        votes_for_collapse, null_spaces = map(tuple, zip(*(
-           self.__matrix_collapse_data(L_matrix, bat_matrix) for bat_matrix in self.bat_matrices
-        )))
-        #return tuple(self.__matrix_collapses(L_matrix, bat_matrix) for bat_matrix in self.bat_matrices) 
-        return votes_for_collapse, null_spaces
+##    def matrix_does_not_collapse(self, L_matrix : sp.Matrix) -> bool:
+##        return not self.matrix_collapses(L_matrix)
+##
+##    def matrix_collapses(self, L_matrix : sp.Matrix) -> bool:
+##        vote_for_collapse, null_space = self.vote_for_collapse_and_null_space(L_matrix)
+##
+##        null_space_dimension = len(null_space)
+##
+##        assert 0 <= null_space_dimension <= self.M
+##
+##        if null_space_dimension == 0:
+##            assert vote_for_collapse
+##
+##        assert 1 <= null_space_dimension <= self.M
 
-        
-    def matrix_does_not_collapse(self, L_matrix : sp.Matrix) -> bool:
-        return not self.matrix_collapses(L_matrix)
 
-    def matrix_collapses(self, L_matrix : sp.Matrix) -> bool:
-        votes_for_collapse, null_spaces = self.votes_for_collapse_and_null_spaces(L_matrix)
-
-        null_space_dimensions = tuple( len(null_space) for null_space in null_spaces )
-
-        max_null_space_dimension = max(null_space_dimensions)
-        min_null_space_dimension = min(null_space_dimensions)
-
-        if max_null_space_dimension != min_null_space_dimension:
-            # Oh dear. We had convinced ourselves that this should not happen!
-            # The principle on which method is based is fully understood.
-            print("Matrix_collapse function seems to be broken (Type 1) as null space dimensions did not agree.")
-            print("Consider this unit test case:")
-            print(self.__collapse_test_case(L_matrix, votes_for_collapse, null_spaces, null_space_dimensions))
-            raise RuntimeError()
-            assert False, "Implementation of matrix_collapse function seems to be broken. Type 1."
-            
-        assert max_null_space_dimension == min_null_space_dimension
-
-        null_space_dimension = max_null_space_dimension
-        assert 0 <= null_space_dimension <= self.M
-
-        # We believe that a non-trivial null space should mean that there exists some 
-        # bad bat direction(s) in which non-collapse will be achieved, and that the places
-        # where this happens are dense. So, although we do not expect ALL votes to be in 
-        # favour, we expect that at least one is in favour. This relies on us using
-        # quite a few bad-bat tests to make sure that we don't hit only one bad case.
-        from warnings import warn
-        warn("deciders.py relies on a stochastic test -- enough bad bats")
-        if len(self.bat_matrices)<4:
-            assert False
-     
-        if null_space_dimension == 0:
-            return True # The L-matrix collapses this even-odd latice when using any bat configuratios. Report collapse!
-
-        assert 1 <= null_space_dimension <= self.M
-
-        # At this point we believe that the L-matrix will not colapse an even-odd lattice for SOME bats.
-        # However, to be sure, we now check that at least one vote agrees.
-
-        if False in votes_for_collapse:
-            # At least one bat_matrix was found to NOT cause collapse. So report the expected NON-collapse.
-            return False
-
-        assert all(vote == True for vote in votes_for_collapse)
-        # All votes were for collapse. We did not expect that as the null_space_dimension was bigger than zero.
-
-        # Oh dear. We had convinced ourselves that this should not happen!
-        # The principle on which method is based is fully understood.
-        print("Matrix_collapse function seems to be broken (Type 2) as null space dimensions did not agree.")
-        print("Consider this unit test case:")
-        print(self.__collapse_test_case(L_matrix, votes_for_collapse, null_spaces, null_space_dimensions))
-        raise RuntimeError()
-        assert False, "Implementation of matrix_collapse function seems to be broken. Type 2."
-
-    def __matrix_collapse_data(self, L_matrix : sp.Matrix, bat_matrix : sp.Matrix):
+    def confusable_sets_or_None(self, L_matrix : sp.Matrix):
         """
-        Currently this returns a two-element tuple (i.e. pair).
-
-        First element is bool, and used to be called a "vote for collapse". It used to be true if the
-        L_matrix collapsed an even-odd lattice using the bad_bats supplied. However, more recently
-        we have realised that this is not quite what we want/need so that may change in future.
-
-        Second element is the null-space.
+        If a scaling of the bad-bat lattice to achive the matches in L_matrix does not generate confusable sets, return None.
+        Else return a pair (tuple) of confusable sets obtained from the bad-bat lattice using the L_matrix matches.
         """
 
-        big_mat = alpha_attacking_matrix(L_matrix, bat_matrix)
+        vote_for_collapse, null_space = self.vote_for_collapse_and_null_space(L_matrix)
+
+        if vote_for_collapse:
+            assert 0 <= len(null_space) <= self.M # Note <= not < in first inequality.
+            return None
+
+        assert not vote_for_collapse
+        assert 0 < len(null_space) <= self.M # Note < not <= in first inequality.
+
+        # OK - it is now our job to generate some confusable sets!
+        import nonzero_lin_comb
+
+        null_space_contribs, point_in_null_space =  nonzero_lin_comb.combine_many(null_space)
+
+        assert len(null_space_contribs) == len(null_space)
+        assert point_in_null_space.shape == (self.M, 1)
+        assert all(alpha!=0 for alpha in point_in_null_space)
+
+        import confusable_multisets
+
+        scaled_bat_matrix = confusable_multisets.scaled_bad_bat_matrix(self.bat_matrix, point_in_null_space)
+
+        E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bat_matrix, show_C_if_plotting = False)
+
+        return (EE, OO)
+
+    def vote_for_collapse_and_null_space(self, L_matrix : sp.Matrix) -> tuple:
+        """
+        A key returned element is the null-space. It is probably only interesting when the
+        null space is .  The null space is a basis
+        for the space of set of scales (alpha_1, alpha_2, ..., alpha_M) which, if applied
+        to the unscaled bad-bat directions, would lead the bad-bat lattice to exhibit the
+        matches specified in L_matrix.  A general point in the null space will always
+        result in the L_matrix matches working, but might (sometimes) also lead to 
+        bad bat lattice collapse, e.g. as would happen if at least one of the alphas was
+        zero.  However, "vote for collapse" being False will assure us that there is 
+        at least one point in the null space where non-collapse happens.
+        """
+
+        big_mat = alpha_attacking_matrix(L_matrix, self.bat_matrix)
 
         null_space = big_mat.nullspace()
 
@@ -299,12 +260,12 @@ class Rational_Decider:
             return True, null_space
 
         if null_space_dimension == self.M:
-            # The null-space is M-dimensional. There are only M alphas, so it is capable of spanning to 
+            # The null-space is M-dimensional. There are only M alphas, so it is capable of spanning to
             # (alpha1, alpha2, .... ) = (1, 1, ... ).
             # So no collapse here!
             return False, null_space
 
-        # OK - the shortcuts didn't work, so fall back to the default method that would always work.
+        # OK - the shortcuts didn't work, so fall back to the default method that will always work.
         # Namely, for the reasons set out in "OneNote -> Research -> Symmetries -> Non collapsing null space"
         # it may be proved that 
         #
@@ -320,15 +281,17 @@ class Rational_Decider:
             if all( (basis_vec[cpt_index, 0] == 0) for basis_vec in null_space  ):
                 # There are zeros in every basis vector at this cpt,
                 # so there is no soln with every alphai nonzero, 
-                # so this matrix collapses:
+                # so this matrix collapses the bad bat lattice, and
+                # so no coonfusable sets were found here
                 return True, null_space
             # Try next cpt
-        # OK - we tried all components but didn't find one that had zero in every basis vector,
+
+        # OK - if we got here we tried all components but didn't find one that had zero in every basis vector,
         # so this matrix does admit solns with all alphai non-zero, i.e. the matrix does not collapse.
         # See proof in "OneNote -> Research -> Symmetries -> Non collapsing null space".
         return False, null_space
 
     def function_factory(self):
-        return lambda mat : self.matrix_does_not_collapse(mat)
+        return lambda mat : self.confusable_sets_or_None(mat)
 
 #########################################################

@@ -27,19 +27,21 @@ def test_M5_k2():
     [ 0, -1],
     [-1,  3],
     [-1, -1]])]
-    decider = deciders.Rational_Decider(M=5, k=2, bat_matrices=bat_matrices)
     
-    votes_for_collapse, null_spaces = decider.votes_for_collapse_and_null_spaces(L_matrix)
-    null_space_dimensions = tuple(len(null_space) for null_space in null_spaces)
+    has_True = False
+    has_False = False
 
-    print("votes_for_collapse are: ",votes_for_collapse)
+    for i, bat_matrix in enumerate(bat_matrices):
+        decider = deciders.Rational_Decider(M=5, k=2, bat_matrix=bat_matrix)
+        
+        vote_for_collapse, null_space = decider.vote_for_collapse_and_null_space(L_matrix)
+
+        print("vote_for_collapse is: ",vote_for_collapse)
+        
+        # Expect votes_for_collapse=(True, True, True, False) 
+        expected = (True, True, True, False)
+        assert vote_for_collapse == expected[i]
     
-    # Expect votes_for_collapse=(True, True, True, False) 
-    
-    has_True = True in votes_for_collapse
-    has_False = True in votes_for_collapse
-    
-    assert  has_True and has_False 
     
 #### Am commenting out the test below as I now know/realise that actually there is no reason that the null-spaces need have the same size for different bat-matrices. This test was inappropriate!
 ####
