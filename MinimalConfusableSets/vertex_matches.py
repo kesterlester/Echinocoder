@@ -471,9 +471,9 @@ def generate_viable_vertex_match_matrices(
                 if confusable_sets_or_None == None:
                     return # Skip deeper exploration without yielding mat as the user's pre-yield test is not passed.
 
-                assert len(confusable_sets_or_None) == 2
+                assert len(confusable_sets_or_None) == 3
                 # Let's extract the confusable sets:
-                EE, OO = confusable_sets_or_None
+                EE, OO, scaled_bad_bats = confusable_sets_or_None
                 assert EE.total()==OO.total(), f"Mismatch failure ({EE.total()} != {OO.total()}) when mat={mat}"
                 assert EE.total()>0
 
@@ -497,7 +497,8 @@ def generate_viable_vertex_match_matrices(
                 assert OO != None
                 assert EE.total()==OO.total()
                 assert EE.total()>0
-                ans.append( (EE, OO) )
+                assert scaled_bad_bats != None
+                ans.append( (EE, OO, scaled_bad_bats) )
             
             # Now we pass all our outputs to the caller:
             user_aborted_this_branch = (yield ans)

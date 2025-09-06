@@ -7,7 +7,7 @@ from Match_Tracker import Match_Tracker
 
 import deciders
 
-def demo(M_and_k_tuple=None):
+def demo(M_and_k_tuple=None, show_cs=False):
 
     def max_row_requirement(mat, max_rows):
         return sp.shape(mat)[0] <= max_rows
@@ -32,14 +32,16 @@ def demo(M_and_k_tuple=None):
         print( "====================================================================")
         print(f"For M={M} and k={k} the initial E and O sets have size {size_of_smallest_confusable_set_constructed_so_far}.")
         print( "--------------------------------------------------------------------")
-        print(f"For M={M} and k={k} the not obviously bad vertex match matrices are:")
-        print( "--------------------------------------------------------------------")
 
         debug = False
 
+        print("Creating fast decider")
         collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=10, starting_sigma=1)
+        print("Creating slow decider")
         collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=0, starting_sigma=100)
+        print("Creating vslow decider")
         collapse_checker_3 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=100, starting_sigma=10000)
+        print("done")
         collapse_checking_function_1 = collapse_checker_1.function_factory()
         collapse_checking_function_2 = collapse_checker_2.function_factory()
         collapse_checking_function_3 = collapse_checker_3.function_factory()
@@ -103,24 +105,29 @@ def demo(M_and_k_tuple=None):
 
             number_enumerated = 0
             smallest_siz_so_far = None
+            best_scaled_bad_bats = None
 
-            for i, (mat,rre,(EE,OO)) in enumerate(mat_gen):
+            for i, (mat,rre,(EE,OO,scaled_bad_bats)) in enumerate(mat_gen):
 
                 pr = False
                 siz = EE.total()
 
                 if smallest_siz_so_far == None or siz < smallest_siz_so_far:
-                    smallest_siz_so_far, smallest_EE, smallest_OO = siz, EE, OO
+                    smallest_siz_so_far, smallest_EE, smallest_OO, best_scaled_bad_bats = siz, EE, OO, scaled_bad_bats
                     pr = True
 
                 if i % 10000 == 0 or pr:
                     print(f"{name}:     {i}:  raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}     ")
-                    print(f"{name}: The smallest confusable sets so far have {smallest_siz_so_far}=={smallest_EE.total()} points and are {smallest_EE} and {smallest_OO}.")
+                    print(f"{name}: The smallest confusable sets so far are {smallest_EE} and {smallest_OO}.")
+                    print(f"{name}: The smallest confusable sets so far have {smallest_siz_so_far}=={smallest_EE.total()} points.")
                     print()
 
                 number_enumerated += 1
 
             print(f"{name}:  M={M} and k={k} smallest confusable set was size {smallest_siz_so_far} and was found after checking {number_enumerated} match matrices.")
+            import confusable_multisets as cs
+            cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True, show_C_if_plotting=True)
+            cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True)
             print("====================================================================")
 
 def ddd():
@@ -129,6 +136,9 @@ def ddd():
     if len(sys.argv) == 3:
         M, k = (int(n) for n in sys.argv[1:3])
         demo( (M,k) )
+    elif len(sys.argv) == 4:
+        M, k = (int(n) for n in sys.argv[1:3])
+        demo( (M,k), show_cs=True )
     else:
         demo()
 

@@ -187,7 +187,7 @@ class Rational_Decider:
 
         assert EE.total() == OO.total(), f"Must have {EE.total()}=={OO.total()} when scaled_bat_matrix = {scaled_bat_matrix}"
 
-        return (EE, OO)
+        return (EE, OO, scaled_bat_matrix)
 
     def vote_for_collapse_and_null_space(self, L_matrix : sp.Matrix) -> tuple:
         """

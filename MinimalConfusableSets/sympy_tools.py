@@ -227,6 +227,8 @@ def rows_are_vectors_in_general_position(B: Matrix) -> bool:
     Returns:
         True if points are vectors in general position, False otherwise.
     """
+    print("checking rows are vectors in general position")
+
     R, d = B.shape
     max_k = min(R, d)
     
@@ -285,14 +287,19 @@ def general_position_integer_bat_matrix(
 
     sigma = starting_sigma 
     trial_matrix = normal_int_matrix(rows=M, cols=k, seed=seed, sigma=sigma)
+    print(f"We have a trial bat matrix with sigma={sigma}")
     while  not rows_are_vectors_in_general_position(trial_matrix):
+
         seed += 1
         trial_matrix = normal_int_matrix(rows=M, cols=k, seed=seed, sigma=sigma)
         if (seed % 1000) == 0:
             warn(f"Warning, {seed} attempts at making a general position integer bat matrix. (sympy_tools.py)")
         sigma *= sigma_growth_factor # Exponential growth makes matrices tend to have small entries, only growing large when really needed.
+        print(f"We have a trial bat matrix with sigma={sigma}")
+
 
     #warn(f"seed={seed}, sigma={sigma}")
+    print("passed check")
     return trial_matrix
 
 def demo():

@@ -179,9 +179,9 @@ def analyze_B(B: Matrix, debug=False, plot_if_2d = True, show_C_if_plotting = Fa
         plot_with_rings(OO, color="blue", label="OO")
         if show_C_if_plotting:
             plot_with_rings(C,  color="green", label="C", double_count=True)
-        plt.legend(["EE","OO","C"])
+        #plt.legend(["EE","OO","C"])
         plt.gca().set_aspect("equal", adjustable="box")
-        plt.title("Subset sum partition with multiplicities\n(EE=red, OO=blue, C=green)")
+        plt.title(f"Confusable sets of size {EE.total()}\n(EE=red, OO=blue, C=green)")
         plt.show()
 
     return E, O, C, EE, OO
