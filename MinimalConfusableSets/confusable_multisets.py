@@ -116,17 +116,20 @@ def mitm_compute_E_O_C_EE_OO(B: Matrix):
     """Meet-in-the-middle computation of E, O, C, EE, OO for matrix B."""
     m, k = B.shape
     rows = _row_tuple_rows([B.row(i) for i in range(m)])
-    mid = m // 2
-    L_rows = rows[:mid]
-    R_rows = rows[mid:]
-    L_even, L_odd = subset_sums_with_parity(L_rows)
-    R_even, R_odd = subset_sums_with_parity(R_rows)
-    E1 = convolve_counters(L_even, R_even)
-    E2 = convolve_counters(L_odd, R_odd)
-    O1 = convolve_counters(L_even, R_odd)
-    O2 = convolve_counters(L_odd, R_even)
-    E = E1 + E2
-    O = O1 + O2
+    if m>=2: # could change 2 to a number bigger than 2, but not less than 2 as otherwise split leads ot empty row
+        mid = m // 2
+        L_rows = rows[:mid]
+        R_rows = rows[mid:]
+        L_even, L_odd = subset_sums_with_parity(L_rows)
+        R_even, R_odd = subset_sums_with_parity(R_rows)
+        E1 = convolve_counters(L_even, R_even)
+        E2 = convolve_counters(L_odd, R_odd)
+        O1 = convolve_counters(L_even, R_odd)
+        O2 = convolve_counters(L_odd, R_even)
+        E = E1 + E2
+        O = O1 + O2
+    else:
+        E, O = subset_sums_with_parity(rows)
     C = Counter()
     for key in set(E.keys()) & set(O.keys()):
         C[key] = min(E[key], O[key])
@@ -149,6 +152,9 @@ def mitm_compute_E_O_C_EE_OO(B: Matrix):
 
 def plot_with_rings(counter, color, label, double_count = False):
     """Plot points with concentric rings for multiplicity."""
+    if counter.total()==0:
+        # nothing to plot
+        return
     max_x = max(x for (x,_),_ in counter.items())
     min_x = min(x for (x,_),_ in counter.items())
     max_y = max(y for (_,y),_ in counter.items())
@@ -183,9 +189,12 @@ def analyze_B(B: Matrix, title_add = "", debug=False, plot_if_2d = True, show_C_
     # Plot only if 2D
     if plot_if_2d and B.shape[1] == 2:
         plt.figure(figsize=(6,6))
+        #print("Plotting EE")
         plot_with_rings(EE, color="red", label="EE")
+        #print("Plotting OO")
         plot_with_rings(OO, color="blue", label="OO")
         if show_C_if_plotting:
+            #print("Plotting C")
             plot_with_rings(C,  color="green", label="C", double_count=True)
         #plt.legend(["EE","OO","C"])
         plt.gca().set_aspect("equal", adjustable="box")
