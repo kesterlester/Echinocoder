@@ -11,7 +11,9 @@ def canonical_nullspace_key(M: sp.Matrix):
     Returns: ImmutableMatrix (hashable canonical matrix).
     """
     M = spt.lex_sort_sympy_matrix_by_cols(M)
-    return sp.ImmutableMatrix(M.rref()[0])
+    rref = M.rref()[0]
+    stripped = spt.strip_zero_rows(rref)
+    return sp.ImmutableMatrix(stripped)
 
 ### from sage.all import Graph, QQ, Matrix as SageMatrix
 ### 
