@@ -302,6 +302,40 @@ def general_position_integer_bat_matrix(
     print("passed check")
     return trial_matrix
 
+import sympy as sp
+
+def lex_sort_sympy_matrix_by_rows(M: sp.Matrix) -> sp.Matrix:
+    return lex_sort_sympy_matrix(M=M, by_cols=False)
+
+def lex_sort_sympy_matrix_by_cols(M: sp.Matrix, by_cols : bool = True) -> sp.Matrix:
+    return lex_sort_sympy_matrix(M=M, by_cols=True)
+
+def lex_sort_sympy_matrix(M: sp.Matrix, by_cols: bool) -> sp.Matrix:
+    """
+    Lexicographically sort the columns or rows of a Sympy Matrix.
+
+    Parameters:
+    - M: sympy.Matrix
+    - by_cols: True -> sort by columns, else False -> sort by rows.
+
+    Returns:
+    - sympy.Matrix with reordered columns or rows
+    """
+
+    if by_cols:
+        # Extract columns as tuples for comparison
+        cols = [tuple(M[:, j]) for j in range(M.cols)]
+        # Sort column indices by lex order
+        order = sorted(range(M.cols), key=lambda j: cols[j])
+        return M[:, order]
+
+    else:  # by rows
+        # Extract rows as tuples for comparison
+        rows = [tuple(M[i, :]) for i in range(M.rows)]
+        # Sort row indices by lex order
+        order = sorted(range(M.rows), key=lambda i: rows[i])
+        return M[order, :]
+
 def demo():
     rows=3
     cols=6

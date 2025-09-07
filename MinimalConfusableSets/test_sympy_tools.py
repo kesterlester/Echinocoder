@@ -223,6 +223,29 @@ def test_rows_are_points_in_general_position():
                       [1,1,1,1], # R3 is in triangle with corners at R0, R1 and R2
                    ]))
 
+def test_sort_sympy_matrix():
+    M = sp.Matrix([
+    [3, 1, 2],
+    [2, 3, 1],
+    [1, 2, 5]
+    ])
+
+    col_sorted = sp.Matrix([
+    [1, 2, 3],
+    [3, 1, 2],
+    [2, 5, 1]])
+    
+    row_sorted = sp.Matrix([
+    [1, 2, 5],
+    [2, 3, 1],
+    [3, 1, 2]])
+
+    assert spt.lex_sort_sympy_matrix_by_rows(M) == row_sorted
+    assert spt.lex_sort_sympy_matrix_by_cols(M) == col_sorted
+    assert spt.lex_sort_sympy_matrix_by_cols(M) != row_sorted
+    assert spt.lex_sort_sympy_matrix_by_rows(M) != col_sorted
+
+
 def test_rows_are_vectors_in_general_position():
     
     gen_pos = spt.rows_are_vectors_in_general_position
