@@ -375,6 +375,7 @@ def generate_viable_vertex_match_matrices(
     k, # k=dimension of space.
     remove_obvious_collapses = True, # Discards matrices whose RRE form have a row with betwen 1 and k non-zero elements. (Nb: ihis setting forces rre to be calcualted.)
     debug_test_max_rows = True,
+    sort_cols = False, # Note that True for sort_cols dissociates cols from particular bad bats, so requires bad bats to be truly generic, which you can only test by making bad bats increasingly diverse and checking that the answers you are interested in do not change. This said, there seems to be zero speed increase from using it, so seems to be a worthless option.
     return_mat = False,
     return_rre = False,
     return_rre_pivots = False,
@@ -410,7 +411,9 @@ def generate_viable_vertex_match_matrices(
 
     hashable_rre_seen = set()
 
-    def calc_rre(mat):
+    def calc_rre(mat, sort_cols):
+        if sort_cols:
+            mat = sympy_tools.lex_sort_sympy_matrix_by_cols(mat)
         rre, pivots = mat.rref()
         stripped = sympy_tools.strip_zero_rows(rre)
         #print(f"{pivots},{repr(rre)}")
@@ -430,21 +433,8 @@ def generate_viable_vertex_match_matrices(
             mat = sp.Matrix(prefix)
 
             if calculate_rre_early:
-                rre, rre_pivots = calc_rre(mat)
+                rre, rre_pivots = calc_rre(mat, sort_cols=sort_cols)
  
-            if remove_obvious_collapses:
-                assert calculate_rre_early
-                if sympy_tools.some_row_causes_collapse(rre, k):
-                    if debug: print(f"VETO as row collapse in {rre} with k={k}.")
-                    # Some row causes collapse!
-                    # Skip deeper evaluation or return of it!
-                    return
-                if not sympy_tools.pivot_positions_are_all_viable_for_stripped_RRE_matrix(rre.shape, rre_pivots, k):
-                    if debug: print(f"VETO as bad pivot positions in {rre} for k={k}.")
-                    # Some row causes collapse!
-                    # Skip deeper evaluation or return of it!
-                    return
-
             if calculate_hashable_rre_early:
                 hashable_rre = sp.ImmutableMatrix(rre)
 
@@ -458,6 +448,20 @@ def generate_viable_vertex_match_matrices(
                 else:
                     # record that we have seen this item:
                     hashable_rre_seen.add(hashable_rre) # Note this is a sort of voluntary memory leak. Users use this at their own risk!
+                    #print("Hash size ",len(hashable_rre_seen))
+
+            if remove_obvious_collapses:
+                assert calculate_rre_early
+                if sympy_tools.some_row_causes_collapse(rre, k):
+                    if debug: print(f"VETO as row collapse in {rre} with k={k}.")
+                    # Some row causes collapse!
+                    # Skip deeper evaluation or return of it!
+                    return
+                if not sympy_tools.pivot_positions_are_all_viable_for_stripped_RRE_matrix(rre.shape, rre_pivots, k):
+                    if debug: print(f"VETO as bad pivot positions in {rre} for k={k}.")
+                    # Some row causes collapse!
+                    # Skip deeper evaluation or return of it!
+                    return
 
             # Our own standard checks are complete! Now allow external user checks on mat. (TODO -- allow user to check RRE too?)
 
@@ -479,7 +483,7 @@ def generate_viable_vertex_match_matrices(
 
             # At this point we know we have to return things, so finish any late computations, if required:
             if calculate_rre_late:
-                rre, rre_pivots = calc_rre(mat)
+                rre, rre_pivots = calc_rre(mat, sort_cols=sort_cols)
             if calculate_hashable_rre_late:
                 hashable_rre = sp.ImmutableMatrix(rre)
 

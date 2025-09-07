@@ -307,7 +307,7 @@ import sympy as sp
 def lex_sort_sympy_matrix_by_rows(M: sp.Matrix) -> sp.Matrix:
     return lex_sort_sympy_matrix(M=M, by_cols=False)
 
-def lex_sort_sympy_matrix_by_cols(M: sp.Matrix, by_cols : bool = True) -> sp.Matrix:
+def lex_sort_sympy_matrix_by_cols(M: sp.Matrix) -> sp.Matrix:
     return lex_sort_sympy_matrix(M=M, by_cols=True)
 
 def lex_sort_sympy_matrix(M: sp.Matrix, by_cols: bool) -> sp.Matrix:

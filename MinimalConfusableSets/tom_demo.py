@@ -46,92 +46,100 @@ def demo(M_and_k_tuple=None, show_cs=False):
         collapse_checking_function_2 = collapse_checker_2.function_factory()
         collapse_checking_function_3 = collapse_checker_3.function_factory()
 
-        mat_gen_fast = generate_viable_vertex_match_matrices(
-            M=M,
-            k=k,
-            return_mat = True,
-            return_hashable_rre = True,
-            return_confusable_sets = True,
-            remove_duplicates_via_hash = True,
-            confusable_sets_or_None_function = collapse_checking_function_1,
-            # yield_matrix = partial(max_row_requirement, max_rows=4),
-            # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
-            # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
-            debug = debug,
-            debug_test_max_rows=True,
-            )
+        for sort_cols in (
+               #True, 
+               False,
+               ):
 
-        mat_gen_slow = generate_viable_vertex_match_matrices(
-            M=M,
-            k=k,
-            return_mat = True,
-            return_hashable_rre = True,
-            return_confusable_sets = True,
-            remove_duplicates_via_hash = True,
-            confusable_sets_or_None_function = collapse_checking_function_2,
-            # yield_matrix = partial(max_row_requirement, max_rows=4),
-            # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
-            # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
-            debug = debug,
-            debug_test_max_rows=True,
-            )
+            mat_gen_fast = generate_viable_vertex_match_matrices(
+                M=M,
+                k=k,
+                sort_cols = sort_cols,
+                return_mat = True,
+                return_hashable_rre = True,
+                return_confusable_sets = True,
+                remove_duplicates_via_hash = True,
+                confusable_sets_or_None_function = collapse_checking_function_1,
+                # yield_matrix = partial(max_row_requirement, max_rows=4),
+                # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+                # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
+                debug = debug,
+                debug_test_max_rows=True,
+                )
+
+            mat_gen_slow = generate_viable_vertex_match_matrices(
+                M=M,
+                k=k,
+                sort_cols = sort_cols,
+                return_mat = True,
+                return_hashable_rre = True,
+                return_confusable_sets = True,
+                remove_duplicates_via_hash = True,
+                confusable_sets_or_None_function = collapse_checking_function_2,
+                # yield_matrix = partial(max_row_requirement, max_rows=4),
+                # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+                # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
+                debug = debug,
+                debug_test_max_rows=True,
+                )
       
-        mat_gen_very_slow = generate_viable_vertex_match_matrices(
-            M=M,
-            k=k,
-            return_mat = True,
-            return_hashable_rre = True,
-            return_confusable_sets = True,
-            remove_duplicates_via_hash = True,
-            confusable_sets_or_None_function = collapse_checking_function_3,
-            # yield_matrix = partial(max_row_requirement, max_rows=4),
-            # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
-            # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
-            debug = debug,
-            debug_test_max_rows=True,
-            )
+            mat_gen_very_slow = generate_viable_vertex_match_matrices(
+                M=M,
+                k=k,
+                sort_cols = sort_cols,
+                return_mat = True,
+                return_hashable_rre = True,
+                return_confusable_sets = True,
+                remove_duplicates_via_hash = True,
+                confusable_sets_or_None_function = collapse_checking_function_3,
+                # yield_matrix = partial(max_row_requirement, max_rows=4),
+                # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+                # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
+                debug = debug,
+                debug_test_max_rows=True,
+                )
       
 
-        for name, mat_gen in (
-                ("VSLW", mat_gen_very_slow),
-                ("SLOW", mat_gen_slow),
-                ("FAST",mat_gen_fast),
-                ):
+            for name, mat_gen in (
+                    (f"VSLW sort={sort_cols}", mat_gen_very_slow),
+                #    (f"SLOW sort={sort_cols}", mat_gen_slow),
+                #    (f"FAST sort={sort_cols}", mat_gen_fast),
+                    ):
 
-            print("")
-            print("=================================")
-            print(f"STARTING {name}")
-            print("=================================")
+                print("")
+                print("=================================")
+                print(f"STARTING {name}")
+                print("=================================")
 
-            number_enumerated = 0
-            smallest_siz_so_far = None
-            best_scaled_bad_bats = None
+                number_enumerated = 0
+                smallest_siz_so_far = None
+                best_scaled_bad_bats = None
 
-            for i, (mat,rre,(EE,OO,scaled_bad_bats)) in enumerate(mat_gen):
+                for i, (mat,rre,(EE,OO,scaled_bad_bats)) in enumerate(mat_gen):
 
-                pr = False
-                new_best = False
-                siz = EE.total()
+                    pr = False
+                    new_best = False
+                    siz = EE.total()
 
-                if smallest_siz_so_far == None or siz < smallest_siz_so_far:
-                    smallest_siz_so_far, smallest_EE, smallest_OO, best_scaled_bad_bats = siz, EE, OO, scaled_bad_bats
-                    pr = True
-                    new_best = True
+                    if smallest_siz_so_far == None or siz < smallest_siz_so_far:
+                        smallest_siz_so_far, smallest_EE, smallest_OO, best_scaled_bad_bats = siz, EE, OO, scaled_bad_bats
+                        pr = True
+                        new_best = True
 
-                if i % 10000 == 0 or pr:
-                    print(f"{name}:     {i}:  raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}     ")
-                    if new_best:
-                        print(f"{name}: The smallest confusable sets so far have scaled bad bats {sp.srepr(best_scaled_bad_bats)}.")
-                    print(f"{name}: The smallest confusable sets so far have {smallest_siz_so_far}=={smallest_EE.total()} points.")
-                    print()
+                    if i % 10000 == 0 or pr:
+                        print(f"{name}:     {i}:  raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}     ")
+                        if new_best:
+                            print(f"{name}: The smallest confusable sets so far have scaled bad bats {sp.srepr(best_scaled_bad_bats)}.")
+                        print(f"{name}: The smallest confusable sets so far have {smallest_siz_so_far}=={smallest_EE.total()} points.")
+                        print()
 
-                number_enumerated += 1
+                    number_enumerated += 1
 
-            print(f"{name}:  M={M} and k={k} smallest confusable set was size {smallest_siz_so_far} and was found after checking {number_enumerated} match matrices. It has scaled bad bats {sp.srepr(best_scaled_bad_bats)}.")
-            import confusable_multisets as cs
-            cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True, show_C_if_plotting=True)
-            cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True)
-            print("====================================================================")
+                print(f"{name}:  M={M} and k={k} smallest confusable set was size {smallest_siz_so_far} and was found after checking {number_enumerated} match matrices. It has scaled bad bats {sp.srepr(best_scaled_bad_bats)}.")
+                import confusable_multisets as cs
+                #cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True, show_C_if_plotting=True)
+                #cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True)
+                print("====================================================================")
 
 def ddd():
     import sys
