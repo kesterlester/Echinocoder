@@ -110,21 +110,24 @@ def demo(M_and_k_tuple=None, show_cs=False):
             for i, (mat,rre,(EE,OO,scaled_bad_bats)) in enumerate(mat_gen):
 
                 pr = False
+                new_best = False
                 siz = EE.total()
 
                 if smallest_siz_so_far == None or siz < smallest_siz_so_far:
                     smallest_siz_so_far, smallest_EE, smallest_OO, best_scaled_bad_bats = siz, EE, OO, scaled_bad_bats
                     pr = True
+                    new_best = True
 
                 if i % 10000 == 0 or pr:
                     print(f"{name}:     {i}:  raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}     ")
-                    print(f"{name}: The smallest confusable sets so far are {smallest_EE} and {smallest_OO}.")
+                    if new_best:
+                        print(f"{name}: The smallest confusable sets so far have scaled bad bats {sp.srepr(best_scaled_bad_bats)}.")
                     print(f"{name}: The smallest confusable sets so far have {smallest_siz_so_far}=={smallest_EE.total()} points.")
                     print()
 
                 number_enumerated += 1
 
-            print(f"{name}:  M={M} and k={k} smallest confusable set was size {smallest_siz_so_far} and was found after checking {number_enumerated} match matrices.")
+            print(f"{name}:  M={M} and k={k} smallest confusable set was size {smallest_siz_so_far} and was found after checking {number_enumerated} match matrices. It has scaled bad bats {sp.srepr(best_scaled_bad_bats)}.")
             import confusable_multisets as cs
             cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True, show_C_if_plotting=True)
             cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True)

@@ -30,11 +30,11 @@ def size_of_EE_multiset_formed_from(B_scaled, # B_scaled is a SCALED bad bat mat
 
     E, O, C, EE, OO = analyze_B(B_scaled, plot_if_2d=False)
 
-    assert len(E) == len(O)
-    assert len(EE) == len(OO)
-    assert len(C) + len(EE) == len(E)
+    assert E.total() == O.total()
+    assert EE.total() == OO.total()
+    assert C.total() + EE.total() == E.total()
 
-    return len(EE)
+    return EE.total()
 
 def scaled_bad_bat_matrix(B_unscaled, # B_unscaled is an UNSCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are scaled versions of these rows.  The lengths of these vectors are yet to be scaled by the alphas which are calculated from the null space of an L-vertex-match-matrix which has been appropriatley transformed to act on the alphas -- hence "unscaled"
                           vector_of_alphas, # vector_of_alphas is an m-dimensional vector, whose first component tells us how much to scale the first row of B, and whose second component tells us how much to scale the second row of B, and so on
@@ -149,6 +149,13 @@ def mitm_compute_E_O_C_EE_OO(B: Matrix):
 
 def plot_with_rings(counter, color, label, double_count = False):
     """Plot points with concentric rings for multiplicity."""
+    max_x = max(x for (x,_),_ in counter.items())
+    min_x = min(x for (x,_),_ in counter.items())
+    max_y = max(y for (_,y),_ in counter.items())
+    min_y = min(y for (_,y),_ in counter.items())
+
+    scale = max( (max_x - min_x, max_y-min_y) )
+
     for (x, y), mult in counter.items():
         if double_count:
             mult *= 2
@@ -156,8 +163,9 @@ def plot_with_rings(counter, color, label, double_count = False):
         plt.scatter([x], [y], color=color, alpha=0.7, s=20, edgecolor='black')
         # add rings if mult > 1
         for r in range(1, mult):
-            circle = plt.Circle((x, y), radius=0.45*r, fill=False,
-                                edgecolor=color, linewidth=1.2, alpha=0.8)
+            from math import sqrt
+            circle = plt.Circle((x, y), radius=0.015*sqrt(r)*scale, fill=False,
+                                edgecolor=color, linewidth=0.8, alpha=0.8)
             plt.gca().add_patch(circle)
 
 def analyze_B(B: Matrix, debug=False, plot_if_2d = True, show_C_if_plotting = False):
@@ -198,6 +206,14 @@ def demo():
 
     B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3], [2,2]])
     E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = False)
+
+    ImmutableDenseMatrix = sp.ImmutableDenseMatrix
+    Rational = sp.Rational
+    Integer = sp.Integer
+
+    B = ImmutableDenseMatrix([[Rational(-208007715675, 42799241), Rational(52078303242, 42799241)], [Rational(-86921854056, 42799241), Rational(-60552552960, 42799241)], [Rational(6091269858759228, 1781352579427), Rational(-156070574610792660, 40971109326821)], [Rational(4248351689209797, 1781352579427), Rational(98199604619439570, 40971109326821)], [Rational(46729572384, 43003949), Rational(69257102112, 43003949)], [Rational(294222088186900192, 284079313655661), Rational(-80212575535572656, 284079313655661)], [Rational(14468279999269184, 284079313655661), Rational(537717304549110224, 284079313655661)], [Rational(249610640175, 43003949), Rational(-60742320210, 43003949)], [Integer(-6891), Integer(-198)]])
+    for x in True, False:
+        E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = x)
 
 if __name__ == "__main__":
     demo()
