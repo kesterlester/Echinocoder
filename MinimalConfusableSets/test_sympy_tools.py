@@ -227,6 +227,21 @@ def test_rows_are_vectors_in_general_position():
     
     gen_pos = spt.rows_are_vectors_in_general_position
 
+    assert True == gen_pos(sp.Matrix([
+                      [1,], 
+                   ]))
+
+    assert True == gen_pos(sp.Matrix([
+                      [1,],
+                      [-4,],
+                   ]))
+
+    assert False == gen_pos(sp.Matrix([
+                      [1,], 
+                      [-4,],
+                      [0,], # This is not a valid basis vector.
+                   ]))
+
     assert False == gen_pos(sp.Matrix([
                       [0,0,0], # This is not a valid basis vector.
                    ]))
