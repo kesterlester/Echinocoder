@@ -168,7 +168,7 @@ def plot_with_rings(counter, color, label, double_count = False):
                                 edgecolor=color, linewidth=0.8, alpha=0.8)
             plt.gca().add_patch(circle)
 
-def analyze_B(B: Matrix, debug=False, plot_if_2d = True, show_C_if_plotting = False):
+def analyze_B(B: Matrix, title_add = "", debug=False, plot_if_2d = True, show_C_if_plotting = False):
     """Compute and summarize E,O,C,EE,OO. If k=2, also make scatter plot."""
     E, O, C, EE, OO = mitm_compute_E_O_C_EE_OO(B)
 
@@ -189,7 +189,7 @@ def analyze_B(B: Matrix, debug=False, plot_if_2d = True, show_C_if_plotting = Fa
             plot_with_rings(C,  color="green", label="C", double_count=True)
         #plt.legend(["EE","OO","C"])
         plt.gca().set_aspect("equal", adjustable="box")
-        plt.title(f"Confusable sets of size {EE.total()}\n(EE=red, OO=blue, C=green)")
+        plt.title(title_add + f"\nConfusable sets of size {EE.total()}\n(EE=red, OO=blue, C=green)")
         plt.show()
 
     return E, O, C, EE, OO
@@ -211,9 +211,15 @@ def demo():
     Rational = sp.Rational
     Integer = sp.Integer
 
+    # M=9, k=2
     B = ImmutableDenseMatrix([[Rational(-208007715675, 42799241), Rational(52078303242, 42799241)], [Rational(-86921854056, 42799241), Rational(-60552552960, 42799241)], [Rational(6091269858759228, 1781352579427), Rational(-156070574610792660, 40971109326821)], [Rational(4248351689209797, 1781352579427), Rational(98199604619439570, 40971109326821)], [Rational(46729572384, 43003949), Rational(69257102112, 43003949)], [Rational(294222088186900192, 284079313655661), Rational(-80212575535572656, 284079313655661)], [Rational(14468279999269184, 284079313655661), Rational(537717304549110224, 284079313655661)], [Rational(249610640175, 43003949), Rational(-60742320210, 43003949)], [Integer(-6891), Integer(-198)]])
     for x in True, False:
-        E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = x)
+        E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = x, title_add = "M=9, k=2")
+
+    # M=13, k=5
+    B = ImmutableDenseMatrix([[Rational(169287, 94868), Integer(0), Rational(56429, 94868), Rational(56429, 94868), Rational(-56429, 94868)], [Rational(43929, 47434), Integer(0), Rational(-131787, 94868), Rational(43929, 94868), Rational(-43929, 94868)], [Rational(121505, 94868), Rational(-121505, 189736), Rational(121505, 94868), Rational(-364515, 189736), Rational(121505, 47434)], [Rational(-94233, 47434), Rational(-94233, 94868), Rational(94233, 94868), Rational(471165, 94868), Integer(0)], [Integer(0), Rational(117515, 189736), Rational(-23503, 94868), Rational(23503, 189736), Rational(-23503, 94868)], [Rational(-71035, 23717), Rational(71035, 23717), Rational(71035, 94868), Rational(-213105, 94868), Rational(-213105, 94868)], [Rational(23489, 23717), Rational(-46978, 23717), Rational(-46978, 23717), Rational(-46978, 23717), Rational(23489, 23717)], [Rational(-29055, 23717), Integer(0), Integer(0), Rational(-29055, 23717), Rational(58110, 23717)], [Integer(0), Rational(48045, 23717), Rational(19218, 23717), Rational(-19218, 23717), Rational(-9609, 23717)], [Rational(-141837, 94868), Rational(47279, 23717), Rational(-47279, 47434), Rational(47279, 47434), Rational(-47279, 47434)], [Integer(-5), Integer(-2), Integer(-1), Integer(-4), Integer(-2)], [Integer(4), Integer(2), Integer(1), Integer(-1), Integer(-1)], [Integer(-1), Integer(6), Integer(1), Integer(2), Integer(-1)]])
+    for x in True, False:
+        E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = x, title_add = "M=13, k=5")
 
 if __name__ == "__main__":
     demo()
