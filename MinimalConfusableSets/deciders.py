@@ -121,8 +121,15 @@ def confusable_sets_or_None(L_matrix : sp.Matrix, unscaled_bad_bat_matrix:sp.Mat
     """
     If no scaling of the bad-bat lattice achieving the matches in L_matrix generates confusable sets,
     return None.
-    Else, return a tuple containing a pair of confusable sets obtained from the bad-bat lattice (using the L_matrix matches)
-    as well as the scaled_bad_bat_matrix that makes them.
+    Else, return a tuple containing:
+        * EE and OO (a pair of confusable sets obtained from the bad-bat lattice using the L_matrix matches)
+        * the length-M vector of scalings that would scale the M unscaled_bad_bats to the M scaled_bad_bats that made EE and OO
+        * the scaled_bad_bats (this is really a convenience output, as it is would be easy to recompute via:
+
+                import confusable_multisets
+                scaled_bad_bat_matrix = confusable_multisets.scaled_bad_bat_matrix(unscaled_bad_bat_matrix, point_in_null_space)
+
+            so I may remove it in future. However, since we already have it to hand, we may as well output it for now.
     """
 
     vote_for_collapse, null_space = vote_for_collapse_and_null_space(L_matrix, unscaled_bad_bat_matrix, M)
@@ -152,7 +159,7 @@ def confusable_sets_or_None(L_matrix : sp.Matrix, unscaled_bad_bat_matrix:sp.Mat
 
     assert EE.total() == OO.total(), f"Must have {EE.total()}=={OO.total()} when scaled_bad_bat_matrix = {scaled_bad_bat_matrix}"
 
-    return (EE, OO, scaled_bad_bat_matrix)
+    return (EE, OO, point_in_null_space, scaled_bad_bat_matrix)
 
 def vote_for_collapse_and_null_space(L_matrix: sp.Matrix, bat_matrix: sp.Matrix, M: int) -> tuple:
         """

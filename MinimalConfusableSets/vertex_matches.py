@@ -384,7 +384,7 @@ def generate_viable_vertex_match_matrices(
     remove_duplicates_via_hash = False, # Making this true could crash your program via memory usage. Beware!  This setting forces rre to be calculated -- so no harm in also choosing to return it.
     go_deeper    = None, # If present, then the branch topped by matrix "mat" is only explored more deeply if go_deeper(mat) is True. Does not affect whether mat itself is yielded.
     old_yield_matrix = None, # If present, then the matrix "mat" is only yielded if old_yield_matrix(mat) is True.  If not yielded, further branch exploration is suppressed. Note that, other things being equal, and if it is physically possible, it is better to use "go_deeper" (with or without old_yield_matrix) than "old_yield_matrix" alone.
-    confusable_sets_or_None_function = None, # Like old_yield_matrix, except that confusable_sets_or_None(mat) is assumed to return either None or a  tuple containing a two confusable multisets. And if there ARE confusable multisets (rather than None) it is assumed that the user would like these to be yielded. So none None her acts like old_yield_matrix == True.
+    confusable_sets_or_None_function = None, # Like old_yield_matrix, except that confusable_sets_or_None(mat) is assumed to return either None or a  tuple containing a two confusable multisets, the scalings, and the scaled bad bats. And if there ARE confusable multisets (rather than None) it is assumed that the user would like these to be yielded. So none None her acts like old_yield_matrix == True.
     debug = False,
     ):
     """
@@ -470,17 +470,18 @@ def generate_viable_vertex_match_matrices(
                 return # Skip deeper exploration without yielding mat as the user's pre-yield test is not passed.
 
 
-            EE, OO = None, None
+            EE, OO, scalings, scaled_bad_bats = None, None, None, None
             if confusable_sets_or_None_function is not None:
                 confusable_sets_or_None = confusable_sets_or_None_function(mat)
                 if confusable_sets_or_None == None:
                     return # Skip deeper exploration without yielding mat as the user's pre-yield test is not passed.
 
-                assert len(confusable_sets_or_None) == 3
+                assert len(confusable_sets_or_None) == 4
                 # Let's extract the confusable sets:
-                EE, OO, scaled_bad_bats = confusable_sets_or_None
+                EE, OO, scalings, scaled_bad_bats = confusable_sets_or_None
                 assert EE.total()==OO.total(), f"Mismatch failure ({EE.total()} != {OO.total()}) when mat={mat}"
                 assert EE.total()>0
+                assert len(scalings) == M
 
             # At this point we know we have to return things, so finish any late computations, if required:
             if calculate_rre_late:
@@ -503,7 +504,7 @@ def generate_viable_vertex_match_matrices(
                 assert EE.total()==OO.total()
                 assert EE.total()>0
                 assert scaled_bad_bats != None
-                ans.append( (EE, OO, scaled_bad_bats) )
+                ans.append( (EE, OO, scalings, scaled_bad_bats) )
             
             # Now we pass all our outputs to the caller:
             user_aborted_this_branch = (yield ans)
