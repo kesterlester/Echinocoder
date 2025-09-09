@@ -376,6 +376,7 @@ def generate_viable_vertex_match_matrices(
     remove_obvious_collapses = True, # Discards matrices whose RRE form have a row with betwen 1 and k non-zero elements. (Nb: ihis setting forces rre to be calcualted.)
     debug_test_max_rows = True,
     sort_cols = False, # Note that True for sort_cols dissociates cols from particular bad bats, so requires bad bats to be truly generic, which you can only test by making bad bats increasingly diverse and checking that the answers you are interested in do not change. This said, there seems to be zero speed increase from using it, so seems to be a worthless option.
+    scale_cols_in_hash = False, # bad bats are unscaled, so their lengths don't matter.  This means that the nullspace is unaltered by scaling a column, Hence, before hashing, we can scale all columns to a canonical length and sign to get better clashes.  It seems to help by a tiny amount in some cases, but not always. Perhaps only a 10% improvement.   Possibly reason is that merely scaling the columns is not the only thing one can do. E.g. scaling rows AND columumns both by -1 can leave the intersection point unchanged, but change things off the intersection. This allows changes in isolated numbers, which is different to scaling whole columns. So a more complex/aggressive canoicalisation process to blind to both row and column scalings would be needed to achive this. TODO for future?
     return_mat = False,
     return_rre = False,
     return_rre_pivots = False,
@@ -411,6 +412,11 @@ def generate_viable_vertex_match_matrices(
 
     hashable_rre_seen = set()
 
+    def make_rre_hashable(rre, scale_cols):
+        if scale_cols:
+            rre = sympy_tools.scale_cols_to_1_at_bottom(rre)
+        return sp.ImmutableMatrix(rre)
+        
     def calc_rre(mat, sort_cols):
         if sort_cols:
             mat = sympy_tools.lex_sort_sympy_matrix_by_cols(mat)
@@ -436,17 +442,17 @@ def generate_viable_vertex_match_matrices(
                 rre, rre_pivots = calc_rre(mat, sort_cols=sort_cols)
  
             if calculate_hashable_rre_early:
-                hashable_rre = sp.ImmutableMatrix(rre)
+                hashable_rre = make_rre_hashable(rre, scale_cols = scale_cols_in_hash)
 
             if remove_duplicates_via_hash:
                 assert calculate_hashable_rre_early
                 if hashable_rre in hashable_rre_seen:
-                    if debug: print(f"VETO as already seen {rre}")
+                    if debug: print("VETO as already seen {rre}")
                     # We already saw this one, so don't need to produce it again!
                     # Skip deeper evaluation or return of it!
                     return
                 else:
-                    if debug: print(f"---- first occurrence {rre}")
+                    if debug: print("---- first occurrence {rre}")
                     # record that we have seen this item:
                     hashable_rre_seen.add(hashable_rre) # Note this is a sort of voluntary memory leak. Users use this at their own risk!
                     #print("Hash size ",len(hashable_rre_seen))
@@ -487,7 +493,7 @@ def generate_viable_vertex_match_matrices(
             if calculate_rre_late:
                 rre, rre_pivots = calc_rre(mat, sort_cols=sort_cols)
             if calculate_hashable_rre_late:
-                hashable_rre = sp.ImmutableMatrix(rre)
+                hashable_rre = make_rre_hashable(rre, scale_cols = scale_cols_in_hash)
 
             ans = []
             if return_mat:
@@ -505,9 +511,13 @@ def generate_viable_vertex_match_matrices(
                 assert EE.total()>0
                 assert scaled_bad_bats != None
                 ans.append( (EE, OO, scalings, scaled_bad_bats) )
-            
+           
+            ##################### YIELD COMING ############################
+
             # Now we pass all our outputs to the caller:
             user_aborted_this_branch = (yield ans)
+
+            ##################### YIELD DONE ! ############################
 
             # Don't go deeper if caller says not to, or for any other reason:
             if (

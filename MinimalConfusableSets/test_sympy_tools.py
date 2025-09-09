@@ -6,19 +6,34 @@ def test_scale_rows_or_cols():
     M = sp.Matrix
     R = sp.Rational
 
-    assert sc(M( [[1,2,3],[4,5,6],[7,8,9]] )) == M([[R(1,7),R(2,8),R(3,9)],[R(4,7),R(5,8),R(6,9)],[1,1,1]]) 
-    assert sc(M( [[1,2,3],[4,5,6],[7,8,9]] )) == M([[R(1,7),R(2,8),R(3,9)],[R(4,7),R(5,8),R(6,9)],[1,1,1]]) 
-    assert sc(M( [[4,2,3]] )) == M([[1,1,1]]) 
-    assert sc(M( [[0,2,3]] )) == M([[0,1,1]]) 
-    assert sc(M( [[4,0,0]] )) == M([[1,0,0]]) 
-    assert sc(M( [[0,0,0]] )) == M([[0,0,0]]) 
+    in_out_pairs = (
+            (((1,2,3),(4,5,6),(7,8,9)), ((R(1,7),R(2,8),R(3,9)),(R(4,7),R(5,8),R(6,9)),(1,1,1))),
+            (((1,2,3),(4,5,6),(7,8,9)), ((R(1,7),R(2,8),R(3,9)),(R(4,7),R(5,8),R(6,9)),(1,1,1))),
+            (((1,2,3),(4,1,6),(7,0,9)), ((R(1,7),2,R(3,9)),(R(4,7),1,R(6,9)),(1,0,1))), # testing 1 already at bottom
+            (((4,2,3)),                 ((1,1,1))),  
+            (((0,2,3)),                 ((0,1,1))),
+            (((4,0,0)),                 ((1,0,0))),
+            (((0,0,0)),                 ((0,0,0))),
+        )
 
+    for m_in, m_out in in_out_pairs:
+        assert sc(M(m_in)) == M(m_out)
+
+    for m_in, m_out in in_out_pairs:
+        m_in, m_out = M(m_in), M(m_out)
+        sc(m_in, in_place=True)
+        assert m_in == m_out
+
+    for m_in, m_out in in_out_pairs:
+        m_in, m_out = M(m_in), M(m_out)
+        if m_in != m_out:
+            sc(m_in, in_place=False)
+            assert m_in != m_out
 
 
 def test_scale_rows_or_cols():
     assert spt.scale_cols(sp.Matrix([[1, 3], [4, 2]]), (5, 6)) == sp.Matrix([[5, 18], [20, 12]])
     assert spt.scale_rows(sp.Matrix([[1, 3], [4, 2]]), (5, 6)) == sp.Matrix([[5, 15], [24, 12]])
-
 
 def test_strip_zero_rows(): #(M: sp.Matrix) -> sp.Matrix:
     assert spt.strip_zero_rows(sp.Matrix([[0,1],[4,2]])) == sp.Matrix([[0,1],[4,2]])

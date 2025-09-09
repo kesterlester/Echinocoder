@@ -7,7 +7,7 @@ from Match_Tracker import Match_Tracker
 
 import deciders
 
-def demo(M_and_k_tuple=None, show_cs=False):
+def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False):
 
     def max_row_requirement(mat, max_rows):
         return sp.shape(mat)[0] <= max_rows
@@ -97,12 +97,13 @@ def demo(M_and_k_tuple=None, show_cs=False):
                 # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
                 debug = debug,
                 debug_test_max_rows=True,
+                scale_cols_in_hash=scale_cols,
                 )
       
 
             for name, mat_gen, decider in (
                 #    (f"SLOW sort={sort_cols}", mat_gen_2, collapse_checker_2),
-                    (f"VSLW sort={sort_cols}", mat_gen_3, collapse_checker_3),
+                    (f"VSLW sort={sort_cols} scale_cols={scale_cols}", mat_gen_3, collapse_checker_3),
                 #    (f"FAST sort={sort_cols}", mat_gen_1, collapse_checker_1),
                     ):
 
@@ -167,7 +168,7 @@ def ddd():
         demo( (M,k) )
     elif len(sys.argv) == 4:
         M, k = (int(n) for n in sys.argv[1:3])
-        demo( (M,k), show_cs=True )
+        demo( (M,k), scale_cols = True if sys.argv[3]=="1" else False  )
     else:
         demo()
 

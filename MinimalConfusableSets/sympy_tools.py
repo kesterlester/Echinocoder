@@ -410,10 +410,12 @@ def scale_cols_to_1_at_bottom(M: sp.Matrix, in_place=False) -> sp.Matrix:
     for j in range(cols):
         # scan upward from the bottom row
         for i in reversed(range(rows)):
-            if M[i, j] != 0:
-                scalar = 1 / M[i, j]
-                M[:, j] = M[:, j] * scalar
-                break  # only scale once per column
+            val = M[i,j]
+            if val==0: continue # haven't found pivot yet
+            if val==1: break # no scaling needed
+            assert val !=0 and val != 1
+            M[:, j] = M[:, j] / val
+            break  # only scale once per column
     return M
 
 def demo():
