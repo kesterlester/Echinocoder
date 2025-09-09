@@ -113,37 +113,33 @@ def demo(M_and_k_tuple=None, show_cs=False):
 
                 number_enumerated = 0
                 smallest_siz_so_far = None
-                best_scaled_bad_bats = None
-                best_scalings = None
-                best_mat = None
-                best_rre = None
 
                 for i, (mat,rre,(EE,OO,scalings, scaled_bad_bats)) in enumerate(mat_gen):
 
-                    pr = False
                     new_best = False
                     siz = EE.total()
 
                     if smallest_siz_so_far == None or siz < smallest_siz_so_far:
-                        smallest_siz_so_far, smallest_EE, smallest_OO, best_scalings, best_scaled_bad_bats = siz, EE, OO, scalings, scaled_bad_bats
-                        best_mat, best_rre = mat,rre
-                        pr = True
+                        smallest_siz_so_far = siz
+                        # smallest_EE, smallest_OO = EE, OO
+                        best_scalings, best_scaled_bad_bats = scalings, scaled_bad_bats
+                        best_mat, best_rre = mat, rre
                         new_best = True
 
-                    if i % 10000 == 0 or pr:
-                        print(f"{name}: CURRENT    {i}:  raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}     ")
-                        if new_best:
-                            prefix = f"{name} SO FAR: " 
-                            mes = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\n"\
-                                  f"raw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\n"\
-                                  f"unscaled_bad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\n"\
-                                  f"scalings={sp.srepr(best_scalings)}\n" \
-                                  f"scalingsSREPR={sp.srepr(best_scalings)}\n" \
-                                  f"scaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n"\
-                                  f"{number_enumerated} matrices have been scanned.\n\n"
-                            for line in mes.split("\n"):
-                                print(prefix, line)
-                        print()
+                    if i % 10000 == 0:
+                        print(f"{name}: CURRENT {i}, M={M}, k={k}, raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}\n")
+
+                    if new_best:
+                        prefix = f"{name} SO FAR: "
+                        mes = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\n"\
+                              f"raw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\n"\
+                              f"unscaled_bad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\n"\
+                              f"scalings={sp.srepr(best_scalings)}\n" \
+                              f"scalingsSREPR={sp.srepr(best_scalings)}\n" \
+                              f"scaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n"\
+                              f"{number_enumerated} matrices have been scanned.\n\n"
+                        for line in mes.split("\n"):
+                            print(prefix, line)
 
                     number_enumerated += 1
 
