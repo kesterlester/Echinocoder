@@ -116,7 +116,7 @@ def mitm_compute_E_O_C_EE_OO(B: Matrix):
     """Meet-in-the-middle computation of E, O, C, EE, OO for matrix B."""
     m, k = B.shape
     rows = _row_tuple_rows([B.row(i) for i in range(m)])
-    if m>=2: # could change 2 to a number bigger than 2, but not less than 2 as otherwise split leads ot empty row
+    if m>=2: #2: # could change 2 to a number bigger than 2, but not less than 2 as otherwise split leads ot empty row
         mid = m // 2
         L_rows = rows[:mid]
         R_rows = rows[mid:]

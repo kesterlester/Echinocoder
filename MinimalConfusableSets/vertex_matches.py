@@ -446,6 +446,7 @@ def generate_viable_vertex_match_matrices(
                     # Skip deeper evaluation or return of it!
                     return
                 else:
+                    if debug: print(f"---- first occurrence {rre}")
                     # record that we have seen this item:
                     hashable_rre_seen.add(hashable_rre) # Note this is a sort of voluntary memory leak. Users use this at their own risk!
                     #print("Hash size ",len(hashable_rre_seen))
@@ -537,28 +538,6 @@ def generate_viable_vertex_match_matrices(
     # Start with no prefix and no lower bound
     yield from dfs([], None)
 
-def alpha_attacking_matrix(
-                L_matrix : sp.Matrix,  # Any number of rows, but M columns.
-                bat_matrix : sp.Matrix, # M rows, and k columns, so that each row is a bat vector.
-                ) -> sp.Matrix :
-    """
-    This method generates the matrix A for which the solns of A.(vec of alphas) are the same as the solutions to L.(alpha1 w1, alpha2 w2, ... , alphaM, wM) where w1 is the first bat (i.e. first row of bat matrix) and w2 the second, and so on.
-    """
-
-    M, k = bat_matrix.shape 
-    R, M_L = L_matrix.shape
-
-    assert M == M_L or R==0, f"L and B must work with the same no. of vectors. Wanted M({M}) == M_L({M_L})"
-
-    effective_row = 0
-    ans = sp.zeros(R*k, M)
-    for i in range(R):
-        for kk in range(k):
-            for j in range(M):
-                ans[effective_row, j] = L_matrix[i,j]*bat_matrix[j,kk]
-            effective_row += 1
-
-    return ans
 
 def demo():
     M=10

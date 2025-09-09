@@ -1,6 +1,6 @@
 import sympy as sp
 from functools import partial
-from vertex_matches import generate_viable_vertex_match_matrices, alpha_attacking_matrix
+from vertex_matches import generate_viable_vertex_match_matrices
 import sympy_tools as spt
 import decider_functions.decider_function as df
 from Match_Tracker import Match_Tracker
@@ -104,95 +104,58 @@ class Rational_Decider:
     def __repr__(self):
         return f"Rational_Decider(M={self.M}, k={self.k}, bat_matrix={self.bat_matrix})"
 
-###    def __collapse_test_case(self, L_matrix : sp.Matrix, votes_for_collapse : tuple, null_spaces, null_space_dimensions,) -> str:
-###        return f"""
-###    
-###    
-###    ##################################
-###    import deciders
-###    from sympy import Matrix
-###    
-###    L_matrix = {repr(L_matrix)}
-###    bat_matrices = {self.bat_matrices}
-###    decider = deciders.Rational_Decider(M={self.M}, k={self.k}, bat_matrices=bat_matrices)
-###    
-###    votes_for_collapse, null_spaces = decider.votes_for_collapse_and_null_spaces(L_matrix)
-###    null_space_dimensions = tuple(len(null_space) for null_space in null_spaces)
-###
-###    print("votes_for_collapse are: ",votes_for_collapse)
-###    # Expect votes_for_collapse={votes_for_collapse} 
-###
-###    print("null space lengths are: ",null_space_dimensions)
-###    # Expect null_space_dimensions={null_space_dimensions} 
-###    
-###    print("null spaces are: ",null_spaces)
-###    # Expect null_spaces={null_spaces} 
-###    
-###    has_True = True in votes_for_collapse
-###    has_False = True in votes_for_collapse
-###
-###    null_spaces_have_different_dimensions = max(null_space_dimensions) != min(null_space_dimensions)
-###
-###    assert True # or something else of your choice.
-###    ##################################
-###    
-###    
-###"""
-        
-##    def matrix_does_not_collapse(self, L_matrix : sp.Matrix) -> bool:
-##        return not self.matrix_collapses(L_matrix)
-##
-##    def matrix_collapses(self, L_matrix : sp.Matrix) -> bool:
-##        vote_for_collapse, null_space = self.vote_for_collapse_and_null_space(L_matrix)
-##
-##        null_space_dimension = len(null_space)
-##
-##        assert 0 <= null_space_dimension <= self.M
-##
-##        if null_space_dimension == 0:
-##            assert vote_for_collapse
-##
-##        assert 1 <= null_space_dimension <= self.M
-
-
-    def confusable_sets_or_None(self, L_matrix : sp.Matrix):
-        """
-        If a scaling of the bad-bat lattice to achive the matches in L_matrix does not generate confusable sets, return None.
-        Else return a pair (tuple) of confusable sets obtained from the bad-bat lattice using the L_matrix matches.
-        """
-
-        vote_for_collapse, null_space = self.vote_for_collapse_and_null_space(L_matrix)
-
-        if vote_for_collapse:
-            assert 0 <= len(null_space) <= self.M # Note <= not < in first inequality.
-            return None
-
-        assert not vote_for_collapse
-        assert 0 < len(null_space) <= self.M # Note < not <= in first inequality.
-
-        # OK - it is now our job to generate some confusable sets!
-        import nonzero_lin_comb
-
-        null_space_contribs, point_in_null_space =  nonzero_lin_comb.combine_many(null_space)
-
-        assert len(null_space_contribs) == len(null_space)
-        assert point_in_null_space.shape == (self.M, 1)
-        assert all(alpha!=0 for alpha in point_in_null_space)
-
-        import confusable_multisets
-
-        scaled_bat_matrix = confusable_multisets.scaled_bad_bat_matrix(self.bat_matrix, point_in_null_space)
-
-        E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bat_matrix, plot_if_2d=False, show_C_if_plotting = False)
-
-        assert EE.total() == OO.total(), f"Must have {EE.total()}=={OO.total()} when scaled_bat_matrix = {scaled_bat_matrix}"
-
-        return (EE, OO, scaled_bat_matrix)
+    def confusable_sets_or_None(self, L_matrix: sp.Matrix):
+        return confusable_sets_or_None(L_matrix, self.bat_matrix, self.M)
 
     def vote_for_collapse_and_null_space(self, L_matrix : sp.Matrix) -> tuple:
+        return vote_for_collapse_and_null_space(L_matrix, self.bat_matrix, self.M)
+
+    def function_factory(self):
+        return lambda mat : self.confusable_sets_or_None(mat)
+
+#########################################################
+
+
+
+def confusable_sets_or_None(L_matrix : sp.Matrix, bat_matrix:sp.Matrix, M:int):
+    """
+    If a scaling of the bad-bat lattice to achive the matches in L_matrix does not generate confusable sets, return None.
+    Else return a pair (tuple) of confusable sets obtained from the bad-bat lattice using the L_matrix matches.
+    """
+
+    vote_for_collapse, null_space = vote_for_collapse_and_null_space(L_matrix, bat_matrix, M)
+
+    if vote_for_collapse:
+        assert 0 <= len(null_space) <= M # Note <= not < in first inequality.
+        return None
+
+    assert not vote_for_collapse
+    assert 0 < len(null_space) <= M # Note < not <= in first inequality.
+
+    # OK - it is now our job to generate some confusable sets!
+    import nonzero_lin_comb
+
+    null_space_contribs, point_in_null_space =  nonzero_lin_comb.combine_many(null_space)
+
+    assert len(null_space_contribs) == len(null_space)
+    assert point_in_null_space.shape == (M, 1)
+    assert all(alpha!=0 for alpha in point_in_null_space)
+
+    import confusable_multisets
+
+    scaled_bat_matrix = confusable_multisets.scaled_bad_bat_matrix(bat_matrix, point_in_null_space)
+
+    ##  E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bat_matrix, plot_if_2d=False, show_C_if_plotting = False)
+    _, _, _, EE, OO = confusable_multisets.mitm_compute_E_O_C_EE_OO(scaled_bat_matrix)
+
+    assert EE.total() == OO.total(), f"Must have {EE.total()}=={OO.total()} when scaled_bat_matrix = {scaled_bat_matrix}"
+
+    return (EE, OO, scaled_bat_matrix)
+
+def vote_for_collapse_and_null_space(L_matrix: sp.Matrix, bat_matrix: sp.Matrix, M: int) -> tuple:
         """
         A key returned element is the null-space. It is probably only interesting when the
-        null space is .  The null space is a basis
+        null space is present.  The null space is a basis
         for the space of set of scales (alpha_1, alpha_2, ..., alpha_M) which, if applied
         to the unscaled bad-bat directions, would lead the bad-bat lattice to exhibit the
         matches specified in L_matrix.  A general point in the null space will always
@@ -200,9 +163,12 @@ class Rational_Decider:
         bad bat lattice collapse, e.g. as would happen if at least one of the alphas was
         zero.  However, "vote for collapse" being False will assure us that there is 
         at least one point in the null space where non-collapse happens.
+
+        In principle M could be found as the number of columns of L_matrix, or as the number
+        of rows of bat_matrix, 
         """
 
-        big_mat = alpha_attacking_matrix(L_matrix, self.bat_matrix)
+        big_mat = alpha_attacking_matrix(L_matrix, bat_matrix)
 
         null_space = big_mat.nullspace()
 
@@ -261,7 +227,7 @@ class Rational_Decider:
             # This is the strongest form of collapse we can have!
             return True, null_space
 
-        if null_space_dimension == self.M:
+        if null_space_dimension == M:
             # The null-space is M-dimensional. There are only M alphas, so it is capable of spanning to
             # (alpha1, alpha2, .... ) = (1, 1, ... ).
             # So no collapse here!
@@ -279,7 +245,7 @@ class Rational_Decider:
         #
         # so test if there is a non-zero value in each component:
 
-        for cpt_index in range(self.M):
+        for cpt_index in range(M):
             if all( (basis_vec[cpt_index, 0] == 0) for basis_vec in null_space  ):
                 # There are zeros in every basis vector at this cpt,
                 # so there is no soln with every alphai nonzero, 
@@ -293,7 +259,28 @@ class Rational_Decider:
         # See proof in "OneNote -> Research -> Symmetries -> Non collapsing null space".
         return False, null_space
 
-    def function_factory(self):
-        return lambda mat : self.confusable_sets_or_None(mat)
 
-#########################################################
+def alpha_attacking_matrix(
+                L_matrix : sp.Matrix,  # Any number of rows, but M columns.
+                bat_matrix : sp.Matrix, # M rows, and k columns, so that each row is a bat vector.
+                ) -> sp.Matrix :
+    """
+    This method generates the matrix A for which the solns of A.(vec of alphas) are the same as the solutions to L.(alpha1 w1, alpha2 w2, ... , alphaM, wM) where w1 is the first bat (i.e. first row of bat matrix) and w2 the second, and so on.
+    """
+
+    M, k = bat_matrix.shape
+    R, M_L = L_matrix.shape
+
+    assert M == M_L or R==0, f"L and B must work with the same no. of vectors. Wanted M({M}) == M_L({M_L})"
+
+    effective_row = 0
+    ans = sp.zeros(R*k, M)
+    for i in range(R):
+        for kk in range(k):
+            for j in range(M):
+                ans[effective_row, j] = L_matrix[i,j]*bat_matrix[j,kk]
+            effective_row += 1
+
+    return ans
+
+

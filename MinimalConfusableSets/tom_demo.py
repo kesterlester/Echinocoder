@@ -1,6 +1,6 @@
 import sympy as sp
 from functools import partial
-from vertex_matches import generate_viable_vertex_match_matrices, alpha_attacking_matrix
+from vertex_matches import generate_viable_vertex_match_matrices
 import sympy_tools as spt
 import decider_functions.decider_function as df
 from Match_Tracker import Match_Tracker
@@ -51,7 +51,7 @@ def demo(M_and_k_tuple=None, show_cs=False):
                False,
                ):
 
-            mat_gen_fast = generate_viable_vertex_match_matrices(
+            mat_gen_1= generate_viable_vertex_match_matrices(
                 M=M,
                 k=k,
                 sort_cols = sort_cols,
@@ -67,7 +67,7 @@ def demo(M_and_k_tuple=None, show_cs=False):
                 debug_test_max_rows=True,
                 )
 
-            mat_gen_slow = generate_viable_vertex_match_matrices(
+            mat_gen_2 = generate_viable_vertex_match_matrices(
                 M=M,
                 k=k,
                 sort_cols = sort_cols,
@@ -83,7 +83,7 @@ def demo(M_and_k_tuple=None, show_cs=False):
                 debug_test_max_rows=True,
                 )
       
-            mat_gen_very_slow = generate_viable_vertex_match_matrices(
+            mat_gen_3 = generate_viable_vertex_match_matrices(
                 M=M,
                 k=k,
                 sort_cols = sort_cols,
@@ -100,10 +100,10 @@ def demo(M_and_k_tuple=None, show_cs=False):
                 )
       
 
-            for name, mat_gen in (
-                    (f"VSLW sort={sort_cols}", mat_gen_very_slow),
-                #    (f"SLOW sort={sort_cols}", mat_gen_slow),
-                #    (f"FAST sort={sort_cols}", mat_gen_fast),
+            for name, mat_gen, decider in (
+                #    (f"SLOW sort={sort_cols}", mat_gen_2, collapse_checker_2),
+                    (f"VSLW sort={sort_cols}", mat_gen_3, collapse_checker_3),
+                #    (f"FAST sort={sort_cols}", mat_gen_1, collapse_checker_1),
                     ):
 
                 print("")
@@ -114,6 +114,8 @@ def demo(M_and_k_tuple=None, show_cs=False):
                 number_enumerated = 0
                 smallest_siz_so_far = None
                 best_scaled_bad_bats = None
+                best_mat = None
+                best_rre = None
 
                 for i, (mat,rre,(EE,OO,scaled_bad_bats)) in enumerate(mat_gen):
 
@@ -123,19 +125,26 @@ def demo(M_and_k_tuple=None, show_cs=False):
 
                     if smallest_siz_so_far == None or siz < smallest_siz_so_far:
                         smallest_siz_so_far, smallest_EE, smallest_OO, best_scaled_bad_bats = siz, EE, OO, scaled_bad_bats
+                        best_mat, best_rre = mat,rre
                         pr = True
                         new_best = True
 
                     if i % 10000 == 0 or pr:
-                        print(f"{name}:     {i}:  raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}     ")
+                        print(f"{name}: CURRENT    {i}:  raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}     ")
                         if new_best:
-                            print(f"{name}: The smallest confusable sets so far have scaled bad bats {sp.srepr(best_scaled_bad_bats)}.")
-                        print(f"{name}: The smallest confusable sets so far have {smallest_siz_so_far}=={smallest_EE.total()} points.")
+                            prefix = f"{name} SO FAR: " 
+                            mes_so_far = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\nraw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\nbad_bats=\n{repr(decider.bat_matrix)},\nscaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n{number_enumerated} matrices were scanned.\n\n"
+                            for line in mes_so_far.split("\n"):
+                                print(prefix, line)
                         print()
 
                     number_enumerated += 1
 
-                print(f"{name}:  M={M} and k={k} smallest confusable set was size {smallest_siz_so_far} and was found after checking {number_enumerated} match matrices. It has scaled bad bats {sp.srepr(best_scaled_bad_bats)}.")
+                prefix = f"{name} AT END: " 
+                mes_at_end = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\nraw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\nbad_bats=\n{repr(decider.bat_matrix)},\nscaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n{number_enumerated} matrices were scanned.\n\n"
+                for line in mes_at_end.split("\n"):
+                   print(prefix, line)
+                    
                 import confusable_multisets as cs
                 #cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True, show_C_if_plotting=True)
                 #cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True)
