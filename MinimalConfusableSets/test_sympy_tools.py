@@ -1,6 +1,11 @@
 import sympy_tools as spt
 import sympy as sp
 
+def test_scale_rows_or_cols():
+    assert spt.scale_cols(sp.Matrix([[1, 3], [4, 2]]), (5, 6)) == sp.Matrix([[5, 18], [20, 12]])
+    assert spt.scale_rows(sp.Matrix([[1, 3], [4, 2]]), (5, 6)) == sp.Matrix([[5, 15], [24, 12]])
+
+
 def test_strip_zero_rows(): #(M: sp.Matrix) -> sp.Matrix:
     assert spt.strip_zero_rows(sp.Matrix([[0,1],[4,2]])) == sp.Matrix([[0,1],[4,2]])
     assert spt.strip_zero_rows(sp.Matrix([[0,0],[4,2]])) == sp.Matrix([[4,2]])

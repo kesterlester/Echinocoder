@@ -1,4 +1,5 @@
 import sympy as sp
+import sympy_tools as spt
 
 def size_of_confusable_multiset_formed_from(B_scaled, # B_scaled is a SCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are these rows
                               ):
@@ -55,38 +56,7 @@ def scaled_bad_bat_matrix(B_unscaled, vector_of_alphas,):
     Returns: B_unscaled with its rows scaled by the coefficients in vector_of_alphas.
     """
 
-    return scale_rows(B_unscaled, vector_of_alphas)
-
-def scale_rows(M: sp.Matrix, a) -> sp.Matrix:
-    """
-    Returns a matrix S that is like M except that
-    row i of S is row i of M multiplied by a[i].
-
-    Parameters:
-    - M: sympy.Matrix (m x n)
-    - a: sympy.Matrix, list, or tuple of length m
-
-    Returns:
-    - sympy.Matrix (m x n)
-    """
-    # Convert a to sympy column vector if it isn't already
-    if isinstance(a, (list, tuple)):
-        a = sp.Matrix(a)
-    elif not isinstance(a, sp.Matrix):
-        raise TypeError("Argument 'a' must be a sympy.Matrix, list, or tuple.")
-
-    # Ensure column vector
-    a = a.reshape(len(a), 1)
-
-    # Input validation
-    assert M.rows == a.rows, (
-        f"Dimension mismatch: M has {M.rows} rows, "
-        f"but vector 'a' has length {a.rows}."
-    )
-
-    # Construct diagonal matrix from 'a' and scale rows
-    return sp.diag(*a) * M
-
+    return spt.scale_rows(B_unscaled, vector_of_alphas)
 
 from sympy import Matrix
 from collections import Counter

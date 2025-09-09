@@ -159,7 +159,7 @@ def int_tuple_without_zeros(size: int,
         raise ValueError(f"Vector's length must be a non-negative integer, not {size}.")
 
     if lam<0:
-        raise ValueError(f"Length scale lam must be >=0, not {la,}.")
+        raise ValueError(f"Length scale lam must be >=0, not {lam}.")
 
     return tuple( int(np.random.choice( (-1,+1) )*(poisson+1)) for poisson in np.random.poisson(lam=lam, size=size) )
 
@@ -335,6 +335,69 @@ def lex_sort_sympy_matrix(M: sp.Matrix, by_cols: bool) -> sp.Matrix:
         # Sort row indices by lex order
         order = sorted(range(M.rows), key=lambda i: rows[i])
         return M[order, :]
+
+
+def scale_rows(M: sp.Matrix, a) -> sp.Matrix:
+    """
+    Returns a matrix S that is like M except that
+    row i of S is row i of M multiplied by a[i].
+
+    Parameters:
+    - M: sympy.Matrix (m x n)
+    - a: sympy.Matrix, list, or tuple of length m
+
+    Returns:
+    - sympy.Matrix (m x n)
+    """
+
+    # Convert a to sympy column vector if it isn't already
+    if isinstance(a, (list, tuple)):
+        a = sp.Matrix(a)
+    elif not isinstance(a, sp.Matrix):
+        raise TypeError("Argument 'a' must be a sympy.Matrix, list, or tuple.")
+
+    # Ensure column vector
+    a = a.reshape(len(a), 1)
+
+    # Input validation
+    assert M.rows == a.rows, (
+        f"Dimension mismatch: M has {M.rows} rows, "
+        f"but vector 'a' has length {a.rows}."
+    )
+
+    # Construct diagonal matrix from 'a' and scale rows
+    return sp.diag(*a) * M
+
+def scale_cols(M: sp.Matrix, a) -> sp.Matrix:
+    """
+    Returns a matrix S that is like M except that
+    row i of S is row i of M multiplied by a[i].
+
+    Parameters:
+    - M: sympy.Matrix (m x n)
+    - a: sympy.Matrix, list, or tuple of length m
+
+    Returns:
+    - sympy.Matrix (m x n)
+    """
+
+    # Convert a to sympy column vector if it isn't already
+    if isinstance(a, (list, tuple)):
+        a = sp.Matrix(a)
+    elif not isinstance(a, sp.Matrix):
+        raise TypeError("Argument 'a' must be a sympy.Matrix, list, or tuple.")
+
+    # Ensure column vector
+    a = a.reshape(len(a), 1)
+
+    # Input validation
+    assert M.rows == a.rows, (
+        f"Dimension mismatch: M has {M.rows} rows, "
+        f"but vector 'a' has length {a.rows}."
+    )
+
+    # Construct diagonal matrix from 'a' and scale rows
+    return  M * sp.diag(*a)
 
 def demo():
     rows=3
