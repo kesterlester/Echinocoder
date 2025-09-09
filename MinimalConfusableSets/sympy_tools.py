@@ -399,6 +399,23 @@ def scale_cols(M: sp.Matrix, a) -> sp.Matrix:
     # Construct diagonal matrix from 'a' and scale rows
     return  M * sp.diag(*a)
 
+def scale_cols_to_1_at_bottom(M: sp.Matrix, in_place=False) -> sp.Matrix:
+    """
+    Scales each column of M so that the last non-zero entry in each column is a 1.  Rows without a non-zero entry are unchanged.
+    """
+    if not in_place:
+        M = M.copy()
+    rows, cols = M.shape
+    
+    for j in range(cols):
+        # scan upward from the bottom row
+        for i in reversed(range(rows)):
+            if M[i, j] != 0:
+                scalar = 1 / M[i, j]
+                M[:, j] = M[:, j] * scalar
+                break  # only scale once per column
+    return M
+
 def demo():
     rows=3
     cols=6

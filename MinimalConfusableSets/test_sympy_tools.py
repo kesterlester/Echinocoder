@@ -2,6 +2,20 @@ import sympy_tools as spt
 import sympy as sp
 
 def test_scale_rows_or_cols():
+    sc = spt.scale_cols_to_1_at_bottom
+    M = sp.Matrix
+    R = sp.Rational
+
+    assert sc(M( [[1,2,3],[4,5,6],[7,8,9]] )) == M([[R(1,7),R(2,8),R(3,9)],[R(4,7),R(5,8),R(6,9)],[1,1,1]]) 
+    assert sc(M( [[1,2,3],[4,5,6],[7,8,9]] )) == M([[R(1,7),R(2,8),R(3,9)],[R(4,7),R(5,8),R(6,9)],[1,1,1]]) 
+    assert sc(M( [[4,2,3]] )) == M([[1,1,1]]) 
+    assert sc(M( [[0,2,3]] )) == M([[0,1,1]]) 
+    assert sc(M( [[4,0,0]] )) == M([[1,0,0]]) 
+    assert sc(M( [[0,0,0]] )) == M([[0,0,0]]) 
+
+
+
+def test_scale_rows_or_cols():
     assert spt.scale_cols(sp.Matrix([[1, 3], [4, 2]]), (5, 6)) == sp.Matrix([[5, 18], [20, 12]])
     assert spt.scale_rows(sp.Matrix([[1, 3], [4, 2]]), (5, 6)) == sp.Matrix([[5, 15], [24, 12]])
 
