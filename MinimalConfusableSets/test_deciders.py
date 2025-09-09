@@ -93,7 +93,7 @@ def test_M5_k2():
     has_False = False
 
     for i, bat_matrix in enumerate(bat_matrices):
-        decider = deciders.Rational_Decider(M=5, k=2, bat_matrix=bat_matrix)
+        decider = deciders.Rational_Decider(M=5, k=2, unscaled_bad_bat_matrix=bat_matrix)
         
         vote_for_collapse, null_space = decider.vote_for_collapse_and_null_space(L_matrix)
 

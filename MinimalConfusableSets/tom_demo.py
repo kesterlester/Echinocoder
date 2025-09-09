@@ -133,7 +133,7 @@ def demo(M_and_k_tuple=None, show_cs=False):
                         print(f"{name}: CURRENT    {i}:  raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}     ")
                         if new_best:
                             prefix = f"{name} SO FAR: " 
-                            mes_so_far = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\nraw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\nbad_bats=\n{repr(decider.bat_matrix)},\nscaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n{number_enumerated} matrices were scanned.\n\n"
+                            mes_so_far = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\nraw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\nbad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\nscaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n{number_enumerated} matrices were scanned.\n\n"
                             for line in mes_so_far.split("\n"):
                                 print(prefix, line)
                         print()
@@ -141,7 +141,7 @@ def demo(M_and_k_tuple=None, show_cs=False):
                     number_enumerated += 1
 
                 prefix = f"{name} AT END: " 
-                mes_at_end = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\nraw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\nbad_bats=\n{repr(decider.bat_matrix)},\nscaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n{number_enumerated} matrices were scanned.\n\n"
+                mes_at_end = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\nraw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\nbad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\nscaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n{number_enumerated} matrices were scanned.\n\n"
                 for line in mes_at_end.split("\n"):
                    print(prefix, line)
                     

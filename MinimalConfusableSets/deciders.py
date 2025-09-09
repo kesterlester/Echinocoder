@@ -78,37 +78,37 @@ class Rational_Decider:
     """
 
     def __init__(self, M, k,
-                 debug=False, 
+                 debug=False,
                  seed=0, starting_sigma=1,
-                 bat_matrix = None,
+                 unscaled_bad_bat_matrix = None,
                  ):
         self.M = M
         self.k = k
         self.debug = debug
 
-        if bat_matrix is not None:
-            self.bat_matrix = bat_matrix
+        if unscaled_bad_bat_matrix is not None:
+            self.unscaled_bad_bat_matrix = unscaled_bad_bat_matrix
             # Check that it is consistent with supplied M and k
-            if bat_matrix.shape != (M,k):
-                raise ValueError(f"In Rational_Decider constructor, bat matrix {bat_matrix} does not have expected shape {(M,k)}.")
+            if unscaled_bad_bat_matrix.shape != (M, k):
+                raise ValueError(f"In Rational_Decider constructor, bat matrix {unscaled_bad_bat_matrix} does not have expected shape {(M, k)}.")
 
             # The shapes were good, so we are done constructing:
             return
 
         # User did not supply a bat matrix, so it is now our job to make one given the supplied parameters.
-        assert bat_matrix == None
+        assert unscaled_bad_bat_matrix == None
 
         # Prepare bad bats
-        self.bat_matrix = spt.general_position_integer_bat_matrix(M=M, k=k, seed=seed, starting_sigma=starting_sigma)
+        self.unscaled_bad_bat_matrix = spt.general_position_integer_bat_matrix(M=M, k=k, seed=seed, starting_sigma=starting_sigma)
 
     def __repr__(self):
-        return f"Rational_Decider(M={self.M}, k={self.k}, bat_matrix={self.bat_matrix})"
+        return f"Rational_Decider(M={self.M}, k={self.k}, bat_matrix={self.unscaled_bad_bat_matrix})"
 
     def confusable_sets_or_None(self, L_matrix: sp.Matrix):
-        return confusable_sets_or_None(L_matrix, self.bat_matrix, self.M)
+        return confusable_sets_or_None(L_matrix, self.unscaled_bad_bat_matrix, self.M)
 
     def vote_for_collapse_and_null_space(self, L_matrix : sp.Matrix) -> tuple:
-        return vote_for_collapse_and_null_space(L_matrix, self.bat_matrix, self.M)
+        return vote_for_collapse_and_null_space(L_matrix, self.unscaled_bad_bat_matrix, self.M)
 
     def function_factory(self):
         return lambda mat : self.confusable_sets_or_None(mat)
@@ -117,15 +117,15 @@ class Rational_Decider:
 
 
 
-def confusable_sets_or_None(L_matrix : sp.Matrix, bat_matrix:sp.Matrix, M:int):
+def confusable_sets_or_None(L_matrix : sp.Matrix, unscaled_bad_bat_matrix:sp.Matrix, M:int):
     """
     If no scaling of the bad-bat lattice achieving the matches in L_matrix generates confusable sets,
     return None.
     Else, return a tuple containing a pair of confusable sets obtained from the bad-bat lattice (using the L_matrix matches)
-    as well as the scaled_bat_matrix that makes them.
+    as well as the scaled_bad_bat_matrix that makes them.
     """
 
-    vote_for_collapse, null_space = vote_for_collapse_and_null_space(L_matrix, bat_matrix, M)
+    vote_for_collapse, null_space = vote_for_collapse_and_null_space(L_matrix, unscaled_bad_bat_matrix, M)
 
     if vote_for_collapse:
         assert 0 <= len(null_space) <= M # Note <= not < in first inequality.
@@ -145,14 +145,14 @@ def confusable_sets_or_None(L_matrix : sp.Matrix, bat_matrix:sp.Matrix, M:int):
 
     import confusable_multisets
 
-    scaled_bat_matrix = confusable_multisets.scaled_bad_bat_matrix(bat_matrix, point_in_null_space)
+    scaled_bad_bat_matrix = confusable_multisets.scaled_bad_bat_matrix(unscaled_bad_bat_matrix, point_in_null_space)
 
-    ##  E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bat_matrix, plot_if_2d=False, show_C_if_plotting = False)
-    _, _, _, EE, OO = confusable_multisets.mitm_compute_E_O_C_EE_OO(scaled_bat_matrix)
+    ##  E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bad_bat_matrix, plot_if_2d=False, show_C_if_plotting = False)
+    _, _, _, EE, OO = confusable_multisets.mitm_compute_E_O_C_EE_OO(scaled_bad_bat_matrix)
 
-    assert EE.total() == OO.total(), f"Must have {EE.total()}=={OO.total()} when scaled_bat_matrix = {scaled_bat_matrix}"
+    assert EE.total() == OO.total(), f"Must have {EE.total()}=={OO.total()} when scaled_bad_bat_matrix = {scaled_bad_bat_matrix}"
 
-    return (EE, OO, scaled_bat_matrix)
+    return (EE, OO, scaled_bad_bat_matrix)
 
 def vote_for_collapse_and_null_space(L_matrix: sp.Matrix, bat_matrix: sp.Matrix, M: int) -> tuple:
         """
