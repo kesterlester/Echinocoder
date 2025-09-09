@@ -28,5 +28,5 @@ def test2():
     E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bat_matrix, plot_if_2d=False, show_C_if_plotting = False)
 
     assert EE.total() == OO.total()
-    assert len(EE) != len(OO) # This surprising result is because EE and OO are objects of type collection.Counterv !
+    assert len(EE) != len(OO) # This result might be surprising until you realise that EE and OO are objects of type collection.Counter !
      
