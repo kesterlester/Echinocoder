@@ -165,6 +165,190 @@ def mitm_compute_E_O_C_EE_OO(scaled_bad_bat_matrix: Matrix):
 
     return E, O, C, EE, OO
 
+
+def confusable_sets_or_None(L_matrix : sp.Matrix, unscaled_bad_bat_matrix:sp.Matrix, M:int):
+    """
+    If no scaling of the bad-bat lattice achieving the matches in L_matrix generates confusable sets,
+    return None.
+    Else, return a tuple containing:
+        * EE and OO (a pair of confusable sets obtained from the bad-bat lattice using the L_matrix matches)
+        * the length-M vector of scalings that would scale the M unscaled_bad_bats to the M scaled_bad_bats that made EE and OO
+        * the scaled_bad_bats (this is really a convenience output, as it is would be easy to recompute via:
+
+                import confusable_multisets
+                scaled_bad_bat_matrix = confusable_multisets.scaled_bad_bat_matrix(unscaled_bad_bat_matrix, point_in_null_space)
+
+            so I may remove it in future. However, since we already have it to hand, we may as well output it for now.
+    """
+
+    vote_for_collapse, null_space = vote_for_collapse_and_null_space(L_matrix, unscaled_bad_bat_matrix, M)
+
+    if vote_for_collapse:
+        assert 0 <= len(null_space) <= M # Note <= not < in first inequality.
+        return None
+
+    assert not vote_for_collapse
+    assert 0 < len(null_space) <= M # Note < not <= in first inequality.
+
+    # OK - it is now our job to generate some confusable sets!
+    import nonzero_lin_comb
+
+    null_space_contribs, point_in_null_space =  nonzero_lin_comb.combine_many(null_space)
+
+    assert len(null_space_contribs) == len(null_space)
+    assert point_in_null_space.shape == (M, 1)
+    assert all(alpha!=0 for alpha in point_in_null_space)
+
+    import confusable_multisets
+
+    scaled_bad_bat_matrix = confusable_multisets.scaled_bad_bat_matrix(unscaled_bad_bat_matrix, point_in_null_space)
+
+    ##  E, O, C, EE, OO = confusable_multisets.analyze_B(scaled_bad_bat_matrix, plot_if_2d=False, show_C_if_plotting = False)
+    _, _, _, EE, OO = confusable_multisets.mitm_compute_E_O_C_EE_OO(scaled_bad_bat_matrix)
+
+    assert EE.total() == OO.total(), f"Must have {EE.total()}=={OO.total()} when scaled_bad_bat_matrix = {scaled_bad_bat_matrix}"
+
+    return (EE, OO, point_in_null_space, scaled_bad_bat_matrix)
+
+def vote_for_collapse_and_null_space(L_matrix: sp.Matrix, bat_matrix: sp.Matrix, M: int) -> tuple:
+        """
+        A key returned element is the null-space. It is probably only interesting when the
+        null space is present.  The null space is a basis
+        for the space of set of scales (alpha_1, alpha_2, ..., alpha_M) which, if applied
+        to the unscaled bad-bat directions, would lead the bad-bat lattice to exhibit the
+        matches specified in L_matrix.  A general point in the null space will always
+        result in the L_matrix matches working, but might (sometimes) also lead to
+        bad bat lattice collapse, e.g. as would happen if at least one of the alphas was
+        zero.  However, "vote for collapse" being False will assure us that there is
+        at least one point in the null space where non-collapse happens.
+
+        In principle M could be found as the number of columns of L_matrix, or as the number
+        of rows of bat_matrix, but this can fail for a few special cases, such as when
+        L_matrix has no rows at all, etc. So to be on the safe side we pass in M
+        """
+        if L_matrix.rows != 0 and L_matrix.cols != M:
+            raise ValueError()
+
+        big_mat = alpha_attacking_matrix(L_matrix, bat_matrix)
+
+        null_space = big_mat.nullspace()
+
+        """
+        Example output of
+
+        print("---------------------------------")
+        print(f"L_matrix   = {L_matrix}")
+        print(f"big_mat    = {big_mat}")
+        print(f"null space = {null_space}")
+        print("---------------------------------")
+
+        ---------------------------------
+        L_matrix   = Matrix([[-1, -1, -1, -1, -1, -1, -1, 0], [-1, -1, -1, -1, 0, 0, 0, -1]])
+        big_mat    = Matrix([[-13, -64, 54, -130, 70, 62, 233, 0], [13, -10, -36, -95, 127, -4, 22, 0], [-13, -64, 54, -130, 0, 0, 0, 125], [13, -10, -36, -95, 0, 0, 0, 73]])
+        null space = [Matrix([
+        [1422/481],
+        [    9/37],
+        [       1],
+        [       0],
+        [       0],
+        [       0],
+        [       0],
+        [       0]]), Matrix([
+        [2390/481],
+        [ -225/74],
+        [       0],
+        [       1],
+        [       0],
+        [       0],
+        [       0],
+        [       0]]), Matrix([
+        [          0],
+        [          0],
+        [          0],
+        [          0],
+        [ -1148/4077],
+        [-28051/8154],
+        [          1],
+        [          0]]), Matrix([
+        [ -1711/481],
+        [     99/37],
+        [         0],
+        [         0],
+        [ 2513/4077],
+        [10765/8154],
+        [         0],
+        [         1]])]
+        ---------------------------------
+        """
+
+        null_space_dimension = len(null_space)
+
+        if null_space_dimension == 0:
+            # The null-space is 0-dimensional, i.e. the only soln has all alphas equal to zero.
+            # This is the strongest form of collapse we can have!
+            return True, null_space
+
+        if null_space_dimension == M:
+            # The null-space is M-dimensional. There are only M alphas, so it is capable of spanning to
+            # (alpha1, alpha2, .... ) = (1, 1, ... ).
+            # So no collapse here!
+            return False, null_space
+
+        # OK - the shortcuts didn't work, so fall back to the default method that will always work.
+        # Namely, for the reasons set out in "OneNote -> Research -> Symmetries -> Non collapsing null space"
+        # it may be proved that
+        #
+        #    (there exists a solution with all alphai != 0) iff (each coordinate direction is non-zero in at least one basis vector)
+        #
+        # or equivalently:
+        #
+        #    (there exists no solution with all alphai != 0) iff (at least one coordinate direction is zero in all basis vectors)
+        #
+        # so test if there is a non-zero value in each component:
+
+        for cpt_index in range(M):
+            if all( (basis_vec[cpt_index, 0] == 0) for basis_vec in null_space  ):
+                # There are zeros in every basis vector at this cpt,
+                # so there is no soln with every alphai nonzero,
+                # so this matrix collapses the bad bat lattice, and
+                # so no coonfusable sets were found here
+                return True, null_space
+            # Try next cpt
+
+        # OK - if we got here we tried all components but didn't find one that had zero in every basis vector,
+        # so this matrix does admit solns with all alphai non-zero, i.e. the matrix does not collapse.
+        # See proof in "OneNote -> Research -> Symmetries -> Non collapsing null space".
+        return False, null_space
+
+
+def alpha_attacking_matrix(
+                L_matrix : sp.Matrix,  # Any number of rows, but M columns.
+                bat_matrix : sp.Matrix, # M rows, and k columns, so that each row is a bat vector.
+                ) -> sp.Matrix :
+    """
+    This method generates the matrix A for which the solns of A.(vec of alphas) are the same as the solutions to L.(alpha1 w1, alpha2 w2, ... , alphaM, wM) where w1 is the first bat (i.e. first row of bat matrix) and w2 the second, and so on.
+    """
+
+    M, k = bat_matrix.shape
+    R, M_L = L_matrix.shape
+
+    assert M == M_L or R==0, f"L and B must work with the same no. of vectors. Wanted M({M}) == M_L({M_L})"
+
+    effective_row = 0
+    ans = sp.zeros(R*k, M)
+    for i in range(R):
+        for kk in range(k):
+            for j in range(M):
+                ans[effective_row, j] = L_matrix[i,j]*bat_matrix[j,kk]
+            effective_row += 1
+
+    return ans
+
+
+# Plotting and cosmetics appear after this line.
+
+
+
 def plot_with_rings(counter, color, label, double_count = False):
     """Plot points with concentric rings for multiplicity."""
     if counter.total()==0:
@@ -236,6 +420,42 @@ def demo():
     ImmutableDenseMatrix = sp.ImmutableDenseMatrix
     Rational = sp.Rational
     Integer = sp.Integer
+
+
+    # M=9, k=2 update:
+    #VSLW sort=False SO FAR:
+    #VSLW sort=False SO FAR:  for M=9, k=2 the smallest confusable sets have size 99,
+    #VSLW sort=False SO FAR:  raw=
+    #VSLW sort=False SO FAR:  Matrix([
+    #VSLW sort=False SO FAR:  [-1, -1, -1, -1, -1, -1, -1, -1, -1],
+    #VSLW sort=False SO FAR:  [-1, -1, -1, -1, -1,  0,  0,  0,  0],
+    #VSLW sort=False SO FAR:  [-1, -1,  0,  0,  0, -1, -1, -1,  0],
+    #VSLW sort=False SO FAR:  [ 0,  0, -1, -1,  0, -1, -1,  0, -1]]),
+    #VSLW sort=False SO FAR:  rre=
+    #VSLW sort=False SO FAR:  Matrix([
+    #VSLW sort=False SO FAR:  [1, 1, 0, 0, 0, 0, 0,  0, -1],
+    #VSLW sort=False SO FAR:  [0, 0, 1, 1, 0, 0, 0, -1,  0],
+    #VSLW sort=False SO FAR:  [0, 0, 0, 0, 1, 0, 0,  1,  1],
+    #VSLW sort=False SO FAR:  [0, 0, 0, 0, 0, 1, 1,  1,  1]]),
+    #VSLW sort=False SO FAR:  unscaled_bad_bats=
+    #VSLW sort=False SO FAR:  Matrix([
+    #VSLW sort=False SO FAR:  [-11575,  2898],
+    #VSLW sort=False SO FAR:  [  7809,  5440],
+    #VSLW sort=False SO FAR:  [ -9614, 10710],
+    #VSLW sort=False SO FAR:  [  7015,  7050],
+    #VSLW sort=False SO FAR:  [  7451, 11043],
+    #VSLW sort=False SO FAR:  [ 22430, -6115],
+    #VSLW sort=False SO FAR:  [   472, 17542],
+    #VSLW sort=False SO FAR:  [-13380,  3256],
+    #VSLW sort=False SO FAR:  [ -6891,  -198]]),
+    #VSLW sort=False SO FAR:  scalings=MutableDenseMatrix([[Rational(17970429, 42799241)], [Rational(-11130984, 42799241)], [Rational(-14572415930046, 40971109326821)], [Rational(69645109659177, 204855546634105)], [Rational(6271584, 43003949)], [Rational(65586733880272, 1420396568278305)], [Rational(30653135591672, 284079313655661)], [Rational(-74622015, 172015796)], [Integer(1)]])
+    #VSLW sort=False SO FAR:  scalingsSREPR=MutableDenseMatrix([[Rational(17970429, 42799241)], [Rational(-11130984, 42799241)], [Rational(-14572415930046, 40971109326821)], [Rational(69645109659177, 204855546634105)], [Rational(6271584, 43003949)], [Rational(65586733880272, 1420396568278305)], [Rational(30653135591672, 284079313655661)], [Rational(-74622015, 172015796)], [Integer(1)]])
+    #VSLW sort=False SO FAR:  scaled_bad_bats=
+    #VSLW sort=False SO FAR:  ImmutableDenseMatrix([[Rational(-208007715675, 42799241), Rational(52078303242, 42799241)], [Rational(-86921854056, 42799241), Rational(-60552552960, 42799241)], [Rational(6091269858759228, 1781352579427), Rational(-156070574610792660, 40971109326821)], [Rational(4248351689209797, 1781352579427), Rational(98199604619439570, 40971109326821)], [Rational(46729572384, 43003949), Rational(69257102112, 43003949)], [Rational(294222088186900192, 284079313655661), Rational(-80212575535572656, 284079313655661)], [Rational(14468279999269184, 284079313655661), Rational(537717304549110224, 284079313655661)], [Rational(249610640175, 43003949), Rational(-60742320210, 43003949)], [Integer(-6891), Integer(-198)]]).
+    #VSLW sort=False SO FAR:  212 matrices have been scanned.
+    #VSLW sort=False SO FAR:
+    #VSLW sort=False SO FAR:
+
 
     # M=9, k=2
     B = ImmutableDenseMatrix([[Rational(-208007715675, 42799241), Rational(52078303242, 42799241)], [Rational(-86921854056, 42799241), Rational(-60552552960, 42799241)], [Rational(6091269858759228, 1781352579427), Rational(-156070574610792660, 40971109326821)], [Rational(4248351689209797, 1781352579427), Rational(98199604619439570, 40971109326821)], [Rational(46729572384, 43003949), Rational(69257102112, 43003949)], [Rational(294222088186900192, 284079313655661), Rational(-80212575535572656, 284079313655661)], [Rational(14468279999269184, 284079313655661), Rational(537717304549110224, 284079313655661)], [Rational(249610640175, 43003949), Rational(-60742320210, 43003949)], [Integer(-6891), Integer(-198)]])
