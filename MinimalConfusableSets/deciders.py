@@ -119,8 +119,10 @@ class Rational_Decider:
 
 def confusable_sets_or_None(L_matrix : sp.Matrix, bat_matrix:sp.Matrix, M:int):
     """
-    If a scaling of the bad-bat lattice to achive the matches in L_matrix does not generate confusable sets, return None.
-    Else return a pair (tuple) of confusable sets obtained from the bad-bat lattice using the L_matrix matches.
+    If no scaling of the bad-bat lattice achieving the matches in L_matrix generates confusable sets,
+    return None.
+    Else, return a tuple containing a pair of confusable sets obtained from the bad-bat lattice (using the L_matrix matches)
+    as well as the scaled_bat_matrix that makes them.
     """
 
     vote_for_collapse, null_space = vote_for_collapse_and_null_space(L_matrix, bat_matrix, M)
@@ -165,8 +167,11 @@ def vote_for_collapse_and_null_space(L_matrix: sp.Matrix, bat_matrix: sp.Matrix,
         at least one point in the null space where non-collapse happens.
 
         In principle M could be found as the number of columns of L_matrix, or as the number
-        of rows of bat_matrix, 
+        of rows of bat_matrix, but this can fail for a few special cases, such as when
+        L_matrix has no rows at all, etc. So to be on the safe side we pass in M
         """
+        if L_matrix.rows != 0 and L_matrix.cols != M:
+            raise ValueError()
 
         big_mat = alpha_attacking_matrix(L_matrix, bat_matrix)
 
