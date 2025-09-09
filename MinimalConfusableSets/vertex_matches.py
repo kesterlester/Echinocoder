@@ -380,7 +380,7 @@ def generate_viable_vertex_match_matrices(
     return_mat = False,
     return_rre = False,
     return_rre_pivots = False,
-    return_hashable_rre = False,
+    #return_hashable_rre = False, ## LOSE
     return_confusable_sets = False,
     remove_duplicates_via_hash = False, # Making this true could crash your program via memory usage. Beware!  This setting forces rre to be calculated -- so no harm in also choosing to return it.
     go_deeper    = None, # If present, then the branch topped by matrix "mat" is only explored more deeply if go_deeper(mat) is True. Does not affect whether mat itself is yielded.
@@ -402,20 +402,22 @@ def generate_viable_vertex_match_matrices(
     if return_confusable_sets and confusable_sets_or_None_function == None:
         raise ValueError("You cannot ask to return confusable sets unless you also supply a confusable_sets_or_None_function.")
 
+
     max_rows = sympy_tools.max_rows_for_viable_stripped_RRE_matrix(M=M, k=k)
 
-    calculate_hashable_rre_early = remove_duplicates_via_hash
-    calculate_hashable_rre_late = return_hashable_rre and not calculate_hashable_rre_early
+    # LOSE calculate_hashable_rre_early = remove_duplicates_via_hash
+    # LOSE calculate_hashable_rre_late = return_hashable_rre and not calculate_hashable_rre_early
 
-    calculate_rre_early = calculate_hashable_rre_early or remove_obvious_collapses
+    calculate_rre_early = remove_obvious_collapses # LOSE or calculate_hashable_rre_early 
     calculate_rre_late = (return_rre or return_rre_pivots) and not calculate_rre_early
 
-    hashable_rre_seen = set()
+    # LOSE hashable_rre_seen = set()
+    hashable_L_nullspaces_seen = set()
 
-    def make_rre_hashable(rre, scale_cols):
-        if scale_cols:
-            rre = sympy_tools.scale_cols_to_1_at_bottom(rre)
-        return sp.ImmutableMatrix(rre)
+    # LOSE def make_rre_hashable(rre, scale_cols):
+    # LOSE     if scale_cols:
+    # LOSE         rre = sympy_tools.scale_cols_to_1_at_bottom(rre)
+    # LOSE     return sp.ImmutableMatrix(rre)
         
     def calc_rre(mat, sort_cols):
         if sort_cols:
@@ -438,24 +440,41 @@ def generate_viable_vertex_match_matrices(
 
             mat = sp.Matrix(prefix)
 
-            if calculate_rre_early:
-                rre, rre_pivots = calc_rre(mat, sort_cols=sort_cols)
- 
-            if calculate_hashable_rre_early:
-                hashable_rre = make_rre_hashable(rre, scale_cols = scale_cols_in_hash)
-
             if remove_duplicates_via_hash:
-                assert calculate_hashable_rre_early
-                if hashable_rre in hashable_rre_seen:
-                    if debug: print("VETO as already seen {rre}")
+                L_nullspace = mat.nullspace()
+                hashable_L_nullspace = sp.ImmutableMatrix(tuple(tuple(v) for v in L_nullspace))
+                if len(L_nullspace)==0 and (prefix or not yield_the_first_matrix): # without the second half of this test, the first matrix does not get yielded
+                    # Give up, don't even bother going further or storing in the hash, as will slow later hash lookup.
+                    if debug or True: print(f"                               NULLSPACE cut given prefix={prefix} and mat={mat}")
+                    return
+                if hashable_L_nullspace in hashable_L_nullspaces_seen:
+                    if debug: print("                               NULLSPACE HIT")
                     # We already saw this one, so don't need to produce it again!
                     # Skip deeper evaluation or return of it!
                     return
                 else:
-                    if debug: print("---- first occurrence {rre}")
+                    if debug: print("                               NULLSPACE ---")
                     # record that we have seen this item:
-                    hashable_rre_seen.add(hashable_rre) # Note this is a sort of voluntary memory leak. Users use this at their own risk!
-                    #print("Hash size ",len(hashable_rre_seen))
+                    hashable_L_nullspaces_seen.add(hashable_L_nullspace)
+
+            if calculate_rre_early:
+                rre, rre_pivots = calc_rre(mat, sort_cols=sort_cols)
+ 
+            # LOSE if calculate_hashable_rre_early:
+            # LOSE     hashable_rre = make_rre_hashable(rre, scale_cols = scale_cols_in_hash)
+
+            # LOSE if remove_duplicates_via_hash:
+            # LOSE     assert calculate_hashable_rre_early
+            # LOSE     if hashable_rre in hashable_rre_seen:
+            # LOSE         if debug: print("VETO as already seen {rre}")
+            # LOSE         # We already saw this one, so don't need to produce it again!
+            # LOSE         # Skip deeper evaluation or return of it!
+            # LOSE         return
+            # LOSE     else:
+            # LOSE         if debug: print("---- first occurrence {rre}")
+            # LOSE         # record that we have seen this item:
+            # LOSE         hashable_rre_seen.add(hashable_rre) # Note this is a sort of voluntary memory leak. Users use this at their own risk!
+            # LOSE         #print("Hash size ",len(hashable_rre_seen))
 
             if remove_obvious_collapses:
                 assert calculate_rre_early
@@ -492,8 +511,8 @@ def generate_viable_vertex_match_matrices(
             # At this point we know we have to return things, so finish any late computations, if required:
             if calculate_rre_late:
                 rre, rre_pivots = calc_rre(mat, sort_cols=sort_cols)
-            if calculate_hashable_rre_late:
-                hashable_rre = make_rre_hashable(rre, scale_cols = scale_cols_in_hash)
+            # LOSE if calculate_hashable_rre_late:
+            # LOSE     hashable_rre = make_rre_hashable(rre, scale_cols = scale_cols_in_hash)
 
             ans = []
             if return_mat:
@@ -502,8 +521,8 @@ def generate_viable_vertex_match_matrices(
                 ans.append(rre)
             if return_rre_pivots:
                 ans.append(rre_pivots)
-            if return_hashable_rre:
-                ans.append(hashable_rre)
+            # LOSE if return_hashable_rre:
+            # LOSE     ans.append(hashable_rre)
             if return_confusable_sets:
                 assert EE != None
                 assert OO != None
