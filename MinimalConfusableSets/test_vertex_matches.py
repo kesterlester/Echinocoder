@@ -532,39 +532,39 @@ def test_start_vertex_matches():
 def test_start_vertex_matches_given_equivalent_places():
     
      test_programme = [
-       (Equivalent_Places(size=3, all_equivalent=True), None, (-1,-1,-1)),
-       (Equivalent_Places(size=3, all_equivalent=True), None, (-1,0,0)),
-       (Equivalent_Places(size=3, all_equivalent=True), None, (-1,1,1)),
+       (Equivalent_Places(size=3, all_equivalent=True), None, (1,1,1)),
+       (Equivalent_Places(size=3, all_equivalent=True), None, (0,0,0)),
+       (Equivalent_Places(size=3, all_equivalent=True), None, (0,1,1)),
 
-       (Equivalent_Places(size=3, all_equivalent=True), 1, (-1,-1,-1)),
-       (Equivalent_Places(size=6, all_equivalent=True), 3, (-1,0,1,1,1,1)),
-       (Equivalent_Places(size=7, all_equivalent=True), 2, (-1,-1,-1,0,0,0,0)),
-       (Equivalent_Places(size=7, all_equivalent=True), 2, (-1,0,0,0,0,1,1)),
-       (Equivalent_Places(size=7, all_equivalent=True), 2, (-1,1,1,1,1,1,1)),
+       (Equivalent_Places(size=3, all_equivalent=True), 1, (1,1,1)),
+       (Equivalent_Places(size=6, all_equivalent=True), 3, (0,1,1,1,1,1)),
+       (Equivalent_Places(size=7, all_equivalent=True), 2, (0,0,0,0,1,1,1)),
+       (Equivalent_Places(size=7, all_equivalent=True), 2, (0,0,0,1,1,1,1)),
+       (Equivalent_Places(size=7, all_equivalent=True), 2, (1,1,1,1,1,1,1)),
 
-       (Equivalent_Places(size=3, equivalents_without_singletons=((0,2),)),         1, (-1,-1,-1)),
-       (Equivalent_Places(size=6, equivalents_without_singletons=((1,2), (3,4),)),  3, (-1,0,1,1,1,1)),
-       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), 2, (-1,-1,-1,0,0,0,0)),
-       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), 2, (-1,0,0,0,0,1,1)),
-       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), 2, (-1,1,1,1,1,1,1)),
+       (Equivalent_Places(size=3, equivalents_without_singletons=((0,2),)),         1, (1,1,1)),
+       (Equivalent_Places(size=6, equivalents_without_singletons=((1,2), (3,4),)),  3, (0,1,1,1,1,1)),
+       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), 2, (0,0,0,0,1,1,1)),
+       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), 2, (0,0,0,1,1,1,1)),
+       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), 2, (1,1,1,1,1,1,1)),
 
-       (Equivalent_Places(size=3, equivalents_without_singletons=((0,2),)),         None, (-1,-1,-1)),
-       (Equivalent_Places(size=6, equivalents_without_singletons=((1,2), (3,4),)),  None, (-1,0,1,1,1,1)),
-       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), None, (-1,-1,-1,0,0,0,0)),
-       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), None, (-1,0,0,0,0,1,1)),
-       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), None, (-1,1,1,1,1,1,1)),
+       (Equivalent_Places(size=3, equivalents_without_singletons=((0,2),)),         None, (1,1,1)),
+       (Equivalent_Places(size=6, equivalents_without_singletons=((1,2), (3,4),)),  None, (0,1,1,1,1,1)),
+       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), None, (0,0,0,0,1,1,1)),
+       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), None, (0,0,0,1,1,1,1)),
+       (Equivalent_Places(size=7, equivalents_without_singletons=((2,4,6),(1,3),)), None, (1,1,1,1,1,1,1)),
 
-       (Equivalent_Places(size=3, none_equivalent=True), 1, (-1,-1,-1)),
-       (Equivalent_Places(size=6, none_equivalent=True), 3, (-1,0,1,1,1,1)),
-       (Equivalent_Places(size=7, none_equivalent=True), 2, (-1,-1,-1,0,0,0,0)),
-       (Equivalent_Places(size=7, none_equivalent=True), 2, (-1,0,0,0,0,1,1)),
-       (Equivalent_Places(size=7, none_equivalent=True), 2, (-1,1,1,1,1,1,1)),
+       (Equivalent_Places(size=3, none_equivalent=True), 1, (1,1,1)),
+       (Equivalent_Places(size=6, none_equivalent=True), 3, (0,1,1,1,1,1)),
+       (Equivalent_Places(size=7, none_equivalent=True), 2, (0,0,0,0,1,1,1)),
+       (Equivalent_Places(size=7, none_equivalent=True), 2, (0,0,0,1,1,1,1)),
+       (Equivalent_Places(size=7, none_equivalent=True), 2, (1,1,1,1,1,1,1)),
 
-       (Equivalent_Places(size=3, none_equivalent=True), None, (-1,-1,-1)),
-       (Equivalent_Places(size=6, none_equivalent=True), None, (-1,0,1,1,1,1)),
-       (Equivalent_Places(size=7, none_equivalent=True), None, (-1,-1,-1,0,0,0,0)),
-       (Equivalent_Places(size=7, none_equivalent=True), None, (-1,0,0,0,0,1,1)),
-       (Equivalent_Places(size=7, none_equivalent=True), None, (-1,1,1,1,1,1,1)),
+       (Equivalent_Places(size=3, none_equivalent=True), None, (1,1,1)),
+       (Equivalent_Places(size=6, none_equivalent=True), None, (0,1,1,1,1,1)),
+       (Equivalent_Places(size=7, none_equivalent=True), None, (0,0,0,0,1,1,1)),
+       (Equivalent_Places(size=7, none_equivalent=True), None, (0,0,0,1,1,1,1)),
+       (Equivalent_Places(size=7, none_equivalent=True), None, (1,1,1,1,1,1,1)),
      ]
     
      from itertools import chain
@@ -575,14 +575,14 @@ def test_start_vertex_matches_given_equivalent_places():
                  (generate_all_vertex_matches_given_equivalent_places_IMPLEMENTATION_B, generate_all_vertex_matches_given_equivalent_places),
              ):
              print(f"================== Testing startup of vertex MATCH generators with e_places={e_places}, k={k}, start={start} =======")
+             print("First, without using 'start=', spot where our start tuple is in the generation sequence:")
              start_pos = None
              for i, (lesters, itertoolss) in enumerate(zip_longest(method_with_start(equivalent_places=e_places, k=k), method_without_start(equivalent_places=e_places, k=k))):
                  print(f"{i}:         {lesters} {'==' if lesters==itertoolss else '!='} {itertoolss}")
                  if lesters == start and start_pos == None:
                     start_pos = i
                  assert lesters==itertoolss
-             print("Match confirmed!")
-             assert start_pos is not None
+             assert start_pos is not None, "Failed to find start pos in vanilla run. Bad unit test!"
              print(f"Start pos determined to be {start_pos}.")
              for i, (lesters, itertoolss) in enumerate(zip_longest(chain(iter([None,]*start_pos),method_with_start(equivalent_places=e_places, k=k, start=start)), method_without_start(equivalent_places=e_places, k=k))):
                  if i < start_pos:
@@ -590,8 +590,10 @@ def test_start_vertex_matches_given_equivalent_places():
                  else:
                      print(f"{i}:         {lesters} {'==' if lesters==itertoolss else '!='} {itertoolss}")
                      assert lesters==itertoolss
+             print("Match confirmed!")
 
-                    
+
+
 
 def test_matrice_some_other_way():
     print("== Test of Matrix Generation =========")
