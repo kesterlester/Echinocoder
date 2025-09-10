@@ -1,4 +1,5 @@
 Would a nullspace hash in alpha space work? 
+Also, nullspace currently recomputes RREF. Can we push RREF into the nullspace calculator as we already have it?
 
 In Notes (apple) I have evidence that results are not reproducible. Currently assuming generation of B matrix or testing of collapse.
 
