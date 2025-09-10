@@ -1,7 +1,7 @@
 """
-A viable RRE-form match-matrix "RRE" is one that can be solved for
+A viable RRE-form match-matrix "RREF" is one that can be solved for
 
-    RRE . ( alpha1 w1, alpha2 w2, ... , alphaM wM)^T = 0
+    RREF . ( alpha1 w1, alpha2 w2, ... , alphaM wM)^T = 0
 
 for fixed general position w1, w2, ... , wM (each in k-dims) with
 all alphas being non-zero.  For short "without causing collapse".
@@ -12,21 +12,21 @@ position p(r)) satisfying:
 
     p(r) <= M - (R-r)k - 1     for 0 <= r < R.     (*)
 
-Further more, a viable RRE matrix so trimmed cannot have more than (M-1)/k rows, i.e.:
+Furthermore, a viable RREF matrix so trimmed cannot have more than (M-1)/k rows, i.e.:
 
     R <= (M-1)/k.                                  (**)
 
 Proofs:
 
-The "best case scenario" for solving a vertex-match matric in zero-trimmed RRE-form
+The "best case scenario" for solving a vertex-match matrix in zero-trimmed RRE-form
 is that every element (other than those in the pivot columns, or below the staircase)
 are non-zero.
 
 Taking as an example:
 
-    RRE_MATRIX(R=3 rows, M=10 columns), with k=2 dimesions.
+    RREF_MATRIX(R=3 rows, M=10 columns), with k=2 dimesions.
 
-In this example, the TIGHTEST (i.e. only just viable) RRE_MATRIX that could be solved
+In this example, the TIGHTEST (i.e. only just viable) RREF_MATRIX that could be solved
 would be as follows (in which "x" means something non-zero, and "a" means anything):
 
 0001x0x0aa     Row r=0, Pivot pos here = 3 = M-3k-1 = M-(3-0)k-1 = M - (R-r)k - 1.
@@ -91,26 +91,26 @@ def strip_zero_rows(M: sp.Matrix) -> sp.Matrix:
     nonzero_rows = [i for i in range(M.rows) if any(M[i, j] != 0 for j in range(M.cols))]
     return M[nonzero_rows, :]
 
-def max_pivot_positions_for_viable_stripped_RRE_matrix(RRE_matrix_shape, k,):
+def max_pivot_positions_for_viable_stripped_RRE_matrix(RREF_matrix_shape, k, ):
     # Assumes RRE matrix has been stripped of rows with all zeros.
     # RRE matrix has R rows and M columns.
     # k is the number of dimensions of space.
     #
     # p(r) <= M - (R-r)k - 1     for 0 <= r < R.   See (*) in docstring at top of this file.
    
-    R, M = RRE_matrix_shape
+    R, M = RREF_matrix_shape
 
     return (M - (R-r)*k - 1 for r in range(R))
 
-def pivot_positions_are_all_viable_for_stripped_RRE_matrix(RRE_matrix_shape, pivot_positions, k,):
+def pivot_positions_are_all_viable_for_stripped_RRE_matrix(RREF_matrix_shape, pivot_positions, k, ):
     # Assumes RRE matrix has been stripped of rows with all zeros.
     # k is the number of dimensions of space.
     
-    max_pivot_positions = max_pivot_positions_for_viable_stripped_RRE_matrix(RRE_matrix_shape, k)
+    max_pivot_positions = max_pivot_positions_for_viable_stripped_RRE_matrix(RREF_matrix_shape, k)
 
     return all( pivot_pos <= max_pivot_pos for pivot_pos, max_pivot_pos in zip(pivot_positions, max_pivot_positions))
 
-def max_rows_for_viable_stripped_RRE_matrix(M, k):
+def max_rows_for_viable_stripped_RREF_matrix(M, k):
     """
     This is the maximum number of rows that an RRE matrix (with zero rows stripped!)
     can have if it is to be viable.

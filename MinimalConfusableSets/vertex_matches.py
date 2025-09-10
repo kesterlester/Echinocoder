@@ -457,7 +457,7 @@ def generate_viable_vertex_match_matrices(
     if return_confusable_sets and confusable_sets_or_None_function == None:
         raise ValueError("You cannot ask to return confusable sets unless you also supply a confusable_sets_or_None_function.")
 
-    max_rows = sympy_tools.max_rows_for_viable_stripped_RRE_matrix(M=M, k=k)
+    max_rows = sympy_tools.max_rows_for_viable_stripped_RREF_matrix(M=M, k=k)
 
     calculate_hashable_rre_early = remove_duplicates_via_hash
     calculate_hashable_rre_late = return_hashable_rre and not calculate_hashable_rre_early
