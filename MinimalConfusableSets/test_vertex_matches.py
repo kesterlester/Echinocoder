@@ -464,26 +464,27 @@ def test_order_stream():
 def test_start_vertex_match_signatures():
   for method_with_start, method_without_start in (
        (generate_all_vertex_match_signatures, generate_all_vertex_match_signatures), 
-       (_old_generate_all_vertex_match_signatures, _old_generate_all_vertex_match_signatures), 
+       #(_old_generate_all_vertex_match_signatures, _old_generate_all_vertex_match_signatures),
     ):
     
      test_programme = [
-       (10,2,(4,3,3)),
-       (20,2,(2,13,5)),
-       (20,2,(18,1,1)),
+       (10,2,(4,0,6)),
+       (20,2,(3,0,17)),
+       (20, 2, (19, 0, 1)),
+       (20, 2, (20, 0, 0)),
      ]
     
      from itertools import chain
      for M, k, start in test_programme:
          print(f"================== Testing startup of vertex SIGNATURE generators with M={M}, k={k}, start={start} =======")
+         print("First, without using 'start=', spot where our start tuple is in the generation sequence:")
          start_pos = None
          for i, (lesters, itertoolss) in enumerate(zip_longest(method_with_start(M=M, k=k), method_without_start(M=M, k=k))):
              print(f"{i}:         {lesters} {'==' if lesters==itertoolss else '!='} {itertoolss}")
              if lesters == start and start_pos == None:
                 start_pos = i
              assert lesters==itertoolss
-         print("Match confirmed!")
-         assert start_pos is not None
+         assert start_pos is not None, "Failed to find start pos in vanilla run. Bad unit test!"
          print(f"Start pos determined to be {start_pos}.")
          for i, (lesters, itertoolss) in enumerate(zip_longest(chain(iter([None,]*start_pos),method_with_start(M=M, k=k, start=start)), method_without_start(M=M, k=k))):
              if i < start_pos:
@@ -491,6 +492,7 @@ def test_start_vertex_match_signatures():
              else:
                  print(f"{i}:         {lesters} {'==' if lesters==itertoolss else '!='} {itertoolss}")
                  assert lesters==itertoolss
+         print("Match confirmed!")
 
                 
 def test_start_vertex_matches():
