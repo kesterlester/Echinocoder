@@ -102,9 +102,9 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False):
       
 
             for name, mat_gen, decider in (
-                    (f"FAST", mat_gen_1, collapse_checker_1),
-                    (f"SLOW", mat_gen_2, collapse_checker_2),
                     (f"VSLW", mat_gen_3, collapse_checker_3),
+                    (f"SLOW", mat_gen_2, collapse_checker_2),
+                    (f"FAST", mat_gen_1, collapse_checker_1),
                     ):
 
                 print("")
