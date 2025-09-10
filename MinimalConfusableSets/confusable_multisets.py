@@ -1,5 +1,6 @@
 import sympy as sp
 import sympy_tools as spt
+from math import sqrt
 
 def size_of_confusable_multiset_formed_from(B_scaled, # B_scaled is a SCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are these rows
                               ):
@@ -338,10 +339,10 @@ def old_plot_with_rings(counter, color, label, double_count = False):
         plt.scatter([x], [y], color=color, alpha=0.7, s=20, edgecolor='black')
         # add rings if mult > 1
         for r in range(1, mult):
-            from math import sqrt
             circle = plt.Circle((x, y), radius=0.015*sqrt(r)*scale, fill=False,
                                 edgecolor=color, linewidth=0.8, alpha=0.8)
             plt.gca().add_patch(circle)
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # registers 3D projection
 
@@ -355,19 +356,40 @@ def plot_with_rings(counter, color, label, double_count=False):
     if not counter:
         return
 
+    if counter.total()==0:
+        # nothing to plot
+        return
+
     dim = len(next(iter(counter.keys())))
     ax = plt.gca()
+
+    if dim==2:
+        max_x = max(x for (x, _), _ in counter.items())
+        min_x = min(x for (x, _), _ in counter.items())
+        max_y = max(y for (_, y), _ in counter.items())
+        min_y = min(y for (_, y), _ in counter.items())
+        scale = max((max_x - min_x, max_y - min_y))
+    elif dim==3:
+        max_x = max(x for (x, _, _), _ in counter.items())
+        min_x = min(x for (x, _, _), _ in counter.items())
+        max_y = max(y for (_, y, _), _ in counter.items())
+        min_y = min(y for (_, y, _), _ in counter.items())
+        max_z = max(z for (_, _, z), _ in counter.items())
+        min_z = min(z for (_, _, z), _ in counter.items())
+        scale = max((max_x - min_x, max_y - min_y, max_z-min_z))
+    else:
+        raise NotImplementedError("Ranging for dims greater than 3 is not yet implemented.")
 
     if dim == 2:
         # --- 2D mode with rings ---
         for (x, y), mult in counter.items():
             if double_count: mult*=2
             x, y = float(x), float(y)
-            ax.scatter([x], [y], color=color, alpha=0.7, s=50,
+            ax.scatter([x], [y], color=color, alpha=0.7, s=20,
                        edgecolor='black', label=label)
             label = None  # only use label once
             for r in range(1, mult):
-                circ = plt.Circle((x, y), radius=0.15*r, fill=False,
+                circ = plt.Circle((x, y), radius=0.015*sqrt(r)*scale, fill=False,
                                   edgecolor=color, linewidth=1.2, alpha=0.8)
                 ax.add_patch(circ)
 
@@ -393,80 +415,15 @@ def plot_with_rings(counter, color, label, double_count=False):
         for pt, mult in counter.items():
             if double_count: mult*=2
             x, y = float(pt[0]), float(pt[1])
-            ax.scatter([x], [y], color=color, alpha=0.7, s=50,
+            ax.scatter([x], [y], color=color, alpha=0.7, s=20,
                        edgecolor='black', label=label)
             label = None
             for r in range(1, mult):
-                circ = plt.Circle((x, y), radius=0.15*r, fill=False,
+                circ = plt.Circle((x, y), radius=0.015*sqrt(r)*scale, fill=False,
                                   edgecolor=color, linewidth=1.2, alpha=0.8)
                 ax.add_patch(circ)
 
 
-def trial_plot_with_rings(counter, color, label, ax=None, double_count=False):
-    """
-    Plot multiset points with multiplicities.
-    - For 2D: solid dot + concentric rings.
-    - For 3D: marker size encodes multiplicity.
-    - For higher dims: fall back to first 2 components.
-    """
-    if not counter:
-        return
-
-    # infer dimension from first key
-    dim = len(next(iter(counter.keys())))
-
-    # create axes if none provided
-    if ax is None:
-        if dim == 3:
-            fig = plt.figure(figsize=(6, 6))
-            ax = fig.add_subplot(111, projection='3d')
-        else:
-            fig, ax = plt.subplots(figsize=(6, 6))
-
-    if dim == 2:
-        # --- 2D mode with rings ---
-        for (x, y), mult in counter.items():
-            if double_count:
-                mult *= 2
-            # base filled dot
-            ax.scatter([x], [y], color=color, alpha=0.7, s=50, edgecolor='black', label=label)
-            label = None  # prevent duplicate labels
-            # add rings
-            for r in range(1, mult):
-                circ = plt.Circle((x, y), radius=0.15*r, fill=False,
-                                  edgecolor=color, linewidth=1.2, alpha=0.8)
-                ax.add_patch(circ)
-
-    elif dim == 3:
-        # --- 3D mode, multiplicity via marker size ---
-        xs, ys, zs, sizes = [], [], [], []
-        for (x, y, z), mult in counter.items():
-            if double_count:
-                mult *= 2
-            xs.append(x)
-            ys.append(y)
-            zs.append(z)
-            # scale size gently with multiplicity
-            sizes.append(40 + 30*(mult-1))
-        ax.scatter(xs, ys, zs, color=color, alpha=0.7, s=sizes,
-                   edgecolor='black', label=label)
-
-    else:
-        # --- fallback: project to first 2 components ---
-        print(f"[plot_with_rings] Warning: dim={dim}>3, projecting to 2D.")
-        for pt, mult in counter.items():
-            if double_count:
-                mult *= 2
-            x, y = pt[0], pt[1]
-            ax.scatter([x], [y], color=color, alpha=0.7, s=50,
-                       edgecolor='black', label=label)
-            label = None
-            for r in range(1, mult):
-                circ = plt.Circle((x, y), radius=0.15*r, fill=False,
-                                  edgecolor=color, linewidth=1.2, alpha=0.8)
-                ax.add_patch(circ)
-
-    return ax
 
 def analyze_B(scaled_bad_bat_matrix: Matrix, title_add ="",
               debug=False, try_to_plot = True,
