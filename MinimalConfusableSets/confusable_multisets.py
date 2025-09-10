@@ -434,6 +434,8 @@ def analyze_B(scaled_bad_bat_matrix: Matrix, title_add ="",
     """Compute and summarize E,O,C,EE,OO. If k=2, also make scatter plot."""
     E, O, C, EE, OO = mitm_compute_E_O_C_EE_OO(scaled_bad_bat_matrix)
 
+    M, k = scaled_bad_bat_matrix.shape
+
     if debug:
         print(f"Scaled bad bat matrix: {scaled_bad_bat_matrix.shape[0]}x{scaled_bad_bat_matrix.shape[1]}")
         print(f"  Distinct |E|={len(E)}, |O|={len(O)}")
@@ -454,7 +456,7 @@ def analyze_B(scaled_bad_bat_matrix: Matrix, title_add ="",
             plot_with_rings(C,  color="green", label="C", double_count=True)
         #plt.legend(["EE","OO","C"])
         plt.gca().set_aspect("equal", adjustable="box")
-        plt.title(title_add + f"\nConfusable sets of size {EE.total()}\n(EE=red, OO=blue, C=green)")
+        plt.title(title_add + f"\nConfusable sets of size {EE.total()} for M={M}, k={k}\n(EE=red, OO=blue, C=green)")
         plt.show()
 
     return E, O, C, EE, OO
@@ -466,6 +468,11 @@ def demo():
 
     scaled_bad_bats_M7k3 = sp.ImmutableDenseMatrix([[Rational(846339635568568320615535800, 39552309291267152811577), Rational(-211895659946238530725168272, 39552309291267152811577), Rational(-570977642691572355566887176, 39552309291267152811577)], [Rational(-1660721099925955406255386400, 118656927873801458434731), Rational(2934958208582377808040309715, 118656927873801458434731), Rational(-1089848221826408235355097325, 39552309291267152811577)], [Rational(10168732570317317945339997515, 237313855747602916869462), Rational(1703244585904896448435423675, 39552309291267152811577), Rational(10800745029427560372163695151, 237313855747602916869462)], [Rational(-4064330700823362155565441489, 79104618582534305623154), Rational(-12382903778792177825228586335, 118656927873801458434731), Rational(6751801748311561961771984435, 237313855747602916869462)], [Rational(133831959296634705086942476, 118656927873801458434731), Rational(4973898792333826264057510411, 118656927873801458434731), Rational(-1264598598438539798067295430, 39552309291267152811577)], [Rational(-60360917979435175285391912, 39552309291267152811577), Rational(127747876473061361453205057, 39552309291267152811577), Rational(3670596363614301199787346, 39552309291267152811577)], [Integer(4748), Integer(-19311), Integer(-9925)]])
     E, O, C, EE, OO = analyze_B(scaled_bad_bats_M7k3, show_C_if_plotting = False)
+
+    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3]])
+    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = False)
+    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2]])
+    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = False)
 
     B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3]])
     E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = True)
