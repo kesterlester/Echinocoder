@@ -1,5 +1,13 @@
 M=11 k=5 disagrees for the without minus-ones vs with minus-ones versions.  Without makes 994, whereas with makes 992.
 
+Note, also, that
+
+VSLW AT END:  for M=10, k=2 the smallest confusable sets have size 192,
+SLOW AT END:  for M=10, k=2 the smallest confusable sets have size 192,
+FAST AT END:  for M=10, k=2 the smallest confusable sets have size 172,
+
+with sigmas of 10000, 100, 10 resepectively.  So FAST bats were not good enough!
+
 
 In Notes (apple) I have evidence that results are not reproducible. Currently assuming generation of B matrix or testing of collapse.
 
