@@ -55,7 +55,7 @@ def generate_all_vertex_match_signatures(
     ):
     """
     The signature of a vertex match is how many ones, minus ones and zeros it has.
-    We yield triplets of numbers having the order (number_ones, number_minus_ones, number_zeros).
+    We yield triplets of numbers having the order (number_minus_ones, number_ones, number_zeros).
 
     If suplied and not None, start must be a tuple containing a signature which the method would ordinarily generate, and as a consequence the generator will start here.
 
