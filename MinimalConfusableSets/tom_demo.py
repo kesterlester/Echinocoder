@@ -36,11 +36,11 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False):
         debug = False
 
         print("Creating fast decider")
-        collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=10, starting_sigma=1)
+        collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=10, starting_sigma=10) # 1
         print("Creating slow decider")
-        collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=0, starting_sigma=100)
+        collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=0, starting_sigma=100) # 100
         print("Creating vslow decider")
-        collapse_checker_3 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=100, starting_sigma=10000)
+        collapse_checker_3 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=100, starting_sigma=10000) # 10000
         print("done")
         collapse_checking_function_1 = collapse_checker_1.function_factory()
         collapse_checking_function_2 = collapse_checker_2.function_factory()
@@ -102,9 +102,9 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False):
       
 
             for name, mat_gen, decider in (
-                #    (f"SLOW sort={sort_cols}", mat_gen_2, collapse_checker_2),
-                    (f"VSLW sort={sort_cols} scale_cols={scale_cols}", mat_gen_3, collapse_checker_3),
-                #    (f"FAST sort={sort_cols}", mat_gen_1, collapse_checker_1),
+                    (f"FAST", mat_gen_1, collapse_checker_1),
+                    (f"SLOW", mat_gen_2, collapse_checker_2),
+                    (f"VSLW", mat_gen_3, collapse_checker_3),
                     ):
 
                 print("")

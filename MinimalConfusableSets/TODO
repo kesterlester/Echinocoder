@@ -1,3 +1,6 @@
+M=11 k=5 disagrees for the without minus-ones vs with minus-ones versions.  Without makes 994, whereas with makes 992.
+
+
 In Notes (apple) I have evidence that results are not reproducible. Currently assuming generation of B matrix or testing of collapse.
 
 I could add a check of both the tom decider-function and the 'don't go deeper as the rre is already as tall as it can be' functions by turning the latter test on and off and checking that the matrices generated are the same in both cases (albeit slower to generate in one case).

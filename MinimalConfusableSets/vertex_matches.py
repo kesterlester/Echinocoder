@@ -56,13 +56,11 @@ def generate_all_vertex_match_signatures(
     """
     The signature of a vertex match is how many ones, minus ones and zeros it has.
 
-    WE NEVER HAVE MINUS ONES
+    WE NEVER HAVE MINUS ONES.  Yet for historical reasons wee yield triplets of numbers having the order (number_ones, number_minus_ones, number_zeros).
 
-    We yield triplets of numbers having the order (number_ones, number_minus_ones, number_zeros).
+    If suplied and not None, start must be a tuple (i.e. a signature) which the method would ordinarily generate, and as a consequence the generator will start here.
 
-    If suplied and not None, start must be a tuple containing a signature which the method would ordinarily generate, and as a consequence the generator will start here.
-
-    Vertex matches have M entries in total, comprising an even number of +1 and and odd number of -1 entries, and others zero.
+    Vertex matches have M entries in total.
 
     "Useful" vertex matches have at least k+1 non-zero entries (because all sums of <=k linearly dependent non-zero things in k-dimes are non-zero).
 
@@ -85,23 +83,21 @@ def generate_all_vertex_match_signatures(
     #    return
 
     if start is not None:
-        if len(start) != 3:
-            raise ValueError(f"len(start) should equal 3 but is {len(start)}. start={start}.")
-        if sum(start) != M:
-            raise ValueError(f"sum(start) should equal {M} but is {sum(start)}. start={start}.")
-        if True in ((int(c) != c or c<0) for c in start):
-            raise ValueError(f"start should be a tuple of non-negative integers but start={start}.")
+        assert len(start) == 3, f"len(start) should equal 3 but is {len(start)}. start={start}."
+        assert sum(start) == M, f"sum(start) should equal {M} but is {sum(start)}. start={start}."
+        assert not (True in ((int(c) != c or c<0) for c in start)), f"start should be a tuple of non-negative integers but start={start}."
 
-        start_ones, start_minus_ones, start_zeros = start  # Historically minus ones appeared
-        assert start_minus_ones == 0 # We never have minus ones!
-
-        # Work backwards to start of e_among_pairs and start of z_among_pairs by reverse engineering yield line:
-        start_e_among_pairs = start_e
-        start_o_among_pairs = start_o - 1 # See (*) above and (*) below.
-        start_z_among_pairs = total_among_pairs - start_e_among_pairs - start_o_among_pairs
-        starting = True
+        start_ones, start_minus_ones, start_zeros = start  # Historically minus ones appeared!
+        assert start_minus_ones == 0 # But we no longer have minus ones!
     else:
-        starting = False
+        if k is None:
+            start_ones = 0
+        else:
+            start_ones = k+1
+
+    for ones in range(start_ones, M+1):
+        # Report the number iof ones, minus ones and zeros as a triple:
+        yield ones, 0, M-ones # TODO: Prune code to get rid of the unnecessary zero reporting?
 
 
 def old_tripartite_generate_all_vertex_match_signatures(
@@ -112,6 +108,9 @@ def old_tripartite_generate_all_vertex_match_signatures(
     """
     The signature of a vertex match is how many ones, minus ones and zeros it has.
     We yield triplets of numbers having the order (number_minus_ones, number_ones, number_zeros).
+=======
+    We yield triplets of numbers having the order (number_ones, number_minus_ones, number_zeros).
+>>>>>>> main
 
     If suplied and not None, start must be a tuple containing a signature which the method would ordinarily generate, and as a consequence the generator will start here.
 
