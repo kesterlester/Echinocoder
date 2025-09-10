@@ -1,5 +1,6 @@
 import sympy as sp
 import sympy_tools as spt
+from math import sqrt
 
 def size_of_confusable_multiset_formed_from(B_scaled, # B_scaled is a SCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are these rows
                               ):
@@ -98,7 +99,7 @@ def convolve_counters(A: Counter, B: Counter):
     return out
 
 def mitm_compute_E_O_C_EE_OO(scaled_bad_bat_matrix: Matrix):
-    """Meet-in-the-middle computation of E, O, C, EE, OO for matrix B."""
+    """Meet-in-the-middle computation of E, O, C, EE, OO for scaled_bad_bat_matrix."""
     m, k = scaled_bad_bat_matrix.shape
     rows = _row_tuple_rows([scaled_bad_bat_matrix.row(i) for i in range(m)])
     if m>=2: #2: # could change 2 to a number bigger than 2, but not less than 2 as otherwise split leads ot empty row
@@ -319,7 +320,7 @@ def alpha_attacking_matrix(
 
 
 
-def plot_with_rings(counter, color, label, double_count = False):
+def old_plot_with_rings(counter, color, label, double_count = False):
     """Plot points with concentric rings for multiplicity."""
     if counter.total()==0:
         # nothing to plot
@@ -338,13 +339,97 @@ def plot_with_rings(counter, color, label, double_count = False):
         plt.scatter([x], [y], color=color, alpha=0.7, s=20, edgecolor='black')
         # add rings if mult > 1
         for r in range(1, mult):
-            from math import sqrt
             circle = plt.Circle((x, y), radius=0.015*sqrt(r)*scale, fill=False,
                                 edgecolor=color, linewidth=0.8, alpha=0.8)
             plt.gca().add_patch(circle)
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # registers 3D projection
+
+def plot_with_rings(counter, color, label, double_count=False):
+    """
+    Plot multiset points with multiplicities.
+    - For 2D: solid dot + concentric rings.
+    - For 3D: marker size encodes multiplicity.
+    - For higher dims: project to first 2 components.
+    """
+    if not counter:
+        return
+
+    if counter.total()==0:
+        # nothing to plot
+        return
+
+    dim = len(next(iter(counter.keys())))
+    ax = plt.gca()
+
+    if dim==2:
+        max_x = max(x for (x, _), _ in counter.items())
+        min_x = min(x for (x, _), _ in counter.items())
+        max_y = max(y for (_, y), _ in counter.items())
+        min_y = min(y for (_, y), _ in counter.items())
+        scale = max((max_x - min_x, max_y - min_y))
+    elif dim==3:
+        max_x = max(x for (x, _, _), _ in counter.items())
+        min_x = min(x for (x, _, _), _ in counter.items())
+        max_y = max(y for (_, y, _), _ in counter.items())
+        min_y = min(y for (_, y, _), _ in counter.items())
+        max_z = max(z for (_, _, z), _ in counter.items())
+        min_z = min(z for (_, _, z), _ in counter.items())
+        scale = max((max_x - min_x, max_y - min_y, max_z-min_z))
+    else:
+        raise NotImplementedError("Ranging for dims greater than 3 is not yet implemented.")
+
+    if dim == 2:
+        # --- 2D mode with rings ---
+        for (x, y), mult in counter.items():
+            if double_count: mult*=2
+            x, y = float(x), float(y)
+            ax.scatter([x], [y], color=color, alpha=0.7, s=20,
+                       edgecolor='black', label=label)
+            label = None  # only use label once
+            for r in range(1, mult):
+                circ = plt.Circle((x, y), radius=0.015*sqrt(r)*scale, fill=False,
+                                  edgecolor=color, linewidth=1.2, alpha=0.8)
+                ax.add_patch(circ)
+
+    elif dim == 3:
+        # --- 3D mode ---
+        if ax.name != "3d":
+            # upgrade axes to 3D
+            ax = plt.gcf().add_subplot(111, projection="3d")
+
+        xs, ys, zs, sizes = [], [], [], []
+        for (x, y, z), mult in counter.items():
+            if double_count: mult*=2
+            xs.append(float(x))
+            ys.append(float(y))
+            zs.append(float(z))
+            sizes.append(float(40 + 30*(mult-1)))
+            if mult > 1:
+               sc = scale*0.02
+               ax.text(float(x+sc), float(y+sc), float(z+sc), str(mult), fontsize=8, color=color)
+        ax.scatter(xs, ys, zs, color=color, alpha=0.7, s=sizes,
+                   edgecolor='black', label=label)
+
+    else:
+        # --- fallback: project higher dims to first 2 coords ---
+        print(f"[plot_with_rings] Warning: dim={dim}>3, projecting to 2D.")
+        for pt, mult in counter.items():
+            if double_count: mult*=2
+            x, y = float(pt[0]), float(pt[1])
+            ax.scatter([x], [y], color=color, alpha=0.7, s=20,
+                       edgecolor='black', label=label)
+            label = None
+            for r in range(1, mult):
+                circ = plt.Circle((x, y), radius=0.015*sqrt(r)*scale, fill=False,
+                                  edgecolor=color, linewidth=1.2, alpha=0.8)
+                ax.add_patch(circ)
+
+
+
 def analyze_B(scaled_bad_bat_matrix: Matrix, title_add ="",
-              debug=False, plot_if_2d = True,
+              debug=False, try_to_plot = True,
               show_C_if_plotting = False):
     """Compute and summarize E,O,C,EE,OO. If k=2, also make scatter plot."""
     E, O, C, EE, OO = mitm_compute_E_O_C_EE_OO(scaled_bad_bat_matrix)
@@ -358,7 +443,7 @@ def analyze_B(scaled_bad_bat_matrix: Matrix, title_add ="",
               f"should equal sum(E)+sum(O) = {sum(E.values())+sum(O.values())}")
 
     # Plot only if 2D
-    if plot_if_2d and scaled_bad_bat_matrix.shape[1] == 2:
+    if try_to_plot and scaled_bad_bat_matrix.shape[1] >= 1:
         plt.figure(figsize=(6,6))
         #print("Plotting EE")
         plot_with_rings(EE, color="red", label="EE")
@@ -375,83 +460,93 @@ def analyze_B(scaled_bad_bat_matrix: Matrix, title_add ="",
     return E, O, C, EE, OO
 
 def demo():
-    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3]])
-    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = True)
-
-    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3]])
-    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = False)
-
-    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3], [2,2]])
-    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = True)
-
-    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3], [2,2]])
-    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = False)
-
     ImmutableDenseMatrix = sp.ImmutableDenseMatrix
     Rational = sp.Rational
     Integer = sp.Integer
 
+    scaled_bad_bats_M7k3 = sp.ImmutableDenseMatrix([[Rational(846339635568568320615535800, 39552309291267152811577), Rational(-211895659946238530725168272, 39552309291267152811577), Rational(-570977642691572355566887176, 39552309291267152811577)], [Rational(-1660721099925955406255386400, 118656927873801458434731), Rational(2934958208582377808040309715, 118656927873801458434731), Rational(-1089848221826408235355097325, 39552309291267152811577)], [Rational(10168732570317317945339997515, 237313855747602916869462), Rational(1703244585904896448435423675, 39552309291267152811577), Rational(10800745029427560372163695151, 237313855747602916869462)], [Rational(-4064330700823362155565441489, 79104618582534305623154), Rational(-12382903778792177825228586335, 118656927873801458434731), Rational(6751801748311561961771984435, 237313855747602916869462)], [Rational(133831959296634705086942476, 118656927873801458434731), Rational(4973898792333826264057510411, 118656927873801458434731), Rational(-1264598598438539798067295430, 39552309291267152811577)], [Rational(-60360917979435175285391912, 39552309291267152811577), Rational(127747876473061361453205057, 39552309291267152811577), Rational(3670596363614301199787346, 39552309291267152811577)], [Integer(4748), Integer(-19311), Integer(-9925)]])
+    E, O, C, EE, OO = analyze_B(scaled_bad_bats_M7k3, show_C_if_plotting = False)
 
-    # M=9, k=2 update:
-    #VSLW sort=False SO FAR:
-    #VSLW sort=False SO FAR:  for M=9, k=2 the smallest confusable sets have size 99,
-    #VSLW sort=False SO FAR:  raw=
-    #VSLW sort=False SO FAR:  Matrix([
-    #VSLW sort=False SO FAR:  [-1, -1, -1, -1, -1, -1, -1, -1, -1],
-    #VSLW sort=False SO FAR:  [-1, -1, -1, -1, -1,  0,  0,  0,  0],
-    #VSLW sort=False SO FAR:  [-1, -1,  0,  0,  0, -1, -1, -1,  0],
-    #VSLW sort=False SO FAR:  [ 0,  0, -1, -1,  0, -1, -1,  0, -1]]),
-    #VSLW sort=False SO FAR:  rre=
-    #VSLW sort=False SO FAR:  Matrix([
-    #VSLW sort=False SO FAR:  [1, 1, 0, 0, 0, 0, 0,  0, -1],
-    #VSLW sort=False SO FAR:  [0, 0, 1, 1, 0, 0, 0, -1,  0],
-    #VSLW sort=False SO FAR:  [0, 0, 0, 0, 1, 0, 0,  1,  1],
-    #VSLW sort=False SO FAR:  [0, 0, 0, 0, 0, 1, 1,  1,  1]]),
-    #VSLW sort=False SO FAR:  unscaled_bad_bats=
-    #VSLW sort=False SO FAR:  Matrix([
-    #VSLW sort=False SO FAR:  [-11575,  2898],
-    #VSLW sort=False SO FAR:  [  7809,  5440],
-    #VSLW sort=False SO FAR:  [ -9614, 10710],
-    #VSLW sort=False SO FAR:  [  7015,  7050],
-    #VSLW sort=False SO FAR:  [  7451, 11043],
-    #VSLW sort=False SO FAR:  [ 22430, -6115],
-    #VSLW sort=False SO FAR:  [   472, 17542],
-    #VSLW sort=False SO FAR:  [-13380,  3256],
-    #VSLW sort=False SO FAR:  [ -6891,  -198]]),
-    #VSLW sort=False SO FAR:  scalings=MutableDenseMatrix([[Rational(17970429, 42799241)], [Rational(-11130984, 42799241)], [Rational(-14572415930046, 40971109326821)], [Rational(69645109659177, 204855546634105)], [Rational(6271584, 43003949)], [Rational(65586733880272, 1420396568278305)], [Rational(30653135591672, 284079313655661)], [Rational(-74622015, 172015796)], [Integer(1)]])
-    #VSLW sort=False SO FAR:  scalingsSREPR=MutableDenseMatrix([[Rational(17970429, 42799241)], [Rational(-11130984, 42799241)], [Rational(-14572415930046, 40971109326821)], [Rational(69645109659177, 204855546634105)], [Rational(6271584, 43003949)], [Rational(65586733880272, 1420396568278305)], [Rational(30653135591672, 284079313655661)], [Rational(-74622015, 172015796)], [Integer(1)]])
-    #VSLW sort=False SO FAR:  scaled_bad_bats=
-    #VSLW sort=False SO FAR:  ImmutableDenseMatrix([[Rational(-208007715675, 42799241), Rational(52078303242, 42799241)], [Rational(-86921854056, 42799241), Rational(-60552552960, 42799241)], [Rational(6091269858759228, 1781352579427), Rational(-156070574610792660, 40971109326821)], [Rational(4248351689209797, 1781352579427), Rational(98199604619439570, 40971109326821)], [Rational(46729572384, 43003949), Rational(69257102112, 43003949)], [Rational(294222088186900192, 284079313655661), Rational(-80212575535572656, 284079313655661)], [Rational(14468279999269184, 284079313655661), Rational(537717304549110224, 284079313655661)], [Rational(249610640175, 43003949), Rational(-60742320210, 43003949)], [Integer(-6891), Integer(-198)]]).
-    #VSLW sort=False SO FAR:  212 matrices have been scanned.
-    #VSLW sort=False SO FAR:
-    #VSLW sort=False SO FAR:
+    B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3]])
+    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = True)
+
+    B = Matrix([[0, -4, 1], [2, -4, 2], [3, -3,3], [4, -2,2],])
+    E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = True)
+
+    
+    if False:
+        B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3]])
+        E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = False)
+
+        B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3], [2,2]])
+        E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = True)
+
+        B = Matrix([[0, -4], [2, -4], [3, -3], [4, -2], [4, 0], [4, 2], [3, 3], [2,2]])
+        E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = False)
 
 
-    # M=9, k=2
-    B = ImmutableDenseMatrix([[Rational(-208007715675, 42799241), Rational(52078303242, 42799241)], [Rational(-86921854056, 42799241), Rational(-60552552960, 42799241)], [Rational(6091269858759228, 1781352579427), Rational(-156070574610792660, 40971109326821)], [Rational(4248351689209797, 1781352579427), Rational(98199604619439570, 40971109326821)], [Rational(46729572384, 43003949), Rational(69257102112, 43003949)], [Rational(294222088186900192, 284079313655661), Rational(-80212575535572656, 284079313655661)], [Rational(14468279999269184, 284079313655661), Rational(537717304549110224, 284079313655661)], [Rational(249610640175, 43003949), Rational(-60742320210, 43003949)], [Integer(-6891), Integer(-198)]])
-    for x in True, False:
-        E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = x, title_add = "M=9, k=2")
 
-    # M=13, k=5
-    B = ImmutableDenseMatrix([[Rational(169287, 94868), Integer(0), Rational(56429, 94868), Rational(56429, 94868), Rational(-56429, 94868)], [Rational(43929, 47434), Integer(0), Rational(-131787, 94868), Rational(43929, 94868), Rational(-43929, 94868)], [Rational(121505, 94868), Rational(-121505, 189736), Rational(121505, 94868), Rational(-364515, 189736), Rational(121505, 47434)], [Rational(-94233, 47434), Rational(-94233, 94868), Rational(94233, 94868), Rational(471165, 94868), Integer(0)], [Integer(0), Rational(117515, 189736), Rational(-23503, 94868), Rational(23503, 189736), Rational(-23503, 94868)], [Rational(-71035, 23717), Rational(71035, 23717), Rational(71035, 94868), Rational(-213105, 94868), Rational(-213105, 94868)], [Rational(23489, 23717), Rational(-46978, 23717), Rational(-46978, 23717), Rational(-46978, 23717), Rational(23489, 23717)], [Rational(-29055, 23717), Integer(0), Integer(0), Rational(-29055, 23717), Rational(58110, 23717)], [Integer(0), Rational(48045, 23717), Rational(19218, 23717), Rational(-19218, 23717), Rational(-9609, 23717)], [Rational(-141837, 94868), Rational(47279, 23717), Rational(-47279, 47434), Rational(47279, 47434), Rational(-47279, 47434)], [Integer(-5), Integer(-2), Integer(-1), Integer(-4), Integer(-2)], [Integer(4), Integer(2), Integer(1), Integer(-1), Integer(-1)], [Integer(-1), Integer(6), Integer(1), Integer(2), Integer(-1)]])
-    for x in True, False:
-        E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = x, title_add = "M=13, k=5")
+        # M=9, k=2 update:
+        #VSLW sort=False SO FAR:
+        #VSLW sort=False SO FAR:  for M=9, k=2 the smallest confusable sets have size 99,
+        #VSLW sort=False SO FAR:  raw=
+        #VSLW sort=False SO FAR:  Matrix([
+        #VSLW sort=False SO FAR:  [-1, -1, -1, -1, -1, -1, -1, -1, -1],
+        #VSLW sort=False SO FAR:  [-1, -1, -1, -1, -1,  0,  0,  0,  0],
+        #VSLW sort=False SO FAR:  [-1, -1,  0,  0,  0, -1, -1, -1,  0],
+        #VSLW sort=False SO FAR:  [ 0,  0, -1, -1,  0, -1, -1,  0, -1]]),
+        #VSLW sort=False SO FAR:  rre=
+        #VSLW sort=False SO FAR:  Matrix([
+        #VSLW sort=False SO FAR:  [1, 1, 0, 0, 0, 0, 0,  0, -1],
+        #VSLW sort=False SO FAR:  [0, 0, 1, 1, 0, 0, 0, -1,  0],
+        #VSLW sort=False SO FAR:  [0, 0, 0, 0, 1, 0, 0,  1,  1],
+        #VSLW sort=False SO FAR:  [0, 0, 0, 0, 0, 1, 1,  1,  1]]),
+        #VSLW sort=False SO FAR:  unscaled_bad_bats=
+        #VSLW sort=False SO FAR:  Matrix([
+        #VSLW sort=False SO FAR:  [-11575,  2898],
+        #VSLW sort=False SO FAR:  [  7809,  5440],
+        #VSLW sort=False SO FAR:  [ -9614, 10710],
+        #VSLW sort=False SO FAR:  [  7015,  7050],
+        #VSLW sort=False SO FAR:  [  7451, 11043],
+        #VSLW sort=False SO FAR:  [ 22430, -6115],
+        #VSLW sort=False SO FAR:  [   472, 17542],
+        #VSLW sort=False SO FAR:  [-13380,  3256],
+        #VSLW sort=False SO FAR:  [ -6891,  -198]]),
+        #VSLW sort=False SO FAR:  scalings=MutableDenseMatrix([[Rational(17970429, 42799241)], [Rational(-11130984, 42799241)], [Rational(-14572415930046, 40971109326821)], [Rational(69645109659177, 204855546634105)], [Rational(6271584, 43003949)], [Rational(65586733880272, 1420396568278305)], [Rational(30653135591672, 284079313655661)], [Rational(-74622015, 172015796)], [Integer(1)]])
+        #VSLW sort=False SO FAR:  scalingsSREPR=MutableDenseMatrix([[Rational(17970429, 42799241)], [Rational(-11130984, 42799241)], [Rational(-14572415930046, 40971109326821)], [Rational(69645109659177, 204855546634105)], [Rational(6271584, 43003949)], [Rational(65586733880272, 1420396568278305)], [Rational(30653135591672, 284079313655661)], [Rational(-74622015, 172015796)], [Integer(1)]])
+        #VSLW sort=False SO FAR:  scaled_bad_bats=
+        #VSLW sort=False SO FAR:  ImmutableDenseMatrix([[Rational(-208007715675, 42799241), Rational(52078303242, 42799241)], [Rational(-86921854056, 42799241), Rational(-60552552960, 42799241)], [Rational(6091269858759228, 1781352579427), Rational(-156070574610792660, 40971109326821)], [Rational(4248351689209797, 1781352579427), Rational(98199604619439570, 40971109326821)], [Rational(46729572384, 43003949), Rational(69257102112, 43003949)], [Rational(294222088186900192, 284079313655661), Rational(-80212575535572656, 284079313655661)], [Rational(14468279999269184, 284079313655661), Rational(537717304549110224, 284079313655661)], [Rational(249610640175, 43003949), Rational(-60742320210, 43003949)], [Integer(-6891), Integer(-198)]]).
+        #VSLW sort=False SO FAR:  212 matrices have been scanned.
+        #VSLW sort=False SO FAR:
+        #VSLW sort=False SO FAR:
 
-    # M=11, k=3
-    #     VSLW:     478445:  raw=Matrix([
-    #                                 [-1, -1, -1, -1, -1,  0,  0,  0,  0, 0, 0],
-    #                                 [-1, -1,  0,  0,  0, -1, -1, -1,  0, 0, 0], 
-    #                                 [ 0,  0, -1, -1,  0,  0,  0,  1, -1, 0, 1],
-    # ]), rre=Matrix([
-    # [1, 1, 0, 0, 0,  1,  1,  1,  0, 0,  0],
-    # [0, 0, 1, 1, 0,  0,  0, -1,  1, 0, -1],
-    # [0, 0, 0, 0, 1, -1, -1,  0, -1, 0,  1]]), EE.total()=824, OO.total()=824
-    # VSLW: The smallest confusable sets so far have scaled bad bats ImmutableDenseMatrix([[Rational(-2504245519491118249040122727900630072700, 341859150003571766011271429186537353), Rational(89568695038386432406273072082147805624, 48837021429081680858753061312362479), Rational(1689473283948694808358904395868338681444, 341859150003571766011271429186537353)], [Rational(551555026084548715703548960439332083520, 48837021429081680858753061312362479), Rational(-974751842054568263377558769423481369662, 48837021429081680858753061312362479), Rational(1085873957603955284041362015864935039430, 48837021429081680858753061312362479)], [Rational(-525905350930859629933716378717151187755, 48837021429081680858753061312362479), Rational(-528529255033864631651133352809111314850, 48837021429081680858753061312362479), Rational(-558591699185436222756396398834140199567, 48837021429081680858753061312362479)], [Rational(311061213857843453602078447695296853447, 48837021429081680858753061312362479), Rational(631812281701659754079020155918274782470, 48837021429081680858753061312362479), Rational(-172248421872744065813339645717354003335, 48837021429081680858753061312362479)], [Rational(3980251254334877660452581675088806168, 9239436486583020703007335923960469), Rational(21132435685091532663335105249518110714, 1319919498083288671858190846280067), Rational(-112830003777543777747575302569254717220, 9239436486583020703007335923960469)], [Rational(-403503010695697194068345911624061177344, 9239436486583020703007335923960469), Rational(853973970117951278969585895884952571584, 9239436486583020703007335923960469), Rational(24537345245008613152804818950111828352, 9239436486583020703007335923960469)], [Rational(176486952942893149836009762137099177064, 9239436486583020703007335923960469), Rational(-717805296604930416276997581429975191298, 9239436486583020703007335923960469), Rational(-368920178592715777616343068494252176150, 9239436486583020703007335923960469)], [Rational(1006136353393289553673102505120414214060, 48837021429081680858753061312362479), Rational(165434444161642985310461749507881696812, 48837021429081680858753061312362479), Rational(493081978098397612643210960887186987296, 48837021429081680858753061312362479)], [Rational(33151263457585138467662082113329465769, 1319919498083288671858190846280067), Rational(-13198364542020563344791609749033287408, 1319919498083288671858190846280067), Rational(37496746212965251001275500044625902903, 1319919498083288671858190846280067)], [Integer(-4062), Integer(2714), Integer(398)], [Integer(115), Integer(-11272), Integer(3347)]]).
-    # VSLW: The smallest confusable sets so far have 824==824 points.
 
-    #########################################################
+        # M=9, k=2
+        B = ImmutableDenseMatrix([[Rational(-208007715675, 42799241), Rational(52078303242, 42799241)], [Rational(-86921854056, 42799241), Rational(-60552552960, 42799241)], [Rational(6091269858759228, 1781352579427), Rational(-156070574610792660, 40971109326821)], [Rational(4248351689209797, 1781352579427), Rational(98199604619439570, 40971109326821)], [Rational(46729572384, 43003949), Rational(69257102112, 43003949)], [Rational(294222088186900192, 284079313655661), Rational(-80212575535572656, 284079313655661)], [Rational(14468279999269184, 284079313655661), Rational(537717304549110224, 284079313655661)], [Rational(249610640175, 43003949), Rational(-60742320210, 43003949)], [Integer(-6891), Integer(-198)]])
+        for x in True, False:
+            E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = x, title_add = "M=9, k=2")
 
-    # VSLW:  M=11 and k=3 smallest confusable set was size 824 and was found after checking 1986006 match matrices. It has scaled bad bats ImmutableDenseMatrix([[Rational(-2504245519491118249040122727900630072700, 341859150003571766011271429186537353), Rational(89568695038386432406273072082147805624, 48837021429081680858753061312362479), Rational(1689473283948694808358904395868338681444, 341859150003571766011271429186537353)], [Rational(551555026084548715703548960439332083520, 48837021429081680858753061312362479), Rational(-974751842054568263377558769423481369662, 48837021429081680858753061312362479), Rational(1085873957603955284041362015864935039430, 48837021429081680858753061312362479)], [Rational(-525905350930859629933716378717151187755, 48837021429081680858753061312362479), Rational(-528529255033864631651133352809111314850, 48837021429081680858753061312362479), Rational(-558591699185436222756396398834140199567, 48837021429081680858753061312362479)], [Rational(311061213857843453602078447695296853447, 48837021429081680858753061312362479), Rational(631812281701659754079020155918274782470, 48837021429081680858753061312362479), Rational(-172248421872744065813339645717354003335, 48837021429081680858753061312362479)], [Rational(3980251254334877660452581675088806168, 9239436486583020703007335923960469), Rational(21132435685091532663335105249518110714, 1319919498083288671858190846280067), Rational(-112830003777543777747575302569254717220, 9239436486583020703007335923960469)], [Rational(-403503010695697194068345911624061177344, 9239436486583020703007335923960469), Rational(853973970117951278969585895884952571584, 9239436486583020703007335923960469), Rational(24537345245008613152804818950111828352, 9239436486583020703007335923960469)], [Rational(176486952942893149836009762137099177064, 9239436486583020703007335923960469), Rational(-717805296604930416276997581429975191298, 9239436486583020703007335923960469), Rational(-368920178592715777616343068494252176150, 9239436486583020703007335923960469)], [Rational(1006136353393289553673102505120414214060, 48837021429081680858753061312362479), Rational(165434444161642985310461749507881696812, 48837021429081680858753061312362479), Rational(493081978098397612643210960887186987296, 48837021429081680858753061312362479)], [Rational(33151263457585138467662082113329465769, 1319919498083288671858190846280067), Rational(-13198364542020563344791609749033287408, 1319919498083288671858190846280067), Rational(37496746212965251001275500044625902903, 1319919498083288671858190846280067)], [Integer(-4062), Integer(2714), Integer(398)], [Integer(115), Integer(-11272), Integer(3347)]]).
+        # M=13, k=5
+        B = ImmutableDenseMatrix([[Rational(169287, 94868), Integer(0), Rational(56429, 94868), Rational(56429, 94868), Rational(-56429, 94868)], [Rational(43929, 47434), Integer(0), Rational(-131787, 94868), Rational(43929, 94868), Rational(-43929, 94868)], [Rational(121505, 94868), Rational(-121505, 189736), Rational(121505, 94868), Rational(-364515, 189736), Rational(121505, 47434)], [Rational(-94233, 47434), Rational(-94233, 94868), Rational(94233, 94868), Rational(471165, 94868), Integer(0)], [Integer(0), Rational(117515, 189736), Rational(-23503, 94868), Rational(23503, 189736), Rational(-23503, 94868)], [Rational(-71035, 23717), Rational(71035, 23717), Rational(71035, 94868), Rational(-213105, 94868), Rational(-213105, 94868)], [Rational(23489, 23717), Rational(-46978, 23717), Rational(-46978, 23717), Rational(-46978, 23717), Rational(23489, 23717)], [Rational(-29055, 23717), Integer(0), Integer(0), Rational(-29055, 23717), Rational(58110, 23717)], [Integer(0), Rational(48045, 23717), Rational(19218, 23717), Rational(-19218, 23717), Rational(-9609, 23717)], [Rational(-141837, 94868), Rational(47279, 23717), Rational(-47279, 47434), Rational(47279, 47434), Rational(-47279, 47434)], [Integer(-5), Integer(-2), Integer(-1), Integer(-4), Integer(-2)], [Integer(4), Integer(2), Integer(1), Integer(-1), Integer(-1)], [Integer(-1), Integer(6), Integer(1), Integer(2), Integer(-1)]])
+        for x in True, False:
+            E, O, C, EE, OO = analyze_B(B, show_C_if_plotting = x, title_add = "M=13, k=5")
+
+        # M=11, k=3
+        #     VSLW:     478445:  raw=Matrix([
+        #                                 [-1, -1, -1, -1, -1,  0,  0,  0,  0, 0, 0],
+        #                                 [-1, -1,  0,  0,  0, -1, -1, -1,  0, 0, 0], 
+        #                                 [ 0,  0, -1, -1,  0,  0,  0,  1, -1, 0, 1],
+        # ]), rre=Matrix([
+        # [1, 1, 0, 0, 0,  1,  1,  1,  0, 0,  0],
+        # [0, 0, 1, 1, 0,  0,  0, -1,  1, 0, -1],
+        # [0, 0, 0, 0, 1, -1, -1,  0, -1, 0,  1]]), EE.total()=824, OO.total()=824
+        # VSLW: The smallest confusable sets so far have scaled bad bats ImmutableDenseMatrix([[Rational(-2504245519491118249040122727900630072700, 341859150003571766011271429186537353), Rational(89568695038386432406273072082147805624, 48837021429081680858753061312362479), Rational(1689473283948694808358904395868338681444, 341859150003571766011271429186537353)], [Rational(551555026084548715703548960439332083520, 48837021429081680858753061312362479), Rational(-974751842054568263377558769423481369662, 48837021429081680858753061312362479), Rational(1085873957603955284041362015864935039430, 48837021429081680858753061312362479)], [Rational(-525905350930859629933716378717151187755, 48837021429081680858753061312362479), Rational(-528529255033864631651133352809111314850, 48837021429081680858753061312362479), Rational(-558591699185436222756396398834140199567, 48837021429081680858753061312362479)], [Rational(311061213857843453602078447695296853447, 48837021429081680858753061312362479), Rational(631812281701659754079020155918274782470, 48837021429081680858753061312362479), Rational(-172248421872744065813339645717354003335, 48837021429081680858753061312362479)], [Rational(3980251254334877660452581675088806168, 9239436486583020703007335923960469), Rational(21132435685091532663335105249518110714, 1319919498083288671858190846280067), Rational(-112830003777543777747575302569254717220, 9239436486583020703007335923960469)], [Rational(-403503010695697194068345911624061177344, 9239436486583020703007335923960469), Rational(853973970117951278969585895884952571584, 9239436486583020703007335923960469), Rational(24537345245008613152804818950111828352, 9239436486583020703007335923960469)], [Rational(176486952942893149836009762137099177064, 9239436486583020703007335923960469), Rational(-717805296604930416276997581429975191298, 9239436486583020703007335923960469), Rational(-368920178592715777616343068494252176150, 9239436486583020703007335923960469)], [Rational(1006136353393289553673102505120414214060, 48837021429081680858753061312362479), Rational(165434444161642985310461749507881696812, 48837021429081680858753061312362479), Rational(493081978098397612643210960887186987296, 48837021429081680858753061312362479)], [Rational(33151263457585138467662082113329465769, 1319919498083288671858190846280067), Rational(-13198364542020563344791609749033287408, 1319919498083288671858190846280067), Rational(37496746212965251001275500044625902903, 1319919498083288671858190846280067)], [Integer(-4062), Integer(2714), Integer(398)], [Integer(115), Integer(-11272), Integer(3347)]]).
+        # VSLW: The smallest confusable sets so far have 824==824 points.
+
+        #########################################################
+
+        # VSLW:  M=11 and k=3 smallest confusable set was size 824 and was found after checking 1986006 match matrices. It has scaled bad bats ImmutableDenseMatrix([[Rational(-2504245519491118249040122727900630072700, 341859150003571766011271429186537353), Rational(89568695038386432406273072082147805624, 48837021429081680858753061312362479), Rational(1689473283948694808358904395868338681444, 341859150003571766011271429186537353)], [Rational(551555026084548715703548960439332083520, 48837021429081680858753061312362479), Rational(-974751842054568263377558769423481369662, 48837021429081680858753061312362479), Rational(1085873957603955284041362015864935039430, 48837021429081680858753061312362479)], [Rational(-525905350930859629933716378717151187755, 48837021429081680858753061312362479), Rational(-528529255033864631651133352809111314850, 48837021429081680858753061312362479), Rational(-558591699185436222756396398834140199567, 48837021429081680858753061312362479)], [Rational(311061213857843453602078447695296853447, 48837021429081680858753061312362479), Rational(631812281701659754079020155918274782470, 48837021429081680858753061312362479), Rational(-172248421872744065813339645717354003335, 48837021429081680858753061312362479)], [Rational(3980251254334877660452581675088806168, 9239436486583020703007335923960469), Rational(21132435685091532663335105249518110714, 1319919498083288671858190846280067), Rational(-112830003777543777747575302569254717220, 9239436486583020703007335923960469)], [Rational(-403503010695697194068345911624061177344, 9239436486583020703007335923960469), Rational(853973970117951278969585895884952571584, 9239436486583020703007335923960469), Rational(24537345245008613152804818950111828352, 9239436486583020703007335923960469)], [Rational(176486952942893149836009762137099177064, 9239436486583020703007335923960469), Rational(-717805296604930416276997581429975191298, 9239436486583020703007335923960469), Rational(-368920178592715777616343068494252176150, 9239436486583020703007335923960469)], [Rational(1006136353393289553673102505120414214060, 48837021429081680858753061312362479), Rational(165434444161642985310461749507881696812, 48837021429081680858753061312362479), Rational(493081978098397612643210960887186987296, 48837021429081680858753061312362479)], [Rational(33151263457585138467662082113329465769, 1319919498083288671858190846280067), Rational(-13198364542020563344791609749033287408, 1319919498083288671858190846280067), Rational(37496746212965251001275500044625902903, 1319919498083288671858190846280067)], [Integer(-4062), Integer(2714), Integer(398)], [Integer(115), Integer(-11272), Integer(3347)]]).
+
 
 if __name__ == "__main__":
     demo()
