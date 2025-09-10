@@ -1,3 +1,5 @@
+Would a nullspace hash in alpha space work? 
+
 In Notes (apple) I have evidence that results are not reproducible. Currently assuming generation of B matrix or testing of collapse.
 
 I could add a check of both the tom decider-function and the 'don't go deeper as the rre is already as tall as it can be' functions by turning the latter test on and off and checking that the matrices generated are the same in both cases (albeit slower to generate in one case).
