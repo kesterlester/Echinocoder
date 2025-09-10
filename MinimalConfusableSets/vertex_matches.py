@@ -440,23 +440,6 @@ def generate_viable_vertex_match_matrices(
 
             mat = sp.Matrix(prefix)
 
-            if remove_duplicates_via_hash:
-                L_nullspace = mat.nullspace()
-                hashable_L_nullspace = sp.ImmutableMatrix(tuple(tuple(v) for v in L_nullspace))
-                if len(L_nullspace)==0 and (prefix or not yield_the_first_matrix): # without the second half of this test, the first matrix does not get yielded
-                    # Give up, don't even bother going further or storing in the hash, as will slow later hash lookup.
-                    if debug or True: print(f"                               NULLSPACE cut given prefix={prefix} and mat={mat}")
-                    return
-                if hashable_L_nullspace in hashable_L_nullspaces_seen:
-                    if debug: print("                               NULLSPACE HIT")
-                    # We already saw this one, so don't need to produce it again!
-                    # Skip deeper evaluation or return of it!
-                    return
-                else:
-                    if debug: print("                               NULLSPACE ---")
-                    # record that we have seen this item:
-                    hashable_L_nullspaces_seen.add(hashable_L_nullspace)
-
             if calculate_rre_early:
                 rre, rre_pivots = calc_rre(mat, sort_cols=sort_cols)
  
@@ -488,6 +471,23 @@ def generate_viable_vertex_match_matrices(
                     # Some row causes collapse!
                     # Skip deeper evaluation or return of it!
                     return
+
+            if remove_duplicates_via_hash:
+                L_nullspace = mat.nullspace()
+                hashable_L_nullspace = sp.ImmutableMatrix(tuple(tuple(v) for v in L_nullspace))
+                if len(L_nullspace)==0 and (prefix or not yield_the_first_matrix): # without the second half of this test, the first matrix does not get yielded
+                    # Give up, don't even bother going further or storing in the hash, as will slow later hash lookup.
+                    if debug or True: print(f"                               NULLSPACE cut given prefix={prefix} and mat={mat}")
+                    return
+                if hashable_L_nullspace in hashable_L_nullspaces_seen:
+                    if debug: print("                               NULLSPACE HIT")
+                    # We already saw this one, so don't need to produce it again!
+                    # Skip deeper evaluation or return of it!
+                    return
+                else:
+                    if debug: print("                               NULLSPACE ---")
+                    # record that we have seen this item:
+                    hashable_L_nullspaces_seen.add(hashable_L_nullspace)
 
             # Our own standard checks are complete! Now allow external user checks on mat. (TODO -- allow user to check RRE too?)
 
