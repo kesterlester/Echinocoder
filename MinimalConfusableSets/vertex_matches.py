@@ -447,12 +447,12 @@ def generate_viable_vertex_match_matrices(
             if remove_duplicates_via_hash:
                 assert calculate_hashable_rre_early
                 if hashable_rre in hashable_rre_seen:
-                    if debug: print("VETO as already seen {rre}")
+                    if debug or True: print("VETO as already seen {rre}")
                     # We already saw this one, so don't need to produce it again!
                     # Skip deeper evaluation or return of it!
                     return
                 else:
-                    if debug: print("---- first occurrence {rre}")
+                    if debug or True: print("---- first occurrence {rre}")
                     # record that we have seen this item:
                     hashable_rre_seen.add(hashable_rre) # Note this is a sort of voluntary memory leak. Users use this at their own risk!
                     #print("Hash size ",len(hashable_rre_seen))

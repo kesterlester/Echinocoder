@@ -7,7 +7,7 @@ from Match_Tracker import Match_Tracker
 
 import deciders
 
-def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False):
+def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False, use_hash=False):
 
     def max_row_requirement(mat, max_rows):
         return sp.shape(mat)[0] <= max_rows
@@ -58,7 +58,7 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False):
                 return_mat = True,
                 return_hashable_rre = True,
                 return_confusable_sets = True,
-                remove_duplicates_via_hash = True,
+                remove_duplicates_via_hash = use_hash,
                 confusable_sets_or_None_function = collapse_checking_function_1,
                 # yield_matrix = partial(max_row_requirement, max_rows=4),
                 # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
@@ -74,7 +74,7 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False):
                 return_mat = True,
                 return_hashable_rre = True,
                 return_confusable_sets = True,
-                remove_duplicates_via_hash = True,
+                remove_duplicates_via_hash = use_hash,
                 confusable_sets_or_None_function = collapse_checking_function_2,
                 # yield_matrix = partial(max_row_requirement, max_rows=4),
                 # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
@@ -90,7 +90,7 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False):
                 return_mat = True,
                 return_hashable_rre = True,
                 return_confusable_sets = True,
-                remove_duplicates_via_hash = True,
+                remove_duplicates_via_hash = use_hash,
                 confusable_sets_or_None_function = collapse_checking_function_3,
                 # yield_matrix = partial(max_row_requirement, max_rows=4),
                 # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
@@ -103,7 +103,7 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False):
 
             for name, mat_gen, decider in (
                 #    (f"SLOW sort={sort_cols}", mat_gen_2, collapse_checker_2),
-                    (f"VSLW sort={sort_cols} scale_cols={scale_cols}", mat_gen_3, collapse_checker_3),
+                    (f"VSLW hash={use_hash}", mat_gen_3, collapse_checker_3),
                 #    (f"FAST sort={sort_cols}", mat_gen_1, collapse_checker_1),
                     ):
 
@@ -168,7 +168,7 @@ def ddd():
         demo( (M,k) )
     elif len(sys.argv) == 4:
         M, k = (int(n) for n in sys.argv[1:3])
-        demo( (M,k), scale_cols = True if sys.argv[3]=="1" else False  )
+        demo( (M,k), use_hash = True if sys.argv[3]=="1" else False  )
     else:
         demo()
 
