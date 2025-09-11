@@ -82,6 +82,8 @@ def generate_all_vertex_match_signatures(
     #    yield from old_tripartite_generate_all_vertex_match_signatures(M=M, k=k, start=start)
     #    return
 
+    import config
+
     if start is not None:
         assert len(start) == 3, f"len(start) should equal 3 but is {len(start)}. start={start}."
         assert sum(start) == M, f"sum(start) should equal {M} but is {sum(start)}. start={start}."
@@ -91,11 +93,17 @@ def generate_all_vertex_match_signatures(
         assert start_minus_ones == 0 # But we no longer have minus ones!
     else:
         if k is None:
-            start_ones = 0
+            start_ones = 1 if config.only_output_odd_ones else 0
         else:
             start_ones = k+1
+            if config.only_output_odd_ones:
+                if start_ones%2 == 0:
+                    start_ones += 1
 
-    for ones in range(start_ones, M+1):
+    if config.only_output_odd_ones:
+        assert start_ones%2 == 1
+
+    for ones in range(start_ones, M+1, 2 if config.only_output_odd_ones else 1):
         # Report the number iof ones, minus ones and zeros as a triple:
         yield ones, 0, M-ones # TODO: Prune code to get rid of the unnecessary zero reporting?
 
@@ -499,12 +507,12 @@ def generate_viable_vertex_match_matrices(
             if remove_duplicates_via_hash:
                 assert calculate_hashable_rre_early
                 if hashable_rre in hashable_rre_seen:
-                    if debug or True: print("VETO as already seen {rre}")
+                    if debug: print("VETO as already seen {rre}")
                     # We already saw this one, so don't need to produce it again!
                     # Skip deeper evaluation or return of it!
                     return
                 else:
-                    if debug or True: print("---- first occurrence {rre}")
+                    if debug: print("---- first occurrence {rre}")
                     # record that we have seen this item:
                     hashable_rre_seen.add(hashable_rre) # Note this is a sort of voluntary memory leak. Users use this at their own risk!
                     #print("Hash size ",len(hashable_rre_seen))

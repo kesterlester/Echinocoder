@@ -6,6 +6,7 @@ import decider_functions.decider_function as df
 from Match_Tracker import Match_Tracker
 
 import deciders
+import config
 
 def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False, use_hash=False):
 
@@ -100,11 +101,10 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False, use_hash=False):
                 scale_cols_in_hash=scale_cols,
                 )
       
-
             for name, mat_gen, decider in (
-                    (f"VSLW hash={use_hash}", mat_gen_3, collapse_checker_3),
-                    #(f"SLOW hash={use_hash}", mat_gen_2, collapse_checker_2),
-                    #(f"FAST hash={use_hash}", mat_gen_1, collapse_checker_1),
+                    (f"VSLW hash={use_hash} odd={config.only_output_odd_ones}", mat_gen_3, collapse_checker_3),
+                    (f"SLOW hash={use_hash} odd={config.only_output_odd_ones}", mat_gen_2, collapse_checker_2),
+                    (f"FAST hash={use_hash} odd={config.only_output_odd_ones}", mat_gen_1, collapse_checker_1),
                     ):
 
                 print("")
@@ -132,7 +132,7 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False, use_hash=False):
 
                     if new_best:
                         prefix = f"{name} SO FAR: "
-                        mes = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\n"\
+                        mes = f"\n\nbest_siz={smallest_siz_so_far} for M={M}, k={k},\n" \
                               f"raw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\n"\
                               f"unscaled_bad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\n"\
                               f"scalings={sp.srepr(best_scalings)}\n" \
@@ -145,7 +145,7 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False, use_hash=False):
                     number_enumerated += 1
 
                 prefix = f"{name} AT END: "
-                mes = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\n" \
+                mes = f"\n\nbest_siz={smallest_siz_so_far} for M={M}, k={k},\n" \
                       f"raw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\n" \
                       f"unscaled_bad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\n" \
                       f"scalings={repr(best_scalings)}\n" \
@@ -168,7 +168,19 @@ def ddd():
         demo( (M,k) )
     elif len(sys.argv) == 4:
         M, k = (int(n) for n in sys.argv[1:3])
-        demo( (M,k), use_hash = True if sys.argv[3]=="1" else False  )
+        way = sys.argv[3]
+        if way=="1":
+            config.only_output_odd_ones=False
+            demo( (M,k), use_hash = True)
+        if way=="2":
+            config.only_output_odd_ones=False
+            demo( (M,k), use_hash = False)
+        if way=="3":
+            config.only_output_odd_ones=True
+            demo( (M,k), use_hash = True)
+        if way=="4":
+            config.only_output_odd_ones=True
+            demo( (M,k), use_hash = False)
     else:
         demo()
 
