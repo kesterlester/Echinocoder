@@ -1,45 +1,48 @@
-FAST hash=False odd=False AT END:  
-FAST hash=False odd=False AT END:  
-FAST hash=False odd=False AT END:  best_siz=172 for M=10, k=2,
-FAST hash=False odd=False AT END:  raw=
-FAST hash=False odd=False AT END:  Matrix([
-FAST hash=False odd=False AT END:  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
-FAST hash=False odd=False AT END:  [0, 0, 0, 1, 1, 1, 0, 1, 1, 1],
-FAST hash=False odd=False AT END:  [1, 1, 1, 0, 1, 1, 0, 0, 0, 1],
-FAST hash=False odd=False AT END:  [1, 1, 1, 1, 0, 0, 0, 1, 1, 0]]),
-FAST hash=False odd=False AT END:  rre=
-FAST hash=False odd=False AT END:  Matrix([
-FAST hash=False odd=False AT END:  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-FAST hash=False odd=False AT END:  [0, 0, 0, 1, 0, 0, 0, 1, 1, 0],
-FAST hash=False odd=False AT END:  [0, 0, 0, 0, 1, 1, 0, 0, 0, 1],
-FAST hash=False odd=False AT END:  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]]),
-FAST hash=False odd=False AT END:  unscaled_bad_bats=
-FAST hash=False odd=False AT END:  Matrix([
-FAST hash=False odd=False AT END:  [-11,  -7],
-FAST hash=False odd=False AT END:  [ -8,   3],
-FAST hash=False odd=False AT END:  [ -2,   1],
-FAST hash=False odd=False AT END:  [  8,   9],
-FAST hash=False odd=False AT END:  [  5,  -5],
-FAST hash=False odd=False AT END:  [ -8,  -8],
-FAST hash=False odd=False AT END:  [ -3,  -1],
-FAST hash=False odd=False AT END:  [-10, -11],
-FAST hash=False odd=False AT END:  [  3, -19],
-FAST hash=False odd=False AT END:  [ -2,   4]]),
-FAST hash=False odd=False AT END:  scalings=Matrix([
-FAST hash=False odd=False AT END:  [     2/89],
-FAST hash=False odd=False AT END:  [   -25/89],
-FAST hash=False odd=False AT END:  [        1],
-FAST hash=False odd=False AT END:  [    14/19],
-FAST hash=False odd=False AT END:  [      3/5],
-FAST hash=False odd=False AT END:  [      1/8],
-FAST hash=False odd=False AT END:  [   -50/19],
-FAST hash=False odd=False AT END:  [2506/4237],
-FAST hash=False odd=False AT END:  [  28/4237],
-FAST hash=False odd=False AT END:  [        1]])
-FAST hash=False odd=False AT END:  scalingsSREPR=MutableDenseMatrix([[Rational(2, 89)], [Rational(-25, 89)], [Integer(1)], [Rational(14, 19)], [Rational(3, 5)], [Rational(1, 8)], [Rational(-50, 19)], [Rational(2506, 4237)], [Rational(28, 4237)], [Integer(1)]])
-FAST hash=False odd=False AT END:  scaled_bad_bats=
-FAST hash=False odd=False AT END:  ImmutableDenseMatrix([[Rational(-22, 89), Rational(-14, 89)], [Rational(200, 89), Rational(-75, 89)], [Integer(-2), Integer(1)], [Rational(112, 19), Rational(126, 19)], [Integer(3), Integer(-3)], [Integer(-1), Integer(-1)], [Rational(150, 19), Rational(50, 19)], [Rational(-25060, 4237), Rational(-27566, 4237)], [Rational(84, 4237), Rational(-28, 223)], [Integer(-2), Integer(4)]]).
-FAST hash=False odd=False AT END:  71320 matrices have been scanned.
-FAST hash=False odd=False AT END:  
-FAST hash=False odd=False AT END:  
+---------------------- ENDING -------------------
+FAST AT END:  
+FAST AT END:  
+FAST AT END:  best_siz=172 for M=10, k=2,
+FAST AT END:  config: hash=False, prune_short_rows=True, prune_max_rows=True, prune_pivots=True, odd_ones=False
+FAST AT END:  CMD: ['./tom_demo.py', '10', '2', '-f', '100', '-m', '-p', '-s']
+FAST AT END:  raw=
+FAST AT END:  Matrix([
+FAST AT END:  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+FAST AT END:  [0, 0, 0, 1, 1, 1, 0, 1, 1, 1],
+FAST AT END:  [1, 1, 1, 0, 1, 1, 0, 0, 0, 1],
+FAST AT END:  [1, 1, 1, 1, 0, 0, 0, 1, 1, 0]]),
+FAST AT END:  rre=
+FAST AT END:  Matrix([
+FAST AT END:  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+FAST AT END:  [0, 0, 0, 1, 0, 0, 0, 1, 1, 0],
+FAST AT END:  [0, 0, 0, 0, 1, 1, 0, 0, 0, 1],
+FAST AT END:  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]]),
+FAST AT END:  unscaled_bad_bats=
+FAST AT END:  Matrix([
+FAST AT END:  [-11,  -7],
+FAST AT END:  [ -8,   3],
+FAST AT END:  [ -2,   1],
+FAST AT END:  [  8,   9],
+FAST AT END:  [  5,  -5],
+FAST AT END:  [ -8,  -8],
+FAST AT END:  [ -3,  -1],
+FAST AT END:  [-10, -11],
+FAST AT END:  [  3, -19],
+FAST AT END:  [ -2,   4]]),
+FAST AT END:  scalings=Matrix([
+FAST AT END:  [     2/89],
+FAST AT END:  [   -25/89],
+FAST AT END:  [        1],
+FAST AT END:  [    14/19],
+FAST AT END:  [      3/5],
+FAST AT END:  [      1/8],
+FAST AT END:  [   -50/19],
+FAST AT END:  [2506/4237],
+FAST AT END:  [  28/4237],
+FAST AT END:  [        1]])
+FAST AT END:  scalingsSREPR=MutableDenseMatrix([[Rational(2, 89)], [Rational(-25, 89)], [Integer(1)], [Rational(14, 19)], [Rational(3, 5)], [Rational(1, 8)], [Rational(-50, 19)], [Rational(2506, 4237)], [Rational(28, 4237)], [Integer(1)]])
+FAST AT END:  scaled_bad_bats=
+FAST AT END:  ImmutableDenseMatrix([[Rational(-22, 89), Rational(-14, 89)], [Rational(200, 89), Rational(-75, 89)], [Integer(-2), Integer(1)], [Rational(112, 19), Rational(126, 19)], [Integer(3), Integer(-3)], [Integer(-1), Integer(-1)], [Rational(150, 19), Rational(50, 19)], [Rational(-25060, 4237), Rational(-27566, 4237)], [Rational(84, 4237), Rational(-28, 223)], [Integer(-2), Integer(4)]]).
+FAST AT END:  71320 matrices have been scanned.
+FAST AT END:  
+FAST AT END:  
 
