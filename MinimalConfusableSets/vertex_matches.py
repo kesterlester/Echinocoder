@@ -471,7 +471,7 @@ def generate_viable_vertex_match_matrices(
     calculate_hashable_rre_late = return_hashable_rre and not calculate_hashable_rre_early
 
     calculate_rre_early = calculate_hashable_rre_early or prune_short_rows or prune_pivots or prune_max_rows
-    calculate_rre_late = (return_rre or return_rre_pivots) and not calculate_rre_early
+    calculate_rre_late = (return_rre or return_rre_pivots or calculate_hashable_rre_late) and not calculate_rre_early
 
     hashable_rre_seen = set()
 
