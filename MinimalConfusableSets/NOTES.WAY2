@@ -1,3 +1,6 @@
+commit dbbb755e226c2ca8eb5f6298e6cb6ac3af80aa58 (HEAD -> NO_MINUS_ONES_BRANCH)
+Author: kesterlester <cgl20@cam.ac.uk>
+Date:   Fri Sep 12 01:39:16 2025 +0100
 ---------------------- ENDING -------------------
 FAST AT END:  
 FAST AT END:  
@@ -45,4 +48,4 @@ FAST AT END:  ImmutableDenseMatrix([[Rational(-22, 89), Rational(-14, 89)], [Rat
 FAST AT END:  71320 matrices have been scanned.
 FAST AT END:  
 FAST AT END:  
-
+---------------------- END -------------------
