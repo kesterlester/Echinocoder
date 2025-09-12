@@ -433,8 +433,9 @@ def generate_all_vertex_matches_given_equivalent_places(
 def generate_viable_vertex_match_matrices(
     M, # M = number of bad bats. 
     k, # k=dimension of space.
-    remove_obvious_collapses = True, # Discards matrices whose RRE form have a row with betwen 1 and k non-zero elements. (Nb: ihis setting forces rre to be calcualted.)
-    debug_test_max_rows = True,
+    prune_short_rows = True, # Discards matrices whose RRE form have a row with betwen 1 and k non-zero elements. (Nb: this setting forces rre to be calcualted.)
+    prune_max_rows = False, # Probably buggy/wrong -- does not go deeper when RREF is already at predicted max height. 
+    prune_pivots = False, # Probably wrong. Discards matrices whose pivots are too far the the right for the given k.  Could be fixed for the bottom row if bad bats are known to be in general position.
     sort_cols = False, # Note that True for sort_cols dissociates cols from particular bad bats, so requires bad bats to be truly generic, which you can only test by making bad bats increasingly diverse and checking that the answers you are interested in do not change. This said, there seems to be zero speed increase from using it, so seems to be a worthless option.
     scale_cols_in_hash = False, # bad bats are unscaled, so their lengths don't matter.  This means that the nullspace is unaltered by scaling a column, Hence, before hashing, we can scale all columns to a canonical length and sign to get better clashes.  It seems to help by a tiny amount in some cases, but not always. Perhaps only a 10% improvement.   Possibly reason is that merely scaling the columns is not the only thing one can do. E.g. scaling rows AND columumns both by -1 can leave the intersection point unchanged, but change things off the intersection. This allows changes in isolated numbers, which is different to scaling whole columns. So a more complex/aggressive canoicalisation process to blind to both row and column scalings would be needed to achive this. TODO for future?
     return_mat = False,
@@ -459,15 +460,17 @@ def generate_viable_vertex_match_matrices(
     It is far better to kill a branch before generating its daughter matrixes than to kill a branch by killing/vetoing each daughter matrix.  This, if it is possible to do so, it is far better to use "go_deeper" (with or without  "yield_matrix") to kill a whole branch in one test, than to use only "yield_matrix".
     """
 
+
+    
     if return_confusable_sets and confusable_sets_or_None_function == None:
         raise ValueError("You cannot ask to return confusable sets unless you also supply a confusable_sets_or_None_function.")
 
-    max_rows = sympy_tools.max_rows_for_viable_stripped_RREF_matrix(M=M, k=k)
+    max_rows = sympy_tools.max_rows_for_viable_stripped_RREF_matrix(M=M, k=k) # Don't use! Probably wrong.
 
     calculate_hashable_rre_early = remove_duplicates_via_hash
     calculate_hashable_rre_late = return_hashable_rre and not calculate_hashable_rre_early
 
-    calculate_rre_early = calculate_hashable_rre_early or remove_obvious_collapses
+    calculate_rre_early = calculate_hashable_rre_early or prune_short_rows or prune_pivots or prune_max_rows
     calculate_rre_late = (return_rre or return_rre_pivots) and not calculate_rre_early
 
     hashable_rre_seen = set()
@@ -517,13 +520,15 @@ def generate_viable_vertex_match_matrices(
                     hashable_rre_seen.add(hashable_rre) # Note this is a sort of voluntary memory leak. Users use this at their own risk!
                     #print("Hash size ",len(hashable_rre_seen))
 
-            if remove_obvious_collapses:
+            if prune_short_rows:
                 assert calculate_rre_early
                 if sympy_tools.some_row_causes_collapse(rre, k):
                     if debug: print(f"VETO as row collapse in {rre} with k={k}.")
                     # Some row causes collapse!
                     # Skip deeper evaluation or return of it!
                     return
+
+            if prune_pivots:
                 if not sympy_tools.pivot_positions_are_all_viable_for_stripped_RRE_matrix(rre.shape, rre_pivots, k):
                     if debug: print(f"VETO as bad pivot positions in {rre} for k={k}.")
                     # Some row causes collapse!
@@ -583,7 +588,7 @@ def generate_viable_vertex_match_matrices(
             if (
                 user_aborted_this_branch
                 or
-                (remove_obvious_collapses and debug_test_max_rows and rre.shape[0]>=max_rows) # We are already as tall as we ever can be!
+                (prune_max_rows and rre.shape[0]>=max_rows) # We are already as tall as we ever can be!
                 or
                 (go_deeper is not None and not go_deeper(mat))
                ):
