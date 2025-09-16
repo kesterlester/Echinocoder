@@ -114,9 +114,9 @@ def demo(M_and_k_tuple=None, show_cs=False,
             )
       
         for name, mat_gen, decider in (
-                #(f"VSLW hash={use_hash} odd={config.only_output_odd_ones}", mat_gen_3, collapse_checker_3),
-                #(f"SLOW hash={use_hash} odd={config.only_output_odd_ones}", mat_gen_2, collapse_checker_2),
-                (f"FAST", mat_gen_1, collapse_checker_1),
+                (f"VSLW", mat_gen_3, collapse_checker_3),
+                #(f"SLOW", mat_gen_2, collapse_checker_2),
+                #(f"FAST", mat_gen_1, collapse_checker_1),
                 ):
 
             print("")
