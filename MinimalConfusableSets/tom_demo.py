@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sympy as sp
 from functools import partial
 from vertex_matches import generate_viable_vertex_match_matrices
@@ -18,7 +20,7 @@ def demo(M_and_k_tuple=None, show_cs=False,
               print_period = 10000,
               ):
 
-    cfg = f"config: hash={use_hash}, prune_short_rows={prune_short_rows}, prune_max_rows={prune_max_rows}, prune_pivots={prune_pivots}, odd_ones={config.only_output_odd_ones}"
+    cfg = f"config: hash={use_hash}, prune_short_rows={prune_short_rows}, prune_max_rows={prune_max_rows}, prune_pivots={prune_pivots}, state={'bi' if (config.use_bistate and not config.use_tristate) else ('tri' if (config.use_tristate and not config.use_bistate) else 'none' )}, odd_ones={config.only_output_odd_ones}"
 
     def max_row_requirement(mat, max_rows):
         return sp.shape(mat)[0] <= max_rows
