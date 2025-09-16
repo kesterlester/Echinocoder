@@ -54,7 +54,9 @@ def generate_all_vertex_match_signatures(
     start = None,
     ):
 
+
     import config as cfg
+    assert not (cfg.use_tristate and cfg.use_bistate)
     if cfg.use_tristate:
         yield from tristate_generate_all_vertex_match_signatures(M, k=k, start=start)
     elif cfg.use_bistate:
