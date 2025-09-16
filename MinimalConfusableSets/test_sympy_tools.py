@@ -47,28 +47,28 @@ def test_max_pivot_positions_for_viable_stripped_RRE_matrix(): #(RRE_matrix_shap
 def test_pivot_positions_are_all_viable_for_stripped_RRE_matrix(): #(RRE_matrix_shape, pivot_positions, k,):
     short = spt.pivot_positions_are_all_viable_for_stripped_RRE_matrix
 
-    assert short(RRE_matrix_shape=(3,7), k=2, pivot_positions=(0,2,4))
+    assert short(RREF_matrix_shape=(3, 7), k=2, pivot_positions=(0, 2, 4))
                             # [1,0,0,0,0,0,0,],
                             # [0,0,1,0,0,0,0,],
                             # [0,0,0,0,1,0,0,],
 
-    assert not short(RRE_matrix_shape=(3,6), k=2, pivot_positions=(0,2,4))
+    assert not short(RREF_matrix_shape=(3, 6), k=2, pivot_positions=(0, 2, 4))
                             # [1,0,0,0,0,0,],
                             # [0,0,1,0,0,0,],
                             # [0,0,0,0,1,0,],
 
-    assert short(RRE_matrix_shape=(3,7), k=2, pivot_positions=(0,2,3))
+    assert short(RREF_matrix_shape=(3, 7), k=2, pivot_positions=(0, 2, 3))
                             # [1,0,0,0,0,0,0,],
                             # [0,0,1,0,0,0,0,],
                             # [0,0,0,1,0,0,0,],
 
-    assert not short(RRE_matrix_shape=(3,7), k=2, pivot_positions=(1,2,4))
+    assert not short(RREF_matrix_shape=(3, 7), k=2, pivot_positions=(1, 2, 4))
                             # [0,1,0,0,0,0,0,],
                             # [0,0,1,0,0,0,0,],
                             # [0,0,0,0,1,0,0,],
 
 def test_max_rows_for_viable_stripped_RRE_matrix(): #(M, k):
-    short = spt.max_rows_for_viable_stripped_RRE_matrix
+    short = spt.max_rows_for_viable_stripped_RREF_matrix
 
     assert short(M=6, k=2) == 2
                  # 01x0x.
