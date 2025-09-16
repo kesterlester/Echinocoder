@@ -1,3 +1,6 @@
+import config
+config.use_tristate = True
+
 from vertex_matches import (
     generate_canonical_vertex_matches,
     generate_all_vertex_matches,

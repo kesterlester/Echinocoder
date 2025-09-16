@@ -48,6 +48,20 @@ E.g. if the first two places are different to each other (and to any other place
 def _smallest_odd_number_greater_than_or_equal_to(x):
     return 2*math.ceil((x+1)/2)-1 
 
+def generate_all_vertex_match_signatures(
+    M, #number of bad bats
+    k = None, # k=dimension of space (supply k if you want to calculate only useful matches, otherwise omit)
+    start = None,
+    ):
+
+    import config as cfg
+    if cfg.use_tristate:
+        yield from tristate_generate_all_vertex_match_signatures(M, k=k, start=start)
+    elif cfg.use_bistate:
+        yield from bistate_generate_all_vertex_match_signatures(M, k=k, start=start)
+    else:
+        yield from tuple() # I.e. don't yield anything!
+
 def bistate_generate_all_vertex_match_signatures(
     M, #number of bad bats
     k = None, # k=dimension of space (supply k if you want to calculate only useful matches, otherwise omit)

@@ -6,8 +6,19 @@ import decider_functions.decider_function as df
 from Match_Tracker import Match_Tracker
 
 import deciders
+import config
+import sys
 
-def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False, use_hash=False):
+def demo(M_and_k_tuple=None, show_cs=False, 
+              scale_cols=False, # Warning - breaks meaning of bats
+              use_hash=False,  # Warning - may not be rigorous
+              prune_max_rows = False, # Warning - buggy
+              prune_short_rows = True, # safe
+              prune_pivots = False, # Warning - buggy
+              print_period = 10000,
+              ):
+
+    cfg = f"config: hash={use_hash}, prune_short_rows={prune_short_rows}, prune_max_rows={prune_max_rows}, prune_pivots={prune_pivots}, odd_ones={config.only_output_odd_ones}"
 
     def max_row_requirement(mat, max_rows):
         return sp.shape(mat)[0] <= max_rows
@@ -36,141 +47,189 @@ def demo(M_and_k_tuple=None, show_cs=False, scale_cols=False, use_hash=False):
         debug = False
 
         print("Creating fast decider")
-        collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=10, starting_sigma=1)
+        collapse_checker_1 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=10, starting_sigma=10) # 1
         print("Creating slow decider")
-        collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=0, starting_sigma=100)
+        collapse_checker_2 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=0, starting_sigma=100) # 100
         print("Creating vslow decider")
-        collapse_checker_3 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=100, starting_sigma=10000)
+        collapse_checker_3 = deciders.Rational_Decider(M=M, k=k, debug=debug, seed=100, starting_sigma=10000) # 10000
         print("done")
         collapse_checking_function_1 = collapse_checker_1.function_factory()
         collapse_checking_function_2 = collapse_checker_2.function_factory()
         collapse_checking_function_3 = collapse_checker_3.function_factory()
 
-        for sort_cols in (
-               #True, 
-               False,
-               ):
+        mat_gen_1= generate_viable_vertex_match_matrices(
+            M=M,
+            k=k,
+            sort_cols = False,
+            return_mat = True,
+            return_hashable_rre = True,
+            return_confusable_sets = True,
+            remove_duplicates_via_hash = use_hash,
+            prune_max_rows = prune_max_rows,
+            prune_short_rows = prune_short_rows,
+            prune_pivots = prune_pivots,
+            confusable_sets_or_None_function = collapse_checking_function_1,
+            # yield_matrix = partial(max_row_requirement, max_rows=4),
+            # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+            # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
+            debug = debug,
+            )
 
-            mat_gen_1= generate_viable_vertex_match_matrices(
-                M=M,
-                k=k,
-                sort_cols = sort_cols,
-                return_mat = True,
-                return_hashable_rre = True,
-                return_confusable_sets = True,
-                remove_duplicates_via_hash = use_hash,
-                confusable_sets_or_None_function = collapse_checking_function_1,
-                # yield_matrix = partial(max_row_requirement, max_rows=4),
-                # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
-                # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
-                debug = debug,
-                debug_test_max_rows=True,
-                )
-
-            mat_gen_2 = generate_viable_vertex_match_matrices(
-                M=M,
-                k=k,
-                sort_cols = sort_cols,
-                return_mat = True,
-                return_hashable_rre = True,
-                return_confusable_sets = True,
-                remove_duplicates_via_hash = use_hash,
-                confusable_sets_or_None_function = collapse_checking_function_2,
-                # yield_matrix = partial(max_row_requirement, max_rows=4),
-                # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
-                # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
-                debug = debug,
-                debug_test_max_rows=True,
-                )
+        mat_gen_2 = generate_viable_vertex_match_matrices(
+            M=M,
+            k=k,
+            sort_cols = False,
+            return_mat = True,
+            return_hashable_rre = True,
+            return_confusable_sets = True,
+            remove_duplicates_via_hash = use_hash,
+            prune_max_rows = prune_max_rows,
+            prune_short_rows = prune_short_rows,
+            prune_pivots = prune_pivots,
+            confusable_sets_or_None_function = collapse_checking_function_2,
+            # yield_matrix = partial(max_row_requirement, max_rows=4),
+            # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+            # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
+            debug = debug,
+            )
       
-            mat_gen_3 = generate_viable_vertex_match_matrices(
-                M=M,
-                k=k,
-                sort_cols = sort_cols,
-                return_mat = True,
-                return_hashable_rre = True,
-                return_confusable_sets = True,
-                remove_duplicates_via_hash = use_hash,
-                confusable_sets_or_None_function = collapse_checking_function_3,
-                # yield_matrix = partial(max_row_requirement, max_rows=4),
-                # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
-                # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
-                debug = debug,
-                debug_test_max_rows=True,
-                scale_cols_in_hash=scale_cols,
-                )
-      
+        mat_gen_3 = generate_viable_vertex_match_matrices(
+            M=M,
+            k=k,
+            sort_cols = False,
+            return_mat = True,
+            return_hashable_rre = True,
+            return_confusable_sets = True,
+            remove_duplicates_via_hash = use_hash,
+            prune_max_rows = prune_max_rows,
+            prune_short_rows = prune_short_rows,
+            prune_pivots = prune_pivots,
+            confusable_sets_or_None_function = collapse_checking_function_3,
+            # yield_matrix = partial(max_row_requirement, max_rows=4),
+            # go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+            # yield_matrix = partial(matrix_is_not_definitely_bad, k=k),
+            debug = debug,
+            )
 
-            for name, mat_gen, decider in (
-                #    (f"SLOW sort={sort_cols}", mat_gen_2, collapse_checker_2),
-                    (f"VSLW hash={use_hash}", mat_gen_3, collapse_checker_3),
-                #    (f"FAST sort={sort_cols}", mat_gen_1, collapse_checker_1),
-                    ):
+        for name, mat_gen, decider in (
+                (f"VSLW", mat_gen_3, collapse_checker_3),
+                #(f"SLOW", mat_gen_2, collapse_checker_2),
+                #(f"FAST", mat_gen_1, collapse_checker_1),
+                ):
 
-                print("")
-                print("=================================")
-                print(f"STARTING {name}")
-                print("=================================")
+            print("")
+            print("=================================")
+            print(f"STARTING {name}")
+            print("=================================")
 
-                number_enumerated = 0
-                smallest_siz_so_far = None
+            number_enumerated = 0
+            smallest_siz_so_far = None
 
-                for i, (mat,rre,(EE,OO,scalings, scaled_bad_bats)) in enumerate(mat_gen):
+            for i, (mat,rre,(EE,OO,scalings, scaled_bad_bats)) in enumerate(mat_gen):
 
-                    new_best = False
-                    siz = EE.total()
+                new_best = False
+                siz = EE.total()
 
-                    if smallest_siz_so_far == None or siz < smallest_siz_so_far:
-                        smallest_siz_so_far = siz
-                        # smallest_EE, smallest_OO = EE, OO
-                        best_scalings, best_scaled_bad_bats = scalings, scaled_bad_bats
-                        best_mat, best_rre = mat, rre
-                        new_best = True
+                if smallest_siz_so_far == None or siz < smallest_siz_so_far:
+                    smallest_siz_so_far = siz
+                    # smallest_EE, smallest_OO = EE, OO
+                    best_scalings, best_scaled_bad_bats = scalings, scaled_bad_bats
+                    best_mat, best_rre = mat, rre
+                    new_best = True
 
-                    if i % 10000 == 0:
-                        print(f"{name}: CURRENT {i}, M={M}, k={k}, raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}\n")
+                if i % print_period == 0:
+                    print(f"{name}: CURRENT {i}, M={M}, k={k}, raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}\n")
+                    mes = f"\n\nbest_siz={smallest_siz_so_far} for M={M}, k={k},\n" \
+                          f"{cfg}\n" \
+                          f"CMD: {sys.argv}\n"
+                    print(mes)
 
-                    if new_best:
-                        prefix = f"{name} SO FAR: "
-                        mes = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\n"\
-                              f"raw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\n"\
-                              f"unscaled_bad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\n"\
-                              f"scalings={sp.srepr(best_scalings)}\n" \
-                              f"scalingsSREPR={sp.srepr(best_scalings)}\n" \
-                              f"scaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n"\
-                              f"{number_enumerated} matrices have been scanned.\n\n"
-                        for line in mes.split("\n"):
-                            print(prefix, line)
+                if new_best:
+                    prefix = f"{name} SO FAR: "
+                    mes = f"\n\nbest_siz={smallest_siz_so_far} for M={M}, k={k},\n" \
+                          f"{cfg}\n" \
+                          f"CMD: {sys.argv}\n" \
+                          f"raw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\n"\
+                          f"unscaled_bad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\n"\
+                          f"scalings={sp.srepr(best_scalings)}\n" \
+                          f"scalingsSREPR={sp.srepr(best_scalings)}\n" \
+                          f"scaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n"\
+                          f"{number_enumerated} matrices have been scanned.\n\n"
+                    for line in mes.split("\n"):
+                        print(prefix, line)
 
-                    number_enumerated += 1
+                number_enumerated += 1
 
-                prefix = f"{name} AT END: "
-                mes = f"\n\nfor M={M}, k={k} the smallest confusable sets have size {smallest_siz_so_far},\n" \
-                      f"raw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\n" \
-                      f"unscaled_bad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\n" \
-                      f"scalings={repr(best_scalings)}\n" \
-                      f"scalingsSREPR={sp.srepr(best_scalings)}\n" \
-                      f"scaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n" \
-                      f"{number_enumerated} matrices have been scanned.\n\n"
-                for line in mes.split("\n"):
-                   print(prefix, line)
-                    
-                import confusable_multisets as cs
-                #cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True, show_C_if_plotting=True)
-                #cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True)
-                print("====================================================================")
+            print("---------------------- ENDING -------------------")
+            prefix = f"{name} AT END: "
+            mes = f"\n\nbest_siz={smallest_siz_so_far} for M={M}, k={k},\n" \
+                  f"{cfg}\n" \
+                  f"CMD: {sys.argv}\n" \
+                  f"raw=\n{repr(best_mat)},\nrre=\n{repr(best_rre)},\n" \
+                  f"unscaled_bad_bats=\n{repr(decider.unscaled_bad_bat_matrix)},\n" \
+                  f"scalings={repr(best_scalings)}\n" \
+                  f"scalingsSREPR={sp.srepr(best_scalings)}\n" \
+                  f"scaled_bad_bats=\n{sp.srepr(best_scaled_bad_bats)}.\n" \
+                  f"{number_enumerated} matrices have been scanned.\n\n"
+            for line in mes.split("\n"):
+               print(prefix, line)
+            print("---------------------- END -------------------")
+
+            import confusable_multisets as cs
+            #cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True, show_C_if_plotting=True)
+            #cs.analyze_B(best_scaled_bad_bats, plot_if_2d=True)
+            print("====================================================================")
+
+def str_to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in {'false', 'f', '0', 'no', 'n'}:
+        return False
+    elif value.lower() in {'true', 't', '1', 'yes', 'y'}:
+        return True
+    raise ValueError(f'{value} is not a valid boolean value')
 
 def ddd():
-    import sys
-    print(f"sys.argv = {sys.argv}")
-    if len(sys.argv) == 3:
-        M, k = (int(n) for n in sys.argv[1:3])
-        demo( (M,k) )
-    elif len(sys.argv) == 4:
-        M, k = (int(n) for n in sys.argv[1:3])
-        demo( (M,k), use_hash = True if sys.argv[3]=="1" else False  )
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("M", type=int, help="number of bad bats")
+    parser.add_argument("k", type=int, help="dimension of space")
+    parser.add_argument("-f", "--frequency", type=int, help="period of status updates.", default=10000)
+    parser.add_argument("-b", "--bistate",  
+                        type=str_to_bool, default=False, nargs='?', const=True,
+                        help="if true, run in (buggy!) bistate mode")
+    parser.add_argument("-s", "--prune-short-rows",  
+                        type=str_to_bool, default=True, nargs='?', const=True,
+                        help="if true, discount L-matrix if any row has fewer than k+1 non-zero elements")
+    parser.add_argument("-o", "--only-odd-ones",
+                        type=str_to_bool, default=False, nargs='?', const=True,
+                        help="if true, require all vertex match deltas to have an odd number of ones")
+    parser.add_argument("-H", "--prune-hash",
+                        type=str_to_bool, default=False, nargs='?', const=True,
+                        help="if true, prune tree if RREF of L-matrix was seen before")
+    parser.add_argument("-m", "--prune-max-rows",
+                        type=str_to_bool, default=False, nargs='?', const=True,
+                        help="if true, apply max row constraint to RREF of L-matrix")
+    parser.add_argument("-p", "--prune-pivots",
+                        type=str_to_bool, default=False, nargs='?', const=True,
+                        help="if true, apply constraint to RREF L_matrix pivot position")
+    args = parser.parse_args()
+
+    config.only_output_odd_ones=args.only_odd_ones
+    if args.bistate:
+        config.use_bistate = True
+        config.use_tristate = False
     else:
-        demo()
+        config.use_bistate = False
+        config.use_tristate = True
+    
+    demo( (args.M,args.k), 
+            use_hash = args.prune_hash,
+            prune_pivots = args.prune_pivots,
+            prune_max_rows = args.prune_max_rows,
+            prune_short_rows = args.prune_short_rows,
+            print_period = args.frequency,
+            )
 
 if __name__ == "__main__":
     ddd()
