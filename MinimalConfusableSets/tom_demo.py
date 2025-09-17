@@ -140,7 +140,7 @@ def demo(M_and_k_tuple=None, show_cs=False,
                     new_best = True
 
                 if i % print_period == 0:
-                    print(f"{name}: CURRENT {i}, M={M}, k={k}, raw={mat}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}\n")
+                    print(f"{name}: CURRENT {i}, M={M}, k={k}, raw={repr(mat)}, rre={repr(rre)}, EE.total()={EE.total()}, OO.total()={OO.total()}\n")
                     mes = f"\n\nbest_siz={smallest_siz_so_far} for M={M}, k={k},\n" \
                           f"{cfg}\n" \
                           f"CMD: {sys.argv}\n"

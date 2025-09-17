@@ -6,12 +6,13 @@ from sympy import Matrix, MutableDenseMatrix, ImmutableDenseMatrix, Rational, In
 def demo(L_matrix_string=None):
 
     M=7
-    k=3
+    k=2
 
     if L_matrix_string==None:
         L_matrix = Matrix([
-            [-1, -1, -1, -1, -1,  0, 0],
-            [-1, -1,  0,  0,  1, -1, 1],
+            [-1, -1, -1, -1, -1,  0,  0],
+            [-1, -1,  0,  0,  0, -1,  0],
+            [ 0,  0, -1, -1,  0,  0, -1],
             ])
     else:
         L_matrix = Matrix(eval(L_matrix_string))
@@ -20,17 +21,15 @@ def demo(L_matrix_string=None):
              or L_matrix.shape[1] == M )# K cols
 
     assert M == 7  # unscaled bad bats currently suppose this!
-    assert k == 3  # unscaled bad bats currently suppose this!
+    assert k == 2  # unscaled bad bats currently suppose this!
 
-    unscaled_bad_bats= Matrix([
-        [-11575,   2898,   7809],
-        [  5440,  -9614,  10710],
-        [  7015,   7050,   7451],
-        [ 11043,  22430,  -6115],
-        [   472,  17542, -13380],
-        [  3256,  -6891,   -198],
-        [  4748, -19311,  -9925],
-        ])
+    unscaled_bad_bats= Matrix([[-11575,  2898],
+                               [  7809,  5440],
+                               [ -9614, 10710],
+                               [  7015,  7050],
+                               [  7451, 11043],
+                               [ 22430, -6115],
+                               [   472, 17542]])
 
     corn = confusable_multisets.confusable_sets_or_None(L_matrix, unscaled_bad_bats, M) 
 

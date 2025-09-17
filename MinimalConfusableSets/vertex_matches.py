@@ -506,7 +506,7 @@ def generate_viable_vertex_match_matrices(
 
     # TODO: consider making prefix a SymPy matrix natively, so that we are not always converting, and can more easily get different views. Maybe this would speed somet hings up??
     def dfs(prefix, start_row):
-        # "prefix" is a list or rows, each of which is a tuple. 
+        # "prefix" is a list or rows, each of which is a tuple of length M.
         # "mat" is a Sympy representation of prefix.
 
         # Yield the current matrix
@@ -515,7 +515,56 @@ def generate_viable_vertex_match_matrices(
 
         if yield_the_matrix:
 
-            mat = sp.Matrix(prefix)
+            if prefix:
+                mat = sp.Matrix(prefix)
+            else:
+                mat = sp.Matrix(0,M, prefix)
+
+            """
+            One could easily have this matrix at some point in the generation:
+            
+                mat_1 = [[ -1, -1, -1, -1, -1],
+                         [  0,  0,  0, +1, +1]]
+                         
+            and then later have
+            
+                mat_2 = [[ -1, -1, -1, +1, +1], # Note trade of two -1s for two +1s on this row
+                         [  0,  0,  0, -1, -1]] # This row is "beyond" the first row as it has fewer minus ones
+                         
+            yet mat_2 can be converted to mat_1 if the signs of columns 4 and 5 are swapped, and so 
+            mat_1 and mat_2 lead to the same confusable sets since bad_bats lengths (and thus signs) are irrelevant.
+            
+            There is therefore no point in pursuing further processing of mat_2 if mat_1 has preceded it.
+            
+            One way of avoiding processing mat_2 is to scale cols so that -1 appears as the upper-most non-zero entry 
+            in each column, and then checking if this matrix has been seen before.  This will work, but is memory
+            intensive if all matrices ever seen are cached.  On the other hand, for pruning at DEPTH one could decide
+            to create a fresh cache only when going deeper (and throw it away on return from depth).  This would
+            keep cache length only as big as the number of unique possibilities in any one row.
+            
+            Such a depth pruning would remove mat_2 much before this point, though, as 
+            
+                mat_0 = [[ -1, -1, -1, -1, -1]]
+                
+            would veto
+            
+                mat_o =  [[ -1, -1, -1, +1, +1]]
+                
+            which is potentially frightening. Why?  Because one might fear that there is some matrix with mat_o at the
+            top and something else lower down that is inequivalent to all matrices which could have been obtained
+            by putting mat_0 at the top with other things below.
+            
+            E.g. what if we "need" something equivalent to this:
+            
+                [[ -1, -1, -1, +1, +1],
+                 [
+                 
+            but can't get it from
+            
+                [[ -1, -1, -1, -1, -1],
+                 [
+        
+            """
 
             if calculate_rre_early:
                 rre, rre_pivots = calc_rre(mat, sort_cols=sort_cols)
