@@ -1,3 +1,5 @@
+Run compare_M7k3.sh to compare two different match matrices.
+
 OK - I have decided to bite the bullet and write some code (I suspect you will contribute to it too) to do what we talked about yesterday. I.e.:
 
 	(1) enumerate all matches (and multi-matches) in a sensible order, then
