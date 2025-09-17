@@ -40,6 +40,8 @@ L = Matrix([
 ```
 
 # Unit Testing:
+NEWSFLASH: some global vars temporarily block the running of pytest framework other than by the workaround script run_tests.sh. So for the moment run pytest via that script. Otherwise, in the past (and in the future):
+
 Unit tests are organised for pytest, so run with
 ```
 pytest
