@@ -620,10 +620,12 @@ def generate_viable_vertex_match_matrices(
         # Start the rows at the given start_row:
         row_gen = generate_all_vertex_matches_given_equivalent_places(equivalent_places = e_places, k=k, start=start_row)
 
+        # Avoid repeating the start_row itself at the top of recursion
+        if start_row is not None:
+            discard = next(row_gen)
+            assert discard == start_row
+
         for row in row_gen:
-            # Avoid repeating the start_row itself at the top of recursion
-            if start_row is not None and row == start_row:
-                continue
             # Recurse with the new row appended to prefix
             yield from dfs(prefix + [row], row)
 
