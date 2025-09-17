@@ -1,6 +1,10 @@
 import sympy as sp
 import sympy_tools as spt
 from math import sqrt
+from sympy import Matrix
+from collections import Counter
+import matplotlib.pyplot as plt
+
 
 def size_of_confusable_multiset_formed_from(B_scaled, # B_scaled is a SCALED bad bat matrix. This means that it is a matrix with m rows, each being a k-dim direction vector which is perp to lots of good bats. The edges of the "even-odd hypercube construction" from which the alternate red and blue points are extracted to make the confusable multisets are these rows
                               ):
@@ -58,10 +62,6 @@ def scaled_bad_bat_matrix(B_unscaled, vector_of_alphas,):
     """
 
     return spt.scale_rows(B_unscaled, vector_of_alphas)
-
-from sympy import Matrix
-from collections import Counter
-import matplotlib.pyplot as plt
 
 # --- Helper functions ---
 
@@ -141,7 +141,9 @@ def confusable_sets_or_None(L_matrix : sp.Matrix, unscaled_bad_bat_matrix:sp.Mat
     """
     If no scaling of the bad-bat lattice achieving the matches in L_matrix generates confusable sets,
     return None.
-    Else, return a tuple containing:
+    Else, return (EE, OO, point_in_null_space, scaled_bad_bat_matrix).
+
+    This is a tuple containing:
         * EE and OO (a pair of confusable sets obtained from the bad-bat lattice using the L_matrix matches)
         * the length-M vector of scalings that would scale the M unscaled_bad_bats to the M scaled_bad_bats that made EE and OO
         * the scaled_bad_bats (this is really a convenience output, as it is would be easy to recompute via:
@@ -428,7 +430,25 @@ def plot_with_rings(counter, color, label, double_count=False):
                                   edgecolor=color, linewidth=1.2, alpha=0.8)
                 ax.add_patch(circ)
 
+def plot(title_add="", M=None, k=None, EE=None, OO=None, C=None):
+    #print(f"M={M}, k={k}, EE={EE}, OO={OO}, C={C} in cs.plot")
+    for thing in EE, OO, C:
+        if thing is not None:
+            elems = tuple(thing.elements())
+            if len(elems)>=1:
+                assert len(elems[0]) == k
 
+    plt.figure(figsize=(6,6))
+    if EE is not None:
+        plot_with_rings(EE, color="red", label="EE")
+    if OO is not None:
+        plot_with_rings(OO, color="blue", label="OO")
+    if C is not None:
+        plot_with_rings(C,  color="green", label="C", double_count=True)
+    plt.gca().set_aspect("equal", adjustable="box")
+    plt.title(title_add + f"\nConfusable sets of size {EE.total()} for M={M}, k={k}")
+    plt.show()
+    
 
 def analyze_B(scaled_bad_bat_matrix: Matrix, title_add ="",
               debug=False, try_to_plot = True,
@@ -446,20 +466,12 @@ def analyze_B(scaled_bad_bat_matrix: Matrix, title_add ="",
         print(f"  Sanity: |EE|+|OO|+2|C| = {sum(EE.values())+sum(OO.values())+2*sum(C.values())} "
               f"should equal sum(E)+sum(O) = {sum(E.values())+sum(O.values())}")
 
-    # Plot only if 2D
-    if try_to_plot and scaled_bad_bat_matrix.shape[1] >= 1:
-        plt.figure(figsize=(6,6))
-        #print("Plotting EE")
-        plot_with_rings(EE, color="red", label="EE")
-        #print("Plotting OO")
-        plot_with_rings(OO, color="blue", label="OO")
+    # Plot
+    if try_to_plot:
         if show_C_if_plotting:
-            #print("Plotting C")
-            plot_with_rings(C,  color="green", label="C", double_count=True)
-        #plt.legend(["EE","OO","C"])
-        plt.gca().set_aspect("equal", adjustable="box")
-        plt.title(title_add + f"\nConfusable sets of size {EE.total()} for M={M}, k={k}\n(EE=red, OO=blue, C=green)")
-        plt.show()
+            plot(title_add, M, k, EE, OO, C)
+        else:
+            plot(title_add, M, k, EE, OO, None)
 
     return E, O, C, EE, OO
 
