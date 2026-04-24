@@ -264,9 +264,41 @@ class Embedder(MultisetEmbedder):
         metadata = None
         return embedding, metadata
     
+    def _pre_hash_state(self, data: np.ndarray):
+        """Return (second_diffs, canonical_eji_counts) — the inputs to the hash step.
+
+        second_diffs       : float64 array, shape (num_v,)
+        canonical_eji_counts: uint16 array,  shape (num_v, n, k)
+        """
+        from itertools import pairwise
+        assert MultisetEmbedder.is_generic_data(data)
+        n, k = data.shape
+        num_v = n * k - 1
+
+        flattened_data = [(data[j][i], Eji(j, i)) for j in range(n) for i in range(k)]
+        sorted_data = sorted(flattened_data, key=lambda x: -x[0])
+        difference_data = [(x[0] - y[0], x[1]) for x, y in pairwise(sorted_data)]
+        difference_data_with_MSVs = [
+            (delta, Maximal_Simplex_Vertex(set(eji for (_, eji) in difference_data[:i + 1])))
+            for i, (delta, _) in enumerate(difference_data)
+        ]
+        sorted_ddmsvs = sorted(difference_data_with_MSVs, key=lambda x: -x[0])
+        deltas = [d for d, _ in sorted_ddmsvs]
+        msvs = [msv for _, msv in sorted_ddmsvs]
+        subdivided = [
+            ((i + 1) * (deltas[i] - (deltas[i + 1] if i + 1 < num_v else 0)),
+             Eji_LinComb(n, k, msvs[:i + 1]))
+            for i in range(num_v)
+        ]
+        canonical_data = [(delta, lc.get_canonical_form()) for delta, lc in subdivided]
+
+        second_diffs = np.array([d for d, _ in canonical_data], dtype=np.float64)
+        canonical_eji_counts = np.array([lc._eji_counts for _, lc in canonical_data], dtype=np.uint16)
+        return second_diffs, canonical_eji_counts
+
     def size_from_n_k_generic(self, n: int, k: int) -> int:
         return 2*n*k + 1
-    
+
 def eji_set_to_np_array(eji_set, n, k):
     ans = np.zeros(shape=(n, k))
     for (j, i) in eji_set:
