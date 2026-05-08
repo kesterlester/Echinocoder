@@ -35,7 +35,16 @@ def demo(L_matrix_string=None):
 
     if corn is not None:
         EE, OO, point_in_null_space, scaled_bad_bats = corn
+
+        def f(x):
+            return ImmutableDenseMatrix((x[0], x[1], 0))
+
+        from collections import Counter
+        EE_3D = Counter({f(k): v for k, v in EE.items()})
+        OO_3D = Counter({f(k): v for k, v in OO.items()})
+
         confusable_multisets.plot(title_add=f"L_mat = {repr(L_matrix)}", M=M, k=k, EE=EE, OO=OO, C=None)
+        #confusable_multisets.plot(title_add=f"L_mat = {repr(L_matrix)}", M=M, k=3, EE=EE_3D, OO=OO_3D, C=None)
 
 if __name__ == "__main__":
     import sys
