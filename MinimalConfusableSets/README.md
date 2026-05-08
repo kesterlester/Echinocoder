@@ -1,3 +1,8 @@
+# WARNING (TEMPORARY):
+NEWSFLASH: some global vars temporarily block the running of pytest framework other than by the workaround script run_tests.sh.   So for the moment run pytest via that script.i Do not run pytest directly.
+
+# General information:
+
 Run compare_M7k3.sh to compare two different match matrices.
 
 OK - I have decided to bite the bullet and write some code (I suspect you will contribute to it too) to do what we talked about yesterday. I.e.:
