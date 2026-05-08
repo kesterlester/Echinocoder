@@ -1,0 +1,413 @@
+%% algorithm_description.tex
+%%
+%% A high-level description of the algorithms in MinimalConfusableSets,
+%% reconstructed primarily from reading the source code.
+%% Written with Claude's assistance, May 2026.
+%%
+%% WARNING: This document was reconstructed from code, not from the author's
+%% own notes. Statements marked with \textbf{[?]} indicate places where
+%% the intent has been inferred rather than read directly.
+
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\newtheorem{observation}{Observation}
+
+\title{Minimal Confusable Multisets:\\
+A Description of the Algorithms in \texttt{MinimalConfusableSets}}
+
+\author{Lester (code), Claude (document reconstruction)}
+\date{May 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document gives a high-level description of the algorithms implemented in
+the \texttt{MinimalConfusableSets} subdirectory of the Echinocoder repository.
+The goal of that code is to search for, and determine the minimum size of,
+\emph{confusable multisets}: pairs of equal-size multisets of vectors in
+$\mathbb{R}^k$ that cannot be distinguished by a given family of encoding
+directions. The description here has been reconstructed from reading the source
+code rather than from the author's own notes; uncertain inferences are flagged
+with \textbf{[?]}.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% -----------------------------------------------------------------------
+\section{Background and motivation}
+
+\textbf{[?]} The broader Echinocoder project appears to be concerned with
+encoding multisets of vectors in $k$-dimensional space, and specifically with
+understanding when such an encoding fails to be injective. An encoding
+associates to each input multiset a set of dot products with a fixed collection
+of $n$ \emph{encoding direction vectors} (the ``good bats''). The encoding is
+injective if no two distinct input multisets produce the same output.
+
+The present sub-project addresses a specific obstruction to injectivity. If
+there exist $M$ vectors $\vec{q}_1, \ldots, \vec{q}_M \in \mathbb{R}^k$ each
+of which is \emph{orthogonal} to all the encoding direction vectors---these are
+the \emph{bad bats}---then certain pairs of multisets built from the $\vec{q}_i$
+are invisible to the encoder. The code searches for the smallest such pairs,
+called confusable multisets.
+
+The key parameters are:
+\begin{itemize}
+  \item $k$: the dimension of the ambient space,
+  \item $M$: the number of bad-bat vectors.
+\end{itemize}
+
+%% -----------------------------------------------------------------------
+\section{The even-odd hypercube construction}
+\label{sec:even-odd}
+
+Given $M$ vectors $\vec{q}_1, \ldots, \vec{q}_M \in \mathbb{R}^k$, define the
+$2^M$ \emph{subset sums}
+\[
+  S_I \;=\; \sum_{i \in I} \vec{q}_i, \qquad I \subseteq \{1, \ldots, M\},
+\]
+and partition them according to the parity of $|I|$:
+\begin{align*}
+  E &= \{\, S_I : |I| \text{ is even}\,\},\\
+  O &= \{\, S_I : |I| \text{ is odd}\,\}.
+\end{align*}
+Both $E$ and $O$ are multisets (a given point may appear with multiplicity $>1$
+if different index sets $I$ produce the same sum). By a simple symmetry argument
+$|E| = |O| = 2^{M-1}$ counting multiplicity.
+
+Let $C$ be the ``collision'' multiset: for each point $\vec{v}$, its
+multiplicity in $C$ is $\min(\text{mult}_{E}(\vec{v}),\,
+\text{mult}_{O}(\vec{v}))$. Define the \emph{exclusive} parts
+\[
+  EE = E \setminus C, \qquad OO = O \setminus C,
+\]
+where subtraction is taken in the multiset sense. By construction
+$|EE| = |OO|$.
+
+\begin{definition}
+  A \emph{confusable multiset pair} is a pair $(EE, OO)$ produced by the
+  even-odd hypercube construction with $|EE| = |OO| > 0$.
+\end{definition}
+
+\begin{remark}
+  The pair $(EE, OO)$ is confusable in the sense that both multisets have the
+  same multiset of dot products with any direction orthogonal to all
+  $\vec{q}_i$. In particular, any encoding that uses only such orthogonal
+  directions cannot distinguish $EE$ from $OO$.
+\end{remark}
+
+\subsection*{Why $|EE|$ can be zero}
+
+If $E$ and $O$ coincide exactly as multisets (total cancellation), then $C = E
+= O$ and $EE = OO = \emptyset$. The code calls this outcome \emph{collapse},
+and the corresponding configuration of bad bats is uninteresting. The search
+is for configurations that \emph{avoid} collapse.
+
+%% -----------------------------------------------------------------------
+\section{Scaling the bad bats: unscaled and scaled representations}
+\label{sec:scaling}
+
+In the code, the bad-bat vectors are separated into \emph{directions}
+$\vec{w}_1, \ldots, \vec{w}_M \in \mathbb{R}^k$ (fixed integer vectors in
+``general position'') and \emph{scalings} $\alpha_1, \ldots, \alpha_M \in
+\mathbb{R}$, so that
+\[
+  \vec{q}_i = \alpha_i \,\vec{w}_i.
+\]
+The \emph{unscaled bat matrix} $W$ is the $M \times k$ matrix whose $i$-th row
+is $\vec{w}_i$. The \emph{scaled bat matrix} $B = \operatorname{diag}(\alpha)
+\, W$ has $i$-th row $\alpha_i \vec{w}_i$.
+
+The purpose of this split is to allow the problem of finding useful
+configurations to be formulated as a linear algebra question (Section
+\ref{sec:alpha-attacking}).
+
+The unscaled directions are chosen randomly in general position, meaning every
+subset of at most $k$ of the $\vec{w}_i$ is linearly independent. This
+genericity ensures that the null-space calculation (Section
+\ref{sec:alpha-attacking}) captures the right constraints.
+
+%% -----------------------------------------------------------------------
+\section{Vertex matches}
+\label{sec:vertex-matches}
+
+\begin{definition}
+  A \emph{vertex match} is a tuple $\ell = (\ell_1, \ldots, \ell_M) \in
+  \{-1, 0, +1\}^M$ such that the number of $+1$ entries is even and the number
+  of $-1$ entries is odd.
+\end{definition}
+
+Geometrically, a vertex match encodes a coincidence between two subset sums:
+the $+1$ positions form one summand and the $-1$ positions form the other, so
+that the constraint $\sum_i \ell_i \vec{q}_i = 0$ expresses the fact that
+those two subsets produce the same point. The parity condition (even $+1$s, odd
+$-1$s) ensures that one summand contributes to $E$ and the other to $O$,
+producing the kind of coincidence needed for a non-trivial confusable pair.
+\textbf{[?]}
+
+\begin{definition}
+  A vertex match $\ell$ is \emph{useful} (for given $k$) if it has at least
+  $k+1$ non-zero entries. The reason is that the sum of $\leq k$ linearly
+  independent vectors in $k$-dimensional space is always non-zero, so a match
+  with only $k$ or fewer active positions cannot hold for generic bad bats.
+\end{definition}
+
+\subsection*{Tristate vs bistate vertex matches}
+
+Two variants of vertex match are present in the code:
+\begin{itemize}
+  \item \textbf{Tristate}: entries in $\{-1, 0, +1\}$ with the parity
+    constraint above. This is the original and more general formulation.
+  \item \textbf{Bistate}: entries in $\{0, +1\}$ only (no $-1$ entries). This
+    is a more recent variant \textbf{[?]} corresponding to the
+    \texttt{NO\_MINUS\_ONES\_BRANCH} in git history. The geometric meaning of
+    the bistate constraint is that a single subset sums to zero, $\sum_{i \in
+    I} \vec{q}_i = 0$, rather than two subsets having equal sums.
+\end{itemize}
+At runtime exactly one variant is active, selected via \texttt{config.py}.
+
+\subsection*{Equivalent places}
+
+When the current partial L-matrix (see Section \ref{sec:L-matrices}) has not
+yet broken any symmetry between some subset of the $M$ bad-bat positions, those
+positions are \emph{equivalent}: permuting them within the next row cannot
+produce anything inequivalent to what has already been generated. The code
+tracks these equivalence classes explicitly via the \texttt{Equivalent\_Places}
+class, and uses them to avoid redundant generation of permuted rows.
+
+%% -----------------------------------------------------------------------
+\section{L-matrices}
+\label{sec:L-matrices}
+
+An \emph{L-matrix} is a matrix $L$ whose rows are vertex matches. Each row
+imposes one coincidence constraint; the full matrix imposes all of them
+simultaneously.
+
+The ultimate output of the search is a ``good'' L-matrix: one for which (a)
+there exists a scaling $\alpha$ consistent with all the constraints, and (b)
+the resulting confusable pair $(EE, OO)$ is non-empty and as small as possible.
+
+%% -----------------------------------------------------------------------
+\section{The alpha-attacking matrix and collapse detection}
+\label{sec:alpha-attacking}
+
+Substituting $\vec{q}_i = \alpha_i \vec{w}_i$ into the $r$-th vertex-match
+constraint
+\[
+  \sum_{j=1}^M L_{rj}\, \vec{q}_j = \vec{0}
+\]
+and writing out the $k$ component equations gives, for each component $\kappa$:
+\[
+  \sum_{j=1}^M L_{rj} \,\alpha_j \, w_{j\kappa} \;=\; 0.
+\]
+Collecting all $R$ constraints and all $k$ components into a single linear
+system $A \alpha = 0$ defines the \emph{alpha-attacking matrix}
+\[
+  A_{(r-1)k+\kappa,\; j} \;=\; L_{rj} \cdot w_{j\kappa},
+  \qquad r=1,\ldots,R,\; \kappa=1,\ldots,k,\; j=1,\ldots,M.
+\]
+This is computed by \texttt{alpha\_attacking\_matrix} in
+\texttt{confusable\_multisets.py}.
+
+The null space $\mathcal{N}(A)$ is the set of valid scalings $\alpha$. Three
+cases arise:
+\begin{enumerate}
+  \item $\dim \mathcal{N}(A) = 0$: the only solution is $\alpha = 0$; all bad
+    bats vanish. This is \emph{complete collapse}; the matrix is discarded.
+  \item $\dim \mathcal{N}(A) = M$: $A$ is the zero matrix, so $\alpha$ is
+    completely free. Any all-ones vector lies in the null space: no collapse.
+  \item $0 < \dim \mathcal{N}(A) < M$: check whether every coordinate
+    direction $e_j$ is non-zero in at least one basis vector of
+    $\mathcal{N}(A)$. If so, a linear combination exists with all $\alpha_j
+    \neq 0$ (proved in the code comments, attributed to a OneNote entry). If
+    some coordinate $j$ is zero in every basis vector, then $\alpha_j = 0$ is
+    forced: bat $j$ collapses.
+\end{enumerate}
+
+\subsection*{Finding a non-collapsing point in the null space}
+
+When the null space is non-trivial and non-collapsing, the code needs a
+specific point $\alpha^* \in \mathcal{N}(A)$ with all $\alpha^*_j \neq 0$.
+This is done by \texttt{nonzero\_lin\_comb.combine\_many}: starting from the
+first basis vector, it combines basis vectors one at a time, at each step
+choosing an integer multiplier $\lambda$ (the smallest integer avoiding a
+finite set of ``forbidden'' values) that keeps all previously-established
+non-zero coordinates non-zero while activating the next coordinate.
+
+%% -----------------------------------------------------------------------
+\section{Computing the confusable pair}
+\label{sec:computing}
+
+Given the scaled bat matrix $B = \operatorname{diag}(\alpha^*) W$, the code
+computes $(EE, OO)$ via a \emph{meet-in-the-middle} approach:
+
+\begin{enumerate}
+  \item Split the $M$ rows of $B$ into a left half ($M/2$ rows) and a right
+    half.
+  \item For each half, enumerate all $2^{M/2}$ subset sums, keeping track of
+    the parity of the subset size. This gives four counters: $L_{\text{even}}$,
+    $L_{\text{odd}}$, $R_{\text{even}}$, $R_{\text{odd}}$.
+  \item Convolve:
+    \begin{align*}
+      E &= (L_{\text{even}} * R_{\text{even}}) + (L_{\text{odd}} * R_{\text{odd}}),\\
+      O &= (L_{\text{even}} * R_{\text{odd}}) + (L_{\text{odd}} * R_{\text{even}}),
+    \end{align*}
+    where $*$ denotes convolution of the counter-valued functions on
+    $\mathbb{R}^k$.
+  \item Compute $C$, $EE$, $OO$ as in Section \ref{sec:even-odd}.
+\end{enumerate}
+
+This reduces the cost from $O(2^M)$ to $O(2^{M/2})$ at the expense of the
+convolution step.
+
+%% -----------------------------------------------------------------------
+\section{The search algorithm}
+\label{sec:search}
+
+The outer loop, driven by \texttt{generate\_viable\_vertex\_match\_matrices} in
+\texttt{vertex\_matches.py}, enumerates L-matrices via a depth-first search:
+
+\begin{enumerate}
+  \item Start with the empty matrix.
+  \item At each level of the DFS, extend the current matrix by one row, chosen
+    from all valid vertex matches respecting the current equivalence classes of
+    bat positions.
+  \item Apply pruning tests (Section \ref{sec:pruning}) to decide whether to
+    yield the current matrix and/or recurse deeper.
+  \item For each yielded matrix, call the \emph{decider function} to test for
+    non-collapse and, if non-collapsing, to compute $(EE, OO)$ and record
+    $|EE|$.
+  \item Track the smallest $|EE|$ found across all matrices and all choices of
+    unscaled bat matrix.
+\end{enumerate}
+
+\subsection*{Robustness via multiple bat matrices}
+
+A collapse result for a specific unscaled bat matrix $W$ does not rule out a
+non-collapsing solution for a different $W$. To guard against this, the demo
+driver (\texttt{tom\_demo.py}) runs multiple independent \texttt{Rational\_Decider}
+instances, each using a differently-seeded random bat matrix. A matrix is
+treated as collapsing only when all deciders agree. The comment in the code
+contains a probabilistic argument (incomplete at the time of writing) that this
+multi-decider approach can drive the false-collapse probability arbitrarily
+low.
+
+%% -----------------------------------------------------------------------
+\section{Pruning strategies}
+\label{sec:pruning}
+
+Several pruning strategies are implemented to reduce the search space.
+
+\subsection{Short-row pruning (\texttt{prune\_short\_rows})}
+
+If the reduced row echelon form (RREF) of the current matrix contains a row
+with between $1$ and $k$ non-zero entries, the matrix is discarded. The
+reasoning is that such a row would force a linear combination of $\leq k$
+specific bad-bat directions to vanish, which is impossible when those bats are
+in general position. This pruning is the most effective and is on by default.
+
+\subsection{Maximum-rows pruning (\texttt{prune\_max\_rows})}
+
+The RREF of a viable L-matrix cannot have more than a certain number of rows,
+determined by $M$ and $k$. The code can optionally stop deepening the DFS once
+this maximum is reached. This pruning is marked as ``probably buggy/wrong'' in
+the source.
+
+\subsection{Pivot pruning (\texttt{prune\_pivots})}
+
+Discards matrices whose RREF pivots are ``too far to the right'' given $k$.
+Also marked as ``probably wrong'' in the source.
+
+\subsection{Hash-based deduplication (\texttt{remove\_duplicates\_via\_hash})}
+
+The RREF of a matrix (optionally with columns scaled to a canonical form) is
+hashed. Matrices whose canonical RREF has been seen before are discarded. This
+is disabled by default with a warning that it can exhaust memory.
+
+\subsection{Equivalent-places symmetry reduction}
+
+As described in Section \ref{sec:vertex-matches}, the enumeration of rows
+respects the current equivalence classes of bat positions. This is not a
+pruning step per se but a reorganisation of the enumeration that avoids
+generating permutations of rows that are known to be equivalent.
+
+A further (commented-out) idea in the source discusses pruning column-sign
+equivalences: if two L-matrices differ only in the signs of certain columns,
+and one precedes the other in the DFS, the later one need not be explored. This
+is noted as potentially very powerful but ``frighteningly'' hard to justify
+correctness for.
+
+%% -----------------------------------------------------------------------
+\section{Vertex-match signature enumeration}
+\label{sec:signatures}
+
+Rather than enumerating vertex matches directly, the code first enumerates
+their \emph{signatures}: the triple $(e, o, z)$ giving the count of $+1$s,
+$-1$s and $0$s respectively (with $e + o + z = M$, $e$ even, $o$ odd in
+the tristate case). Signatures are generated in an order such that when
+converted to canonical tuples (sorted non-decreasingly) the result is in
+ascending lexicographic order.
+
+For each signature, all distinct permutations of the corresponding canonical
+tuple are generated, subject to the current equivalent-places constraints. This
+two-level generation (signature, then permutations) is more efficient than
+iterating over all $3^M$ possible tuples and filtering.
+
+%% -----------------------------------------------------------------------
+\section{Data flow summary}
+
+The following diagram gives the overall data flow.
+
+\medskip
+\noindent
+\begin{tabular}{l p{9cm}}
+  \textbf{Input} & $M$, $k$, and (optionally) specific unscaled bat matrices $W$. \\[4pt]
+  \textbf{Step 1} & Generate unscaled bat matrix $W$ in general position (random
+    integers, sampled from a Gaussian, with a given seed). \\[4pt]
+  \textbf{Step 2} & Enumerate L-matrices via DFS over vertex-match rows
+    (\texttt{generate\_viable\_vertex\_match\_matrices}). \\[4pt]
+  \textbf{Step 3} & For each L-matrix, form the alpha-attacking matrix $A =
+    A(L, W)$ and compute $\mathcal{N}(A)$. \\[4pt]
+  \textbf{Step 4} & If non-collapsing, find $\alpha^* \in \mathcal{N}(A)$ with
+    all components non-zero (\texttt{nonzero\_lin\_comb}). \\[4pt]
+  \textbf{Step 5} & Compute $B = \operatorname{diag}(\alpha^*) W$ and evaluate
+    $(EE, OO)$ via meet-in-the-middle. \\[4pt]
+  \textbf{Step 6} & Record $|EE|$ if it is the new minimum. \\[4pt]
+  \textbf{Output} & The minimum observed $|EE|$, together with the L-matrix,
+    scalings, and scaled bat matrix that achieved it.
+\end{tabular}
+
+%% -----------------------------------------------------------------------
+\section{Notes and caveats}
+
+\begin{itemize}
+  \item All arithmetic is exact, using SymPy rational arithmetic throughout.
+    This avoids floating-point errors in the null-space computation at the cost
+    of speed.
+
+  \item The search is \emph{not} proved to be exhaustive (the pruning
+    strategies marked ``probably wrong'' in the code may over-prune). The
+    output is therefore a \emph{upper bound} on the minimum confusable-set
+    size, not necessarily the true minimum. \textbf{[?]}
+
+  \item The \texttt{only\_output\_odd\_ones} flag in \texttt{config.py}
+    restricts the search to vertex matches with an odd number of $+1$ entries.
+    The rationale for this restriction is not documented in the code, but may
+    be related to a symmetry argument. \textbf{[?]}
+
+  \item The \texttt{MinimalConfusableSets} subdirectory is not yet integrated
+    with the rest of the Echinocoder project. The interface between it and
+    ``Tom's'' decider functions (referred to in the README and
+    \texttt{deciders.py}) was under design at the time the code was last
+    actively developed.
+\end{itemize}
+
+\end{document}
