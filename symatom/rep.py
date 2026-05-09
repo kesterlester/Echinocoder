@@ -45,6 +45,14 @@ class Flavour:
     def rank(self) -> int:
         return sum(self.counts)
 
+    def describe(self, group_names) -> str:
+        """Return a human-readable string using group names, e.g. '2 electrons + 1 muon'."""
+        parts = [f"{k} {name}" for k, name in zip(self.counts, group_names) if k > 0]
+        return " + ".join(parts) if parts else "empty"
+
+    def __repr__(self):
+        return f"Flavour({', '.join(str(c) for c in self.counts)})"
+
     def __iter__(self):
         return iter(self.counts)
 
@@ -144,6 +152,12 @@ class FlavouredOperator:
             yield Atom(self.operation, labels, sign=+1)
             if antisym_and_signed:
                 yield Atom(self.operation, labels, sign=-1)
+
+    def __repr__(self):
+        group_names = [g.name for g in self.context.groups]
+        fl_str = self.flavour.describe(group_names)
+        mode = "repL" if self.signed else "repS"
+        return f"FO({self.operation.name}, {fl_str}, {mode})"
 
     def contains(self, atom: Atom) -> bool:
         """
@@ -274,6 +288,16 @@ class PairFlavour:
             object.__setattr__(self, 'flavour_u', self.flavour_v)
             object.__setattr__(self, 'op_v',      op_u)
             object.__setattr__(self, 'flavour_v', fl_u)
+
+    def __repr__(self):
+        def _side(op, fl):
+            counts_str = ", ".join(str(c) for c in fl.counts)
+            return f"{op.name}[{counts_str}]"
+        ov_str = ", ".join(str(s) for s in self.overlap)
+        return (
+            f"PairFlavour({_side(self.op_u, self.flavour_u)}"
+            f" × {_side(self.op_v, self.flavour_v)}, overlap=({ov_str}))"
+        )
 
     def count(self, group_sizes: tuple) -> int:
         """

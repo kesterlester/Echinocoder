@@ -42,6 +42,10 @@ class Context:
         for label in atom.labels:
             self.group_of(label)   # raises KeyError if absent
 
+    def __repr__(self):
+        parts = ", ".join(f"{g.name}[{g.size}]" for g in self.groups)
+        return f"Context({parts})"
+
 
 @dataclass
 class Plan:
@@ -63,3 +67,7 @@ class Plan:
             if op.name == name:
                 return op
         raise KeyError(f"Operation {name!r} is not registered in this plan")
+
+    def __repr__(self):
+        ops = ", ".join(op.name for op in self.operations)
+        return f"Plan(context={self.context!r}, ops=({ops}))"

@@ -48,6 +48,11 @@ class Operation:
         if self.parity not in (+1, -1):
             raise ValueError(f"parity must be +1 or -1, got {self.parity!r}")
 
+    def __repr__(self):
+        par = f"+{self.parity}" if self.parity == 1 else str(self.parity)
+        sym = self.argument_symmetry.name
+        return f"Operation('{self.name}', rank={self.rank}, parity={par}, {sym})"
+
 
 @dataclass(frozen=True)
 class VectorGroup:
@@ -65,6 +70,10 @@ class VectorGroup:
             raise ValueError("VectorGroup must have at least one label")
         if len(set(self.labels)) != len(self.labels):
             raise ValueError(f"VectorGroup labels must be distinct, got {self.labels!r}")
+
+    def __repr__(self):
+        lbls = ", ".join(str(l) for l in self.labels)
+        return f"VectorGroup('{self.name}': {lbls})"
 
     @property
     def size(self) -> int:
@@ -129,6 +138,11 @@ class Atom:
             new_sign = self.sign * perm_sign if sym == ArgumentSymmetry.ANTISYMMETRIC else self.sign
             object.__setattr__(self, 'labels', sorted_labels)
             object.__setattr__(self, 'sign',   new_sign)
+
+    def __repr__(self):
+        sign_str = "+" if self.sign == 1 else "-"
+        args = ", ".join(str(l) for l in self.labels)
+        return f"{sign_str}{self.operation.name}({args})"
 
 
 def are_negatives(a: Atom, b: Atom) -> bool:
