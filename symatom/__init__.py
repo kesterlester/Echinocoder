@@ -13,7 +13,10 @@ from .atoms   import ArgumentSymmetry, Operation, VectorGroup, Atom, are_negativ
 from .context import Context, Plan
 from .canon   import Canonicaliser, SimpleCanonicaliser
 from .orbits  import orbit, stabiliser_size, orbit_and_stabiliser_size
-from .rep     import Flavour, FlavouredOperator, repL, repS
+from .rep     import (Flavour, FlavouredOperator, repL, repS,
+                      PairFlavour, pair_flavour_of,
+                      canonical_pair_flavours,
+                      brute_force_canonical_pair_flavours)
 
 __all__ = [
     "ArgumentSymmetry",
@@ -32,4 +35,8 @@ __all__ = [
     "FlavouredOperator",
     "repL",
     "repS",
+    "PairFlavour",
+    "pair_flavour_of",
+    "canonical_pair_flavours",
+    "brute_force_canonical_pair_flavours",
 ]

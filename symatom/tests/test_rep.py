@@ -1,10 +1,15 @@
-"""Tests for Flavour, FlavouredOperator, repL, repS."""
+"""Tests for Flavour, FlavouredOperator, repL, repS, PairFlavour."""
 import math
 import pytest
 from symatom import (
     ArgumentSymmetry, Operation, VectorGroup, Atom, Context,
+    Plan, SimpleCanonicaliser,
 )
-from symatom.rep import Flavour, FlavouredOperator, repL, repS
+from symatom.rep import (
+    Flavour, FlavouredOperator, repL, repS,
+    PairFlavour, pair_flavour_of,
+    canonical_pair_flavours, brute_force_canonical_pair_flavours,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -367,3 +372,262 @@ def test_three_group_atoms_labels_distinct(eps3, ctx3):
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3, signed=True)
     for atom in fo.atoms():
         assert len(set(atom.labels)) == len(atom.labels)
+
+
+# ---------------------------------------------------------------------------
+# PairFlavour — construction and canonical ordering
+# ---------------------------------------------------------------------------
+
+def test_pair_flavour_construction_basic(dot, electrons):
+    """PairFlavour builds and stores its fields."""
+    fl2 = Flavour((2,))
+    pf = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(1,))
+    assert pf.op_u == dot
+    assert pf.flavour_u == fl2
+    assert pf.op_v == dot
+    assert pf.flavour_v == fl2
+    assert pf.overlap == (1,)
+
+def test_pair_flavour_canonical_ordering_swaps_sides(dot, eps3):
+    """If (op_v, fl_v) < (op_u, fl_u), the sides are swapped at construction."""
+    fl2 = Flavour((2,))
+    fl3 = Flavour((3,))
+    # "dot" < "eps3" alphabetically, so dot should always end up as op_u.
+    pf_natural  = PairFlavour(op_u=dot,  flavour_u=fl2, op_v=eps3, flavour_v=fl3, overlap=(1,))
+    pf_reversed = PairFlavour(op_u=eps3, flavour_u=fl3, op_v=dot,  flavour_v=fl2, overlap=(1,))
+    assert pf_natural == pf_reversed
+    assert pf_natural.op_u == dot
+    assert pf_natural.op_v == eps3
+
+def test_pair_flavour_same_op_same_fl_is_symmetric(dot):
+    """When both sides are identical, swapping changes nothing."""
+    fl2 = Flavour((2,))
+    pf = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(1,))
+    assert pf.op_u == dot and pf.op_v == dot
+    assert pf.flavour_u == fl2 and pf.flavour_v == fl2
+
+def test_pair_flavour_frozen(dot):
+    """PairFlavour is immutable."""
+    fl2 = Flavour((2,))
+    pf = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(0,))
+    with pytest.raises((AttributeError, TypeError)):
+        pf.overlap = (1,)  # type: ignore[misc]
+
+
+# ---------------------------------------------------------------------------
+# PairFlavour — validation errors
+# ---------------------------------------------------------------------------
+
+def test_pair_flavour_overlap_exceeds_min_flavour(dot):
+    """overlap[i] > min(k_u_i, k_v_i) must raise ValueError."""
+    fl2 = Flavour((2,))
+    fl1 = Flavour((1,))
+    with pytest.raises(ValueError, match="overlap"):
+        PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl1, overlap=(2,))
+
+def test_pair_flavour_negative_overlap(dot):
+    """Negative overlap must raise ValueError."""
+    fl2 = Flavour((2,))
+    with pytest.raises(ValueError, match="overlap"):
+        PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(-1,))
+
+def test_pair_flavour_mismatched_length(dot):
+    """overlap length != flavour length must raise ValueError."""
+    fl2 = Flavour((2,))
+    with pytest.raises(ValueError):
+        PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(0, 0))
+
+
+# ---------------------------------------------------------------------------
+# PairFlavour — count()
+# ---------------------------------------------------------------------------
+
+def test_pair_flavour_count_dot_dot_single_group(dot):
+    """
+    With 4 electrons, dot (rank 2) paired with itself at each valid overlap:
+      overlap=0: C(4,0)*C(4,2)*C(2,2) = 1*6*1 = 6
+      overlap=1: C(4,1)*C(3,1)*C(2,1) = 4*3*2 = 24
+      overlap=2: C(4,2)*C(2,0)*C(2,0) = 6*1*1 = 6
+    Total = 36 = 6² (6 dot atoms, all ordered pairs).
+    """
+    fl2 = Flavour((2,))
+    group_sizes = (4,)
+    counts = {
+        s: PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2,
+                       overlap=(s,)).count(group_sizes)
+        for s in (0, 1, 2)
+    }
+    assert counts[0] == 6
+    assert counts[1] == 24
+    assert counts[2] == 6
+    assert sum(counts.values()) == 36
+
+def test_pair_flavour_count_two_groups(dot, muons):
+    """
+    Electrons (n=4, k_u=k_v=2) × Muons (n=2, k_u=k_v=1), overlap (0,0).
+    ways_electrons = C(4,0)*C(4,2)*C(2,2) = 6
+    ways_muons     = C(2,0)*C(2,1)*C(1,1) = 2
+    Total = 12.
+    """
+    fl = Flavour((2, 1))
+    pf = PairFlavour(op_u=dot, flavour_u=fl, op_v=dot, flavour_v=fl, overlap=(0, 0))
+    assert pf.count((4, 2)) == 12
+
+
+# ---------------------------------------------------------------------------
+# pair_flavour_of()
+# ---------------------------------------------------------------------------
+
+def test_pair_flavour_of_overlap_zero(dot, ctx1):
+    """Disjoint atoms: overlap should be (0,)."""
+    u = Atom(dot, ("a", "b"), sign=+1)
+    v = Atom(dot, ("c", "d"), sign=+1)
+    pf = pair_flavour_of(u, v, ctx1)
+    assert pf.overlap == (0,)
+    assert pf.flavour_u == Flavour((2,))
+    assert pf.flavour_v == Flavour((2,))
+
+def test_pair_flavour_of_overlap_one(dot, ctx1):
+    """Atoms sharing one label: overlap should be (1,)."""
+    u = Atom(dot, ("a", "b"), sign=+1)
+    v = Atom(dot, ("a", "c"), sign=+1)
+    pf = pair_flavour_of(u, v, ctx1)
+    assert pf.overlap == (1,)
+
+def test_pair_flavour_of_overlap_two_same_atom(dot, ctx1):
+    """Same atom paired with itself: overlap equals the flavour count."""
+    u = Atom(dot, ("a", "b"), sign=+1)
+    pf = pair_flavour_of(u, u, ctx1)
+    assert pf.overlap == (2,)
+
+def test_pair_flavour_of_two_groups(dot, eps3, ctx2):
+    """Cross-group atom: dot(a, p) has flavour (1,1), self-overlap (1,1)."""
+    u = Atom(dot, ("a", "p"), sign=+1)
+    pf = pair_flavour_of(u, u, ctx2)
+    assert pf.flavour_u == Flavour((1, 1))
+    assert pf.overlap == (1, 1)
+
+def test_pair_flavour_of_is_symmetric(dot, ctx1):
+    """pair_flavour_of(u, v) == pair_flavour_of(v, u) (canonical ordering)."""
+    u = Atom(dot, ("a", "b"), sign=+1)
+    v = Atom(dot, ("c", "d"), sign=+1)
+    assert pair_flavour_of(u, v, ctx1) == pair_flavour_of(v, u, ctx1)
+
+def test_pair_flavour_of_mixed_ops(dot, eps3, ctx1):
+    """pair_flavour_of works for atoms with different operations."""
+    u = Atom(dot,  ("a", "b"),      sign=+1)
+    v = Atom(eps3, ("a", "b", "c"), sign=+1)
+    pf = pair_flavour_of(u, v, ctx1)
+    assert pf.op_u == dot   # dot < eps3 alphabetically
+    assert pf.op_v == eps3
+    assert pf.overlap == (2,)  # 'a' and 'b' are shared
+
+
+# ---------------------------------------------------------------------------
+# canonical_pair_flavours vs brute_force: cross-validation
+# ---------------------------------------------------------------------------
+
+def test_cpf_matches_brute_force_single_group_dot_only(dot, ctx1):
+    """With one group and one op, both methods agree."""
+    fo_list = repL(ctx1, [dot])
+    fast   = set(canonical_pair_flavours(fo_list, ctx1))
+    brute  = brute_force_canonical_pair_flavours(fo_list, ctx1)
+    assert fast == brute
+
+def test_cpf_matches_brute_force_single_group_two_ops(dot, eps3, ctx1):
+    """With one group, dot + eps3: both methods agree."""
+    fo_list = repL(ctx1, [dot, eps3])
+    fast   = set(canonical_pair_flavours(fo_list, ctx1))
+    brute  = brute_force_canonical_pair_flavours(fo_list, ctx1)
+    assert fast == brute
+
+def test_cpf_matches_brute_force_two_groups(dot, eps3, ctx2):
+    """With two groups (electrons + muons): both methods agree."""
+    fo_list = repL(ctx2, [dot, eps3])
+    fast   = set(canonical_pair_flavours(fo_list, ctx2))
+    brute  = brute_force_canonical_pair_flavours(fo_list, ctx2)
+    assert fast == brute
+
+def test_cpf_empty_fo_list(ctx1):
+    """Empty input gives empty output."""
+    assert canonical_pair_flavours([], ctx1) == []
+    assert brute_force_canonical_pair_flavours([], ctx1) == set()
+
+
+# ---------------------------------------------------------------------------
+# canonical_pair_flavours — specific orbit-structure checks
+# ---------------------------------------------------------------------------
+
+def test_cpf_overlap_zero_and_one_are_distinct(dot, ctx1):
+    """(dot, dot, overlap=0) and (dot, dot, overlap=1) are different PairFlavours."""
+    fl2 = Flavour((2,))
+    pf0 = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(0,))
+    pf1 = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(1,))
+    assert pf0 != pf1
+    fo_list = repL(ctx1, [dot])
+    result = set(canonical_pair_flavours(fo_list, ctx1))
+    assert pf0 in result
+    assert pf1 in result
+
+def test_cpf_count_single_group_dot(dot, ctx1):
+    """
+    4 electrons, dot only.  Valid overlaps for (dot, dot): 0, 1, 2.
+    So canonical_pair_flavours should return exactly 3 PairFlavours.
+    """
+    fo_list = repL(ctx1, [dot])
+    result = canonical_pair_flavours(fo_list, ctx1)
+    assert len(result) == 3
+
+def test_cpf_count_single_group_dot_eps3(dot, eps3, ctx1):
+    """
+    4 electrons, dot (rank 2) + eps3 (rank 3).
+    dot-dot pairs:   overlap ∈ {0,1,2}          → 3 PairFlavours
+    dot-eps3 pairs:  overlap ∈ {max(0,2+3-4)=1, min(2,3)=2} = {1,2} → 2
+    eps3-eps3 pairs: overlap ∈ {max(0,3+3-4)=2, min(3,3)=3} = {2,3} → 2
+    Total: 7 distinct PairFlavours.
+    """
+    fo_list = repL(ctx1, [dot, eps3])
+    result = canonical_pair_flavours(fo_list, ctx1)
+    assert len(result) == 7
+
+def test_cpf_count_satisfies_total_pair_count(dot, ctx1):
+    """
+    Sum of count() over all PairFlavours must equal (total dot atoms)².
+    For 4 electrons with dot: 6 atoms, 36 ordered pairs.
+    """
+    fo_list = repL(ctx1, [dot])
+    group_sizes = (4,)
+    total = sum(pf.count(group_sizes) for pf in canonical_pair_flavours(fo_list, ctx1))
+    assert total == 36   # 6 dot atoms → 6² ordered pairs
+
+def test_cpf_is_sorted_deterministically(dot, eps3, ctx1):
+    """canonical_pair_flavours returns the same sorted list on repeated calls."""
+    fo_list = repL(ctx1, [dot, eps3])
+    r1 = canonical_pair_flavours(fo_list, ctx1)
+    r2 = canonical_pair_flavours(fo_list, ctx1)
+    assert r1 == r2
+
+
+# ---------------------------------------------------------------------------
+# SimpleCanonicaliser: atom-tuple order does not affect canonical form
+# ---------------------------------------------------------------------------
+
+def test_canon_pair_order_independent(dot, eps3, electrons):
+    """
+    canon((dot(a,b), eps3(a,b,c))) == canon((eps3(a,b,c), dot(a,b))).
+    The SimpleCanonicaliser sorts atoms within the tuple, so input order
+    must not affect the canonical form.
+    """
+    ctx  = Context((electrons,))
+    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot, eps3))
+    u = Atom(dot,  ("a", "b"),      sign=+1)
+    v = Atom(eps3, ("a", "b", "c"), sign=+1)
+    assert plan.canonicalise((u, v)) == plan.canonicalise((v, u))
+
+def test_canon_dot_dot_pair_order_independent(dot, electrons):
+    """canon((dot(a,b), dot(c,d))) == canon((dot(c,d), dot(a,b)))."""
+    ctx  = Context((electrons,))
+    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
+    u = Atom(dot, ("a", "b"), sign=+1)
+    v = Atom(dot, ("c", "d"), sign=+1)
+    assert plan.canonicalise((u, v)) == plan.canonicalise((v, u))

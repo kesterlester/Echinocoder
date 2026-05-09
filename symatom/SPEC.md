@@ -496,6 +496,79 @@ The returned list covers every combination of every operation with every
 valid Flavour. The individual atoms in any group are available lazily via
 `.atoms()` and are never materialised unless explicitly requested.
 
+### 8.7 PairFlavour
+
+A **PairFlavour** is to a pair of atoms what a `Flavour` is to a single atom:
+it is the orbit-type of the pair under the full symmetry group G.
+
+**Theorem**: two atom-pairs `(u, v)` and `(u', v')` (with all labels distinct,
+as guaranteed by the well-formedness rules) lie in the same G-orbit if and
+only if they have the same PairFlavour.  This makes the set of distinct
+PairFlavours a direct index of the distinct G-orbits of atom-pairs — which is
+exactly the set of non-redundant row-pairs needed for the encoding layer above.
+
+A PairFlavour bundles:
+
+- `op_u: Operation`, `flavour_u: Flavour` — operation and flavour of atom *u*
+- `op_v: Operation`, `flavour_v: Flavour` — operation and flavour of atom *v*
+- `overlap: tuple[int, ...]` — one non-negative integer per group: the number
+  of labels shared between *u* and *v* from that group.
+
+**Validity** (enforced at construction, context-free):
+
+- `len(flavour_u.counts) == len(flavour_v.counts) == len(overlap)`
+- `0 ≤ overlap[i] ≤ min(flavour_u.counts[i], flavour_v.counts[i])` for each *i*
+
+The group-size upper bound `flavour_u.counts[i] + flavour_v.counts[i] −
+overlap[i] ≤ |G_i|` requires knowing the group sizes and is not validated at
+construction; `canonical_pair_flavours` enforces it implicitly by only
+generating overlaps that satisfy it.
+
+**Canonical ordering**: PairFlavour imposes a canonical ordering on the
+`(op_u, flavour_u)` vs `(op_v, flavour_v)` sides at construction time, so
+that swapping the two sides always produces the same object.  This mirrors
+the fact that the `SimpleCanonicaliser` sorts atoms within a tuple, meaning
+the G-orbit of `(u, v)` and the G-orbit of `(v, u)` are identified by the
+canonicaliser — and therefore need not be encoded separately.
+
+Note: sign information (`sign = +1` vs `sign = −1` for ANTISYMMETRIC atoms)
+is deliberately absent from PairFlavour.  Sign-related encoding redundancies
+— such as the fact that zipping `(rowA, rowB)` and zipping `(rowA, −rowB)`
+carry the same information — are encoding-layer concerns, not group-theory
+concerns, and are handled separately above `symatom`.
+
+**`count(group_sizes: tuple[int, ...]) -> int`**: returns the number of
+ordered atom-pairs `(u, v)` with this PairFlavour, given the sizes of the
+vector groups.  Pure combinatorics; no atoms are materialised.  For group *i*
+with size *nᵢ*, flavour counts *kᵤᵢ* and *kᵥᵢ*, and overlap *sᵢ*:
+
+    ways_i = C(nᵢ, sᵢ) × C(nᵢ − sᵢ, kᵤᵢ − sᵢ) × C(nᵢ − kᵤᵢ, kᵥᵢ − sᵢ)
+
+The total count is the product over all groups.  This counts *ordered* pairs;
+when `op_u == op_v` and `flavour_u == flavour_v`, each unordered pair
+`{u, v}` with `u ≠ v` appears twice.
+
+**`pair_flavour_of(atom_u, atom_v, context) -> PairFlavour`**: computes the
+PairFlavour of a concrete atom-pair.
+
+**`canonical_pair_flavours(fo_list, context) -> list[PairFlavour]`**: returns
+all distinct PairFlavours for the given list of `FlavouredOperator`s and
+context, generated directly from `(FlavouredOperator, FlavouredOperator,
+overlap)` triples without materialising atom-pairs.  For each ordered pair of
+FlavouredOperators `(fo_u, fo_v)`, the valid overlap range for group *i* is:
+
+    s_lo = max(0, k_u_i + k_v_i − n_i),   s_hi = min(k_u_i, k_v_i)
+
+PairFlavour's own canonical ordering ensures that `(fo_u, fo_v)` and
+`(fo_v, fo_u)` contribute identical PairFlavours; a `seen` set handles
+deduplication.  Returns a deterministically sorted list.
+
+**`brute_force_canonical_pair_flavours(fo_list, context) -> set[PairFlavour]`**:
+reference / cross-check implementation.  Materialises all atom-pairs and
+extracts their PairFlavours.  *O*(*N*²) where *N* = total atoms.  Not suitable
+for large contexts; intended only for unit-test cross-validation against
+`canonical_pair_flavours`.
+
 ---
 
 ## 9. Evaluation hook (anticipated, not specified here)  <!-- was §8 -->
