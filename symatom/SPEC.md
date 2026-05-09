@@ -445,6 +445,13 @@ Required methods:
   vocabulary of this `FlavouredOperator`. For `SYMMETRIC` and `ANTISYMMETRIC`
   operations this can usually be determined without full enumeration (see
   below).
+- `.canonical_representative(canonicaliser) -> Atom` — returns the canonical
+  orbit representative for this `FlavouredOperator`: picks any atom from
+  `.atoms()`, canonicalises it as a 1-tuple using the supplied canonicaliser
+  and the `FlavouredOperator`'s own context, and returns the resulting atom.
+  All atoms in a `FlavouredOperator` share the same operation and Flavour and
+  therefore lie in the same G-orbit, so the representative is well-defined
+  (independent of which atom is picked).
 
 Mixed-symmetry operations are **not supported** in this version and are not
 yet handled by `FlavouredOperator`. Support is deferred to a future version.
