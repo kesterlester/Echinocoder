@@ -16,6 +16,8 @@ source venv/bin/activate
 python -m symatom.demo
 ```
 
+Expected output: [demo_output.txt](demo_output.txt)
+
 ## Tests
 
 From the `Echinocoder` root directory:

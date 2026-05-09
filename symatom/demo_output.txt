@@ -1,0 +1,200 @@
+
+============================================================
+  Context and Operations
+============================================================
+  context : Context(electrons[3], muons[2])
+  plan    : Plan(context=Context(electrons[3], muons[2]), ops=(m, dot, eps))
+  op      : Operation('m', rank=1, parity=+1, SYMMETRIC)
+  op      : Operation('dot', rank=2, parity=+1, SYMMETRIC)
+  op      : Operation('eps', rank=3, parity=-1, ANTISYMMETRIC)
+
+============================================================
+  VectorGroups
+============================================================
+  VectorGroup('electrons': A, B, C)
+  VectorGroup('muons': P, Q)
+
+============================================================
+  repL — FlavouredOperators
+============================================================
+  FO(m, 1 muons, repL)  →  2 atoms, in the orbit of +m(P)
+  FO(m, 1 electrons, repL)  →  3 atoms, in the orbit of +m(A)
+  FO(dot, 2 muons, repL)  →  1 atoms, in the orbit of +dot(P, Q)
+  FO(dot, 1 electrons + 1 muons, repL)  →  6 atoms, in the orbit of +dot(A, P)
+  FO(dot, 2 electrons, repL)  →  3 atoms, in the orbit of +dot(A, B)
+  FO(eps, 1 electrons + 2 muons, repL)  →  6 atoms, in the orbit of +eps(A, P, Q)
+  FO(eps, 2 electrons + 1 muons, repL)  →  12 atoms, in the orbit of +eps(A, B, P)
+  FO(eps, 3 electrons, repL)  →  2 atoms, in the orbit of +eps(A, B, C)
+
+============================================================
+  repL — all atoms (first 40)
+============================================================
+  [  0]  +m(P)
+  [  1]  +m(Q)
+  [  2]  +m(A)
+  [  3]  +m(B)
+  [  4]  +m(C)
+  [  5]  +dot(P, Q)
+  [  6]  +dot(A, P)
+  [  7]  +dot(A, Q)
+  [  8]  +dot(B, P)
+  [  9]  +dot(B, Q)
+  [ 10]  +dot(C, P)
+  [ 11]  +dot(C, Q)
+  [ 12]  +dot(A, B)
+  [ 13]  +dot(A, C)
+  [ 14]  +dot(B, C)
+  [ 15]  +eps(A, P, Q)
+  [ 16]  -eps(A, P, Q)
+  [ 17]  +eps(B, P, Q)
+  [ 18]  -eps(B, P, Q)
+  [ 19]  +eps(C, P, Q)
+  [ 20]  -eps(C, P, Q)
+  [ 21]  +eps(A, B, P)
+  [ 22]  -eps(A, B, P)
+  [ 23]  +eps(A, B, Q)
+  [ 24]  -eps(A, B, Q)
+  [ 25]  +eps(A, C, P)
+  [ 26]  -eps(A, C, P)
+  [ 27]  +eps(A, C, Q)
+  [ 28]  -eps(A, C, Q)
+  [ 29]  +eps(B, C, P)
+  [ 30]  -eps(B, C, P)
+  [ 31]  +eps(B, C, Q)
+  [ 32]  -eps(B, C, Q)
+  [ 33]  +eps(A, B, C)
+  [ 34]  -eps(A, B, C)
+
+  total atoms: 35
+
+============================================================
+  Canonical PairFlavours
+============================================================
+  PairFlavour(dot[0, 2] × dot[0, 2], overlap=(0, 2))
+       u=dot(2 muons), v=dot(2 muons)  →  1 ordered pairs
+  PairFlavour(dot[0, 2] × dot[1, 1], overlap=(0, 1))
+       u=dot(2 muons), v=dot(1 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(dot[0, 2] × dot[2, 0], overlap=(0, 0))
+       u=dot(2 muons), v=dot(2 electrons)  →  3 ordered pairs
+  PairFlavour(dot[0, 2] × eps[1, 2], overlap=(0, 2))
+       u=dot(2 muons), v=eps(1 electrons + 2 muons)  →  3 ordered pairs
+  PairFlavour(dot[0, 2] × eps[2, 1], overlap=(0, 1))
+       u=dot(2 muons), v=eps(2 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(dot[0, 2] × eps[3, 0], overlap=(0, 0))
+       u=dot(2 muons), v=eps(3 electrons)  →  1 ordered pairs
+  PairFlavour(dot[0, 2] × m[0, 1], overlap=(0, 1))
+       u=dot(2 muons), v=m(1 muons)  →  2 ordered pairs
+  PairFlavour(dot[0, 2] × m[1, 0], overlap=(0, 0))
+       u=dot(2 muons), v=m(1 electrons)  →  3 ordered pairs
+  PairFlavour(dot[1, 1] × dot[1, 1], overlap=(0, 0))
+       u=dot(1 electrons + 1 muons), v=dot(1 electrons + 1 muons)  →  12 ordered pairs
+  PairFlavour(dot[1, 1] × dot[1, 1], overlap=(0, 1))
+       u=dot(1 electrons + 1 muons), v=dot(1 electrons + 1 muons)  →  12 ordered pairs
+  PairFlavour(dot[1, 1] × dot[1, 1], overlap=(1, 0))
+       u=dot(1 electrons + 1 muons), v=dot(1 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(dot[1, 1] × dot[1, 1], overlap=(1, 1))
+       u=dot(1 electrons + 1 muons), v=dot(1 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(dot[1, 1] × dot[2, 0], overlap=(0, 0))
+       u=dot(1 electrons + 1 muons), v=dot(2 electrons)  →  6 ordered pairs
+  PairFlavour(dot[1, 1] × dot[2, 0], overlap=(1, 0))
+       u=dot(1 electrons + 1 muons), v=dot(2 electrons)  →  12 ordered pairs
+  PairFlavour(dot[1, 1] × eps[1, 2], overlap=(0, 1))
+       u=dot(1 electrons + 1 muons), v=eps(1 electrons + 2 muons)  →  12 ordered pairs
+  PairFlavour(dot[1, 1] × eps[1, 2], overlap=(1, 1))
+       u=dot(1 electrons + 1 muons), v=eps(1 electrons + 2 muons)  →  6 ordered pairs
+  PairFlavour(dot[1, 1] × eps[2, 1], overlap=(0, 0))
+       u=dot(1 electrons + 1 muons), v=eps(2 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(dot[1, 1] × eps[2, 1], overlap=(0, 1))
+       u=dot(1 electrons + 1 muons), v=eps(2 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(dot[1, 1] × eps[2, 1], overlap=(1, 0))
+       u=dot(1 electrons + 1 muons), v=eps(2 electrons + 1 muons)  →  12 ordered pairs
+  PairFlavour(dot[1, 1] × eps[2, 1], overlap=(1, 1))
+       u=dot(1 electrons + 1 muons), v=eps(2 electrons + 1 muons)  →  12 ordered pairs
+  PairFlavour(dot[1, 1] × eps[3, 0], overlap=(1, 0))
+       u=dot(1 electrons + 1 muons), v=eps(3 electrons)  →  6 ordered pairs
+  PairFlavour(dot[1, 1] × m[0, 1], overlap=(0, 0))
+       u=dot(1 electrons + 1 muons), v=m(1 muons)  →  6 ordered pairs
+  PairFlavour(dot[1, 1] × m[0, 1], overlap=(0, 1))
+       u=dot(1 electrons + 1 muons), v=m(1 muons)  →  6 ordered pairs
+  PairFlavour(dot[1, 1] × m[1, 0], overlap=(0, 0))
+       u=dot(1 electrons + 1 muons), v=m(1 electrons)  →  12 ordered pairs
+  PairFlavour(dot[1, 1] × m[1, 0], overlap=(1, 0))
+       u=dot(1 electrons + 1 muons), v=m(1 electrons)  →  6 ordered pairs
+  PairFlavour(dot[2, 0] × dot[2, 0], overlap=(1, 0))
+       u=dot(2 electrons), v=dot(2 electrons)  →  6 ordered pairs
+  PairFlavour(dot[2, 0] × dot[2, 0], overlap=(2, 0))
+       u=dot(2 electrons), v=dot(2 electrons)  →  3 ordered pairs
+  PairFlavour(dot[2, 0] × eps[1, 2], overlap=(0, 0))
+       u=dot(2 electrons), v=eps(1 electrons + 2 muons)  →  3 ordered pairs
+  PairFlavour(dot[2, 0] × eps[1, 2], overlap=(1, 0))
+       u=dot(2 electrons), v=eps(1 electrons + 2 muons)  →  6 ordered pairs
+  PairFlavour(dot[2, 0] × eps[2, 1], overlap=(1, 0))
+       u=dot(2 electrons), v=eps(2 electrons + 1 muons)  →  12 ordered pairs
+  PairFlavour(dot[2, 0] × eps[2, 1], overlap=(2, 0))
+       u=dot(2 electrons), v=eps(2 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(dot[2, 0] × eps[3, 0], overlap=(2, 0))
+       u=dot(2 electrons), v=eps(3 electrons)  →  3 ordered pairs
+  PairFlavour(dot[2, 0] × m[0, 1], overlap=(0, 0))
+       u=dot(2 electrons), v=m(1 muons)  →  6 ordered pairs
+  PairFlavour(dot[2, 0] × m[1, 0], overlap=(0, 0))
+       u=dot(2 electrons), v=m(1 electrons)  →  3 ordered pairs
+  PairFlavour(dot[2, 0] × m[1, 0], overlap=(1, 0))
+       u=dot(2 electrons), v=m(1 electrons)  →  6 ordered pairs
+  PairFlavour(eps[1, 2] × eps[1, 2], overlap=(0, 2))
+       u=eps(1 electrons + 2 muons), v=eps(1 electrons + 2 muons)  →  6 ordered pairs
+  PairFlavour(eps[1, 2] × eps[1, 2], overlap=(1, 2))
+       u=eps(1 electrons + 2 muons), v=eps(1 electrons + 2 muons)  →  3 ordered pairs
+  PairFlavour(eps[1, 2] × eps[2, 1], overlap=(0, 1))
+       u=eps(1 electrons + 2 muons), v=eps(2 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(eps[1, 2] × eps[2, 1], overlap=(1, 1))
+       u=eps(1 electrons + 2 muons), v=eps(2 electrons + 1 muons)  →  12 ordered pairs
+  PairFlavour(eps[1, 2] × eps[3, 0], overlap=(1, 0))
+       u=eps(1 electrons + 2 muons), v=eps(3 electrons)  →  3 ordered pairs
+  PairFlavour(eps[1, 2] × m[0, 1], overlap=(0, 1))
+       u=eps(1 electrons + 2 muons), v=m(1 muons)  →  6 ordered pairs
+  PairFlavour(eps[1, 2] × m[1, 0], overlap=(0, 0))
+       u=eps(1 electrons + 2 muons), v=m(1 electrons)  →  6 ordered pairs
+  PairFlavour(eps[1, 2] × m[1, 0], overlap=(1, 0))
+       u=eps(1 electrons + 2 muons), v=m(1 electrons)  →  3 ordered pairs
+  PairFlavour(eps[2, 1] × eps[2, 1], overlap=(1, 0))
+       u=eps(2 electrons + 1 muons), v=eps(2 electrons + 1 muons)  →  12 ordered pairs
+  PairFlavour(eps[2, 1] × eps[2, 1], overlap=(1, 1))
+       u=eps(2 electrons + 1 muons), v=eps(2 electrons + 1 muons)  →  12 ordered pairs
+  PairFlavour(eps[2, 1] × eps[2, 1], overlap=(2, 0))
+       u=eps(2 electrons + 1 muons), v=eps(2 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(eps[2, 1] × eps[2, 1], overlap=(2, 1))
+       u=eps(2 electrons + 1 muons), v=eps(2 electrons + 1 muons)  →  6 ordered pairs
+  PairFlavour(eps[2, 1] × eps[3, 0], overlap=(2, 0))
+       u=eps(2 electrons + 1 muons), v=eps(3 electrons)  →  6 ordered pairs
+  PairFlavour(eps[2, 1] × m[0, 1], overlap=(0, 0))
+       u=eps(2 electrons + 1 muons), v=m(1 muons)  →  6 ordered pairs
+  PairFlavour(eps[2, 1] × m[0, 1], overlap=(0, 1))
+       u=eps(2 electrons + 1 muons), v=m(1 muons)  →  6 ordered pairs
+  PairFlavour(eps[2, 1] × m[1, 0], overlap=(0, 0))
+       u=eps(2 electrons + 1 muons), v=m(1 electrons)  →  6 ordered pairs
+  PairFlavour(eps[2, 1] × m[1, 0], overlap=(1, 0))
+       u=eps(2 electrons + 1 muons), v=m(1 electrons)  →  12 ordered pairs
+  PairFlavour(eps[3, 0] × eps[3, 0], overlap=(3, 0))
+       u=eps(3 electrons), v=eps(3 electrons)  →  1 ordered pairs
+  PairFlavour(eps[3, 0] × m[0, 1], overlap=(0, 0))
+       u=eps(3 electrons), v=m(1 muons)  →  2 ordered pairs
+  PairFlavour(eps[3, 0] × m[1, 0], overlap=(1, 0))
+       u=eps(3 electrons), v=m(1 electrons)  →  3 ordered pairs
+  PairFlavour(m[0, 1] × m[0, 1], overlap=(0, 0))
+       u=m(1 muons), v=m(1 muons)  →  2 ordered pairs
+  PairFlavour(m[0, 1] × m[0, 1], overlap=(0, 1))
+       u=m(1 muons), v=m(1 muons)  →  2 ordered pairs
+  PairFlavour(m[0, 1] × m[1, 0], overlap=(0, 0))
+       u=m(1 muons), v=m(1 electrons)  →  6 ordered pairs
+  PairFlavour(m[1, 0] × m[1, 0], overlap=(0, 0))
+       u=m(1 electrons), v=m(1 electrons)  →  6 ordered pairs
+  PairFlavour(m[1, 0] × m[1, 0], overlap=(1, 0))
+       u=m(1 electrons), v=m(1 electrons)  →  3 ordered pairs
+
+  distinct pair-flavours: 60
+
+============================================================
+  repS — FlavouredOperators (for comparison)
+============================================================
+  repS total atoms : 25
+  repL total atoms : 35
