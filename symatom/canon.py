@@ -55,9 +55,6 @@ class SimpleCanonicaliser:
     the small groups (4–6 vectors) this package targets.  A faster
     implementation can be swapped in later without changing the interface.
 
-    Note on C4: the sign consistency property C4 as written in SPEC.md rev 2
-    is under review — see the discussion in tests/test_canon.py.  C1, C2, C3,
-    and C5 are all satisfied by this implementation.
     """
 
     def canonicalise(self, atom_tuple: tuple, context) -> tuple:
