@@ -1,27 +1,7 @@
 from __future__ import annotations
 from itertools import permutations as _iperms, product as _product
 from typing import runtime_checkable, Protocol
-from .atoms import Atom, ArgumentSymmetry
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-def _sort_sign(labels: tuple) -> tuple[tuple, int]:
-    """
-    Return (sorted_labels, sign) where sign is the parity of the permutation
-    that sorts the labels.  Uses bubble sort to count adjacent transpositions.
-    Assumes labels are mutually comparable (e.g. all strings).
-    """
-    lst = list(labels)
-    sign = 1
-    for i in range(len(lst)):
-        for j in range(len(lst) - 1 - i):
-            if lst[j] > lst[j + 1]:
-                lst[j], lst[j + 1] = lst[j + 1], lst[j]
-                sign *= -1
-    return tuple(lst), sign
+from .atoms import Atom, ArgumentSymmetry, _sort_sign
 
 
 def _canonicalise_atom_args(atom: Atom) -> Atom:

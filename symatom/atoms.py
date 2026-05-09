@@ -3,6 +3,22 @@ from dataclasses import dataclass
 from enum import Enum
 
 
+def _sort_sign(labels: tuple) -> tuple[tuple, int]:
+    """
+    Return (sorted_labels, sign) where sign is the parity of the permutation
+    that sorts the labels.  Uses bubble sort to count adjacent transpositions.
+    Assumes labels are mutually comparable (e.g. all strings).
+    """
+    lst = list(labels)
+    sign = 1
+    for i in range(len(lst)):
+        for j in range(len(lst) - 1 - i):
+            if lst[j] > lst[j + 1]:
+                lst[j], lst[j + 1] = lst[j + 1], lst[j]
+                sign *= -1
+    return tuple(lst), sign
+
+
 class ArgumentSymmetry(Enum):
     """
     Declares how an operation's value transforms under permutations of its own
@@ -68,10 +84,21 @@ class Atom:
       3. sign == +1  whenever  operation.argument_symmetry != ANTISYMMETRIC
          (a dot product can never legitimately carry sign = -1)
       4. all labels are distinct (dot(a,a) is ill-formed; use a rank-1 lenSq op)
+
+    Internal argument canonicalization (also enforced at construction):
+      - SYMMETRIC:     labels are sorted into ascending order; sign is unchanged.
+      - ANTISYMMETRIC: labels are sorted into ascending order; sign is multiplied
+                       by the parity of the sorting permutation.
+      - UNSTRUCTURED:  labels are stored in the order given; no reordering.
+
+    As a result, Atom(dot, ("b","a"), +1) == Atom(dot, ("a","b"), +1), and
+    are_negatives(Atom(eps, ("b","a"), +1), Atom(eps, ("a","b"), +1)) is True
+    (the unsorted eps atom self-canonicalizes to the sorted form with sign -1).
+
     Rule 2 (label membership in a context) is checked separately by Context.
     """
     operation:  Operation
-    labels:     tuple   # ordered tuple of vector labels
+    labels:     tuple   # stored in canonical argument order (see above)
     sign:       int     # +1 or -1
 
     def __post_init__(self):
@@ -95,6 +122,13 @@ class Atom:
             raise ValueError(
                 f"Atom labels must be distinct, got {self.labels!r}"
             )
+        # Internal argument canonicalization for SYMMETRIC and ANTISYMMETRIC ops.
+        sym = self.operation.argument_symmetry
+        if sym in (ArgumentSymmetry.SYMMETRIC, ArgumentSymmetry.ANTISYMMETRIC):
+            sorted_labels, perm_sign = _sort_sign(self.labels)
+            new_sign = self.sign * perm_sign if sym == ArgumentSymmetry.ANTISYMMETRIC else self.sign
+            object.__setattr__(self, 'labels', sorted_labels)
+            object.__setattr__(self, 'sign',   new_sign)
 
 
 def are_negatives(a: Atom, b: Atom) -> bool:

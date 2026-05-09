@@ -119,6 +119,48 @@ def test_atom_frozen(dot):
 
 
 # ---------------------------------------------------------------------------
+# Internal argument canonicalization
+# ---------------------------------------------------------------------------
+
+def test_symmetric_op_sorts_labels(dot):
+    a = Atom(dot, ("b", "a"), sign=+1)
+    assert a.labels == ("a", "b")
+    assert a.sign == +1
+
+def test_symmetric_op_equal_regardless_of_input_order(dot):
+    assert Atom(dot, ("b", "a"), sign=+1) == Atom(dot, ("a", "b"), sign=+1)
+
+def test_antisymmetric_op_sorts_labels_even_permutation(eps3):
+    # (c,a,b) → (a,b,c) requires 2 swaps (even permutation): sign unchanged
+    a = Atom(eps3, ("c", "a", "b"), sign=+1)
+    assert a.labels == ("a", "b", "c")
+    assert a.sign == +1
+
+def test_antisymmetric_op_sorts_labels_odd_permutation(eps3):
+    # (b,a,c) → (a,b,c) requires 1 swap (odd permutation): sign flips
+    a = Atom(eps3, ("b", "a", "c"), sign=+1)
+    assert a.labels == ("a", "b", "c")
+    assert a.sign == -1
+
+def test_antisymmetric_op_sign_tracks_parity(eps3):
+    # Supplying sign=-1 with an odd input permutation: -1 * -1 = +1
+    a = Atom(eps3, ("b", "a", "c"), sign=-1)
+    assert a.labels == ("a", "b", "c")
+    assert a.sign == +1
+
+def test_antisymmetric_are_negatives_unsorted_input(eps3):
+    # (b,a,c)+1 self-canonicalises to (a,b,c)-1; (a,b,c)+1 stays as-is.
+    x = Atom(eps3, ("b", "a", "c"), sign=+1)
+    y = Atom(eps3, ("a", "b", "c"), sign=+1)
+    assert are_negatives(x, y)
+
+def test_unstructured_op_preserves_order(unstructured_op):
+    # UNSTRUCTURED atoms are stored in the order given.
+    a = Atom(unstructured_op, ("b", "a"), sign=+1)
+    assert a.labels == ("b", "a")
+
+
+# ---------------------------------------------------------------------------
 # are_negatives
 # ---------------------------------------------------------------------------
 
