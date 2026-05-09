@@ -106,6 +106,12 @@ def test_atom_requires_tuple_labels(dot):
     with pytest.raises(TypeError):
         Atom(dot, ["a", "b"], sign=+1)
 
+def test_atom_duplicate_labels_raises(dot, eps3):
+    with pytest.raises(ValueError, match="distinct"):
+        Atom(dot, ("a", "a"), sign=+1)
+    with pytest.raises(ValueError, match="distinct"):
+        Atom(eps3, ("a", "a", "b"), sign=+1)
+
 def test_atom_frozen(dot):
     a = Atom(dot, ("a", "b"), sign=+1)
     with pytest.raises(Exception):

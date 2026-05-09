@@ -67,6 +67,7 @@ class Atom:
       2. sign in {+1, -1}
       3. sign == +1  whenever  operation.argument_symmetry != ANTISYMMETRIC
          (a dot product can never legitimately carry sign = -1)
+      4. all labels are distinct (dot(a,a) is ill-formed; use a rank-1 lenSq op)
     Rule 2 (label membership in a context) is checked separately by Context.
     """
     operation:  Operation
@@ -89,6 +90,10 @@ class Atom:
                 f"sign=-1 is not valid for operation '{self.operation.name}' whose "
                 f"argument_symmetry is {self.operation.argument_symmetry}; "
                 f"only ANTISYMMETRIC operations may carry sign=-1"
+            )
+        if len(set(self.labels)) != len(self.labels):
+            raise ValueError(
+                f"Atom labels must be distinct, got {self.labels!r}"
             )
 
 
