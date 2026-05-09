@@ -1,7 +1,7 @@
 # symatom — Specification
 
 **Status**: draft, pre-implementation  
-**Last revised**: May 2026 (rev 5 — added Section 8: Flavour, Ingredients, FlavouredOperator, repL/repS)  
+**Last revised**: May 2026 (rev 6 — added OrbitEnumerator strategy to Section 6; orbit_size/orbit_elements/OrbitEnumerator to Section 8.7)  
 
 ---
 
@@ -287,11 +287,17 @@ computation:
   canonicalisation contract (Section 4.2).
 - An **operation registry**: the set of named operations available in this
   plan.
+- An **orbit enumerator** (Section 8.8): the strategy used to enumerate
+  G-orbits of atom-pairs.
 
 A plan is the unit of "local configuration". Two plans may differ in any of
 these components. Passing different plans to the same computation function
 produces results under different configurations without any global state being
 affected.
+
+The orbit enumerator defaults to `BruteForceOrbitEnumerator` (Section 8.8).
+Switch to `DirectOrbitEnumerator` for large *n* once that implementation is
+complete.
 
 ---
 
@@ -592,6 +598,39 @@ The length of the returned list always equals `orbit_size(group_sizes)`.  This
 is the primary entry point for the encoding layer: iterate over the returned
 pairs, evaluate both atoms numerically, and form the complex numbers
 `z_k = eval(u') + i·eval(v')` to pass to the polynomial embedder.
+
+### 8.8 OrbitEnumerator
+
+Enumerating the G-orbit of an atom-pair is a performance-critical operation:
+for large particle multiplicities (*n* ~ 30 per species) the cost per orbit
+dominates the encoding.  `symatom` therefore exposes orbit enumeration as a
+pluggable **strategy**, following the same pattern as `Canonicaliser`.
+
+**`OrbitEnumerator`** (abstract base class, `symatom/orbit_enum.py`): defines
+the interface:
+
+```python
+def orbit_elements(self, pf: PairFlavour, context: Context) -> list[tuple[Atom, Atom]]
+```
+
+**`BruteForceOrbitEnumerator`**: delegates to `pf.orbit_elements(context)` —
+the cross-product + `pair_flavour_of` filter described above.  Correct by
+inspection.  O(`atoms_u` × `atoms_v`).  **Kept permanently** as the reference
+implementation for testing.
+
+**`DirectOrbitEnumerator`**: *not yet implemented* (raises `NotImplementedError`).
+The intended algorithm iterates directly over the combinatorial structure
+encoded in `pf.overlap`: for each group *i*, enumerate C(*n*ᵢ, *s*ᵢ) choices
+of shared labels, then C(*n*ᵢ − *s*ᵢ, *k*ᵤᵢ − *s*ᵢ) u-only labels, then
+C(*n*ᵢ − *k*ᵤᵢ, *k*ᵥᵢ − *s*ᵢ) v-only labels; form atoms directly with
+correct sign handling for ANTISYMMETRIC operations (both `sign=+1` and
+`sign=−1` variants).  This is O(orbit\_size) — no filtering step.  Intended
+as the production implementation for large *n*.
+
+The default `orbit_enumerator` in `Plan` is `BruteForceOrbitEnumerator()`.
+When `DirectOrbitEnumerator` is complete, the parametrised tests in
+`symatom/tests/test_orbit_enum.py` (currently skipped) validate it against the
+brute-force reference.
 
 ---
 
