@@ -159,6 +159,10 @@ class FlavouredOperator:
         mode = "repL" if self.signed else "repS"
         return f"FO({self.operation.name}, {fl_str}, {mode})"
 
+    def canonical_representative(self, canonicaliser) -> Atom:
+        """Return the canonical orbit representative for this FlavouredOperator."""
+        return canonicaliser.canonicalise((next(self.atoms()),), self.context)[0]
+
     def contains(self, atom: Atom) -> bool:
         """
         Return True if atom belongs to the vocabulary of this FlavouredOperator.

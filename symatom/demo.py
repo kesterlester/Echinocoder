@@ -43,7 +43,7 @@ def demo():
     _section("repL — FlavouredOperators")
     fo_list = repL(ctx, plan.operations)
     for fo in fo_list:
-        rep = plan.canonicalise((next(fo.atoms()),))[0]
+        rep = fo.canonical_representative(plan.canonicaliser)
         print(f"  {fo!r}  →  {fo.count()} atoms, in the orbit of {rep!r}")
 
     numPrintPerPage = 40
