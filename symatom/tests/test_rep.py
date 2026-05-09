@@ -548,6 +548,13 @@ def test_cpf_matches_brute_force_two_groups(dot, eps3, ctx2):
     brute  = brute_force_canonical_pair_flavours(fo_list, ctx2)
     assert fast == brute
 
+def test_cpf_matches_brute_force_three_groups(mass, dot, eps3, ctx3):
+    """With three groups (electrons + muons + jets): both methods agree."""
+    fo_list = repL(ctx3, [mass, dot, eps3])
+    fast   = set(canonical_pair_flavours(fo_list, ctx3))
+    brute  = brute_force_canonical_pair_flavours(fo_list, ctx3)
+    assert fast == brute
+
 def test_cpf_empty_fo_list(ctx1):
     """Empty input gives empty output."""
     assert canonical_pair_flavours([], ctx1) == []
