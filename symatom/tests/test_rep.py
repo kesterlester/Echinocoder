@@ -320,8 +320,8 @@ def test_three_group_dot_fo_count(dot, ctx3):
     assert len(fos) == 6
 
 def test_three_group_eps3_fo_count(eps3, ctx3):
-    # (0,0,3) excluded because Jets has only 3 labels — exactly valid.
-    # (0,3,0) excluded because Muons has only 2 labels.
+    # (0,3,0) is excluded because Muons has only 2 labels.
+    # (0,0,3) is valid: Jets has exactly 3 labels, C(3,3)=1.
     fos = repS(ctx3, [eps3])
     assert len(fos) == 9
 
