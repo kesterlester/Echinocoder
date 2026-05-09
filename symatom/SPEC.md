@@ -1,7 +1,7 @@
 # symatom — Specification
 
 **Status**: draft, pre-implementation  
-**Last revised**: May 2026 (rev 3 — labels in an atom must be distinct)  
+**Last revised**: May 2026 (rev 4 — dropped C4, added joint-canonicalization note)  
 
 ---
 
@@ -185,6 +185,22 @@ The canonical form is itself a valid atom tuple. All sign changes introduced
 during canonicalisation are absorbed into the `sign` fields of the atoms in
 the canonical form; no sign is returned separately to the caller.
 
+**Joint canonicalisation of multi-atom tuples.** For a tuple of two or more
+atoms, the canonicalisation must apply a *single* group element to *all* atoms
+simultaneously. It is **not** equivalent to canonicalising each atom
+independently and then assembling the results. Formally, the canonical form of
+`(U, V)` is
+
+    argmin_{g ∈ G}  (g·U arg-sorted,  g·V arg-sorted)
+
+where the same `g` is used for both atoms. Applying the individually-optimal
+group elements for `U` and `V` separately would in general yield a different
+result that may not even lie in the orbit of `(U, V)`. As a concrete example,
+`(dot(a,b), dot(c,d))` (four distinct labels) and `(dot(a,b), dot(a,c))`
+(three distinct labels, one shared) are in different orbits, yet each atom
+individually canonicalises to the same form — so independent atom-by-atom
+canonicalisation would wrongly collapse them to the same tuple.
+
 ### 4.2 The canonicalisation contract
 
 Any conforming canonicalisation implementation must satisfy all of the
@@ -198,18 +214,7 @@ full symmetry group.
 **C3 — Consistent**: `canon(x) == canon(y)` if and only if `x` and `y` lie in
 the same orbit.
 
-**C4 — Sign consistency**: `canon(x)` returns a canonical atom tuple (not a
-`(tuple, sign)` pair). All sign information is absorbed into the atoms'
-`sign` fields. The consistency requirement is: if atom tuple `y` was obtained
-from atom tuple `x` by applying a group element `g` (relabelling vector
-labels), then the net sign of `canon(y)` relative to `canon(x)` equals the
-sign by which `g` transforms `x` into `y`. Concretely, if evaluating `x` and
-`y` on concrete vectors would give values related by a factor `s(g,x) ∈
-{+1,−1}`, then the product of the `sign` fields of the atoms in `canon(y)`
-equals `s(g,x)` times the product of the `sign` fields of the atoms in
-`canon(x)`.
-
-**C5 — Deterministic**: `canon(x)` returns the same result on every call with
+**C4 — Deterministic**: `canon(x)` returns the same result on every call with
 the same input.
 
 ### 4.3 What the spec does NOT mandate
@@ -372,7 +377,7 @@ for it without requiring a refactor.
 ## 9. Test contracts
 
 The test suite must include tests for the canonicalisation contract properties
-C1–C5 (Section 4.2) against any conforming implementation. These tests should:
+C1–C4 (Section 4.2) against any conforming implementation. These tests should:
 
 - **C1**: Apply `canon` twice and assert the result equals applying it once.
 - **C2**: Assert that `canon(x)` and `x` produce the same orbit (i.e. `x`
@@ -380,12 +385,13 @@ C1–C5 (Section 4.2) against any conforming implementation. These tests should:
 - **C3**: For pairs `(x, y)` known to be in the same orbit, assert
   `canon(x) == canon(y)`. For pairs known to be in different orbits, assert
   `canon(x) != canon(y)`.
-- **C4**: For `y` obtained from `x` by a known group element `g` with known
-  sign `s(g,x)`, assert that the product of the `sign` fields of atoms in
-  `canon(y)` equals `s(g,x)` times the product of the `sign` fields of atoms
-  in `canon(x)`.
-- **C5**: Call `canon(x)` twice in the same session and assert identical
+- **C4**: Call `canon(x)` twice in the same session and assert identical
   results.
+
+The test suite should also include at least one test demonstrating that
+multi-atom tuple canonicalisation is joint (Section 4.1): two tuples that
+differ in their label-sharing structure must be in different orbits even if
+every atom individually canonicalises to the same form.
 
 Tests should be written against the **contract**, using the plan mechanism to
 inject whichever canonicalisation implementation is under test. This ensures

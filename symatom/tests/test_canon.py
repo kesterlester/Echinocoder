@@ -1,17 +1,9 @@
 """
-Tests for the canonicalisation contract (C1–C5) against SimpleCanonicaliser.
+Tests for the canonicalisation contract (C1–C4) against SimpleCanonicaliser.
 
 The tests are written against the CONTRACT (SPEC.md Section 4.2), not against
 any specific canonical form.  A different canonicaliser can be tested by
 substituting it into the plan fixture.
-
-NOTE on C4: the sign-consistency property C4 as written in SPEC.md rev 2 is
-under review.  For ANTISYMMETRIC operations, atoms (+1, eps, labels) and
-(-1, eps, labels) lie in the same orbit (related by an odd label permutation),
-so C3 forces canon(x) == canon(y) for both.  This makes the "product of signs"
-the same for both canonical forms regardless of the group element connecting
-them, which is inconsistent with the stated C4 formula.  C4 will be revised
-in a future spec update.  It is not tested here.
 """
 import pytest
 from symatom import (
@@ -135,13 +127,46 @@ def test_c3_different_orbit_different_label_count(plan, dot, eps3):
 
 
 # ---------------------------------------------------------------------------
-# C5 — Deterministic:  repeated calls return identical results
+# C4 — Deterministic:  repeated calls return identical results
 # ---------------------------------------------------------------------------
 
-def test_c5_repeated_calls(plan, dot, eps3):
+def test_c4_repeated_calls(plan, dot, eps3):
     x = (
         Atom(eps3, ("c", "a", "b"), sign=+1),
         Atom(dot,  ("b", "d"),      sign=+1),
     )
     results = [plan.canonicalise(x) for _ in range(5)]
     assert all(r == results[0] for r in results)
+
+
+# ---------------------------------------------------------------------------
+# Joint canonicalisation of multi-atom tuples
+#
+# canon((U, V)) is NOT the same as (canon(U), canon(V)).
+# The same group element must be applied to all atoms simultaneously.
+# Two pairs that differ only in their label-sharing structure are in
+# different orbits even when every individual atom canonicalises identically.
+# ---------------------------------------------------------------------------
+
+def test_joint_canon_different_orbits_by_label_sharing(plan, dot):
+    # Every cross-dot individually canonicalises to the same form (orbit size 1).
+    # But the PAIRS differ: (dot(a,b), dot(c,d)) uses four distinct labels
+    # while (dot(a,b), dot(a,c)) shares label 'a'.  No relabelling can turn a
+    # 4-label pair into a 3-label pair, so they are in different orbits and
+    # must have different canonical forms.
+    four_label_pair  = (Atom(dot, ("a", "b"), sign=+1), Atom(dot, ("c", "d"), sign=+1))
+    three_label_pair = (Atom(dot, ("a", "b"), sign=+1), Atom(dot, ("a", "c"), sign=+1))
+    assert plan.canonicalise(four_label_pair) != plan.canonicalise(three_label_pair)
+
+def test_joint_canon_not_independent(plan, dot):
+    # Demonstrates the failure mode of naive independent canonicalisation:
+    # canon(U) == canon(V) for all cross-dots, so (canon(U), canon(V)) would
+    # be the same tuple for both pairs above — collapsing two distinct orbits.
+    four_label_pair  = (Atom(dot, ("a", "b"), sign=+1), Atom(dot, ("c", "d"), sign=+1))
+    three_label_pair = (Atom(dot, ("a", "b"), sign=+1), Atom(dot, ("a", "c"), sign=+1))
+    naive_four  = tuple(plan.canonicalise((a,))[0] for a in four_label_pair)
+    naive_three = tuple(plan.canonicalise((a,))[0] for a in three_label_pair)
+    # Naive approach wrongly gives the same result for both:
+    assert naive_four == naive_three
+    # But joint canonicalisation correctly distinguishes them:
+    assert plan.canonicalise(four_label_pair) != plan.canonicalise(three_label_pair)
