@@ -15,5 +15,5 @@ def eval_pair_orbit(pf: PairFlavour, plan: Plan, event: dict) -> list:
     """
     return [
         complex(evaluate(u, event), evaluate(v, event))
-        for u, v in pf.orbit_elements(plan.context)
+        for u, v in plan.orbit_enumerator.orbit_elements(pf, plan.context)
     ]

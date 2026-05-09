@@ -3,20 +3,22 @@ symatom — symbolic atom and orbit machinery for permutation + continuous
 symmetry encodings.
 
 Public API:
-  atoms   : ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
-  context : Context, Plan
-  canon   : Canonicaliser (Protocol), SimpleCanonicaliser
-  orbits  : orbit, stabiliser_size, orbit_and_stabiliser_size
-  rep     : Flavour, FlavouredOperator, repL, repS
+  atoms      : ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
+  context    : Context, Plan
+  canon      : Canonicaliser (Protocol), SimpleCanonicaliser
+  orbit_enum : OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
+  orbits     : orbit, stabiliser_size, orbit_and_stabiliser_size
+  rep        : Flavour, FlavouredOperator, repL, repS
 """
-from .atoms   import ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
-from .context import Context, Plan
-from .canon   import Canonicaliser, SimpleCanonicaliser
-from .orbits  import orbit, stabiliser_size, orbit_and_stabiliser_size
-from .rep     import (Flavour, FlavouredOperator, repL, repS,
-                      PairFlavour, pair_flavour_of,
-                      canonical_pair_flavours,
-                      brute_force_canonical_pair_flavours)
+from .atoms      import ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
+from .context    import Context, Plan
+from .canon      import Canonicaliser, SimpleCanonicaliser
+from .orbit_enum import OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
+from .orbits     import orbit, stabiliser_size, orbit_and_stabiliser_size
+from .rep        import (Flavour, FlavouredOperator, repL, repS,
+                         PairFlavour, pair_flavour_of,
+                         canonical_pair_flavours,
+                         brute_force_canonical_pair_flavours)
 
 __all__ = [
     "ArgumentSymmetry",
@@ -28,6 +30,9 @@ __all__ = [
     "Plan",
     "Canonicaliser",
     "SimpleCanonicaliser",
+    "OrbitEnumerator",
+    "BruteForceOrbitEnumerator",
+    "DirectOrbitEnumerator",
     "orbit",
     "stabiliser_size",
     "orbit_and_stabiliser_size",
