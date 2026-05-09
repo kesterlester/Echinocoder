@@ -457,10 +457,12 @@ either case.
 Within a `FlavouredOperator`:
 
 - **repS** (`signed=False`): one atom per label combination (one per
-  Ingredients orbit under the operation's own argument symmetry). For
-  `ANTISYMMETRIC` operations, only `sign = +1` is included (the sign
-  produced by sorting the labels of the combination into canonical order).
-  For `SYMMETRIC` and `UNSTRUCTURED` operations, `sign = +1` always.
+  Ingredients orbit under the operation's own argument symmetry). Exactly
+  one sign is included per combination. In the current implementation this
+  is always `sign = +1` by convention, with labels in group-concatenation
+  order (each group's subset sorted within itself but not globally sorted
+  across groups). Callers who need canonical argument order should
+  canonicalise the atom after generation.
 - **repL** (`signed=True`): same as repS, plus the additive inverse for each
   `ANTISYMMETRIC` atom. So both `sign = +1` and `sign = −1` appear for each
   combination. For `SYMMETRIC` and `UNSTRUCTURED` operations, repL and repS
