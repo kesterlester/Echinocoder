@@ -1,7 +1,7 @@
 # symatom — Specification
 
 **Status**: draft, pre-implementation  
-**Last revised**: May 2026 (rev 2 — sign lives in atom, not external to canon)  
+**Last revised**: May 2026 (rev 3 — labels in an atom must be distinct)  
 
 ---
 
@@ -94,8 +94,9 @@ atoms, not the same atom with an external multiplier.
 
 An atom is **well-formed** if:
 1. `len(labels) == operation.rank`,
-2. every label belongs to a known vector group in the current context, and
-3. `sign == +1` whenever `operation.argument_symmetry != ANTISYMMETRIC`.
+2. every label belongs to a known vector group in the current context,
+3. `sign == +1` whenever `operation.argument_symmetry != ANTISYMMETRIC`, and
+4. all labels in the tuple are **distinct**.
 
 Rule 3 is enforced at construction time (raises an error on violation). It
 expresses the fact that only antisymmetric operations can ever produce
@@ -103,6 +104,13 @@ sign-flipped atoms under argument reordering or orbit action; for symmetric
 and unstructured operations `sign = −1` has no legitimate meaning within this
 framework and its presence indicates a bug. In particular, atoms representing
 dot products must always carry `sign = +1`.
+
+Rule 4 is enforced at construction time (raises an error on violation). Each
+operation is understood to take *r* **distinct** vector arguments. A squared
+length `a·a` is not a rank-2 dot applied to `(a, a)`; it is a separate rank-1
+operation (e.g. `lenSq`) that happens to evaluate the same expression. The
+distinct-label rule also ensures that the orbit structure is clean (see
+Section 7.2).
 
 An atom is **purely symbolic**. It has no numerical value until an evaluation
 hook (Section 8) is invoked.
@@ -301,7 +309,34 @@ emphasis): the orbit machinery acts by relabelling vector labels across all
 atoms in the tuple simultaneously. It does *not* permute arguments within a
 single atom; that is the job of the canonicalisation step.
 
-### 7.1 Atom utilities
+### 7.1 Counting canonical classes
+
+The distinct-label rule (Section 2.4 Rule 4) makes it straightforward to
+count how many distinct canonical forms exist for a single-atom tuple given
+an operation of rank *r* and a context with groups of sizes *n₁, n₂, …, nₘ*.
+
+Because each group $S_{n_i}$ acts transitively on the $k$-element subsets of
+its label set, two single-atom tuples that draw the same number of labels from
+each group are always in the same orbit. Two tuples that draw *different*
+numbers from some group are always in different orbits (the group index of each
+label is fixed by the context). Therefore the canonical classes are indexed
+exactly by the **label-composition tuples** $(k_1, k_2, \dots, k_m)$ with:
+
+$$k_i \ge 0, \quad k_i \le n_i, \quad \sum_i k_i = r.$$
+
+The number of canonical classes is the number of such tuples. For example,
+with `eps3` (rank 3), electrons (size 4) and muons (size 2) there are exactly
+three classes: $(3,0)$, $(2,1)$, $(1,2)$ — corresponding to atoms drawn
+entirely from electrons, two electrons and one muon, and one electron and both
+muons respectively. The class $(0,3)$ is excluded because there are only two
+muon labels.
+
+This count holds for both `SYMMETRIC` and `ANTISYMMETRIC` operations. For
+`ANTISYMMETRIC` operations the distinct-label rule is also consistent with
+antisymmetry (an antisymmetric form vanishes whenever two arguments are
+equal).
+
+### 7.2 Atom utilities
 
 The following utilities on individual atoms are required:
 
