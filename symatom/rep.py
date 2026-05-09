@@ -333,6 +333,48 @@ class PairFlavour:
             )
         return total
 
+    def orbit_size(self, group_sizes: tuple) -> int:
+        """
+        Number of atom-pairs in the G-orbit of this PairFlavour.
+
+        Equals count(group_sizes) multiplied by 2 for each ANTISYMMETRIC
+        operation in the pair, because a permutation that reorders the
+        arguments of an antisymmetric atom flips its sign — so both the
+        sign=+1 and sign=-1 variants of every label combination appear as
+        distinct elements of the true G-orbit.
+        """
+        n = self.count(group_sizes)
+        if self.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC:
+            n *= 2
+        if self.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC:
+            n *= 2
+        return n
+
+    def orbit_elements(self, context) -> list:
+        """
+        Return all (Atom, Atom) pairs in the G-orbit of the canonical
+        representative of this PairFlavour.
+
+        Uses FlavouredOperator.atoms() (signed=True) to enumerate all
+        concrete atoms for each side, then filters by matching PairFlavour.
+        For ANTISYMMETRIC operations both sign=+1 and sign=-1 variants are
+        included: a permutation that reorders the arguments of an
+        antisymmetric atom flips its sign, so both signed variants appear
+        in the true G-orbit.
+
+        The length of the returned list equals orbit_size(group_sizes).
+        """
+        fo_u = FlavouredOperator(operation=self.op_u, flavour=self.flavour_u,
+                                 context=context, signed=True)
+        fo_v = FlavouredOperator(operation=self.op_v, flavour=self.flavour_v,
+                                 context=context, signed=True)
+        return [
+            (u, v)
+            for u in fo_u.atoms()
+            for v in fo_v.atoms()
+            if pair_flavour_of(u, v, context) == self
+        ]
+
 
 # ---------------------------------------------------------------------------
 # Functions that work with PairFlavour

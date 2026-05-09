@@ -576,6 +576,23 @@ extracts their PairFlavours.  *O*(*N*²) where *N* = total atoms.  Not suitable
 for large contexts; intended only for unit-test cross-validation against
 `canonical_pair_flavours`.
 
+**`orbit_size(group_sizes: tuple[int, ...]) -> int`**: returns the number of
+distinct atom-pairs in the G-orbit of the canonical representative of this
+PairFlavour.  This equals `count(group_sizes)` multiplied by 2 for each
+ANTISYMMETRIC operation in the pair.  The extra factor arises because a
+permutation that reorders the arguments of an antisymmetric atom flips its
+sign — so both the `sign=+1` and `sign=−1` variants of every label combination
+appear as distinct elements of the true G-orbit.
+
+**`orbit_elements(context) -> list[tuple[Atom, Atom]]`**: materialises and
+returns all atom-pairs in the G-orbit of the canonical representative.  Uses
+`FlavouredOperator.atoms()` (with `signed=True`) to enumerate all concrete
+atoms for each side, then filters by `pair_flavour_of(u, v, context) == self`.
+The length of the returned list always equals `orbit_size(group_sizes)`.  This
+is the primary entry point for the encoding layer: iterate over the returned
+pairs, evaluate both atoms numerically, and form the complex numbers
+`z_k = eval(u') + i·eval(v')` to pass to the polynomial embedder.
+
 ---
 
 ## 9. Evaluation hook (anticipated, not specified here)  <!-- was §8 -->
