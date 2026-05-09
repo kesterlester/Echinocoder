@@ -1,11 +1,26 @@
-## Symatom
+# symatom
 
-# Demo:
-If in the symatom directory, run demo with:
+Symbolic atom and orbit machinery for permutation and continuous symmetry encodings.
+Part of the [Echinocoder](https://github.com/kesterlester/Echinocoder) project.
 
-source ../venv/bin/activate
-( cd .. ; python -m symatom.demo )
+## Specification
 
+See [SPEC.md](SPEC.md) for the full design specification.
 
-# Specification for symatom
-See SPEC.md
+## Demo
+
+From the `Echinocoder` root directory:
+
+```bash
+source venv/bin/activate
+python -m symatom.demo
+```
+
+## Tests
+
+From the `Echinocoder` root directory:
+
+```bash
+source venv/bin/activate
+python -m pytest symatom/
+```
