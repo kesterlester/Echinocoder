@@ -98,16 +98,17 @@ def test_self_dot_and_cross_dot_different_orbits(plan, dot):
     assert set(orbit(x, plan)) != set(orbit(y, plan))
 
 def test_orbit_size_eps_single_atom(plan, eps3, electrons):
-    # eps3(a,b,c) with 4 electrons: orbit should have C(4,3) = 4 elements
-    # (one for each 3-element subset of {a,b,c,d}), since the +1 and -1
-    # versions are in the same orbit and the canonical form picks one sign.
+    # eps3(a,b,c) with 4 electrons: orbit size == 1.
+    # S4 acts transitively on 3-element subsets of {a,b,c,d}: the permutation
+    # (c<->d) maps eps3(a,b,c) to eps3(a,b,d), so all four subsets are in the
+    # same orbit.  After canonicalisation they all collapse to a single form.
     x = (Atom(eps3, ("a", "b", "c"), sign=+1),)
-    assert len(orbit(x, plan)) == 4
+    assert len(orbit(x, plan)) == 1
 
 def test_orbit_size_eps_stabiliser(plan, eps3, electrons):
-    # |G| = 24, orbit = 4, so stabiliser = 6.
+    # orbit size = 1, so stabiliser = |G| / 1 = 24.
     x = (Atom(eps3, ("a", "b", "c"), sign=+1),)
-    assert stabiliser_size(x, plan) == 6
+    assert stabiliser_size(x, plan) == 24
 
 
 # ---------------------------------------------------------------------------
