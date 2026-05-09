@@ -37,9 +37,18 @@ def ctx1(electrons):
     return Context((electrons,))
 
 @pytest.fixture
+def jets():
+    return VectorGroup("jets", ("u", "v", "w"))
+
+@pytest.fixture
 def ctx2(electrons, muons):
     """Two-group context: 4 electrons + 2 muons."""
     return Context((electrons, muons))
+
+@pytest.fixture
+def ctx3(electrons, muons, jets):
+    """Three-group context: 4 electrons + 2 muons + 3 jets."""
+    return Context((electrons, muons, jets))
 
 
 # ---------------------------------------------------------------------------
@@ -269,3 +278,92 @@ def test_repS_total_atom_count(eps3, ctx1):
 def test_repL_repS_same_length(mass, dot, eps3, ctx2):
     # repL and repS always produce the same number of FlavouredOperators
     assert len(repL(ctx2, [mass, dot, eps3])) == len(repS(ctx2, [mass, dot, eps3]))
+
+
+# ---------------------------------------------------------------------------
+# Three-group context: Electrons(4) + Muons(2) + Jets(3)
+#
+# Expected FlavouredOperator counts (one per valid flavour):
+#   mass  rank 1:  (1,0,0) (0,1,0) (0,0,1)                          → 3
+#   dot   rank 2:  (2,0,0) (1,1,0) (1,0,1) (0,2,0) (0,1,1) (0,0,2) → 6
+#   eps3  rank 3:  (3,0,0) (2,1,0) (2,0,1) (1,2,0) (1,1,1)          → 5
+#                  (1,0,2) (0,2,1) (0,1,2) (0,0,3)                   → 4
+#                                                             total eps3 → 9
+#   total: 3 + 6 + 9 = 18
+#
+# Expected repS atom counts per FlavouredOperator (C(n_i, k_i) product):
+#   mass:  C(4,1)=4,  C(2,1)=2,  C(3,1)=3                  → total 9
+#   dot:   C(4,2)=6,  C(4,1)C(2,1)=8, C(4,1)C(3,1)=12,
+#          C(2,2)=1,  C(2,1)C(3,1)=6, C(3,2)=3             → total 36
+#   eps3:  C(4,3)=4,  C(4,2)C(2,1)=12, C(4,2)C(3,1)=18,
+#          C(4,1)C(2,2)=4, C(4,1)C(2,1)C(3,1)=24,
+#          C(4,1)C(3,2)=12, C(2,2)C(3,1)=3,
+#          C(2,1)C(3,2)=6,  C(3,3)=1                        → total 84
+#   repS grand total: 9 + 36 + 84 = 129
+#   repL grand total: 9 + 36 + 168 = 213  (eps3 atoms doubled)
+# ---------------------------------------------------------------------------
+
+def test_three_group_fo_count(mass, dot, eps3, ctx3):
+    assert len(repL(ctx3, [mass, dot, eps3])) == 18
+
+def test_three_group_repL_repS_same_fo_count(mass, dot, eps3, ctx3):
+    assert len(repL(ctx3, [mass, dot, eps3])) == len(repS(ctx3, [mass, dot, eps3]))
+
+def test_three_group_mass_fo_count(mass, ctx3):
+    fos = repS(ctx3, [mass])
+    assert len(fos) == 3
+    flavours = {fo.flavour for fo in fos}
+    assert flavours == {Flavour((1,0,0)), Flavour((0,1,0)), Flavour((0,0,1))}
+
+def test_three_group_dot_fo_count(dot, ctx3):
+    fos = repS(ctx3, [dot])
+    assert len(fos) == 6
+
+def test_three_group_eps3_fo_count(eps3, ctx3):
+    # (0,0,3) excluded because Jets has only 3 labels — exactly valid.
+    # (0,3,0) excluded because Muons has only 2 labels.
+    fos = repS(ctx3, [eps3])
+    assert len(fos) == 9
+
+def test_three_group_repS_atom_totals(mass, dot, eps3, ctx3):
+    mass_total = sum(fo.count() for fo in repS(ctx3, [mass]))
+    dot_total  = sum(fo.count() for fo in repS(ctx3, [dot]))
+    eps3_total = sum(fo.count() for fo in repS(ctx3, [eps3]))
+    assert mass_total == 9
+    assert dot_total  == 36
+    assert eps3_total == 84
+
+def test_three_group_repL_atom_totals(mass, dot, eps3, ctx3):
+    # mass and dot are SYMMETRIC — repL count equals repS count.
+    # eps3 is ANTISYMMETRIC — repL count is double repS.
+    mass_total = sum(fo.count() for fo in repL(ctx3, [mass]))
+    dot_total  = sum(fo.count() for fo in repL(ctx3, [dot]))
+    eps3_total = sum(fo.count() for fo in repL(ctx3, [eps3]))
+    assert mass_total == 9
+    assert dot_total  == 36
+    assert eps3_total == 168
+
+def test_three_group_grand_total_repS(mass, dot, eps3, ctx3):
+    assert sum(fo.count() for fo in repS(ctx3, [mass, dot, eps3])) == 129
+
+def test_three_group_grand_total_repL(mass, dot, eps3, ctx3):
+    assert sum(fo.count() for fo in repL(ctx3, [mass, dot, eps3])) == 213
+
+def test_three_group_atoms_matches_count(mass, dot, eps3, ctx3):
+    # For every FlavouredOperator, atoms() must yield exactly count() atoms.
+    for fo in repL(ctx3, [mass, dot, eps3]):
+        assert len(list(fo.atoms())) == fo.count()
+
+def test_three_group_eps3_mixed_flavour_spot_check(eps3, ctx3):
+    # Flavour (1,1,1): C(4,1)*C(2,1)*C(3,1) = 4*2*3 = 24 atoms in repS, 48 in repL.
+    fo_s = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3, signed=False)
+    fo_l = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3, signed=True)
+    assert fo_s.count() == 24
+    assert fo_l.count() == 48
+    assert len(list(fo_s.atoms())) == 24
+    assert len(list(fo_l.atoms())) == 48
+
+def test_three_group_atoms_labels_distinct(eps3, ctx3):
+    fo = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3, signed=True)
+    for atom in fo.atoms():
+        assert len(set(atom.labels)) == len(atom.labels)
