@@ -12,6 +12,7 @@ from .atoms   import ArgumentSymmetry, Operation, VectorGroup, Atom, are_negativ
 from .context import Context, Plan
 from .canon   import Canonicaliser, SimpleCanonicaliser
 from .orbits  import orbit, stabiliser_size, orbit_and_stabiliser_size
+from .rep     import Flavour, FlavouredOperator, repL, repS
 
 __all__ = [
     "ArgumentSymmetry",
@@ -26,4 +27,8 @@ __all__ = [
     "orbit",
     "stabiliser_size",
     "orbit_and_stabiliser_size",
+    "Flavour",
+    "FlavouredOperator",
+    "repL",
+    "repS",
 ]
