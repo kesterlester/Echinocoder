@@ -1,22 +1,7 @@
 from __future__ import annotations
 from itertools import permutations as _iperms, product as _product
 from typing import runtime_checkable, Protocol
-from .atoms import Atom, ArgumentSymmetry, _sort_sign
-
-
-def _canonicalise_atom_args(atom: Atom) -> Atom:
-    """
-    Return a copy of atom with its own labels sorted into ascending order.
-    For ANTISYMMETRIC operations the sign is updated to absorb the permutation
-    parity; for all other operations the labels are sorted but the sign
-    (always +1 by the well-formedness rule) is unchanged.
-    """
-    sorted_labels, perm_sign = _sort_sign(atom.labels)
-    if atom.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC:
-        new_sign = atom.sign * perm_sign
-    else:
-        new_sign = atom.sign
-    return Atom(operation=atom.operation, labels=sorted_labels, sign=new_sign)
+from .atoms import Atom
 
 
 def _atom_key(atom: Atom) -> tuple:
@@ -60,8 +45,9 @@ class SimpleCanonicaliser:
     Canonical form = the lexicographically smallest atom tuple obtained by:
       1. Trying every combination of permutations of the labels in each
          VectorGroup (i.e. every element of the full symmetry group).
-      2. For each relabeling: relabel the atoms, then sort each atom's own
-         argument list (adjusting sign for ANTISYMMETRIC operations).
+      2. For each relabeling: construct relabeled Atoms (the Atom constructor
+         automatically sorts each atom's own argument list and adjusts sign
+         for ANTISYMMETRIC operations).
       3. Sort the atoms within the tuple into a canonical order.
       4. Return the smallest such tuple.
 
@@ -90,14 +76,12 @@ class SimpleCanonicaliser:
                 for orig, new in zip(group.labels, perm):
                     relabeling[orig] = new
 
-            # Apply relabeling then canonicalise each atom's own argument order.
+            # Apply relabeling; the Atom constructor handles internal arg sorting.
             relabeled = [
-                _canonicalise_atom_args(
-                    Atom(
-                        operation=a.operation,
-                        labels=tuple(relabeling.get(lbl, lbl) for lbl in a.labels),
-                        sign=a.sign,
-                    )
+                Atom(
+                    operation=a.operation,
+                    labels=tuple(relabeling.get(lbl, lbl) for lbl in a.labels),
+                    sign=a.sign,
                 )
                 for a in atom_tuple
             ]
