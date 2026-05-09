@@ -7,6 +7,7 @@ Public API:
   context : Context, Plan
   canon   : Canonicaliser (Protocol), SimpleCanonicaliser
   orbits  : orbit, stabiliser_size, orbit_and_stabiliser_size
+  rep     : Flavour, FlavouredOperator, repL, repS
 """
 from .atoms   import ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
 from .context import Context, Plan

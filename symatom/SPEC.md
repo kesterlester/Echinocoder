@@ -19,11 +19,10 @@ Those concerns belong to packages that sit above it.
 ### Explicitly out of scope for this spec
 
 - Numerical evaluation of atoms given concrete vector coordinates (a future
-  evaluation hook is anticipated; see Section 8).
+  evaluation hook is anticipated; see Section 9).
 - Any specific canonicalisation algorithm (the spec defines the *contract*
   only).
-- The repS / repL representations and the polynomial zipping machinery that
-  uses them.
+- The polynomial zipping machinery that sits above repS / repL.
 - Mixed-symmetry operations (deferred; see Section 4.3).
 
 ---
@@ -82,7 +81,10 @@ together with an overall sign.
 Properties:
 - `operation: Operation`
 - `labels: tuple[label, ...]` — length must equal `operation.rank`. Labels may
-  come from different vector groups.
+  come from different vector groups. **Note:** the constructor reorders the
+  stored labels into a canonical form depending on `argument_symmetry` (see
+  Section 3.2); the caller should not assume the stored order matches the
+  order passed in.
 - `sign: int` — either `+1` or `−1`.
 
 The `sign` field is an intrinsic part of the atom's identity. It is the
@@ -149,12 +151,14 @@ The following `ArgumentSymmetry` values are supported in this version:
 
 ### 3.2 Use in canonicalisation
 
-`ArgumentSymmetry` is used *only* inside canonicalisation, to put an atom's
-own argument list into a canonical order (e.g. alphabetical). Any sign change
-that results from reordering the arguments (e.g. an odd permutation of an
-`ANTISYMMETRIC` operation's arguments contributes a factor of `−1`) is
-multiplied into the atom's `sign` field. The orbit machinery never uses
-`ArgumentSymmetry` directly.
+`ArgumentSymmetry` is used in two places: at atom construction time, and
+inside canonicalisation.  In both cases the purpose is the same — to put an
+atom's own argument list into a canonical order (e.g. alphabetical) and to
+absorb any resulting sign change into the atom's `sign` field (e.g. an odd
+permutation of an `ANTISYMMETRIC` operation's arguments contributes a factor
+of `−1`).  The `Atom` constructor enforces this at creation so that two atoms
+that are argument-permutations of each other are immediately equal as Python
+objects.  The orbit machinery never uses `ArgumentSymmetry` directly.
 
 ### 3.3 Future extension
 
@@ -223,8 +227,8 @@ the same input.
 - Any particular ordering of atoms within a tuple.
 - Any particular strategy for breaking ties.
 
-These are implementation choices. Different implementations satisfying C1–C5
-are all conforming, and the test suite (Section 9) tests the contract, not the
+These are implementation choices. Different implementations satisfying C1–C4
+are all conforming, and the test suite (Section 10) tests the contract, not the
 specific canonical form produced.
 
 ### 4.4 Canonicalisation plans
@@ -442,9 +446,8 @@ Required methods:
   operations this can usually be determined without full enumeration (see
   below).
 
-Mixed-symmetry operations are **not supported** in this version. If an
-operation with mixed argument symmetry is encountered, `FlavouredOperator`
-must raise `NotImplementedError`.
+Mixed-symmetry operations are **not supported** in this version and are not
+yet handled by `FlavouredOperator`. Support is deferred to a future version.
 
 **Membership without full enumeration.** For `SYMMETRIC` operations,
 membership reduces to: is the operation correct, do the labels match the
