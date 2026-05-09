@@ -93,8 +93,16 @@ in sign — e.g. `(+1, eps, (a,b,p))` and `(−1, eps, (a,b,p))` — are distinc
 atoms, not the same atom with an external multiplier.
 
 An atom is **well-formed** if:
-1. `len(labels) == operation.rank`, and
-2. every label belongs to a known vector group in the current context.
+1. `len(labels) == operation.rank`,
+2. every label belongs to a known vector group in the current context, and
+3. `sign == +1` whenever `operation.argument_symmetry != ANTISYMMETRIC`.
+
+Rule 3 is enforced at construction time (raises an error on violation). It
+expresses the fact that only antisymmetric operations can ever produce
+sign-flipped atoms under argument reordering or orbit action; for symmetric
+and unstructured operations `sign = −1` has no legitimate meaning within this
+framework and its presence indicates a bug. In particular, atoms representing
+dot products must always carry `sign = +1`.
 
 An atom is **purely symbolic**. It has no numerical value until an evaluation
 hook (Section 8) is invoked.
@@ -292,6 +300,19 @@ Required operations:
 emphasis): the orbit machinery acts by relabelling vector labels across all
 atoms in the tuple simultaneously. It does *not* permute arguments within a
 single atom; that is the job of the canonicalisation step.
+
+### 7.1 Atom utilities
+
+The following utilities on individual atoms are required:
+
+- `are_negatives(a, b) -> bool` — returns `True` if and only if `a` and `b`
+  have the same operation and the same labels but opposite signs. Only
+  meaningful (and only ever `True`) when `operation.argument_symmetry ==
+  ANTISYMMETRIC`; always `False` for symmetric or unstructured operations,
+  consistent with the well-formedness rule that such atoms always carry
+  `sign = +1`. Callers can use this to ask "would a parity flip (or an odd
+  argument permutation) map atom `a` to atom `b`?" without needing to perform
+  the transformation themselves.
 
 ---
 
