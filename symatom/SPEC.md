@@ -1,7 +1,7 @@
 # symatom — Specification
 
 **Status**: draft, pre-implementation  
-**Last revised**: May 2026 (rev 4 — dropped C4, added joint-canonicalization note)  
+**Last revised**: May 2026 (rev 5 — added Section 8: Flavour, Ingredients, FlavouredOperator, repL/repS)  
 
 ---
 
@@ -356,7 +356,142 @@ The following utilities on individual atoms are required:
 
 ---
 
-## 8. Evaluation hook (anticipated, not specified here)
+## 8. Flavour, Ingredients, and the repL / repS representations
+
+### 8.1 Motivation
+
+Given a context (e.g. Electrons `{a,b,c,d}` + Muons `{p,q}`) and a set of
+operations (e.g. `mass`, `dot`, `eps3`), we want to enumerate all atoms that
+can be formed by applying each operation to every valid combination of labels.
+These atoms are the basis elements from which representations of an event are
+built.
+
+The enumeration naturally falls into groups determined solely by the operation
+and by how many labels come from each species. These groups — not the
+individual atoms — are the mathematically meaningful objects. Knowing the
+group tells you immediately how many atoms it contains and how to generate
+them; the individual atoms within the group are almost secondary.
+
+### 8.2 Flavour
+
+A **Flavour** is an ordered tuple of non-negative integers, one per vector
+group in the context, encoding how many arguments an operation draws from each
+group. For a context with groups `G_1, …, G_m` and an operation of rank *r*:
+
+- `Flavour((k_1, …, k_m))` means *k_i* arguments come from group *G_i*.
+- Validity requires `k_i ≥ 0`, `k_i ≤ |G_i|` (group size), and
+  `Σ k_i = r`.
+
+Example: with groups `[Electrons, Muons]` and `eps3` (rank 3), the valid
+Flavours are `(3,0)`, `(2,1)`, and `(1,2)`. The Flavour `(0,3)` is excluded
+because there are only two muon labels.
+
+A Flavour is **context-agnostic**: it is just a tuple of counts. The context
+is carried by the `FlavouredOperator` (Section 8.4).
+
+*Why "Flavour"?* The metaphor is culinary: the species composition of a group
+of atoms is its "taste" — all electrons and no muons is a very different
+flavour from a mix of electrons and muons, just as different particle types
+play different physical roles. Within one Flavour, all atoms taste the same;
+individual atoms differ only in which specific labels were chosen (the
+Ingredients, Section 8.3).
+
+### 8.3 Ingredients
+
+An **Ingredients** is an ordered list of labels consistent with a given
+Flavour. For example, `[a, b, p]` is one Ingredients of Flavour `(2,1)`;
+`[a, c, p]` is another.
+
+Key properties:
+
+- **Ordering matters.** Ingredients are passed directly to the operation as
+  positional arguments. For an `ANTISYMMETRIC` operation, the permutation
+  that sorts the ingredients into canonical order contributes a sign, which
+  is absorbed into the resulting atom's `sign` field. This property becomes
+  important when mixed-symmetry operations are introduced.
+- **Transient.** Ingredients are used during atom construction and are not
+  persisted. They are not a named type in the public API; they appear
+  implicitly in the generation algorithm.
+
+### 8.4 FlavouredOperator
+
+A **FlavouredOperator** bundles one operation with one Flavour in a given
+context. It is a lazy recipe for a group of atoms: it knows how many atoms
+it contains and can generate them on demand, but it does not materialise them
+unless asked.
+
+Properties:
+
+- `operation` — the `Operation` instance.
+- `flavour` — the `Flavour` instance.
+- `context` — the `Context` (so it knows the label pools).
+- `signed: bool` — `True` for repL semantics, `False` for repS (Section 8.5).
+
+Required methods:
+
+- `.count() -> int` — returns the number of atoms this group contains, by
+  pure combinatorics. No atoms are generated.
+- `.atoms() -> iterator` — lazily generates all atoms for this group. Labels
+  are generated as **combinations** (one per choice of labels from each
+  group's pool), not as permutations-then-deduplicate. Permutation-based
+  generation is acceptable in unit tests to cross-check, but the direct
+  combination strategy is preferred in production because species pools may
+  be large.
+- `.contains(atom) -> bool` — returns `True` if the atom belongs to the
+  vocabulary of this `FlavouredOperator`. For `SYMMETRIC` and `ANTISYMMETRIC`
+  operations this can usually be determined without full enumeration (see
+  below).
+
+Mixed-symmetry operations are **not supported** in this version. If an
+operation with mixed argument symmetry is encountered, `FlavouredOperator`
+must raise `NotImplementedError`.
+
+**Membership without full enumeration.** For `SYMMETRIC` operations,
+membership reduces to: is the operation correct, do the labels match the
+flavour, and is the sign `+1`? For `ANTISYMMETRIC` operations, membership
+also allows `sign = −1` in repL mode. Full enumeration is not required for
+either case.
+
+### 8.5 Sign semantics: repS vs repL
+
+Within a `FlavouredOperator`:
+
+- **repS** (`signed=False`): one atom per label combination (one per
+  Ingredients orbit under the operation's own argument symmetry). For
+  `ANTISYMMETRIC` operations, only `sign = +1` is included (the sign
+  produced by sorting the labels of the combination into canonical order).
+  For `SYMMETRIC` and `UNSTRUCTURED` operations, `sign = +1` always.
+- **repL** (`signed=True`): same as repS, plus the additive inverse for each
+  `ANTISYMMETRIC` atom. So both `sign = +1` and `sign = −1` appear for each
+  combination. For `SYMMETRIC` and `UNSTRUCTURED` operations, repL and repS
+  are identical.
+
+A convenient mnemonic: in repL, every antisymmetric atom travels with its
+negative twin; in repS, the twin is suppressed.
+
+The `count()` values follow directly:
+
+| operation symmetry | repS count | repL count |
+|---|---|---|
+| SYMMETRIC or UNSTRUCTURED | `∏ C(nᵢ, kᵢ)` | same |
+| ANTISYMMETRIC | `∏ C(nᵢ, kᵢ)` | `2 × ∏ C(nᵢ, kᵢ)` |
+
+### 8.6 repL and repS functions
+
+`repL(context, operations)` and `repS(context, operations)` are functions
+(not types) that enumerate all valid `(operation, Flavour)` combinations for
+the given context and return a list of `FlavouredOperator` instances.
+
+"Valid" means: each species contributes no more labels than its pool size
+allows, i.e. `k_i ≤ |G_i|` for all *i*, and `Σ k_i = rank(operation)`.
+
+The returned list covers every combination of every operation with every
+valid Flavour. The individual atoms in any group are available lazily via
+`.atoms()` and are never materialised unless explicitly requested.
+
+---
+
+## 9. Evaluation hook (anticipated, not specified here)  <!-- was §8 -->
 
 It is anticipated that each `Operation` instance will carry an optional
 **evaluation method** of the form
@@ -374,7 +509,7 @@ for it without requiring a refactor.
 
 ---
 
-## 9. Test contracts
+## 10. Test contracts
 
 The test suite must include tests for the canonicalisation contract properties
 C1–C4 (Section 4.2) against any conforming implementation. These tests should:
@@ -399,7 +534,7 @@ that swapping in a new implementation is immediately testable.
 
 ---
 
-## 10. What this spec does not decide
+## 11. What this spec does not decide
 
 The following are left to the implementation:
 
@@ -413,7 +548,7 @@ The following are left to the implementation:
 
 ---
 
-## 11. Relation to the broader project
+## 12. Relation to the broader project
 
 `symatom` sits below a not-yet-named encoding package that will use it to:
 
