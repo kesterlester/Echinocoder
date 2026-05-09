@@ -6,7 +6,7 @@ from .atoms import Atom
 
 def _atom_key(atom: Atom) -> tuple:
     """A comparable sort key for a single Atom."""
-    return (atom.operation.name, atom.operation.rank, atom.labels, atom.sign)
+    return (atom.operation.name, atom.operation.rank, atom.labels, -atom.sign)
 
 
 def _atom_tuple_key(atom_tuple: tuple) -> tuple:
