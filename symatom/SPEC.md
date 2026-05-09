@@ -1,7 +1,7 @@
 # symatom — Specification
 
 **Status**: draft, pre-implementation  
-**Last revised**: May 2026  
+**Last revised**: May 2026 (rev 2 — sign lives in atom, not external to canon)  
 
 ---
 
@@ -85,6 +85,13 @@ Properties:
   come from different vector groups.
 - `sign: int` — either `+1` or `−1`.
 
+The `sign` field is an intrinsic part of the atom's identity. It is the
+**only** place a sign lives; canonicalisation absorbs all sign changes it
+introduces directly into the atom's `sign` field and never returns an
+additional external sign to the caller. This means two atoms that differ only
+in sign — e.g. `(+1, eps, (a,b,p))` and `(−1, eps, (a,b,p))` — are distinct
+atoms, not the same atom with an external multiplier.
+
 An atom is **well-formed** if:
 1. `len(labels) == operation.rank`, and
 2. every label belongs to a known vector group in the current context.
@@ -127,8 +134,11 @@ The following `ArgumentSymmetry` values are supported in this version:
 ### 3.2 Use in canonicalisation
 
 `ArgumentSymmetry` is used *only* inside canonicalisation, to put an atom's
-own argument list into a canonical order (e.g. alphabetical) while tracking
-any sign change that results. It is never used by the orbit machinery directly.
+own argument list into a canonical order (e.g. alphabetical). Any sign change
+that results from reordering the arguments (e.g. an odd permutation of an
+`ANTISYMMETRIC` operation's arguments contributes a factor of `−1`) is
+multiplied into the atom's `sign` field. The orbit machinery never uses
+`ArgumentSymmetry` directly.
 
 ### 3.3 Future extension
 
@@ -155,7 +165,9 @@ the other by:
 2. Adjusting signs consistently with the `argument_symmetry` and `parity`
    declarations of each operation involved.
 
-The canonical form is itself a valid atom tuple (with a well-defined sign).
+The canonical form is itself a valid atom tuple. All sign changes introduced
+during canonicalisation are absorbed into the `sign` fields of the atoms in
+the canonical form; no sign is returned separately to the caller.
 
 ### 4.2 The canonicalisation contract
 
@@ -170,12 +182,16 @@ full symmetry group.
 **C3 — Consistent**: `canon(x) == canon(y)` if and only if `x` and `y` lie in
 the same orbit.
 
-**C4 — Sign-tracking**: The sign introduced by canonicalisation is recorded.
-Concretely, `canon(x)` returns a pair `(canonical_form, sign)` where `sign ∈
-{+1, −1}` and `canonical_form` is the canonical atom tuple. The sign satisfies:
-if `y` was obtained from `x` by applying group element `g`, then
-`sign(canon(y)) = transform_sign(g, x) * sign(canon(x))`, where
-`transform_sign(g, x)` is the sign by which `g` maps `x` to `y`.
+**C4 — Sign consistency**: `canon(x)` returns a canonical atom tuple (not a
+`(tuple, sign)` pair). All sign information is absorbed into the atoms'
+`sign` fields. The consistency requirement is: if atom tuple `y` was obtained
+from atom tuple `x` by applying a group element `g` (relabelling vector
+labels), then the net sign of `canon(y)` relative to `canon(x)` equals the
+sign by which `g` transforms `x` into `y`. Concretely, if evaluating `x` and
+`y` on concrete vectors would give values related by a factor `s(g,x) ∈
+{+1,−1}`, then the product of the `sign` fields of the atoms in `canon(y)`
+equals `s(g,x)` times the product of the `sign` fields of the atoms in
+`canon(x)`.
 
 **C5 — Deterministic**: `canon(x)` returns the same result on every call with
 the same input.
@@ -200,6 +216,24 @@ to canonicalise. There is no global or default plan.
 This allows multiple plans to be run side-by-side in the same process — for
 example, running a repS-based plan and a repL-based plan simultaneously to
 cross-validate results.
+
+**Vocabulary.** A plan implicitly declares a **vocabulary**: the set of signed
+atoms that are considered named, first-class members of the representation.
+This is what distinguishes a repL-style plan from a repS-style plan:
+
+- A *repL-style* vocabulary includes both `(+1, op, labels)` and
+  `(−1, op, labels)` for antisymmetric operations. A vector-group permutation
+  that would flip the sign of such an atom merely maps it to another named
+  vocabulary member — no sign "escapes" the vocabulary.
+- A *repS-style* vocabulary includes only `(+1, op, labels)` for antisymmetric
+  operations. A sign-flipping permutation produces `(−1, op, labels)`, which
+  is a valid signed atom but not a positively-signed vocabulary member.
+
+Both styles use the same signed-atom representation and the same
+canonicalisation and orbit machinery. The vocabulary is a property of the
+layer above `symatom`; it is recorded here only to explain why two plans that
+differ only in vocabulary are expected to produce encodings of the same final
+size once all canonicalisations and redundancy-eliminations are applied.
 
 ---
 
@@ -290,8 +324,10 @@ C1–C5 (Section 4.2) against any conforming implementation. These tests should:
 - **C3**: For pairs `(x, y)` known to be in the same orbit, assert
   `canon(x) == canon(y)`. For pairs known to be in different orbits, assert
   `canon(x) != canon(y)`.
-- **C4**: For `y` obtained from `x` by a known group element `g`, assert that
-  the signs are related as specified.
+- **C4**: For `y` obtained from `x` by a known group element `g` with known
+  sign `s(g,x)`, assert that the product of the `sign` fields of atoms in
+  `canon(y)` equals `s(g,x)` times the product of the `sign` fields of atoms
+  in `canon(x)`.
 - **C5**: Call `canon(x)` twice in the same session and assert identical
   results.
 
