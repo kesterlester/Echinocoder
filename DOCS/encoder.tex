@@ -1,0 +1,719 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{geometry}
+\usepackage{parskip}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{microtype}
+\usepackage{enumitem}
+
+\geometry{margin=2.5cm}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{example}[definition]{Example}
+
+\theoremstyle{plain}
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{lemma}[definition]{Lemma}
+
+\theoremstyle{remark}
+\newtheorem{remark}[definition]{Remark}
+
+% Notation shorthands
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Sym}{\mathfrak{S}}
+\newcommand{\eval}{\mathrm{eval}}
+\newcommand{\fo}{\mathrm{FO}}
+\newcommand{\repL}{\mathrm{repL}}
+\newcommand{\sign}{\mathrm{sign}}
+\newcommand{\pf}{\mathrm{pf}}
+\newcommand{\acount}{\mathrm{count}}
+\newcommand{\comb}[2]{\binom{#1}{#2}}
+
+\title{\textbf{The Symcoder Encoder: Methodology and Correctness}\\
+\large A pedagogical account of the permutation-invariant embedding algorithm}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------------------
+\section{Overview}
+% ---------------------------------------------------------------------------
+
+The encoder takes as input a \emph{physics event}: a finite collection of
+particle vectors grouped by particle type, together with a set of scalar
+operations.  It produces a fixed-length real vector that is invariant under any
+permutation of particles of the same type, and that contains enough information
+to separate generic events.
+
+The construction proceeds in two phases.
+\begin{enumerate}
+  \item \textbf{Phase 1 — single-orbit encoding.}  For each distinct
+    \emph{FlavouredOperator} (an operation with a fixed recipe for drawing
+    argument labels from the particle groups), evaluate the operation on every
+    valid label combination and sort the results.  This yields a
+    permutation-invariant sequence of real numbers describing the marginal
+    distribution of each scalar feature.
+
+  \item \textbf{Phase 2 — pair-association encoding.}  For each pair of
+    FlavouredOperators, evaluate the complex number $z_k = \eval(u_k) +
+    i\,\eval(v_k)$ for every pair $(u_k,v_k)$ of atoms that share a specific
+    pattern of label overlap (\emph{one association}).  Embed the resulting
+    multiset into permutation-invariant polynomial coefficients.  Several
+    optimisations reduce storage without losing information.
+\end{enumerate}
+
+The two phases together form a complete, permutation-invariant encoding.
+Phase~1 captures individual feature statistics; Phase~2 captures pairwise
+correlations between features.
+
+% ---------------------------------------------------------------------------
+\section{Mathematical Setup}
+% ---------------------------------------------------------------------------
+
+\subsection{Events, Groups, and Labels}
+
+\begin{definition}[Vector group]
+A \emph{vector group} $\mathcal{V} = (\mathcal{L}, d)$ consists of a finite
+label set $\mathcal{L} = \{\ell_1,\ldots,\ell_n\}$ and a dimension $d \in
+\N$.  The \emph{size} of the group is $|\mathcal{L}| = n$.
+\end{definition}
+
+\begin{definition}[Context]
+A \emph{context} $\mathcal{C} = (\mathcal{V}_1,\ldots,\mathcal{V}_m)$ is an
+ordered tuple of vector groups with disjoint label sets.  Let $n_i =
+|\mathcal{V}_i|$ be the size of group~$i$.
+\end{definition}
+
+\begin{definition}[Event]
+An \emph{event} $E$ is an assignment $\ell \mapsto \mathbf{v}_\ell \in \R^d$
+of a $d$-dimensional vector to every label $\ell$ across all groups.
+\end{definition}
+
+The symmetry group acting on events is the product of symmetric groups
+\[
+  G = \Sym_{n_1} \times \cdots \times \Sym_{n_m},
+\]
+where each $\Sym_{n_i}$ permutes the labels of group~$i$.  Two events are
+\emph{physically equivalent} if one is obtained from the other by a $G$-action,
+i.e.\ by relabelling particles within each type.  The encoder must produce the
+same output for physically equivalent events.
+
+\subsection{Operations}
+
+\begin{definition}[Operation]
+An \emph{operation} $\mathit{op}$ is characterised by:
+\begin{itemize}[nosep]
+  \item a \emph{rank} $r \in \N$ (number of vector arguments),
+  \item a \emph{parity} $p \in \{+1,-1\}$,
+  \item an \emph{argument symmetry} $\sigma \in \{\textsc{Symmetric},
+    \textsc{Antisymmetric}\}$, and
+  \item an \emph{evaluation function} $\mathit{op}_{fn}: (\R^d)^r \to \R$.
+\end{itemize}
+For \textsc{Symmetric} operations, $\mathit{op}_{fn}$ is invariant under all
+permutations of its $r$ arguments.  For \textsc{Antisymmetric} operations,
+$\mathit{op}_{fn}$ changes sign under any transposition of two arguments.
+\end{definition}
+
+\begin{example}
+The dot product $\mathit{dot}(\mathbf{u},\mathbf{v}) = \mathbf{u}\cdot\mathbf{v}$ has
+rank~2, parity~$+1$, and is \textsc{Symmetric}.
+
+The triple product
+$\varepsilon_3(\mathbf{u},\mathbf{v},\mathbf{w}) =
+\mathbf{u}\cdot(\mathbf{v}\times\mathbf{w})$ has rank~3, parity~$-1$, and is
+\textsc{Antisymmetric}.
+\end{example}
+
+\subsection{Atoms}
+
+An \emph{atom} is an operation applied to a specific ordered tuple of labels.
+Because the argument symmetry of the operation constrains how permutations of
+the labels affect the result, each unordered combination of labels gives rise to
+either one or two atoms.
+
+\begin{definition}[Atom]
+Let $\mathit{op}$ be an operation of rank~$r$ and let
+$(\ell_1,\ldots,\ell_r)$ be a tuple of distinct labels in canonical
+(lexicographic) order within each group.  An \emph{atom} is a triple
+\[
+  u = (\mathit{op},\, (\ell_1,\ldots,\ell_r),\, \varepsilon)
+\]
+where $\varepsilon \in \{+1,-1\}$ is the \emph{sign}.
+
+\begin{itemize}
+  \item For \textsc{Symmetric} $\mathit{op}$: only $\varepsilon = +1$ arises.
+  \item For \textsc{Antisymmetric} $\mathit{op}$: both $\varepsilon = +1$ and
+    $\varepsilon = -1$ arise, one for each canonical label tuple.  The sign
+    $\varepsilon$ records the parity of the permutation that maps the canonical
+    ordering to a particular chosen reference ordering.
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Evaluation]
+The evaluation of atom $u = (\mathit{op}, (\ell_1,\ldots,\ell_r), \varepsilon)$
+on event $E$ is
+\[
+  \eval(u, E) = \varepsilon \cdot \mathit{op}_{fn}(\mathbf{v}_{\ell_1},
+  \ldots, \mathbf{v}_{\ell_r}).
+\]
+\end{definition}
+
+The sign $\varepsilon$ means that for an \textsc{Antisymmetric} operation the
+two atoms sharing the same label tuple satisfy
+$\eval(u^{+}, E) = -\eval(u^{-}, E)$ for every event $E$, by antisymmetry of
+$\mathit{op}_{fn}$.
+
+\subsection{Flavours and FlavouredOperators}
+
+Atoms are organised by how many labels each argument draws from each group.
+
+\begin{definition}[Flavour]
+A \emph{flavour} for a context with $m$ groups is a tuple $F = (k_1,\ldots,k_m)$
+of non-negative integers with $\sum_i k_i = r$ (the rank of the associated
+operation).  We require $k_i \le n_i$ for all~$i$.
+\end{definition}
+
+\begin{definition}[FlavouredOperator]
+A \emph{FlavouredOperator} $\fo(\mathit{op}, F)$ is the set of all atoms whose
+operation is $\mathit{op}$ and whose label tuple draws exactly $k_i$ labels from
+group~$i$, for each~$i$.
+\end{definition}
+
+The number of atoms in a FlavouredOperator is
+\begin{equation}\label{eq:fo-count}
+  |\fo(\mathit{op}, F)| =
+  \begin{cases}
+    \displaystyle\prod_{i=1}^m \comb{n_i}{k_i}
+      & \text{if $\mathit{op}$ is \textsc{Symmetric}},\\[8pt]
+    \displaystyle 2\prod_{i=1}^m \comb{n_i}{k_i}
+      & \text{if $\mathit{op}$ is \textsc{Antisymmetric}.}
+  \end{cases}
+\end{equation}
+The factor of~2 for \textsc{Antisymmetric} operations reflects the two sign
+choices per label combination.
+
+\begin{definition}[repL]
+For a context $\mathcal{C}$ and a set of operations $\mathcal{K}$, the
+\emph{repL} is the list of all valid FlavouredOperators:
+\[
+  \repL(\mathcal{C}, \mathcal{K})
+  = \bigl\{\fo(\mathit{op}, F) : \mathit{op} \in \mathcal{K},\;
+    F \text{ is a valid flavour for $\mathit{op}$ and $\mathcal{C}$}\bigr\}.
+\]
+\end{definition}
+
+Every atom in the encoding vocabulary appears in exactly one FlavouredOperator.
+
+% ---------------------------------------------------------------------------
+\section{Phase 1: Single-Orbit Encoding}
+% ---------------------------------------------------------------------------
+
+The first phase encodes each FlavouredOperator's evaluation values as a
+permutation-invariant sequence of reals.
+
+\subsection{The Symmetric Case}
+
+For a \textsc{Symmetric} FlavouredOperator $\mathit{fo} = \fo(\mathit{op}, F)$,
+let $n = \prod_i \comb{n_i}{k_i}$ be the number of atoms (all with sign
+$+1$).  Evaluating on event $E$ gives $n$ real numbers
+\[
+  a_1 = \eval(u_1, E),\quad a_2 = \eval(u_2, E),\quad \ldots,\quad
+  a_n = \eval(u_n, E).
+\]
+The \textbf{Phase~1 encoding} of $\mathit{fo}$ is the sorted sequence
+\[
+  \bigl(a_{(1)},\, a_{(2)},\, \ldots,\, a_{(n)}\bigr),
+  \qquad a_{(1)} \le a_{(2)} \le \cdots \le a_{(n)}.
+\]
+Sorting is the canonical permutation-invariant operation.  The sorted sequence
+is a complete encoding of the multiset $\{a_1,\ldots,a_n\}$, and hence of all
+symmetric functions of that multiset.
+
+\subsection{The Antisymmetric Case: Sign Compression}
+\label{sec:5c}
+
+For an \textsc{Antisymmetric} $\mathit{fo}$, the atom set contains pairs
+$(u^+, u^-)$ for each label combination, with $\eval(u^+, E) =
+-\eval(u^-, E)$.  The full set of $2n$ evaluation values is therefore
+\[
+  \{a_1, -a_1, a_2, -a_2, \ldots, a_n, -a_n\},
+  \qquad \text{where } a_j = \eval(u^+_j, E).
+\]
+This multiset is antisymmetric about zero: knowing the positive half
+$\{a_1,\ldots,a_n\}$ (or equivalently the absolute values $\{|a_j|\}$)
+determines the full multiset.
+
+\begin{proposition}[Sign compression]
+The multiset $\{|a_1|,\ldots,|a_n|\}$ is invariant under the action of~$G$.
+\end{proposition}
+\begin{proof}
+A group element $g \in G$ permutes atoms and may change the canonical
+label ordering, thereby flipping the sign of some atoms (i.e.\ swapping $u^+_j
+\leftrightarrow u^-_j$ for certain $j$).  However, $|a_j| = |\eval(u^+_j,E)|
+= |\eval(u^-_j,E)|$ is invariant under sign flip, so the multiset
+$\{|a_j|\}$ is unchanged.
+\end{proof}
+
+The decision to apply sign compression is made from the operation's argument
+symmetry alone — never from the numerical values of $a_j$.
+
+\textbf{Phase~1 encoding (antisymmetric case):} store the sorted sequence
+\[
+  \bigl(|a|_{(1)}, |a|_{(2)}, \ldots, |a|_{(n)}\bigr),
+  \qquad |a|_{(1)} \le \cdots \le |a|_{(n)},
+\]
+contributing $n = \frac{1}{2}|\mathit{fo}|$ reals instead of $2n$.
+
+\subsection{Summary}
+
+Each distinct FlavouredOperator $\mathit{fo}$ contributes
+\begin{equation}\label{eq:phase1-length}
+  \ell_1(\mathit{fo}) =
+  \begin{cases}
+    |\mathit{fo}| & \text{if \textsc{Symmetric}},\\
+    \tfrac{1}{2}|\mathit{fo}| & \text{if \textsc{Antisymmetric}},
+  \end{cases}
+\end{equation}
+reals to Phase~1.  In both cases $\ell_1(\mathit{fo}) = \prod_i \comb{n_i}{k_i}$,
+the number of distinct label combinations.
+
+% ---------------------------------------------------------------------------
+\section{Phase 2: Pair-Association Encoding}
+% ---------------------------------------------------------------------------
+
+Phase~2 encodes pairwise correlations between atoms from (possibly different)
+FlavouredOperators.  The central objects are \emph{PairFlavours}, which classify
+atom-pairs by orbit type under $G$.
+
+\subsection{PairFlavours and Overlap Blocks}
+
+\begin{definition}[PairFlavour]
+A \emph{PairFlavour} is a tuple
+\[
+  \pf = (\mathit{op}_u, F_u, \mathit{op}_v, F_v, s),
+\]
+where $(op_u, F_u)$ and $(\mathit{op}_v, F_v)$ are the operation-flavour pairs
+of atoms $u$ and~$v$, and $s = (s_1,\ldots,s_m)$ is the \emph{overlap} vector:
+$s_i$ is the number of labels shared between $u$ and $v$ from group~$i$.
+We require $0 \le s_i \le \min(k_{u,i}, k_{v,i})$ for all~$i$.
+
+By convention the two sides are canonically ordered so that $(\mathit{op}_u,
+F_u) \le (\mathit{op}_v, F_v)$ under a fixed total order; this ensures that
+$\pf(u,v) = \pf(v,u)$.
+\end{definition}
+
+\begin{proposition}
+Two atom-pairs $(u,v)$ and $(u',v')$ lie in the same $G$-orbit if and only if
+they have the same PairFlavour.
+\end{proposition}
+
+\begin{definition}[Overlap block]
+An \emph{overlap block} is the set of all PairFlavours sharing the same
+$(\mathit{op}_u, F_u, \mathit{op}_v, F_v)$, differing only in the overlap~$s$.
+Each member of an overlap block is called an \emph{association}.
+
+The valid overlap range for group~$i$ is
+\[
+  s_i \in \bigl[\max(0,\, k_{u,i}+k_{v,i}-n_i),\; \min(k_{u,i}, k_{v,i})\bigr].
+\]
+\end{definition}
+
+\subsection{The Association Table}
+
+Fix an overlap block $B = \{(\mathit{op}_u, F_u, \mathit{op}_v, F_v, s) : s
+\text{ valid}\}$.  Imagine a matrix whose columns are labelled by the atoms of
+$\fo(\mathit{op}_u, F_u)$ and whose rows are labelled by the atoms of
+$\fo(\mathit{op}_v, F_v)$.  Each cell $(u_j, v_k)$ belongs to exactly one
+association: the one whose overlap $s_i$ equals the number of labels shared by
+$u_j$ and $v_k$ from group~$i$.
+
+\begin{example}
+\label{ex:assoc-table}
+Let $n=3$ (labels $a,b,c$), one group, and $\mathit{op} = \mathit{dot}$ with
+rank~2 and flavour $F=(2)$.  The atoms are $\mathit{dot}(a,b)$,
+$\mathit{dot}(a,c)$, $\mathit{dot}(b,c)$.  The self-pairing overlap block
+$(\mathit{dot},(2),\mathit{dot},(2))$ has associations $s \in \{1,2\}$ (overlap
+$s=0$ is impossible here since $k_u+k_v-n = 2+2-3 = 1$).
+
+\medskip
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{c|ccc}
+  \toprule
+  & $\mathit{dot}(a,b)$ & $\mathit{dot}(a,c)$ & $\mathit{dot}(b,c)$ \\
+  \midrule
+  $\mathit{dot}(a,b)$ & $s=2$ & $s=1$ & $s=1$ \\
+  $\mathit{dot}(a,c)$ & $s=1$ & $s=2$ & $s=1$ \\
+  $\mathit{dot}(b,c)$ & $s=1$ & $s=1$ & $s=2$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+\medskip
+
+Association $s=2$ (diagonal): 3 cells; association $s=1$ (off-diagonal): 6 cells.
+\end{example}
+
+The number of atom-pairs in association $\pf$ is
+\begin{equation}\label{eq:pf-count}
+  \acount(\pf) = \prod_{i=1}^m \comb{n_i}{s_i}\comb{n_i-s_i}{k_{u,i}-s_i}
+    \comb{n_i-k_{u,i}}{k_{v,i}-s_i}.
+\end{equation}
+The three binomial factors count: (i)~the shared labels, (ii)~the extra
+$u$-labels from the remaining pool, (iii)~the extra $v$-labels from what is
+left.
+
+\begin{remark}
+The cells of the association table partition exactly into the associations of
+the block:
+\[
+  |\fo(\mathit{op}_u,F_u)| \cdot |\fo(\mathit{op}_v,F_v)|
+  = \sum_{\pf \in B} \acount(\pf)
+\]
+(counting sign variants on both sides for antisymmetric operations).
+\end{remark}
+
+\subsection{Dropping the Largest Association: The Complementation Argument}
+\label{sec:5b}
+
+Within each overlap block, the association with the largest $\acount(\pf)$ is
+not encoded explicitly.  Instead, it is recovered by the decoder via a
+multiset-complementation argument.
+
+Let $B$ be an overlap block, and let $\pf^* \in B$ be the association with the
+largest count.  Write
+\[
+  U = \{\eval(u_j, E) : u_j \in \fo(\mathit{op}_u, F_u)\}
+  \quad\text{and}\quad
+  V = \{\eval(v_k, E) : v_k \in \fo(\mathit{op}_v, F_v)\}
+\]
+for the multisets of evaluation values (known from Phase~1 encodings of
+$\fo(\mathit{op}_u, F_u)$ and $\fo(\mathit{op}_v, F_v)$).
+
+The multiset of complex numbers
+\[
+  Z = \{z_{jk} = \eval(u_j,E) + i\,\eval(v_k,E) : (u_j,v_k)
+  \text{ any pair with $u_j \in \fo_u$, $v_k \in \fo_v$}\}
+\]
+is the multiset product $U \oplus_\C V = \{a + ib : a \in U, b \in V\}$, which
+is determined entirely by $U$ and~$V$.  The associations partition $Z$ into
+disjoint submultisets $Z_\pf$ for $\pf \in B$.  Therefore, knowing all
+associations except $\pf^*$ determines $Z_{\pf^*}$ by complement:
+\[
+  Z_{\pf^*} = Z \;\setminus\; \bigsqcup_{\pf \in B,\, \pf\ne \pf^*} Z_\pf.
+\]
+
+\begin{proposition}[Complementation is exact]
+The above complementation works for \emph{all} events $E$, including those
+where some evaluation values coincide.  Since $Z$ is a multiset, repeated
+values appear with the correct multiplicity, and the complement operation on
+multisets accounts for this correctly.
+\end{proposition}
+
+\begin{remark}[Choosing which association to drop]
+The complementation argument is valid regardless of which association within the
+block is designated as dropped.  Choosing the largest minimises storage, since
+the number of reals contributed by an association scales with $\acount(\pf)$.
+\end{remark}
+
+\begin{remark}[Single-association blocks]
+If an overlap block contains only one association (which occurs when
+$\fo(\mathit{op}_u, F_u)$ and $\fo(\mathit{op}_v, F_v)$ draw labels from
+completely disjoint groups, forcing $s = (0,\ldots,0)$ as the only valid
+overlap), then the entire block is dropped: it is the unique and hence largest
+association in its block.  No information is lost, since the single
+association's $z$-values are a Cartesian product of $U$ and $V$, which are
+already encoded in Phase~1.
+\end{remark}
+
+\subsection{The Z-value Embedding}
+\label{sec:z-embed}
+
+For each surviving association $\pf$ (i.e.\ each non-dropped member of each
+overlap block), the encoder computes a set of complex numbers and then produces
+a permutation-invariant polynomial encoding.
+
+\subsubsection{The positive-sign subset}
+
+For each atom-pair $(u_j, v_k)$ with both $u_j.\varepsilon = +1$ and
+$v_k.\varepsilon = +1$, define
+\[
+  z_k = \eval(u_j, E) + i\,\eval(v_k, E).
+\]
+This subset has exactly $\acount(\pf)$ elements regardless of which operations
+are antisymmetric, because for each base label combination there is exactly one
+$(u^+, v^+)$ pair.
+
+\subsubsection{Permutation-invariant embedding}
+
+The multiset $\{z_k\}$ (of size $n = \acount(\pf)$) is embedded by the
+Echinocoder polynomial encoder: compute the monic polynomial whose roots are
+$\{-z_k\}$, and return all coefficients except the leading (monic) one,
+ordered by descending degree.  This yields $n$ complex numbers that are
+invariant under any permutation of the $z_k$ values (i.e.\ under any relabelling
+of the pairs).
+
+Each complex coefficient is unpacked into two reals $(\mathrm{Re}, \mathrm{Im})$,
+contributing $2n = 2\acount(\pf)$ reals in total.
+
+\subsection{Sign-Symmetry Compression of the Embedding}
+\label{sec:5a}
+
+When one or both operations in an association are \textsc{Antisymmetric}, the
+full orbit of $z$-values (over all sign combinations of $u$ and $v$) has
+a forced structure that can be exploited to halve (or quarter) the apparent cost
+of embedding the full orbit.
+
+The key observation is that the full orbit's $z$-values come in symmetry-related
+groups:
+\begin{itemize}
+  \item $\textsc{Sym}\times\textsc{Antisym}$ (\emph{SA}):
+    the full orbit is $\{z_k, \overline{z}_k\}$ — conjugate-closed.
+  \item $\textsc{Antisym}\times\textsc{Sym}$ (\emph{AS}):
+    the full orbit is $\{z_k, -\overline{z}_k\}$ — anti-conjugate-closed.
+  \item $\textsc{Antisym}\times\textsc{Antisym}$ (\emph{AA}):
+    the full orbit contains $\{z_k, \overline{z}_k, -z_k, -\overline{z}_k\}$,
+    so the squares $\{z_k^2\}$ form a conjugate-closed set of size~$n$.
+\end{itemize}
+
+In each non-trivial case, the characteristic polynomial of the full orbit
+has forced coefficient structure (real coefficients, or alternating
+real/imaginary, etc.) that allows $2n$ reals to encode the same information as
+the brute-force $4n$ or $8n$ reals.  The details are as follows.
+
+\subsubsection{SS: Symmetric $\times$ Symmetric}
+Embed $\{z_k\}$ ($n$ complex roots) directly.  Output: $n$ complex
+$= 2n$ reals.  No forced structure.
+
+\subsubsection{SA: Symmetric $\times$ Antisymmetric}
+The full orbit is $\{z_k, \overline{z}_k\}$ ($2n$ roots).  The corresponding
+polynomial has \emph{real} coefficients (a conjugate-closed root set implies
+real coefficients).  Output: $2n$ real coefficients, packed as $n$ complex
+numbers ($2n$ reals total).
+
+\subsubsection{AS: Antisymmetric $\times$ Symmetric}
+The full orbit is $\{z_k, -\overline{z}_k\}$ ($2n$ roots).  The polynomial has
+even-degree coefficients real and odd-degree coefficients purely imaginary.
+Output: $n$ independent reals of each parity, again packed as $n$ complex
+numbers ($2n$ reals).
+
+\subsubsection{AA: Antisymmetric $\times$ Antisymmetric}
+The full orbit is $\{z_k, \overline{z}_k, -z_k, -\overline{z}_k\}$ ($4n$
+roots in $n$ quadruples).  Setting $w_k = z_k^2$ reduces to an SA-type
+structure in the variable~$w$: the multiset $\{w_k, \overline{w}_k\}$ is
+conjugate-closed and its polynomial has real coefficients.  Output: $n$ complex
+$= 2n$ reals, after embedding $\{w_k^2\}$ as in SA.
+
+\begin{proposition}[Output size]\label{prop:assoc-size}
+Every association, regardless of symmetry class, contributes exactly
+$2\acount(\pf)$ reals to the Phase~2 encoding.
+\end{proposition}
+
+The compression is in avoiding the naive approach of embedding the full orbit
+(which would require $2 \times \mathrm{orbit\_size}(\pf)$ reals and grows by a
+factor of~2 or~4 for antisymmetric operations).
+
+% ---------------------------------------------------------------------------
+\section{Correctness}
+% ---------------------------------------------------------------------------
+
+\subsection{Permutation Invariance}
+
+\begin{theorem}
+The complete encoding (Phase~1 + Phase~2) is invariant under the action of the
+symmetry group $G = \Sym_{n_1} \times \cdots \times \Sym_{n_m}$.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+\textbf{Phase~1.}  A group element $g \in G$ permutes atoms within each
+FlavouredOperator, and for \textsc{Antisymmetric} operations may flip the sign
+of some atoms.  The \textsc{Symmetric} Phase~1 encoding sorts evaluation values,
+and sorting commutes with any permutation of the values.  The
+\textsc{Antisymmetric} encoding sorts absolute values, which are additionally
+invariant under sign flips (\cref{sec:5c}).
+
+\textbf{Phase~2.}  The complex numbers $z_k = \eval(u_j,E) +
+i\,\eval(v_k,E)$ are defined for pairs $(u_j,v_k)$ in the positive-sign subset
+of association $\pf$.  Under $g$, the set of such pairs is permuted (with
+possible sign changes, handled by the 5a symmetry classes in
+\cref{sec:5a}).  The polynomial embedding of a multiset is invariant under any
+permutation of its elements, so the embedding is $G$-invariant.  The
+complementation step (\cref{sec:5b}) produces the same dropped-association
+values because it operates on the multiset $Z_{\pf^*}$, which is the
+set-theoretic complement of the stored associations within $Z = U \oplus_\C V$,
+and $Z$, $U$, $V$ are all $G$-invariant.
+\end{proof}
+
+\subsection{Information Completeness}
+
+The encoding is \emph{complete} if the full set of evaluation values for all
+atoms and atom-pairs can be reconstructed from the encoded vector.  Completeness
+is required for the encoder to separate generic events.
+
+\begin{theorem}[Phase~1 completeness]
+The Phase~1 encoding of $\fo(\mathit{op}, F)$ is a complete encoding of the
+multiset $\{\eval(u, E) : u \in \fo\}$.
+\end{theorem}
+\begin{proof}
+The sorted sequence is the canonical representative of the multiset; it uniquely
+determines the multiset.  For the \textsc{Antisymmetric} case, the sorted
+absolute values $\{|a_j|\}$ determine the multiset $\{a_j, -a_j\}$ because each
+absolute value contributes exactly one positive/negative pair.
+\end{proof}
+
+\begin{theorem}[Phase~2 completeness]
+Given the Phase~1 encodings of all FlavouredOperators, the Phase~2 encoding
+(after complementation) is complete.
+\end{theorem}
+\begin{proof}
+For each overlap block $B$:
+\begin{enumerate}
+  \item The stored associations' $z$-multisets $\{Z_\pf\}_{\pf \ne \pf^*}$
+    are recovered from their polynomial embeddings (which are injective on
+    multisets by the Echinocoder construction).
+  \item The Phase~1 encodings supply the multisets $U$ and $V$, hence $Z = U
+    \oplus_\C V$.
+  \item The dropped association satisfies $Z_{\pf^*} = Z \setminus
+    \bigsqcup_{\pf \ne \pf^*} Z_\pf$, uniquely determined as a multiset
+    complement.
+  \item The 5a sign-symmetry compression is reversible: the full orbit
+    $z$-multiset is reconstructed from the positive-sign subset and the
+    symmetry class of the association.
+\end{enumerate}
+\end{proof}
+
+\begin{remark}[Degenerate events]
+Completeness holds for \emph{all} events, including degenerate ones where some
+particles have identical vectors.  Identical particles produce repeated
+evaluation values; these are handled correctly as multiset multiplicities
+throughout (in Phase~1 sorted sequences, in $Z = U \oplus_\C V$, and in the
+multiset complement).  Two numerically identical particles are indistinguishable,
+which is the physically correct behaviour for a permutation-invariant encoder.
+\end{remark}
+
+% ---------------------------------------------------------------------------
+\section{Output Structure}
+% ---------------------------------------------------------------------------
+
+The output of the encoder for a given plan $(\mathcal{C}, \mathcal{K})$ and
+event $E$ is a concatenation of real-valued segments.  The structure depends
+only on the plan; it is the same for every event.
+
+\subsection{Segment types}
+
+\begin{description}
+  \item[\texttt{ORBIT}] One per distinct FlavouredOperator $\mathit{fo}$ in
+    $\repL(\mathcal{C},\mathcal{K})$.  Length: $\prod_i \comb{n_i}{k_i}$ reals
+    (\emph{sign-compressed} for \textsc{Antisymmetric} operations; label
+    \texttt{sign\_compressed=True} in the metadata).
+
+  \item[\texttt{ASSOC}] One per stored association (every non-dropped member of
+    each overlap block).  Length: $2\acount(\pf)$ reals.
+
+  \item[\texttt{NULL}] One per dropped association (largest per block, by
+    $\acount(\pf)$).  Length: 0 reals.  Present in the metadata at its logical
+    position in the overlap block so a decoder knows which association was
+    omitted.
+\end{description}
+
+All \texttt{ORBIT} segments precede all \texttt{ASSOC}/\texttt{NULL} segments.
+Within Phase~2, segments are grouped by overlap block, ordered by a canonical
+sort key $(\mathit{op}_u\text{-key}, \mathit{op}_v\text{-key}, s)$ (where
+$\mathit{op}$-key $= (\mathrm{name}, r, p, \sigma, F)$), with overlap~$s$
+ascending lexicographically within each block.
+
+\subsection{Total output length}
+
+\begin{equation}
+  L = \underbrace{\sum_{\mathit{fo} \in \repL} \prod_i \comb{n_i}{k_i}}_{\text{Phase~1}}
+    + \underbrace{\sum_{\substack{\pf \in \text{all blocks} \\ \pf \ne \pf^*_B}}\!
+      2\,\acount(\pf)}_{\text{Phase~2}},
+\end{equation}
+where $\pf^*_B$ denotes the dropped (largest-count) association in block~$B$.
+
+\subsection{Human-readable metadata}
+
+The function \texttt{describe\_encoding(plan)} returns a list of
+\texttt{SegmentInfo} records, one per segment, containing: segment kind
+(\texttt{ORBIT}/\texttt{ASSOC}/\texttt{NULL}), start index, length, operation
+names, flavours, overlap, symmetry class (\texttt{SS}/\texttt{SA}/\texttt{AS}/\texttt{AA}),
+and the \texttt{sign\_compressed} flag for \texttt{ORBIT} segments.  This list
+is a complete description of the encoder's output structure given only the
+plan — no event data is needed.
+
+% ---------------------------------------------------------------------------
+\section{Algorithm Summary}
+% ---------------------------------------------------------------------------
+
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Step} & \textbf{Input} & \textbf{Output} \\
+  \midrule
+  Construct \texttt{repL} & plan $(\mathcal{C}, \mathcal{K})$
+    & list of FlavouredOperators \\
+  Compute PairFlavours & \texttt{repL}
+    & all valid $\pf$, grouped into overlap blocks \\
+  \midrule
+  Phase~1 per $\mathit{fo}$
+    & \texttt{fo.atoms()}, event $E$
+    & $\ell_1(\mathit{fo})$ sorted reals \\
+  \midrule
+  Phase~2: choose $\pf^*$ per block & overlap blocks & dropped-association map \\
+  Phase~2: $z$-values per $\pf \ne \pf^*$
+    & atom pairs, event $E$
+    & $\acount(\pf)$ complex numbers \\
+  Phase~2: embed $z$-values (5a)
+    & $\{z_k\}$, symmetry class
+    & $\acount(\pf)$ complex coefficients \\
+  Phase~2: unpack to reals
+    & complex coefficients
+    & $2\acount(\pf)$ reals \\
+  \midrule
+  Concatenate & all segments & output vector of length $L$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ---------------------------------------------------------------------------
+\appendix
+\section{Notation Reference}
+% ---------------------------------------------------------------------------
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Symbol} & \textbf{Meaning} \\
+  \midrule
+  $m$ & number of particle groups in the context \\
+  $n_i$ & size of group $i$ (number of labels) \\
+  $G = \Sym_{n_1}\times\cdots\times\Sym_{n_m}$ & symmetry group \\
+  $r$ & rank of an operation (number of vector arguments) \\
+  $F = (k_1,\ldots,k_m)$ & flavour: label counts per group, $\sum k_i = r$ \\
+  $\fo(\mathit{op}, F)$ & FlavouredOperator \\
+  $\varepsilon \in \{+1,-1\}$ & sign of an atom \\
+  $\eval(u, E)$ & scalar evaluation of atom $u$ on event $E$ \\
+  $\acount(\pf)$ & number of atom-pairs in association $\pf$ \\
+  $s = (s_1,\ldots,s_m)$ & overlap vector of a PairFlavour \\
+  $Z_\pf$ & multiset of $z$-values for association $\pf$ \\
+  $U \oplus_\C V$ & complex Cartesian sum $\{a+ib : a\in U, b\in V\}$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}
