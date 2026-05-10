@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from itertools import groupby
 from symatom import ArgumentSymmetry
 from symatom.rep import canonical_pair_flavours
 from symatom import repL
@@ -11,26 +12,52 @@ def _symmetry_class(pf) -> str:
     return f"{u}{v}"
 
 
+def _block_key(pf):
+    """Key that identifies an OVERLAP BLOCK: fixed (op_u, flavour_u, op_v, flavour_v)."""
+    u = (pf.op_u.name, pf.op_u.rank, pf.op_u.parity,
+         pf.op_u.argument_symmetry.value, pf.flavour_u.counts)
+    v = (pf.op_v.name, pf.op_v.rank, pf.op_v.parity,
+         pf.op_v.argument_symmetry.value, pf.flavour_v.counts)
+    return (u, v)
+
+
 @dataclass(frozen=True)
 class SegmentInfo:
     """
-    Metadata for one contiguous block of complex coefficients in the encode()
-    output vector.
+    Metadata for one entry in the describe_encoding() output.
+
+    kind
+    ----
+    "ORBIT"  Phase 1: sort-encoded single-operator orbit.
+             eval(u) for all u in fo.atoms(), sorted and packed as complex pairs.
+             Fields op_v, flavour_v, overlap, symmetry_class are None.
+
+    "ASSOC"  Phase 2: compressed pair encoding of one association.
+             One PairFlavour within an OVERLAP BLOCK, encoded via _embed_compressed.
+             All fields are set.
+
+    "NULL"   Phase 2: dropped association — deducible from orbit headers + other
+             associations in the same OVERLAP BLOCK by complementation in the
+             association table.  length == 0; all fields are set.
+             These are the largest-count association per OVERLAP BLOCK.
 
     Fields
     ------
-    start          : first index (inclusive) in the output array
-    length         : number of complex coefficients in this segment
-    op_u, op_v     : names of the two operations forming this PairFlavour
-    flavour_u      : counts tuple — how many labels from each group go into op_u
-    flavour_v      : counts tuple — how many labels from each group go into op_v
-    overlap        : how many labels are shared between op_u and op_v per group
-    symmetry_class : two-character code — "SS", "SA", "AS", or "AA"
-                     (S = SYMMETRIC, A = ANTISYMMETRIC for op_u then op_v)
+    start          : first index (inclusive) in the output array (real units)
+    length         : number of real values in this segment (0 for NULL).
+                     ORBIT: one real per atom (fo.count()).
+                     ASSOC: two reals per association pair (2 * pf.count()),
+                            since each complex polynomial coefficient = (re, im).
+    op_u           : name of operation u (or the single operation for ORBIT)
+    flavour_u      : counts tuple — labels from each group going into op_u
+    op_v           : name of operation v (None for ORBIT)
+    flavour_v      : counts tuple for op_v (None for ORBIT)
+    overlap        : shared-label counts per group (None for ORBIT)
+    symmetry_class : "SS", "SA", "AS", or "AA" (None for ORBIT)
 
     Human-readable display
     ----------------------
-    str(seg)  — single-line summary, suitable for printing a table.
+    str(seg)  — single-line summary.
 
     Machine-readable export
     -----------------------
@@ -38,57 +65,82 @@ class SegmentInfo:
 
     Notes
     -----
-    Segment lengths are computed analytically from pf.count(group_sizes) and
-    do not require evaluating the encoding on any event.  A "dry-run with
-    all-zero inputs" would give the same lengths but is unnecessary here.
+    NULL entries appear at their logical position in the OVERLAP BLOCK sequence
+    but contribute zero coefficients; start == stop for a NULL entry.
+    Consecutive ASSOC/NULL entries within the same block are ordered by
+    canonical_pair_flavours' overlap sort (lex ascending).
     """
+    kind:           str
     start:          int
     length:         int
     op_u:           str
-    op_v:           str
     flavour_u:      tuple
-    flavour_v:      tuple
-    overlap:        tuple
-    symmetry_class: str
+    op_v:           str   | None = None
+    flavour_v:      tuple | None = None
+    overlap:        tuple | None = None
+    symmetry_class: str   | None = None
 
     @property
     def stop(self) -> int:
         return self.start + self.length
 
     def __str__(self) -> str:
+        idx = f"[{self.start}:{self.stop}]"
         fl_u = ",".join(str(c) for c in self.flavour_u)
+
+        if self.kind == "ORBIT":
+            return f"{idx}  {self.op_u}  ORBIT  u=({fl_u})  len={self.length}"
+
         fl_v = ",".join(str(c) for c in self.flavour_v)
         ov   = ",".join(str(c) for c in self.overlap)
-        return (
-            f"[{self.start}:{self.stop}]"
+        base = (
+            f"{idx}"
             f"  {self.op_u}×{self.op_v}"
             f"  {self.symmetry_class}"
             f"  u=({fl_u})  v=({fl_v})  shared=({ov})"
             f"  len={self.length}"
         )
+        if self.kind == "NULL":
+            base += "  NULL_ENCODING(deducible_from_uv_overlap_block)"
+        return base
 
     def to_dict(self) -> dict:
-        return {
-            "start":          self.start,
-            "stop":           self.stop,
-            "length":         self.length,
-            "op_u":           self.op_u,
-            "op_v":           self.op_v,
-            "flavour_u":      list(self.flavour_u),
-            "flavour_v":      list(self.flavour_v),
-            "overlap":        list(self.overlap),
-            "symmetry_class": self.symmetry_class,
+        d = {
+            "kind":      self.kind,
+            "start":     self.start,
+            "stop":      self.stop,
+            "length":    self.length,
+            "op_u":      self.op_u,
+            "flavour_u": list(self.flavour_u),
         }
+        if self.kind != "ORBIT":
+            d.update({
+                "op_v":           self.op_v,
+                "flavour_v":      list(self.flavour_v),
+                "overlap":        list(self.overlap),
+                "symmetry_class": self.symmetry_class,
+            })
+        return d
 
 
 def describe_encoding(plan) -> list[SegmentInfo]:
     """
-    Return a list of SegmentInfo objects describing the structure of the vector
-    produced by encode(plan, event).
+    Return a list of SegmentInfo objects describing the full structure of the
+    vector produced by encode(plan, event).
 
-    The i-th SegmentInfo covers output[seg.start : seg.stop] and describes
-    which PairFlavour generated that block, how many coefficients it contains,
-    and what symmetry compression was applied.
+    The list mirrors encode()'s two-phase structure exactly:
+
+      Phase 1 — ORBIT segments (one per distinct FlavouredOperator in repL):
+        kind="ORBIT", length=ceil(fo.count()/2).  Appear first.
+
+      Phase 2 — ASSOC and NULL segments (one per PairFlavour):
+        Within each OVERLAP BLOCK (fixed op_u/flavour_u/op_v/flavour_v) the
+        largest-count PairFlavour is marked kind="NULL" (length=0, cursor does
+        not advance); all others are kind="ASSOC".
+
+    NULL segments present as real encoding entries with zero length — their
+    position in the block sequence is preserved so a decoder can reconstruct
+    which association was dropped.
 
     Usage examples
     --------------
@@ -100,9 +152,8 @@ def describe_encoding(plan) -> list[SegmentInfo]:
     import json
     json.dumps([s.to_dict() for s in describe_encoding(plan)])
 
-    The segments are listed in the same order as the coefficients in the
-    encode() output, so output[seg.start : seg.stop] always corresponds to
-    the PairFlavour described by that SegmentInfo.
+    # Total encoded length (should match len(encode(plan, event))):
+    sum(s.length for s in describe_encoding(plan))
 
     This function is pure — it does not evaluate any event data.
     """
@@ -112,18 +163,58 @@ def describe_encoding(plan) -> list[SegmentInfo]:
 
     segments = []
     cursor = 0
-    for pf in pf_list:
-        length = pf.count(group_sizes)
+
+    # Phase 1: one ORBIT segment per distinct FlavouredOperator.
+    seen_fo_keys: set = set()
+    for fo in fo_list:
+        fo_key = (fo.operation.name, fo.operation.rank, fo.operation.parity,
+                  fo.operation.argument_symmetry.value, fo.flavour.counts)
+        if fo_key in seen_fo_keys:
+            continue
+        seen_fo_keys.add(fo_key)
+        n = fo.count()
+        if n == 0:
+            continue
         segments.append(SegmentInfo(
-            start          = cursor,
-            length         = length,
-            op_u           = pf.op_u.name,
-            op_v           = pf.op_v.name,
-            flavour_u      = tuple(pf.flavour_u.counts),
-            flavour_v      = tuple(pf.flavour_v.counts),
-            overlap        = tuple(pf.overlap),
-            symmetry_class = _symmetry_class(pf),
+            kind      = "ORBIT",
+            start     = cursor,
+            length    = n,      # n real eval values, one per atom
+            op_u      = fo.operation.name,
+            flavour_u = tuple(fo.flavour.counts),
         ))
-        cursor += length
+        cursor += n
+
+    # Phase 2: one ASSOC or NULL segment per PairFlavour, grouped into blocks.
+    for _bkey, block_iter in groupby(pf_list, key=_block_key):
+        block = list(block_iter)
+        max_idx = max(range(len(block)), key=lambda i: block[i].count(group_sizes))
+        for i, pf in enumerate(block):
+            sc = _symmetry_class(pf)
+            if i == max_idx:
+                segments.append(SegmentInfo(
+                    kind           = "NULL",
+                    start          = cursor,   # cursor does not advance
+                    length         = 0,
+                    op_u           = pf.op_u.name,
+                    flavour_u      = tuple(pf.flavour_u.counts),
+                    op_v           = pf.op_v.name,
+                    flavour_v      = tuple(pf.flavour_v.counts),
+                    overlap        = tuple(pf.overlap),
+                    symmetry_class = sc,
+                ))
+            else:
+                length = 2 * pf.count(group_sizes)   # n complex coeffs = 2n reals
+                segments.append(SegmentInfo(
+                    kind           = "ASSOC",
+                    start          = cursor,
+                    length         = length,
+                    op_u           = pf.op_u.name,
+                    flavour_u      = tuple(pf.flavour_u.counts),
+                    op_v           = pf.op_v.name,
+                    flavour_v      = tuple(pf.flavour_v.counts),
+                    overlap        = tuple(pf.overlap),
+                    symmetry_class = sc,
+                ))
+                cursor += length
 
     return segments

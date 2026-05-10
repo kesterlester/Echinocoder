@@ -1,11 +1,12 @@
 from __future__ import annotations
 import importlib.util
 import numpy as np
+from itertools import groupby
 from pathlib import Path
 from symatom.atoms import ArgumentSymmetry
 from symatom.rep import canonical_pair_flavours
 from symatom import repL
-from .pairs import eval_pair_orbit, eval_pair_orbit_positive
+from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit
 
 # Load the Echinocoder zip embedder from the repo root.  It is not a proper
 # package, so we locate it relative to this file (repo_root/symcoder/encode.py
@@ -183,49 +184,61 @@ def _embed_compressed(z_pos: np.ndarray, pf) -> np.ndarray:
         return r[0::2] + 1j * r[1::2]
 
 
-def encode(plan, event: dict) -> np.ndarray:
+def _complex_to_reals(c: np.ndarray) -> np.ndarray:
+    """Unpack n complex values to 2n reals: [re0, im0, re1, im1, ...]."""
+    out = np.empty(2 * len(c), dtype=float)
+    out[0::2] = c.real
+    out[1::2] = c.imag
+    return out
+
+
+def _overlap_block_key(pf):
+    """Key that identifies an OVERLAP BLOCK: fixed (op_u, flavour_u, op_v, flavour_v)."""
+    u = (pf.op_u.name, pf.op_u.rank, pf.op_u.parity,
+         pf.op_u.argument_symmetry.value, pf.flavour_u.counts)
+    v = (pf.op_v.name, pf.op_v.rank, pf.op_v.parity,
+         pf.op_v.argument_symmetry.value, pf.flavour_v.counts)
+    return (u, v)
+
+
+def _sort_encode(values: np.ndarray) -> np.ndarray:
     """
-    Encode a physics event as a permutation-invariant vector.
+    Sort real eval values into a permutation-invariant float64 array.
 
-    Algorithm:
-      1. Enumerate all canonical PairFlavours for this plan.
-      2. Deduplicate under encoding equivalence (seen_keys check).
-      3. For each kept PairFlavour, evaluate the sign=(+1,+1) orbit subset:
-         z_k = eval(u'_k, E) + i * eval(v'_k, E)  (pf.count() values).
-      4. Form the symmetry-class-appropriate invariant multiset and embed via
-         _embed_compressed, yielding exactly pf.count() complex coefficients.
-      5. Concatenate all parts.
+    This is the Phase 1 encoding for a single-operator orbit.  Sorting is the
+    permutation-invariant operation; the output length equals the number of
+    atoms in the orbit (fo.count()), one real per atom.
 
-    The output length is sum(pf.count(group_sizes) for pf in kept PairFlavours),
-    which equals sum(pf.orbit_size(group_sizes) / symmetry_factor) — a factor
-    2 smaller than the naive orbit embedding for pairs involving one ANTISYMMETRIC
-    operation, and factor 4 smaller for ANTISYMMETRIC×ANTISYMMETRIC pairs.
+    Note: for ANTISYMMETRIC operations the orbit contains {a_k, -a_k} pairs,
+    so the sorted list is antisymmetric about 0 and only half the values carry
+    independent information.  A future optimisation (announced) will exploit
+    this to halve Phase 1 storage for ANTISYMMETRIC operators.
+    """
+    if len(values) == 0:
+        return np.array([], dtype=float)
+    return np.sort(np.asarray(values, dtype=float))
 
-    Returns a 1-D numpy array of complex dtype.
+
+def encode_brute(plan, event: dict) -> np.ndarray:
+    """
+    Encode a physics event as a permutation-invariant vector (5a only, no 5b).
+
+    This is the reference implementation kept for cross-checking.  It encodes
+    every PairFlavour via _embed_compressed (exploitation 5a: sign symmetry in
+    polynomial coefficients) but does NOT apply the 5b overlap-block dropping
+    optimisation.  Use encode() for the full optimised encoding.
+
+    Returns a 1-D numpy array of float64.  Each ASSOC contributes 2*pf.count()
+    reals (the complex polynomial coefficients viewed as (re, im) pairs).
     If the plan has no registered operations, returns an empty array.
     """
     fo_list = repL(plan.context, plan.operations)
     pf_list = canonical_pair_flavours(fo_list, plan.context)
     if not pf_list:
-        return np.array([], dtype=complex)
+        return np.array([], dtype=float)
 
-    # Encoding-level deduplication: skip PairFlavours whose z-vectors carry
-    # the same information as one already embedded (related by u↔v swap or
-    # negation of a row for ANTISYMMETRIC operations).
-    #
-    # NOTE: It is believed — but not yet formally proved — that this check
-    # never fires given the current symatom machinery.  The argument is:
-    # _encoding_canonical_key is injective on PairFlavours (same-named
-    # operations are equal, same-counted Flavours are equal), and
-    # canonical_pair_flavours already returns a duplicate-free list — so
-    # seen_keys would never contain a collision.  The check is retained
-    # because (a) the proof has not been written down rigorously, and
-    # (b) if the upstream generation ever changes, this safety net matters.
-    #
-    # Longer exposition in docstring at end of file.
-
-    group_sizes = tuple(g.size for g in plan.context.groups)
     seen_keys = set()
+    group_sizes = tuple(g.size for g in plan.context.groups)
     parts = []
     for pf in pf_list:
         key = _encoding_canonical_key(pf)
@@ -238,9 +251,87 @@ def encode(plan, event: dict) -> np.ndarray:
             f"eval_pair_orbit_positive returned {len(z_pos)} values "
             f"but expected pf.count={pf.count(group_sizes)} for {pf!r}"
         )
-        parts.append(_embed_compressed(z_pos, pf))
+        parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
 
     return np.concatenate(parts)
+
+
+def encode(plan, event: dict) -> np.ndarray:
+    """
+    Encode a physics event as a permutation-invariant vector (optimised: 5a + 5b).
+
+    Two-phase encoding
+    ------------------
+    Phase 1 — single-orbit sort encoding:
+        For each distinct FlavouredOperator fo in repL(plan), sort the real
+        values {eval(u, event) : u in fo.atoms()} and pack adjacent pairs as
+        complex numbers.  Each fo contributes ceil(fo.count() / 2) complex
+        values.  A fo is stored exactly once even if it appears as the u-side
+        or v-side of many PairFlavours.
+
+    Phase 2 — compressed pair encoding with largest association dropped:
+        PairFlavours from canonical_pair_flavours are grouped into OVERLAP
+        BLOCKS: consecutive PairFlavours sharing (op_u, flavour_u, op_v,
+        flavour_v).  Within each block the association (PairFlavour) with the
+        largest pf.count() is omitted — its values are deducible from the
+        Phase 1 orbit headers plus the other stored associations in the block
+        (by complementation in the association table).  All remaining
+        associations are encoded via _embed_compressed (5a compression).
+
+    Information completeness
+    ------------------------
+    The dropped association's z-values {eval(u_k)+i*eval(v_k)} can be
+    recovered as the complement of the stored associations' (real, imag) pairs
+    within the full Cartesian product of Phase-1 u-values × Phase-1 v-values.
+    No information about the event is lost for generic events (where all
+    eval values are distinct).
+
+    Output structure
+    ----------------
+    [Phase 1 ORBIT segments ... | Phase 2 ASSOC segments ...]
+    Use describe_encoding(plan) for a segment-by-segment map.
+
+    Returns a 1-D numpy array of float64.  The output is entirely real:
+    ORBIT segments contribute fo.count() reals (sorted eval values);
+    ASSOC segments contribute 2*pf.count() reals (complex polynomial
+    coefficients viewed as interleaved (re, im) pairs).
+    """
+    fo_list = repL(plan.context, plan.operations)
+    pf_list = canonical_pair_flavours(fo_list, plan.context)
+    group_sizes = tuple(g.size for g in plan.context.groups)
+
+    parts = []
+
+    # Phase 1: sort-encode the orbit of each distinct FlavouredOperator.
+    # fo is identified by (op.name, op.rank, op.parity, op.argument_symmetry, flavour.counts)
+    # so that we don't depend on FlavouredOperator.__hash__ including Context.
+    seen_fo_keys: set = set()
+    for fo in fo_list:
+        fo_key = (fo.operation.name, fo.operation.rank, fo.operation.parity,
+                  fo.operation.argument_symmetry.value, fo.flavour.counts)
+        if fo_key in seen_fo_keys:
+            continue
+        seen_fo_keys.add(fo_key)
+        if fo.count() == 0:
+            continue
+        values = np.array(eval_single_orbit(fo, plan, event), dtype=float)
+        parts.append(_sort_encode(values))
+
+    # Phase 2: group PairFlavours into OVERLAP BLOCKS, skip largest per block.
+    for _block_key, block_iter in groupby(pf_list, key=_overlap_block_key):
+        block = list(block_iter)
+        max_idx = max(range(len(block)), key=lambda i: block[i].count(group_sizes))
+        for i, pf in enumerate(block):
+            if i == max_idx:
+                continue   # this association is deducible; omit it
+            z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
+            assert len(z_pos) == pf.count(group_sizes), (
+                f"eval_pair_orbit_positive returned {len(z_pos)} values "
+                f"but expected pf.count={pf.count(group_sizes)} for {pf!r}"
+            )
+            parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
+
+    return np.concatenate(parts) if parts else np.array([], dtype=float)
 
 
 """

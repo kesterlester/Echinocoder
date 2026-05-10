@@ -20,6 +20,22 @@ def eval_pair_orbit(pf: PairFlavour, plan: Plan, event: dict) -> list:
     ]
 
 
+def eval_single_orbit(fo, plan: Plan, event: dict) -> list:
+    """
+    Return eval(u, event) for every atom u in the orbit of a single
+    FlavouredOperator fo.
+
+    Uses fo.atoms() directly — no pair machinery needed.  The returned values
+    are real scalars; for ANTISYMMETRIC operations both sign=+1 and sign=-1
+    atoms are included (fo was created by repL with signed=True), so the list
+    contains {a_k, -a_k} pairs.
+
+    Used in Phase 1 of encode() to sort-encode the single-atom orbit before
+    processing pair associations.
+    """
+    return [evaluate(atom, event) for atom in fo.atoms()]
+
+
 def eval_pair_orbit_positive(pf: PairFlavour, plan: Plan, event: dict) -> list:
     """
     Return z_k = eval(u'_k, E) + i*eval(v'_k, E) for the (u.sign=+1, v.sign=+1)

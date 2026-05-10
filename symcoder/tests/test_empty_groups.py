@@ -31,7 +31,7 @@ def test_encode_with_empty_group_returns_ndarray(dot, event):
     plan = Plan(context=ctx, operations=(dot,))
     result = encode(plan, event)
     assert isinstance(result, np.ndarray)
-    assert np.iscomplexobj(result)
+    assert result.dtype == np.float64
     assert len(result) > 0
 
 def test_encode_with_empty_group_same_as_without(dot, event):

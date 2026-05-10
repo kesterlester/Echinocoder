@@ -5,7 +5,7 @@ from symatom import (
     ArgumentSymmetry, VectorGroup, Context, Plan, SimpleCanonicaliser,
     repL, canonical_pair_flavours,
 )
-from symcoder import EvaluableOperation, encode
+from symcoder import EvaluableOperation, encode, encode_brute, describe_encoding
 from symcoder.pairs import eval_pair_orbit, eval_pair_orbit_positive
 from symcoder.encode import _embed_compressed
 
@@ -60,36 +60,30 @@ def test_encode_returns_ndarray(dot, plan, ctx, event_3d):
     result = encode(plan, event_3d)
     assert isinstance(result, np.ndarray)
 
-def test_encode_returns_complex(dot, plan, ctx, event_3d):
+def test_encode_returns_real(dot, plan, ctx, event_3d):
     result = encode(plan, event_3d)
-    assert np.iscomplexobj(result)
+    assert result.dtype == np.float64
 
-def test_encode_length_matches_sum_of_counts(dot, eps3, plan, ctx, event_3d):
-    """
-    Each PairFlavour contributes exactly pf.count(group_sizes) complex coefficients.
-    For ANTISYMMETRIC operations the compressed embedding exploits polynomial symmetry
-    to halve (one ANTISYM) or quarter (both ANTISYM) the raw orbit_size.
-    """
-    fo_list = repL(ctx, (dot, eps3))
-    group_sizes = tuple(g.size for g in ctx.groups)
-    expected_len = sum(
-        pf.count(group_sizes)
-        for pf in canonical_pair_flavours(fo_list, ctx)
-    )
+def test_encode_length_matches_describe(dot, eps3, plan, ctx, event_3d):
+    """encode() output length matches sum of segment lengths from describe_encoding()."""
     result = encode(plan, event_3d)
-    assert len(result) == expected_len
+    assert len(result) == sum(s.length for s in describe_encoding(plan))
 
 def test_encode_dot_only_length(dot, ctx, event_3d):
-    """Length check for dot-only plan (SYM×SYM: count == orbit_size)."""
+    """Length check for dot-only plan matches describe_encoding()."""
     plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
-    fo_list = repL(ctx, (dot,))
+    result = encode(plan, event_3d)
+    assert len(result) == sum(s.length for s in describe_encoding(plan))
+
+def test_encode_brute_length_matches_sum_of_counts(dot, eps3, plan, ctx, event_3d):
+    """encode_brute() gives 2*sum(pf.count()) reals — n complex coeffs × 2 reals each."""
+    fo_list = repL(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
-    expected_len = sum(
+    expected_len = 2 * sum(
         pf.count(group_sizes)
         for pf in canonical_pair_flavours(fo_list, ctx)
     )
-    result = encode(plan, event_3d)
-    assert len(result) == expected_len
+    assert len(encode_brute(plan, event_3d)) == expected_len
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +159,7 @@ def test_encode_two_groups(dot, eps3):
     }
     result = encode(plan, event)
     assert isinstance(result, np.ndarray)
-    assert np.iscomplexobj(result)
+    assert result.dtype == np.float64
     assert len(result) > 0
 
 def test_encode_two_groups_permutation_invariant(dot):
