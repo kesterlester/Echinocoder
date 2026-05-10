@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from .atoms import VectorGroup, Operation, Atom
-from .orbit_enum import OrbitEnumerator, BruteForceOrbitEnumerator
+from .orbit_enum import OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
 
 
 @dataclass(frozen=True)
@@ -60,7 +60,7 @@ class Plan:
     context:          Context
     canonicaliser:    object           # any object with .canonicalise(atom_tuple, context) -> tuple
     operations:       tuple            # tuple of Operation
-    orbit_enumerator: OrbitEnumerator = field(default_factory=BruteForceOrbitEnumerator)
+    orbit_enumerator: OrbitEnumerator = field(default_factory=DirectOrbitEnumerator)
 
     def canonicalise(self, atom_tuple: tuple) -> tuple:
         """Delegate to the plan's canonicaliser."""

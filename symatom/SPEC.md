@@ -295,9 +295,9 @@ these components. Passing different plans to the same computation function
 produces results under different configurations without any global state being
 affected.
 
-The orbit enumerator defaults to `BruteForceOrbitEnumerator` (Section 8.8).
-Switch to `DirectOrbitEnumerator` for large *n* once that implementation is
-complete.
+The orbit enumerator defaults to `DirectOrbitEnumerator` (Section 8.8).
+`BruteForceOrbitEnumerator` remains available and is used in tests as the
+reference implementation.
 
 ---
 
@@ -618,19 +618,21 @@ the cross-product + `pair_flavour_of` filter described above.  Correct by
 inspection.  O(`atoms_u` × `atoms_v`).  **Kept permanently** as the reference
 implementation for testing.
 
-**`DirectOrbitEnumerator`**: *not yet implemented* (raises `NotImplementedError`).
-The intended algorithm iterates directly over the combinatorial structure
-encoded in `pf.overlap`: for each group *i*, enumerate C(*n*ᵢ, *s*ᵢ) choices
-of shared labels, then C(*n*ᵢ − *s*ᵢ, *k*ᵤᵢ − *s*ᵢ) u-only labels, then
-C(*n*ᵢ − *k*ᵤᵢ, *k*ᵥᵢ − *s*ᵢ) v-only labels; form atoms directly with
-correct sign handling for ANTISYMMETRIC operations (both `sign=+1` and
-`sign=−1` variants).  This is O(orbit\_size) — no filtering step.  Intended
-as the production implementation for large *n*.
+**`DirectOrbitEnumerator`**: O(orbit\_size) direct combinatorial construction
+— no filtering step anywhere.  For each group *i*, enumerates C(*n*ᵢ, *s*ᵢ)
+choices of shared labels, then C(*n*ᵢ − *s*ᵢ, *k*ᵤᵢ − *s*ᵢ) u-only labels,
+then C(*n*ᵢ − *k*ᵤᵢ, *k*ᵥᵢ − *s*ᵢ) v-only labels; takes the Cartesian
+product across groups; assembles label tuples and constructs atoms directly.
+The `Atom` constructor sorts labels and adjusts sign via `perm_sign`, so
+unsorted concatenation order is handled correctly.  Both `sign=+1` and
+`sign=-1` variants are emitted for ANTISYMMETRIC operations, giving all four
+sign combinations for ANTISYMMETRIC×ANTISYMMETRIC pairs.  This is the default
+`orbit_enumerator` in `Plan` and the production implementation for large *n*.
 
-The default `orbit_enumerator` in `Plan` is `BruteForceOrbitEnumerator()`.
-When `DirectOrbitEnumerator` is complete, the parametrised tests in
-`symatom/tests/test_orbit_enum.py` (currently skipped) validate it against the
-brute-force reference.
+The parametrised tests in `symatom/tests/test_orbit_enum.py` run both
+enumerators side-by-side; additional cross-comparison tests assert that
+`DirectOrbitEnumerator` produces the same element set as `BruteForceOrbitEnumerator`
+for every `PairFlavour`.
 
 ---
 
