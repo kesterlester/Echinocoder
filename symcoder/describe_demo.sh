@@ -12,7 +12,7 @@ eps3 = EvaluableOperation('eps3', rank=3, parity=-1, argument_symmetry=ArgumentS
 
 electrons = VectorGroup('electrons', ('a','b','c'))
 muons     = VectorGroup('muons',     ('p','q'))
-ctx  = Context((electrons, muons))
+ctx  = Context((electrons, muons, ))
 plan = Plan(context=ctx, operations=(dot, eps3))
 
 segs = describe_encoding(plan)
@@ -20,7 +20,7 @@ for s in segs:
     print(s)
 
 print()
-event = {l: np.random.randn(3) for l in ('a','b','c','p','q')}
+event = {l: np.random.randn(3) for l in ('a','b','c','p','q',)}
 out = encode(plan, event)
 print(f'Total output length: {len(out)}  (sum of segment lengths: {sum(s.length for s in segs)})')
 print()
