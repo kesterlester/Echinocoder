@@ -409,14 +409,28 @@ def canonical_pair_flavours(fo_list, context: Context) -> list:
     Return all distinct PairFlavours for the given FlavouredOperators and
     context, generated directly without materialising atom-pairs.
 
-    For each ordered pair (fo_u, fo_v) of FlavouredOperators the valid overlap
-    range for group i is:
+    For each ordered pair (fo_u, fo_v) of FlavouredOperators — including
+    fo_u == fo_v (self-pairing is intentional: pairing a FO with itself captures
+    correlations between different atoms of the same type, and at full overlap
+    it degenerates to the single-atom orbit which is handled by Phase 1 encoding)
+    — the valid overlap range for group i is:
         s ∈ [max(0, k_u_i + k_v_i − n_i),  min(k_u_i, k_v_i)]
 
     PairFlavour's canonical ordering ensures (fo_u, fo_v) and (fo_v, fo_u)
     contribute identical PairFlavours; a seen-set handles deduplication.
 
-    Returns a deterministically sorted list.
+    Sort order guarantee
+    --------------------
+    The returned list is sorted by:
+        (op_u_key, op_v_key, overlap)
+    where op_key = (name, rank, parity, argument_symmetry, flavour.counts).
+
+    Consequence: all PairFlavours sharing the same (op_u, flavour_u, op_v,
+    flavour_v) — i.e. an OVERLAP BLOCK — appear as a contiguous run in the
+    output, ordered by ascending overlap tuple within the block.  Code that
+    groups PairFlavours into OVERLAP BLOCKS (e.g. encode() and
+    describe_encoding()) relies on this contiguity and must continue to do so.
+    Any alternative implementation of canonical_pair_flavours must preserve it.
     """
     group_sizes = tuple(g.size for g in context.groups)
     seen = set()

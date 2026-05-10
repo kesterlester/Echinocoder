@@ -709,3 +709,80 @@ def test_orbit_elements_sum_over_all_pf_equals_total_pairs(dot, ctx4):
     total_orbit = sum(pf.orbit_size(group_sizes) for pf in canonical_pair_flavours(fo_list, ctx4))
     total_atoms = sum(fo.count() for fo in fo_list)
     assert total_orbit == total_atoms ** 2
+
+
+# ---------------------------------------------------------------------------
+# canonical_pair_flavours: self-pairing and block-consecutiveness guarantees
+# ---------------------------------------------------------------------------
+
+def test_cpf_includes_self_pairing(dot, eps3, ctx2):
+    """
+    canonical_pair_flavours includes self-pairings (fo_u == fo_v).
+    This is intentional: pairing a FO with itself captures correlations between
+    distinct atoms of the same type, and full-overlap self-pairs degenerate to
+    the single-atom orbit (handled by Phase 1 encoding under 5b).
+    """
+    fo_list = repL(ctx2, [dot, eps3])
+    pf_list = canonical_pair_flavours(fo_list, ctx2)
+    # At least one PairFlavour must pair an operation with itself
+    self_pairs = [pf for pf in pf_list if pf.op_u == pf.op_v and pf.flavour_u == pf.flavour_v]
+    assert len(self_pairs) > 0, "Expected self-pairings (fo_u == fo_v) to be present"
+
+def test_cpf_every_fo_self_paired(dot, eps3, ctx2):
+    """Every FlavouredOperator in repL is paired with itself at some overlap."""
+    fo_list = repL(ctx2, [dot, eps3])
+    pf_list = canonical_pair_flavours(fo_list, ctx2)
+    for fo in fo_list:
+        found = any(
+            pf.op_u == fo.operation and pf.flavour_u == fo.flavour and
+            pf.op_v == fo.operation and pf.flavour_v == fo.flavour
+            for pf in pf_list
+        )
+        assert found, f"No self-pairing found for {fo!r}"
+
+def test_cpf_overlap_blocks_are_contiguous(dot, eps3, ctx2):
+    """
+    PairFlavours with the same (op_u, flavour_u, op_v, flavour_v) — an OVERLAP
+    BLOCK — must appear as a contiguous run in the canonical_pair_flavours output.
+    encode() and describe_encoding() rely on this via itertools.groupby.
+    This test will catch any future change to the sort order that breaks it.
+    """
+    fo_list = repL(ctx2, [dot, eps3])
+    pf_list = canonical_pair_flavours(fo_list, ctx2)
+
+    def block_key(pf):
+        return (pf.op_u.name, pf.flavour_u.counts, pf.op_v.name, pf.flavour_v.counts)
+
+    seen_blocks = {}
+    for idx, pf in enumerate(pf_list):
+        key = block_key(pf)
+        if key not in seen_blocks:
+            seen_blocks[key] = idx
+        else:
+            # If we've seen this block key before, the previous occurrence must
+            # be the immediately preceding index (no gap allowed).
+            prev_idx = seen_blocks[key]
+            assert prev_idx == idx - 1, (
+                f"OVERLAP BLOCK {key} is not contiguous: "
+                f"last seen at index {prev_idx}, reappears at index {idx}"
+            )
+            seen_blocks[key] = idx
+
+def test_cpf_overlap_blocks_contiguous_three_groups(dot, eps3, ctx3):
+    """Block-consecutiveness holds in a three-group context too."""
+    fo_list = repL(ctx3, [dot, eps3])
+    pf_list = canonical_pair_flavours(fo_list, ctx3)
+
+    def block_key(pf):
+        return (pf.op_u.name, pf.flavour_u.counts, pf.op_v.name, pf.flavour_v.counts)
+
+    seen_blocks = {}
+    for idx, pf in enumerate(pf_list):
+        key = block_key(pf)
+        if key in seen_blocks:
+            prev_idx = seen_blocks[key]
+            assert prev_idx == idx - 1, (
+                f"OVERLAP BLOCK {key} is not contiguous in three-group context: "
+                f"last seen at index {prev_idx}, reappears at index {idx}"
+            )
+        seen_blocks[key] = idx
