@@ -283,8 +283,13 @@ def encode(plan, event: dict) -> np.ndarray:
     The dropped association's z-values {eval(u_k)+i*eval(v_k)} can be
     recovered as the complement of the stored associations' (real, imag) pairs
     within the full Cartesian product of Phase-1 u-values × Phase-1 v-values.
-    No information about the event is lost for generic events (where all
-    eval values are distinct).
+    The complementation operates on multisets, so repeated eval values (e.g.
+    two particles with identical position vectors) are handled correctly: their
+    z-values appear with the right multiplicity in the complement, and the
+    polynomial embedding captures that multiplicity exactly.  No information
+    about the event is lost for any event — degenerate or otherwise.  (Particles
+    that are numerically identical are correctly represented as indistinguishable,
+    which is the desired behaviour for a permutation-invariant encoding.)
 
     Output structure
     ----------------
