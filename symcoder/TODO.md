@@ -15,7 +15,11 @@ Get rid of the 8-fold deduplication in [encode.py](encode.py) if it is really no
 
 (4) There is no top-level documentation explaining how symatom and symcode responsibilites are split. Some parts of this is indirectly explained in lower level docs, but there is no top-down attempt.
 
-(5) There are two potentially major disruptive changes I have mostly kept quiet about so far (for fear of creating confusion). They have the possibility of cutting the embedding size down a lot.  One relates to signs, one relates to pre-row knowledge. Either of them could be discussed.
+(5) There are three potentially major disruptive changes I have mostly kept quiet about so far (for fear of creating confusion). They have the possibility of cutting the embedding size down a lot.
+	(5a) One relates to signs[implemented 0b9f6a2ec69ae35fa95e],
+	(5b) one relates to pre-row knowledge being subtracted off
+	(5c) I keep forgetting.
+Any of them could be discussed.
 
 (6) If there was a demo for symcoder, it is likely that the end-to-end-output could potentially become a unit test BUT this is also a bad idea as there are lots of allowed choices (types of canoncialisation, and optimisations hinted at in (5) above, that would change the output of an end to end test by removing redundancy, so maybe we don't really want to over-fixate on having tests that will break when output becomes less redund
 
