@@ -52,8 +52,11 @@ def test_vector_group_valid():
     assert g.labels == ("a", "b", "c", "d")
 
 def test_vector_group_empty():
-    with pytest.raises(ValueError):
-        VectorGroup("empty", ())
+    # Empty groups are allowed: S_0 is the trivial group, 0!=1, C(0,0)=1.
+    # They carry meaningful identity information (e.g. muon_count=0 vs jet_count=0).
+    g = VectorGroup("empty", ())
+    assert g.size == 0
+    assert g.labels == ()
 
 def test_vector_group_duplicate_labels():
     with pytest.raises(ValueError, match="distinct"):

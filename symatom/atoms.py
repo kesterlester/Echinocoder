@@ -66,8 +66,6 @@ class VectorGroup:
     def __post_init__(self):
         if not isinstance(self.labels, tuple):
             raise TypeError(f"labels must be a tuple, got {type(self.labels)}")
-        if len(self.labels) == 0:
-            raise ValueError("VectorGroup must have at least one label")
         if len(set(self.labels)) != len(self.labels):
             raise ValueError(f"VectorGroup labels must be distinct, got {self.labels!r}")
 
