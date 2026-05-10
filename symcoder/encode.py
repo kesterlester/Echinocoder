@@ -114,9 +114,8 @@ def encode(plan, event: dict) -> np.ndarray:
     The argument rests on the assumption that no two registered operations share a name with different behaviour (which would be a user error). Under normal use, the deduplication is provably redundant given the current symatom machinery. Adding the comment you suggested is exactly the right thing:
     
     
-    Edited a file, ran 2 commands
-    Good. To summarise the proof argument in a form you can critique:
-    
+    Saying all the above again but in different words:
+
     _encoding_canonical_key(pf) = (sorted([(op_u.name, fl_u.counts), (op_v.name, fl_v.counts)]), overlap)
     canonical_pair_flavours returns PairFlavours distinguished by (op_u, fl_u, op_v, fl_v, overlap) after canonical ordering — no two entries are equal.
     Two equal Operations always have the same .name (and vice versa, under normal use). Two equal Flavours always have the same .counts.
