@@ -1,11 +1,9 @@
 """
 Tests for OrbitEnumerator implementations.
 
-BruteForceOrbitEnumerator is tested fully.  DirectOrbitEnumerator tests are
-parametrised alongside it but skipped until the implementation is complete.
-When DirectOrbitEnumerator is implemented, remove the skip markers and the
-parametrised tests will serve as the correctness cross-check against brute
-force.
+Both BruteForceOrbitEnumerator and DirectOrbitEnumerator are tested via the
+parametrised suite below.  A cross-comparison test verifies that Direct
+produces the same element set as BruteForce for every PairFlavour.
 """
 import pytest
 from symatom import (
@@ -43,8 +41,7 @@ def ctx(electrons):
 
 ENUMERATORS = [
     pytest.param(BruteForceOrbitEnumerator(), id="brute_force"),
-    pytest.param(DirectOrbitEnumerator(),     id="direct",
-                 marks=pytest.mark.skip(reason="DirectOrbitEnumerator not yet implemented")),
+    pytest.param(DirectOrbitEnumerator(),     id="direct"),
 ]
 
 
@@ -107,11 +104,29 @@ def test_brute_force_matches_pf_orbit_elements(dot, ctx):
 
 
 # ---------------------------------------------------------------------------
-# DirectOrbitEnumerator — raises until implemented
+# Cross-comparison: Direct must produce the same element set as BruteForce
 # ---------------------------------------------------------------------------
 
-def test_direct_raises_not_implemented(dot, ctx):
-    fl2 = Flavour((2,))
-    pf  = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(0,))
-    with pytest.raises(NotImplementedError):
-        DirectOrbitEnumerator().orbit_elements(pf, ctx)
+def test_direct_matches_brute_force_dot(dot, ctx):
+    """Direct produces exactly the same atom-pairs as BruteForce for all dot PairFlavours."""
+    bf     = BruteForceOrbitEnumerator()
+    direct = DirectOrbitEnumerator()
+    for pf in canonical_pair_flavours(repL(ctx, [dot]), ctx):
+        assert set(bf.orbit_elements(pf, ctx)) == set(direct.orbit_elements(pf, ctx))
+
+def test_direct_matches_brute_force_dot_eps(dot, eps3, ctx):
+    """Direct produces exactly the same atom-pairs as BruteForce for mixed dot+eps3 PairFlavours."""
+    bf     = BruteForceOrbitEnumerator()
+    direct = DirectOrbitEnumerator()
+    for pf in canonical_pair_flavours(repL(ctx, [dot, eps3]), ctx):
+        assert set(bf.orbit_elements(pf, ctx)) == set(direct.orbit_elements(pf, ctx))
+
+def test_direct_matches_brute_force_two_groups(dot, eps3):
+    """Direct matches BruteForce in a two-group context."""
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx       = Context((electrons, muons))
+    bf     = BruteForceOrbitEnumerator()
+    direct = DirectOrbitEnumerator()
+    for pf in canonical_pair_flavours(repL(ctx, [dot, eps3]), ctx):
+        assert set(bf.orbit_elements(pf, ctx)) == set(direct.orbit_elements(pf, ctx))
