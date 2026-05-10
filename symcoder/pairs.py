@@ -36,6 +36,31 @@ def eval_single_orbit(fo, plan: Plan, event: dict) -> list:
     return [evaluate(atom, event) for atom in fo.atoms()]
 
 
+def eval_single_orbit_compressed(fo, plan: Plan, event: dict) -> list:
+    """
+    Return Phase 1 values for fo, exploiting sign compression (5c) for
+    ANTISYMMETRIC operations.
+
+    ANTISYMMETRIC: the orbit under repL contains pairs {+u, -u} for every
+    label combination, so eval values come in {y, -y} pairs.  Only the
+    sign=+1 atoms are evaluated, and their absolute values are returned.
+    This is permutation-invariant: label permutations may swap which atom
+    carries sign=+1 vs -1, but |eval| is unchanged, and the multiset
+    {|y_i|} is invariant.  Returns fo.count() // 2 values.
+
+    SYMMETRIC / UNSTRUCTURED: all atoms have sign=+1 and the full eval
+    list is returned (identical to eval_single_orbit).  Returns fo.count()
+    values.
+
+    The distinction is made entirely from fo.operation.argument_symmetry —
+    never from the eval values themselves.
+    """
+    from symatom.atoms import ArgumentSymmetry
+    if fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC:
+        return [abs(evaluate(atom, event)) for atom in fo.atoms() if atom.sign == +1]
+    return [evaluate(atom, event) for atom in fo.atoms()]
+
+
 def eval_pair_orbit_positive(pf: PairFlavour, plan: Plan, event: dict) -> list:
     """
     Return z_k = eval(u'_k, E) + i*eval(v'_k, E) for the (u.sign=+1, v.sign=+1)

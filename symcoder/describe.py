@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from itertools import groupby
-from symatom import ArgumentSymmetry
+from symatom.atoms import ArgumentSymmetry
 from symatom.rep import canonical_pair_flavours
 from symatom import repL
 
@@ -29,8 +29,12 @@ class SegmentInfo:
     kind
     ----
     "ORBIT"  Phase 1: sort-encoded single-operator orbit.
-             eval(u) for all u in fo.atoms(), sorted and packed as complex pairs.
              Fields op_v, flavour_v, overlap, symmetry_class are None.
+             sign_compressed=True: ANTISYMMETRIC operation — the orbit contains
+             {+u, -u} pairs; only |eval(sign=+1 atom)| is stored per combination
+             (n values, n = base label combinations).
+             sign_compressed=False: SYMMETRIC/UNSTRUCTURED — eval(u) for every
+             atom stored (fo.count() values).
 
     "ASSOC"  Phase 2: compressed pair encoding of one association.
              One PairFlavour within an OVERLAP BLOCK, encoded via _embed_compressed.
@@ -43,17 +47,19 @@ class SegmentInfo:
 
     Fields
     ------
-    start          : first index (inclusive) in the output array (real units)
-    length         : number of real values in this segment (0 for NULL).
-                     ORBIT: one real per atom (fo.count()).
-                     ASSOC: two reals per association pair (2 * pf.count()),
-                            since each complex polynomial coefficient = (re, im).
-    op_u           : name of operation u (or the single operation for ORBIT)
-    flavour_u      : counts tuple — labels from each group going into op_u
-    op_v           : name of operation v (None for ORBIT)
-    flavour_v      : counts tuple for op_v (None for ORBIT)
-    overlap        : shared-label counts per group (None for ORBIT)
-    symmetry_class : "SS", "SA", "AS", or "AA" (None for ORBIT)
+    start           : first index (inclusive) in the output array (real units)
+    length          : number of real values in this segment (0 for NULL).
+                      ORBIT: fo.count() // 2 if sign_compressed else fo.count().
+                      ASSOC: two reals per association pair (2 * pf.count()),
+                             since each complex polynomial coefficient = (re, im).
+    op_u            : name of operation u (or the single operation for ORBIT)
+    flavour_u       : counts tuple — labels from each group going into op_u
+    op_v            : name of operation v (None for ORBIT)
+    flavour_v       : counts tuple for op_v (None for ORBIT)
+    overlap         : shared-label counts per group (None for ORBIT)
+    symmetry_class  : "SS", "SA", "AS", or "AA" (None for ORBIT)
+    sign_compressed : True if ANTISYMMETRIC ORBIT (5c compression applied),
+                      False if SYMMETRIC/UNSTRUCTURED ORBIT, None for ASSOC/NULL.
 
     Human-readable display
     ----------------------
@@ -70,15 +76,16 @@ class SegmentInfo:
     Consecutive ASSOC/NULL entries within the same block are ordered by
     canonical_pair_flavours' overlap sort (lex ascending).
     """
-    kind:           str
-    start:          int
-    length:         int
-    op_u:           str
-    flavour_u:      tuple
-    op_v:           str   | None = None
-    flavour_v:      tuple | None = None
-    overlap:        tuple | None = None
-    symmetry_class: str   | None = None
+    kind:            str
+    start:           int
+    length:          int
+    op_u:            str
+    flavour_u:       tuple
+    op_v:            str   | None = None
+    flavour_v:       tuple | None = None
+    overlap:         tuple | None = None
+    symmetry_class:  str   | None = None
+    sign_compressed: bool  | None = None
 
     @property
     def stop(self) -> int:
@@ -89,7 +96,8 @@ class SegmentInfo:
         fl_u = ",".join(str(c) for c in self.flavour_u)
 
         if self.kind == "ORBIT":
-            return f"{idx}  {self.op_u}  ORBIT  u=({fl_u})  len={self.length}"
+            sc = "  [sign_compressed]" if self.sign_compressed else ""
+            return f"{idx}  {self.op_u}  ORBIT  u=({fl_u})  len={self.length}{sc}"
 
         fl_v = ",".join(str(c) for c in self.flavour_v)
         ov   = ",".join(str(c) for c in self.overlap)
@@ -113,7 +121,9 @@ class SegmentInfo:
             "op_u":      self.op_u,
             "flavour_u": list(self.flavour_u),
         }
-        if self.kind != "ORBIT":
+        if self.kind == "ORBIT":
+            d["sign_compressed"] = self.sign_compressed
+        else:
             d.update({
                 "op_v":           self.op_v,
                 "flavour_v":      list(self.flavour_v),
@@ -172,15 +182,17 @@ def describe_encoding(plan) -> list[SegmentInfo]:
         if fo_key in seen_fo_keys:
             continue
         seen_fo_keys.add(fo_key)
-        n = fo.count()
-        if n == 0:
+        if fo.count() == 0:
             continue
+        antisym = fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+        n = fo.count() // 2 if antisym else fo.count()
         segments.append(SegmentInfo(
-            kind      = "ORBIT",
-            start     = cursor,
-            length    = n,      # n real eval values, one per atom
-            op_u      = fo.operation.name,
-            flavour_u = tuple(fo.flavour.counts),
+            kind             = "ORBIT",
+            start            = cursor,
+            length           = n,
+            op_u             = fo.operation.name,
+            flavour_u        = tuple(fo.flavour.counts),
+            sign_compressed  = antisym,
         ))
         cursor += n
 

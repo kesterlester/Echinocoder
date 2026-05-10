@@ -118,12 +118,59 @@ def test_orbit_op_v_is_none(plan):
             assert s.overlap is None
             assert s.symmetry_class is None
 
+def test_orbit_sign_compressed_field_is_set(plan):
+    """Every ORBIT segment has sign_compressed as a bool."""
+    for s in describe_encoding(plan):
+        if s.kind == "ORBIT":
+            assert isinstance(s.sign_compressed, bool)
+
+def test_orbit_sign_compressed_false_for_symmetric(dot, ctx):
+    """SYMMETRIC operation → sign_compressed=False on all ORBIT segments."""
+    plan = Plan(context=ctx, operations=(dot,))
+    for s in describe_encoding(plan):
+        if s.kind == "ORBIT":
+            assert s.sign_compressed is False
+
+def test_orbit_sign_compressed_true_for_antisymmetric(eps3, ctx):
+    """ANTISYMMETRIC operation → sign_compressed=True on all ORBIT segments."""
+    plan = Plan(context=ctx, operations=(eps3,))
+    for s in describe_encoding(plan):
+        if s.kind == "ORBIT":
+            assert s.sign_compressed is True
+
+def test_orbit_length_symmetric_equals_fo_count(dot, ctx):
+    """SYMMETRIC: ORBIT length == fo.count() (no compression)."""
+    from symatom import repL
+    plan = Plan(context=ctx, operations=(dot,))
+    fo_list = repL(plan.context, plan.operations)
+    fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count() for fo in fo_list}
+    for s in describe_encoding(plan):
+        if s.kind == "ORBIT":
+            expected = fo_counts[(s.op_u, s.flavour_u)]
+            assert s.length == expected
+
+def test_orbit_length_antisymmetric_halved(eps3, ctx):
+    """ANTISYMMETRIC (5c): ORBIT length == fo.count() // 2."""
+    from symatom import repL
+    plan = Plan(context=ctx, operations=(eps3,))
+    fo_list = repL(plan.context, plan.operations)
+    fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count() for fo in fo_list}
+    for s in describe_encoding(plan):
+        if s.kind == "ORBIT":
+            expected = fo_counts[(s.op_u, s.flavour_u)] // 2
+            assert s.length == expected
+
 def test_orbit_count_for_symmetric_op(dot, ctx):
-    """SYMMETRIC dot with flavour (2,) in group of 4: C(4,2)=6 atoms → ceil(6/2)=3 complex."""
+    """SYMMETRIC dot with flavour (2,) in group of 4: C(4,2)=6 atoms, length=6."""
     plan = Plan(context=ctx, operations=(dot,))
     orbit_segs = [s for s in describe_encoding(plan) if s.kind == "ORBIT"]
-    # All orbit segments should have length = ceil(fo.count()/2)
     assert all(s.length > 0 for s in orbit_segs)
+
+def test_assoc_null_sign_compressed_is_none(plan):
+    """ASSOC and NULL segments must not set sign_compressed."""
+    for s in describe_encoding(plan):
+        if s.kind in ("ASSOC", "NULL"):
+            assert s.sign_compressed is None
 
 
 # ---------------------------------------------------------------------------
@@ -242,7 +289,7 @@ def test_orbit_to_dict_has_required_keys(plan):
     for s in describe_encoding(plan):
         if s.kind == "ORBIT":
             d = s.to_dict()
-            assert {"kind", "start", "stop", "length", "op_u", "flavour_u"} <= set(d.keys())
+            assert {"kind", "start", "stop", "length", "op_u", "flavour_u", "sign_compressed"} <= set(d.keys())
             assert "op_v" not in d
 
 def test_assoc_to_dict_has_required_keys(plan):

@@ -6,7 +6,7 @@ from pathlib import Path
 from symatom.atoms import ArgumentSymmetry
 from symatom.rep import canonical_pair_flavours
 from symatom import repL
-from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit
+from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed
 
 # Load the Echinocoder zip embedder from the repo root.  It is not a proper
 # package, so we locate it relative to this file (repo_root/symcoder/encode.py
@@ -319,7 +319,7 @@ def encode(plan, event: dict) -> np.ndarray:
         seen_fo_keys.add(fo_key)
         if fo.count() == 0:
             continue
-        values = np.array(eval_single_orbit(fo, plan, event), dtype=float)
+        values = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
         parts.append(_sort_encode(values))
 
     # Phase 2: group PairFlavours into OVERLAP BLOCKS, skip largest per block.
