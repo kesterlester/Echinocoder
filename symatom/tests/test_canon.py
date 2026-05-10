@@ -276,3 +276,53 @@ def test_direct_matches_simple_two_groups(dot, eps3):
             f"  simple={simple.canonicalise(x, ctx)}\n"
             f"  direct={direct.canonicalise(x, ctx)}"
         )
+
+# def test_direct_matches_simple_two_groups_of_which_one_is_empty(dot, eps3):
+#     """DirectCanonicaliser agrees with SimpleCanonicaliser in a two-group context."""
+#     electrons = VectorGroup("electrons", ("a", "b", "c", "d"))
+#     muons     = VectorGroup("muons",     tuple())
+#     ctx       = Context((electrons, muons))
+#     simple = SimpleCanonicaliser()
+#     direct = DirectCanonicaliser()
+#     cases = [
+#         (Atom(dot,  ("a", "b"), sign=+1),),
+#         (Atom(dot,  ("d", "b"), sign=+1),),
+#         (Atom(dot,  ("c", "a"), sign=+1),),
+#         (Atom(eps3, ("a", "b", "c"), sign=+1),),
+#         (Atom(eps3, ("a", "d", "c"), sign=+1),),
+#         (Atom(eps3, ("a", "d", "c"), sign=-1),),
+#         (Atom(eps3, ("b", "d", "c"), sign=-1),),
+#     ]
+#     for x in cases:
+#         assert direct.canonicalise(x, ctx) == simple.canonicalise(x, ctx), (
+#             f"Mismatch on {x!r}:\n"
+#             f"  simple={simple.canonicalise(x, ctx)}\n"
+#             f"  direct={direct.canonicalise(x, ctx)}"
+#         )
+
+def test_direct_matches_simple_three_groups_with_funny_names(dot, eps3):
+    """DirectCanonicaliser agrees with SimpleCanonicaliser in a two-group context."""
+    electrons = VectorGroup("electrons", ("u", "q", "c"))
+    muons     = VectorGroup("muons",     ("p", "b"))
+    jets      = VectorGroup("jets",      ("a", "v","w","z"))
+    ctx       = Context((electrons, muons))
+    simple = SimpleCanonicaliser()
+    direct = DirectCanonicaliser()
+    cases = [
+        (Atom(dot,  ("z", "p"), sign=+1),),
+        (Atom(dot,  ("a", "p"), sign=+1),),
+        (Atom(dot,  ("b", "q"), sign=+1),),
+        (Atom(eps3, ("a", "b", "p"), sign=+1),),
+        (Atom(eps3, ("z", "b", "p"), sign=+1),),
+        (Atom(eps3, ("q", "p", "w"), sign=-1),),
+        (Atom(eps3, ("a", "z", "v"), sign=-1),),
+        (Atom(dot,  ("a", "p"), sign=+1), Atom(dot, ("b", "q"), sign=+1)),
+        (Atom(dot,  ("a", "b"), sign=+1), Atom(dot, ("p", "q"), sign=+1)),
+        (Atom(eps3, ("a", "b", "c"), sign=+1), Atom(dot, ("p", "q"), sign=+1)),
+    ]
+    for x in cases:
+        assert direct.canonicalise(x, ctx) == simple.canonicalise(x, ctx), (
+            f"Mismatch on {x!r}:\n"
+            f"  simple={simple.canonicalise(x, ctx)}\n"
+            f"  direct={direct.canonicalise(x, ctx)}"
+        )
