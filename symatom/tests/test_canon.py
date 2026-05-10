@@ -1,14 +1,14 @@
 """
-Tests for the canonicalisation contract (C1–C4) against SimpleCanonicaliser.
+Tests for the canonicalisation contract (C1–C4).
 
-The tests are written against the CONTRACT (SPEC.md Section 4.2), not against
-any specific canonical form.  A different canonicaliser can be tested by
-substituting it into the plan fixture.
+The contract tests are parametrised over both SimpleCanonicaliser (brute force,
+permanent reference) and DirectCanonicaliser (fast, active-label algorithm).
+Cross-comparison tests assert they produce identical output on every case.
 """
 import pytest
 from symatom import (
     ArgumentSymmetry, Operation, VectorGroup, Atom,
-    Context, Plan, SimpleCanonicaliser,
+    Context, Plan, SimpleCanonicaliser, DirectCanonicaliser,
 )
 from symatom.orbits import orbit
 
@@ -29,8 +29,23 @@ def eps3():
 def electrons():
     return VectorGroup("electrons", ("a", "b", "c", "d"))
 
+
+# ---------------------------------------------------------------------------
+# Parametrised over both canonicalisers
+# ---------------------------------------------------------------------------
+
+CANONICALISERS = [
+    pytest.param(SimpleCanonicaliser(), id="simple"),
+    pytest.param(DirectCanonicaliser(), id="direct"),
+]
+
+def _plan(canonicaliser, dot, eps3, electrons):
+    ctx = Context((electrons,))
+    return Plan(context=ctx, canonicaliser=canonicaliser, operations=(dot, eps3))
+
 @pytest.fixture
 def plan(dot, eps3, electrons):
+    """Default plan fixture uses SimpleCanonicaliser for backward compat."""
     ctx = Context((electrons,))
     return Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot, eps3))
 
@@ -170,3 +185,94 @@ def test_joint_canon_not_independent(plan, dot):
     assert naive_four == naive_three
     # But joint canonicalisation correctly distinguishes them:
     assert plan.canonicalise(four_label_pair) != plan.canonicalise(three_label_pair)
+
+
+# ---------------------------------------------------------------------------
+# Contract tests parametrised over both canonicalisers
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("canon", CANONICALISERS)
+def test_c1_idempotent_parametrised(canon, dot, eps3, electrons):
+    p = _plan(canon, dot, eps3, electrons)
+    for x in [
+        (Atom(dot,  ("b", "a"),      sign=+1),),
+        (Atom(eps3, ("c", "a", "b"), sign=+1),),
+        (Atom(eps3, ("b", "c", "a"), sign=-1),),
+        (Atom(eps3, ("c", "b", "a"), sign=+1), Atom(dot, ("d", "a"), sign=+1)),
+    ]:
+        assert p.canonicalise(p.canonicalise(x)) == p.canonicalise(x)
+
+@pytest.mark.parametrize("canon", CANONICALISERS)
+def test_c3_same_orbit_parametrised(canon, dot, eps3, electrons):
+    p = _plan(canon, dot, eps3, electrons)
+    # Related by label permutation b<->c
+    x = (Atom(dot, ("a", "b"), sign=+1),)
+    y = (Atom(dot, ("a", "c"), sign=+1),)
+    assert p.canonicalise(x) == p.canonicalise(y)
+
+@pytest.mark.parametrize("canon", CANONICALISERS)
+def test_c3_different_orbit_parametrised(canon, dot, eps3, electrons):
+    p = _plan(canon, dot, eps3, electrons)
+    x = (Atom(eps3, ("a", "b", "c"), sign=+1),)
+    y = (Atom(dot,  ("a", "b"),      sign=+1),)
+    assert p.canonicalise(x) != p.canonicalise(y)
+
+@pytest.mark.parametrize("canon", CANONICALISERS)
+def test_joint_canon_parametrised(canon, dot, eps3, electrons):
+    p = _plan(canon, dot, eps3, electrons)
+    four_label_pair  = (Atom(dot, ("a", "b"), sign=+1), Atom(dot, ("c", "d"), sign=+1))
+    three_label_pair = (Atom(dot, ("a", "b"), sign=+1), Atom(dot, ("a", "c"), sign=+1))
+    assert p.canonicalise(four_label_pair) != p.canonicalise(three_label_pair)
+
+
+# ---------------------------------------------------------------------------
+# Cross-comparison: DirectCanonicaliser must match SimpleCanonicaliser exactly
+# ---------------------------------------------------------------------------
+
+def _all_test_cases(dot, eps3):
+    return [
+        (Atom(dot,  ("b", "a"),      sign=+1),),
+        (Atom(dot,  ("d", "c"),      sign=+1),),
+        (Atom(eps3, ("c", "a", "b"), sign=+1),),
+        (Atom(eps3, ("b", "c", "a"), sign=-1),),
+        (Atom(eps3, ("a", "b", "c"), sign=+1),),
+        (Atom(eps3, ("a", "b", "c"), sign=-1),),
+        (Atom(eps3, ("c", "b", "a"), sign=+1), Atom(dot, ("d", "a"),      sign=+1)),
+        (Atom(dot,  ("a", "b"),      sign=+1), Atom(dot, ("c", "d"),      sign=+1)),
+        (Atom(dot,  ("a", "b"),      sign=+1), Atom(dot, ("a", "c"),      sign=+1)),
+        (Atom(dot,  ("b", "d"),      sign=+1), Atom(eps3, ("a", "c", "d"), sign=+1)),
+    ]
+
+def test_direct_matches_simple_single_group(dot, eps3, electrons):
+    """DirectCanonicaliser agrees with SimpleCanonicaliser on all single-group cases."""
+    simple = SimpleCanonicaliser()
+    direct = DirectCanonicaliser()
+    ctx = Context((electrons,))
+    for x in _all_test_cases(dot, eps3):
+        assert direct.canonicalise(x, ctx) == simple.canonicalise(x, ctx), (
+            f"Mismatch on {x!r}:\n"
+            f"  simple={simple.canonicalise(x, ctx)}\n"
+            f"  direct={direct.canonicalise(x, ctx)}"
+        )
+
+def test_direct_matches_simple_two_groups(dot, eps3):
+    """DirectCanonicaliser agrees with SimpleCanonicaliser in a two-group context."""
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx       = Context((electrons, muons))
+    simple = SimpleCanonicaliser()
+    direct = DirectCanonicaliser()
+    cases = [
+        (Atom(dot,  ("a", "p"), sign=+1),),
+        (Atom(dot,  ("b", "q"), sign=+1),),
+        (Atom(eps3, ("a", "b", "p"), sign=+1),),
+        (Atom(dot,  ("a", "p"), sign=+1), Atom(dot, ("b", "q"), sign=+1)),
+        (Atom(dot,  ("a", "b"), sign=+1), Atom(dot, ("p", "q"), sign=+1)),
+        (Atom(eps3, ("a", "b", "c"), sign=+1), Atom(dot, ("p", "q"), sign=+1)),
+    ]
+    for x in cases:
+        assert direct.canonicalise(x, ctx) == simple.canonicalise(x, ctx), (
+            f"Mismatch on {x!r}:\n"
+            f"  simple={simple.canonicalise(x, ctx)}\n"
+            f"  direct={direct.canonicalise(x, ctx)}"
+        )

@@ -5,14 +5,14 @@ symmetry encodings.
 Public API:
   atoms      : ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
   context    : Context, Plan
-  canon      : Canonicaliser (Protocol), SimpleCanonicaliser
+  canon      : Canonicaliser (Protocol), SimpleCanonicaliser, DirectCanonicaliser
   orbit_enum : OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
   orbits     : orbit, stabiliser_size, orbit_and_stabiliser_size
   rep        : Flavour, FlavouredOperator, repL, repS
 """
 from .atoms      import ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
 from .context    import Context, Plan
-from .canon      import Canonicaliser, SimpleCanonicaliser
+from .canon      import Canonicaliser, SimpleCanonicaliser, DirectCanonicaliser
 from .orbit_enum import OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
 from .orbits     import orbit, stabiliser_size, orbit_and_stabiliser_size
 from .rep        import (Flavour, FlavouredOperator, repL, repS,
@@ -30,6 +30,7 @@ __all__ = [
     "Plan",
     "Canonicaliser",
     "SimpleCanonicaliser",
+    "DirectCanonicaliser",
     "OrbitEnumerator",
     "BruteForceOrbitEnumerator",
     "DirectOrbitEnumerator",
