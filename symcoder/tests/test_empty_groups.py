@@ -1,0 +1,65 @@
+"""
+Tests verifying that symcoder.encode() handles contexts with empty VectorGroups.
+"""
+import numpy as np
+import pytest
+from symatom import ArgumentSymmetry, VectorGroup, Context, Plan
+from symcoder import EvaluableOperation, encode
+
+
+@pytest.fixture
+def dot():
+    return EvaluableOperation(
+        name="dot", rank=2, parity=+1,
+        argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
+    )
+
+@pytest.fixture
+def event():
+    return {
+        "a": np.array([1.0, 0.0, 0.0]),
+        "b": np.array([0.0, 1.0, 0.0]),
+        "c": np.array([0.0, 0.0, 1.0]),
+    }
+
+
+def test_encode_with_empty_group_returns_ndarray(dot, event):
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ())
+    ctx  = Context((electrons, muons))
+    plan = Plan(context=ctx, operations=(dot,))
+    result = encode(plan, event)
+    assert isinstance(result, np.ndarray)
+    assert np.iscomplexobj(result)
+    assert len(result) > 0
+
+def test_encode_with_empty_group_same_as_without(dot, event):
+    """
+    Encoding with an empty muons group gives the same result as encoding
+    with no muons group at all (the empty group contributes nothing).
+    """
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    ctx_with    = Context((electrons, VectorGroup("muons", ())))
+    ctx_without = Context((electrons,))
+    plan_with    = Plan(context=ctx_with,    operations=(dot,))
+    plan_without = Plan(context=ctx_without, operations=(dot,))
+    np.testing.assert_array_equal(encode(plan_with, event), encode(plan_without, event))
+
+def test_encode_with_empty_group_permutation_invariant(dot, event):
+    """Swapping electron labels leaves the encoding unchanged."""
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ())
+    ctx  = Context((electrons, muons))
+    plan = Plan(context=ctx, operations=(dot,))
+    event_swapped = dict(event)
+    event_swapped["a"], event_swapped["b"] = event["b"], event["a"]
+    np.testing.assert_array_almost_equal(encode(plan, event), encode(plan, event_swapped))
+
+def test_encode_all_empty_groups_returns_empty(dot):
+    """With all groups empty there are no atoms, so encode returns an empty array."""
+    ctx  = Context((VectorGroup("electrons", ()), VectorGroup("muons", ())))
+    plan = Plan(context=ctx, operations=(dot,))
+    result = encode(plan, {})
+    assert isinstance(result, np.ndarray)
+    assert len(result) == 0
