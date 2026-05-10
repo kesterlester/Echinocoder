@@ -26,6 +26,12 @@ event = {l: np.random.randn(3) for l in ctx.all_labels}
 out = encode(plan, event)
 print(f'Total output length: {len(out)}  (sum of segment lengths: {sum(s.length for s in segs)})')
 print()
+for s in segs[:100]:
+    vals = out[s.start:s.stop]
+    vals_str = ', '.join(f'{v:.4f}' for v in vals) if len(vals) else '(empty)'
+    print(f'{s}')
+    print(f'    [{vals_str}]')
+print()
 import json
 print(json.dumps([s.to_dict() for s in segs[:2]], indent=2))
 "
