@@ -6,6 +6,31 @@ from symatom.rep import canonical_pair_flavours
 from symatom import repL
 
 
+def _orbit_example(op_name: str, flavour_counts: tuple, groups) -> str:
+    """Canonical label example for an ORBIT, e.g. 'dot(a,p)'."""
+    labels = []
+    for group, k in zip(groups, flavour_counts):
+        labels.extend(list(group.labels)[:k])
+    return f"{op_name}({','.join(str(l) for l in labels)})"
+
+
+def _assoc_example(op_u: str, flavour_u: tuple, op_v: str, flavour_v: tuple,
+                   overlap: tuple, groups) -> str:
+    """Canonical label example for an ASSOC/NULL, e.g. 'dot(p,q)×dot(a,p)'."""
+    u_labels, v_labels = [], []
+    for group, ku, kv, s in zip(groups, flavour_u, flavour_v, overlap):
+        glabels = list(group.labels)
+        u_g = glabels[:ku]
+        shared = u_g[:s]
+        remaining = [l for l in glabels if l not in u_g]
+        v_g = shared + remaining[:kv - s]
+        u_labels.extend(u_g)
+        v_labels.extend(v_g)
+    u_str = f"{op_u}({','.join(str(l) for l in u_labels)})"
+    v_str = f"{op_v}({','.join(str(l) for l in v_labels)})"
+    return f"{u_str}×{v_str}"
+
+
 def _symmetry_class(pf) -> str:
     u = "A" if pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC else "S"
     v = "A" if pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC else "S"
@@ -60,6 +85,10 @@ class SegmentInfo:
     symmetry_class  : "SS", "SA", "AS", or "AA" (None for ORBIT)
     sign_compressed : True if ANTISYMMETRIC ORBIT (5c compression applied),
                       False if SYMMETRIC/UNSTRUCTURED ORBIT, None for ASSOC/NULL.
+    example         : decorative canonical label string, e.g. 'dot(a,p)' for
+                      ORBIT or 'dot(p,q)×dot(a,p)' for ASSOC/NULL.  Set by
+                      describe_encoding() from the plan's group labels; None if
+                      not computed.  Not needed for decoding.
 
     Human-readable display
     ----------------------
@@ -86,6 +115,7 @@ class SegmentInfo:
     overlap:         tuple | None = None
     symmetry_class:  str   | None = None
     sign_compressed: bool  | None = None
+    example:         str   | None = None
 
     @property
     def stop(self) -> int:
@@ -95,9 +125,11 @@ class SegmentInfo:
         idx = f"[{self.start}:{self.stop}]"
         fl_u = ",".join(str(c) for c in self.flavour_u)
 
+        ex = f"  | {self.example}" if self.example is not None else ""
+
         if self.kind == "ORBIT":
             sc = "  [sign_compressed]" if self.sign_compressed else ""
-            return f"{idx}  {self.op_u}  ORBIT  u=({fl_u})  len={self.length}{sc}"
+            return f"{idx}  {self.op_u}  ORBIT  u=({fl_u})  len={self.length}{sc}{ex}"
 
         fl_v = ",".join(str(c) for c in self.flavour_v)
         ov   = ",".join(str(c) for c in self.overlap)
@@ -110,7 +142,7 @@ class SegmentInfo:
         )
         if self.kind == "NULL":
             base += "  NULL_ENCODING(deducible_from_uv_overlap_block)"
-        return base
+        return base + ex
 
     def to_dict(self) -> dict:
         d = {
@@ -170,6 +202,7 @@ def describe_encoding(plan) -> list[SegmentInfo]:
     fo_list = repL(plan.context, plan.operations)
     pf_list = canonical_pair_flavours(fo_list, plan.context)
     group_sizes = tuple(g.size for g in plan.context.groups)
+    groups = plan.context.groups
 
     segments = []
     cursor = 0
@@ -193,6 +226,7 @@ def describe_encoding(plan) -> list[SegmentInfo]:
             op_u             = fo.operation.name,
             flavour_u        = tuple(fo.flavour.counts),
             sign_compressed  = antisym,
+            example          = _orbit_example(fo.operation.name, fo.flavour.counts, groups),
         ))
         cursor += n
 
@@ -202,6 +236,11 @@ def describe_encoding(plan) -> list[SegmentInfo]:
         max_idx = max(range(len(block)), key=lambda i: block[i].count(group_sizes))
         for i, pf in enumerate(block):
             sc = _symmetry_class(pf)
+            ex = _assoc_example(
+                pf.op_u.name, pf.flavour_u.counts,
+                pf.op_v.name, pf.flavour_v.counts,
+                pf.overlap, groups,
+            )
             if i == max_idx:
                 segments.append(SegmentInfo(
                     kind           = "NULL",
@@ -213,6 +252,7 @@ def describe_encoding(plan) -> list[SegmentInfo]:
                     flavour_v      = tuple(pf.flavour_v.counts),
                     overlap        = tuple(pf.overlap),
                     symmetry_class = sc,
+                    example        = ex,
                 ))
             else:
                 length = 2 * pf.count(group_sizes)   # n complex coeffs = 2n reals
@@ -226,6 +266,7 @@ def describe_encoding(plan) -> list[SegmentInfo]:
                     flavour_v      = tuple(pf.flavour_v.counts),
                     overlap        = tuple(pf.overlap),
                     symmetry_class = sc,
+                    example        = ex,
                 ))
                 cursor += length
 
