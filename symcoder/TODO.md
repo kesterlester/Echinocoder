@@ -18,7 +18,8 @@ Get rid of the 8-fold deduplication in [encode.py](encode.py) if it is really no
 (5) There are three potentially major disruptive changes I have mostly kept quiet about so far (for fear of creating confusion). They have the possibility of cutting the embedding size down a lot.
 	(5a) One relates to signs[implemented 0b9f6a2ec69ae35fa95e],
 	(5b) I keep forgetting. Ah yes, it is that there are BLAH^2 zips associations, and one you know all but one by class, and provided you know the column and row headings (via single row encoding) you are done. [This also means that all-against-all comparisons don't need recording propvided you have the full row.] See longer description belopw headed "Descrption of 5b in detail".
-	(5c) one relates to pre-row knowledge being subtracted off
+	(5c) Removes 1/2 of the elements in ORBIT rows as they are +- sign repeats.
+	(5d) one relates to pre-row knowledge being subtracted off
 Any of them could be discussed.
 
 (6) If there was a demo for symcoder, it is likely that the end-to-end-output could potentially become a unit test BUT this is also a bad idea as there are lots of allowed choices (types of canoncialisation, and optimisations hinted at in (5) above, that would change the output of an end to end test by removing redundancy, so maybe we don't really want to over-fixate on having tests that will break when output becomes less redund
