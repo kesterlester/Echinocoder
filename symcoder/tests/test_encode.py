@@ -6,7 +6,8 @@ from symatom import (
     repL, canonical_pair_flavours,
 )
 from symcoder import EvaluableOperation, encode
-from symcoder.pairs import eval_pair_orbit
+from symcoder.pairs import eval_pair_orbit, eval_pair_orbit_positive
+from symcoder.encode import _embed_compressed
 
 
 # ---------------------------------------------------------------------------
@@ -63,27 +64,28 @@ def test_encode_returns_complex(dot, plan, ctx, event_3d):
     result = encode(plan, event_3d)
     assert np.iscomplexobj(result)
 
-def test_encode_length_matches_sum_of_orbit_sizes(dot, eps3, plan, ctx, event_3d):
+def test_encode_length_matches_sum_of_counts(dot, eps3, plan, ctx, event_3d):
     """
-    Each PairFlavour contributes exactly orbit_size(group_sizes) coefficients
-    (the zip polynomial has that degree; the leading 1 is dropped).
+    Each PairFlavour contributes exactly pf.count(group_sizes) complex coefficients.
+    For ANTISYMMETRIC operations the compressed embedding exploits polynomial symmetry
+    to halve (one ANTISYM) or quarter (both ANTISYM) the raw orbit_size.
     """
     fo_list = repL(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
     expected_len = sum(
-        pf.orbit_size(group_sizes)
+        pf.count(group_sizes)
         for pf in canonical_pair_flavours(fo_list, ctx)
     )
     result = encode(plan, event_3d)
     assert len(result) == expected_len
 
 def test_encode_dot_only_length(dot, ctx, event_3d):
-    """Same length check for dot-only plan."""
+    """Length check for dot-only plan (SYM×SYM: count == orbit_size)."""
     plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
     fo_list = repL(ctx, (dot,))
     group_sizes = tuple(g.size for g in ctx.groups)
     expected_len = sum(
-        pf.orbit_size(group_sizes)
+        pf.count(group_sizes)
         for pf in canonical_pair_flavours(fo_list, ctx)
     )
     result = encode(plan, event_3d)
@@ -184,3 +186,170 @@ def test_encode_two_groups_permutation_invariant(dot):
         encode(plan, event),
         encode(plan, event_swapped),
     )
+
+
+# ---------------------------------------------------------------------------
+# Optimization 5a: compressed polynomial embedding
+# ---------------------------------------------------------------------------
+
+def _make_ops_and_event():
+    """Shared setup: four 3-D vectors, all four symmetry-class operation pairs."""
+    labels = ("a", "b", "c", "d")
+    dot = EvaluableOperation(
+        name="dot", rank=2, parity=+1,
+        argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
+    )
+    eps3 = EvaluableOperation(
+        name="eps3", rank=3, parity=-1,
+        argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
+    )
+    event = {
+        "a": np.array([1.0, 0.2, 0.3]),
+        "b": np.array([0.1, 1.0, 0.4]),
+        "c": np.array([0.5, 0.3, 1.0]),
+        "d": np.array([0.2, 0.7, 0.1]),
+    }
+    return dot, eps3, labels, event
+
+
+def test_eval_pair_orbit_positive_count(dot, eps3, ctx):
+    """eval_pair_orbit_positive always returns exactly pf.count() values."""
+    fo_list = repL(ctx, (dot, eps3))
+    group_sizes = tuple(g.size for g in ctx.groups)
+    for pf in canonical_pair_flavours(fo_list, ctx):
+        plan = Plan(context=ctx, operations=(dot, eps3))
+        event = {l: np.random.randn(3) for l in ctx.all_labels}
+        pos = eval_pair_orbit_positive(pf, plan, event)
+        assert len(pos) == pf.count(group_sizes), (
+            f"Expected {pf.count(group_sizes)}, got {len(pos)} for {pf!r}"
+        )
+
+
+def test_eval_pair_orbit_positive_count_unusual_label_order():
+    """Count invariant holds even with unusual alphabetical label ordering."""
+    # "toast" < "apple" < "zebra" under default str ordering is False,
+    # but "apple" < "toast" < "zebra" — the point is the Atom constructor
+    # sorts internally and absorbs parity into sign, so count is always n.
+    labels = ("apple", "toast", "zebra")
+    dot = EvaluableOperation(
+        name="dot", rank=2, parity=+1,
+        argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
+    )
+    eps3 = EvaluableOperation(
+        name="eps3", rank=3, parity=-1,
+        argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
+    )
+    g = VectorGroup("particles", labels)
+    ctx = Context((g,))
+    plan = Plan(context=ctx, operations=(dot, eps3))
+    event = {l: np.random.randn(3) for l in labels}
+    fo_list = repL(ctx, (dot, eps3))
+    group_sizes = tuple(g.size for g in ctx.groups)
+    for pf in canonical_pair_flavours(fo_list, ctx):
+        pos = eval_pair_orbit_positive(pf, plan, event)
+        assert len(pos) == pf.count(group_sizes), (
+            f"Expected {pf.count(group_sizes)}, got {len(pos)} for {pf!r}"
+        )
+
+
+@pytest.mark.parametrize("perm", [
+    {"a": "b", "b": "a", "c": "c", "d": "d"},
+    {"a": "b", "b": "c", "c": "d", "d": "a"},
+    {"a": "d", "b": "c", "c": "b", "d": "a"},
+])
+def test_compressed_encoding_permutation_invariant_dot(perm, ctx):
+    """Compressed encoding of dot-only plan is invariant under label permutation."""
+    dot = EvaluableOperation(
+        name="dot", rank=2, parity=+1,
+        argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
+    )
+    plan = Plan(context=ctx, operations=(dot,))
+    event = {
+        "a": np.array([1.0, 0.2, 0.3]),
+        "b": np.array([0.1, 1.0, 0.4]),
+        "c": np.array([0.5, 0.3, 1.0]),
+        "d": np.array([0.2, 0.7, 0.1]),
+    }
+    event_permuted = {perm[k]: v for k, v in event.items()}
+    np.testing.assert_array_almost_equal(
+        encode(plan, event),
+        encode(plan, event_permuted),
+    )
+
+
+@pytest.mark.parametrize("perm", [
+    {"a": "b", "b": "a", "c": "c", "d": "d"},
+    {"a": "b", "b": "c", "c": "d", "d": "a"},
+])
+def test_compressed_encoding_permutation_invariant_eps3(perm, ctx):
+    """Compressed encoding with ANTISYMMETRIC eps3 is permutation-invariant."""
+    eps3 = EvaluableOperation(
+        name="eps3", rank=3, parity=-1,
+        argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
+    )
+    plan = Plan(context=ctx, operations=(eps3,))
+    event = {
+        "a": np.array([1.0, 0.2, 0.3]),
+        "b": np.array([0.1, 1.0, 0.4]),
+        "c": np.array([0.5, 0.3, 1.0]),
+        "d": np.array([0.2, 0.7, 0.1]),
+    }
+    event_permuted = {perm[k]: v for k, v in event.items()}
+    np.testing.assert_array_almost_equal(
+        encode(plan, event),
+        encode(plan, event_permuted),
+    )
+
+
+def test_compressed_length_sym_sym(dot, ctx, event_3d):
+    """SYM×SYM: compressed length == orbit_size (no compression)."""
+    plan = Plan(context=ctx, operations=(dot,))
+    fo_list = repL(ctx, (dot,))
+    group_sizes = tuple(g.size for g in ctx.groups)
+    for pf in canonical_pair_flavours(fo_list, ctx):
+        assert pf.count(group_sizes) == pf.orbit_size(group_sizes)
+
+
+def test_compressed_length_antisym_antisym(ctx, event_3d):
+    """ANTISYM×ANTISYM: compressed length == orbit_size / 4."""
+    eps3 = EvaluableOperation(
+        name="eps3", rank=3, parity=-1,
+        argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
+    )
+    plan = Plan(context=ctx, operations=(eps3,))
+    fo_list = repL(ctx, (eps3,))
+    group_sizes = tuple(g.size for g in ctx.groups)
+    for pf in canonical_pair_flavours(fo_list, ctx):
+        assert pf.count(group_sizes) == pf.orbit_size(group_sizes) // 4
+
+
+def test_compressed_length_sym_antisym(ctx):
+    """SYM×ANTISYM or ANTISYM×SYM: compressed length == orbit_size / 2."""
+    dot = EvaluableOperation(
+        name="dot", rank=2, parity=+1,
+        argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
+    )
+    eps3 = EvaluableOperation(
+        name="eps3", rank=3, parity=-1,
+        argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+        eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
+    )
+    plan = Plan(context=ctx, operations=(dot, eps3))
+    fo_list = repL(ctx, (dot, eps3))
+    group_sizes = tuple(g.size for g in ctx.groups)
+    mixed_pfs = [
+        pf for pf in canonical_pair_flavours(fo_list, ctx)
+        if (pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
+        != (pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
+    ]
+    assert len(mixed_pfs) > 0, "Need at least one SYM×ANTISYM pair for this test"
+    for pf in mixed_pfs:
+        assert pf.count(group_sizes) == pf.orbit_size(group_sizes) // 2
