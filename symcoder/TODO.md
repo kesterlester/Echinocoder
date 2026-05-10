@@ -173,4 +173,4 @@ THEN: each OVERLAP BLOCK can be investigated for the worst-sized ASSOCIATION, an
 Phew! And this may perhaps need a latex level document with nice tables to show what's happening unless a good clear way of explaining it in asciii is possilbe.
 
 
-
+* Contemplate removing symcoder/SPEC.md --- maybe no-one needs it.
