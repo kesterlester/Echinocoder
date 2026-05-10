@@ -17,7 +17,7 @@ Get rid of the 8-fold deduplication in [encode.py](encode.py) if it is really no
 
 (5) There are three potentially major disruptive changes I have mostly kept quiet about so far (for fear of creating confusion). They have the possibility of cutting the embedding size down a lot.
 	(5a) One relates to signs[implemented 0b9f6a2ec69ae35fa95e],
-	(5b) I keep forgetting. Ah yes, it is that there are BLAH^2 zips associations, and one you know all but one by class, and provided you know the column and row headings (via single row encoding) you are done. [This also means that all-against-all comparisons don't need recording propvided you have the full row.]
+	(5b) I keep forgetting. Ah yes, it is that there are BLAH^2 zips associations, and one you know all but one by class, and provided you know the column and row headings (via single row encoding) you are done. [This also means that all-against-all comparisons don't need recording propvided you have the full row.] See longer description belopw headed "Descrption of 5b in detail".
 	(5c) one relates to pre-row knowledge being subtracted off
 Any of them could be discussed.
 
@@ -56,4 +56,118 @@ rather than something like this which it does at present:
     [32:44]  dot×dot  SS  u=(1,1)  v=(1,1)  shared=(0,1)  len=12
 	...
 Probably it would be best to put the decorated operations as an extra column (rather than modifying the first column as I have done above) as the new info is redundant output given to everything earlier on in the output, and nice to keep that earlier output all independent. Also it does not matter what the vectors are called to decode the output, so the extra letters are decoration not fundamental.
+
+## Description of (5b) in detail:
+ALTHOUGH ... I have just been thinking about how to explain 5b to you, and I realise that it is going to be easier if the row pairs are explored in a  very parcicular order (if that's easy to arrange). The display output shows that at present the order is this:
+
+[0:1]  dot×dot  SS  u=(0,2)  v=(0,2)  shared=(0,2)  len=1
+[1:7]  dot×dot  SS  u=(0,2)  v=(1,1)  shared=(0,1)  len=6
+[7:10]  dot×dot  SS  u=(0,2)  v=(2,0)  shared=(0,0)  len=3
+[10:13]  dot×eps3  SA  u=(0,2)  v=(1,2)  shared=(0,2)  len=3
+[13:19]  dot×eps3  SA  u=(0,2)  v=(2,1)  shared=(0,1)  len=6
+[19:20]  dot×eps3  SA  u=(0,2)  v=(3,0)  shared=(0,0)  len=1
+[20:32]  dot×dot  SS  u=(1,1)  v=(1,1)  shared=(0,0)  len=12
+[32:44]  dot×dot  SS  u=(1,1)  v=(1,1)  shared=(0,1)  len=12
+[44:50]  dot×dot  SS  u=(1,1)  v=(1,1)  shared=(1,0)  len=6
+[50:56]  dot×dot  SS  u=(1,1)  v=(1,1)  shared=(1,1)  len=6
+[56:62]  dot×dot  SS  u=(1,1)  v=(2,0)  shared=(0,0)  len=6
+[62:74]  dot×dot  SS  u=(1,1)  v=(2,0)  shared=(1,0)  len=12
+[74:86]  dot×eps3  SA  u=(1,1)  v=(1,2)  shared=(0,1)  len=12
+[86:92]  dot×eps3  SA  u=(1,1)  v=(1,2)  shared=(1,1)  len=6
+[92:98]  dot×eps3  SA  u=(1,1)  v=(2,1)  shared=(0,0)  len=6
+[98:104]  dot×eps3  SA  u=(1,1)  v=(2,1)  shared=(0,1)  len=6
+[104:116]  dot×eps3  SA  u=(1,1)  v=(2,1)  shared=(1,0)  len=12
+[116:128]  dot×eps3  SA  u=(1,1)  v=(2,1)  shared=(1,1)  len=12
+[128:134]  dot×eps3  SA  u=(1,1)  v=(3,0)  shared=(1,0)  len=6
+[134:140]  dot×dot  SS  u=(2,0)  v=(2,0)  shared=(1,0)  len=6
+[140:143]  dot×dot  SS  u=(2,0)  v=(2,0)  shared=(2,0)  len=3
+[143:146]  dot×eps3  SA  u=(2,0)  v=(1,2)  shared=(0,0)  len=3
+[146:152]  dot×eps3  SA  u=(2,0)  v=(1,2)  shared=(1,0)  len=6
+[152:164]  dot×eps3  SA  u=(2,0)  v=(2,1)  shared=(1,0)  len=12
+[164:170]  dot×eps3  SA  u=(2,0)  v=(2,1)  shared=(2,0)  len=6
+[170:173]  dot×eps3  SA  u=(2,0)  v=(3,0)  shared=(2,0)  len=3
+[173:179]  eps3×eps3  AA  u=(1,2)  v=(1,2)  shared=(0,2)  len=6
+[179:182]  eps3×eps3  AA  u=(1,2)  v=(1,2)  shared=(1,2)  len=3
+[182:188]  eps3×eps3  AA  u=(1,2)  v=(2,1)  shared=(0,1)  len=6
+[188:200]  eps3×eps3  AA  u=(1,2)  v=(2,1)  shared=(1,1)  len=12
+[200:203]  eps3×eps3  AA  u=(1,2)  v=(3,0)  shared=(1,0)  len=3
+[203:215]  eps3×eps3  AA  u=(2,1)  v=(2,1)  shared=(1,0)  len=12
+[215:227]  eps3×eps3  AA  u=(2,1)  v=(2,1)  shared=(1,1)  len=12
+[227:233]  eps3×eps3  AA  u=(2,1)  v=(2,1)  shared=(2,0)  len=6
+[233:239]  eps3×eps3  AA  u=(2,1)  v=(2,1)  shared=(2,1)  len=6
+[239:245]  eps3×eps3  AA  u=(2,1)  v=(3,0)  shared=(2,0)  len=6
+[245:246]  eps3×eps3  AA  u=(3,0)  v=(3,0)  shared=(3,0)  len=1
+
+
+which appears to go lex sort order by u, then v then shared with some other priority that puts dot before eps3 and presumably if we had multiple ops with identical rank (which we don't have in this example) then they would also be ordered somehow.
+
+Is that really the order.
+
+To explain 5b  efficiently it would be convenient if it is guaranteed :
+
+* for a fixed opxop in column 2,
+* and for a fixed u and v in columns 4 and 5 of the display output
+
+That all shared values for those overlaps came consecutively in an unbroken block. I.e. when all shared combinations of u=(3,4) and v=(4,1) for a given operator pairing WILL COME TOGETHER (not interrupted by, say, changes of operation or changes of u or v).
+
+Is that an order we are currently guaranteed?
+
+-- YES
+Yes, this is definitively guaranteed. The sort key is:
+
+key=lambda pf: (
+    _op_fl_key(pf.op_u, pf.flavour_u),   # (name, rank, parity, sym, counts)
+    _op_fl_key(pf.op_v, pf.flavour_v),
+    pf.overlap,
+)
+overlap is the third component of the key, so for any fixed (op_u, flavour_u, op_v, flavour_v) the first two components are identical and Python's sorted is stable — all overlap tuples for that combination land in one unbroken block, sorted lexicographically within it.
+
+The only subtlety: PairFlavour.__init__ may swap the sides so the "smaller" side (by _op_fl_key) is always op_u. That's why you see dot×eps3 everywhere rather than eps3×dot. But after that normalization the three-level sort is strict: op_u key, then op_v key, then overlap.
+
+So the structure you want for 5b — enumerate over (op×op, flavour_u, flavour_v) blocks, and within each block see all overlaps consecutively — is an exact description of the current output order. Ready to hear 5b.
+
+
+
+
+OK - let's call one of those consecutive blocks an "OVERLAP BLOCK" as it covers all forms of overlap between those two operators each having a fixed flavour. And call each member of an OVLEAP BLOCK an "ASSOCIATION" -- this name because it tells us which atoms from the top row area ASSOCIATED with which other atoms from the bottom row, in the sense that they "move together" under the group action.
+
+Note also that if the pair is (u,v) then G.u is a set (often a small one) but the orbit of the pair, G.(u,v), is often longer than G.u because the top elements of G.(u,v) [I'll call this. the TOP ROW] could contain (say) 4 copies of every u=a.b if each a.b is associated with four things v. So theTOP ROW  is a mulitiset (with a pre-computable duplucation factor) wqhile G.u is just a set and lacks that factor.
+
+Preamble out of the way, we could imagine unpacking all the ASSOCIATIONS in one OVERLAP BLOCK into an ASSOCTIATION TABLE, where we label the columms with the elements of G.x (a set, no dupliucation) and we label the rows with the elements of the set G.y (no duplications in there either).  Initially the table is empty, but when we read our first ASSOCIATION from the OVERLAP BLOCK we could insert a number "1" into each cell were the appropruate elements are assocaited. Then we could move to the 2nd ASSCITATION in the ASSOCIATION block, and put a 2 in every cell of the TABLE where those ele,memts are assopciated. None of these will overlap with an exising 1. {check out can see why]
+
+Keep going.
+
+By the end of the OVERLAP BLOCK every cell of the table will be filled by the integer telling us whether that association was made by the 1st, or the 2nd or the 3rd (etc) ASSOCIATION within the block.
+
+Hopefully you can see now, that
+
+IF:
+
+we already  know the atoms on the column lables (G.x) (on their own, not in any association), and have a way of storing their evals in a permutation invariant way,   and  if we already know the atoms which are the row labels (on their own, not in any association) and can store their evals in a perm invariant way,
+
+THEN:
+
+It is not necessary to do encode ONE of the associtions in the OVERLAP BLOCK .... since once you know where ALL but one of the associations fill the table, you will know by process of elimination where the last one goes!
+
+The last set of associations could be reconstructed, information theoretically, form the column headings, row headings, and the first N-1 associations in the block.
+
+And you don't have to choose the association wihtin the block to drop to be the last one. You can choose it to be THE WOST ONE -- i.e, the one that yields the largest number of coefficients.
+
+One corollary of this is if there is only one ASSOCIATION in the BLOCK, then the BLOCK does not need storing at all (provided that the row headings and column headings have been recorded).
+
+Another amazing thing about this is that very often in large OVERLAP_BLOCKS one of the ASSOCIATIONS is much larger than the others, so there is often a huge saving here. Indeed The cost of saving the heading (which are one dimensional, growing like the larger of the table width and height) is always better than saving the worst table ASSOCIATION (which grows as the table's are).
+
+Finally, how would one store the row (or column) headings in a perm invariant way?
+
+Well, one COULD use a 1-D (k=1) polynomial encoder over the reals which would put the values into an identical number of reals. Or you could (my preference) just sort the values into numerical order.  BUT this choice should be selectable for reasons I have not told you about yet.
+
+BUT BUT BUT (and this is the final cherry)  the storage of that G.u or G.v row/col header should NOT be done when processing this OVERLAP BLOCK because almost certainly there is another OVERLAP BLOCK in the encoding that will re-use the same G.u (possibluy this time as a row or a column header) and the same G.v.  Since the G.u and the G.v are just USED BY BUT NOT PART OF the association, the right place to store them all is BEFORE any OVERLAP BLOCKS are processed.
+
+I.e. phase one of storage is
+
+FIRST store (either) the polynomial encoded (or) sort-encoded BUT ALWAYS non-associated orbits of each canonically different element of repL FIRST , and then with this new non-association coding block out of the way [self documenting with its desribed]
+
+THEN: each OVERLAP BLOCK can be investigated for the worst-sized ASSOCIATION, and then all associations EXCEPT that one would be encoded.
+
+Phew! And this may perhaps need a latex level document with nice tables to show what's happening unless a good clear way of explaining it in asciii is possilbe.
 
