@@ -17,7 +17,7 @@ Get rid of the 8-fold deduplication in [encode.py](encode.py) if it is really no
 
 (5) There are three potentially major disruptive changes I have mostly kept quiet about so far (for fear of creating confusion). They have the possibility of cutting the embedding size down a lot.
 	(5a) One relates to signs[implemented 0b9f6a2ec69ae35fa95e],
-	(5b) I keep forgetting. Ah yes, it is that there are BLAH^2 zips associations, and one you know all but one by class, you are done.
+	(5b) I keep forgetting. Ah yes, it is that there are BLAH^2 zips associations, and one you know all but one by class, and provided you know the column and row headings (via single row encoding) you are done. [This also means that all-against-all comparisons don't need recording propvided you have the full row.]
 	(5c) one relates to pre-row knowledge being subtracted off
 Any of them could be discussed.
 
@@ -29,7 +29,7 @@ Any of them could be discussed.
 
 * The output order of the row-pair-zips is a bit odd (see below, describe_demo.sh) with dot(p,q)xdot(p,q) coming out first (so first operation with last group rather than first operation with first group).  It's not an important fix, but it would be nicer if they came out first-first. 
 
-* Also I am surprised that dot(p,q)xdot(p,q) seems to be a thing, though am pleased that it compressed to just 1 element.
+* Also I am surprised that dot(p,q)xdot(p,q) seems to be a thing, though am pleased that it compressed to just 1 element. How did it get there? It's not a row pair? [But it is worth recording given 5c)
 
 
 * At some point we should modify describe.py so that describe_demo.sh would produce something like this:
