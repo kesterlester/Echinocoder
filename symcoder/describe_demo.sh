@@ -5,6 +5,8 @@ import numpy as np
 from symatom import ArgumentSymmetry, VectorGroup, Context, Plan
 from symcoder import EvaluableOperation, encode, describe_encoding
 
+mag  = EvaluableOperation('mag',  rank=1, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+                           eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))))
 dot  = EvaluableOperation('dot',  rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
                            eval_fn=lambda v: float(np.dot(v[0], v[1])))
 eps3 = EvaluableOperation('eps3', rank=3, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
@@ -12,10 +14,10 @@ eps3 = EvaluableOperation('eps3', rank=3, parity=-1, argument_symmetry=ArgumentS
 
 ctx = Context((
    VectorGroup('electrons', ('a','b','c')),
-   VectorGroup('muons',     ('p','q')),
-   VectorGroup('jets',      ('u','v','w','x')),
+   #VectorGroup('muons',     ('p','q')),
+   #VectorGroup('jets',      ('u','v','w','x')),
 ))
-plan = Plan(context=ctx, operations=(dot, eps3))
+plan = Plan(context=ctx, operations=(mag, dot, eps3))
 
 segs = describe_encoding(plan)
 for s in segs:

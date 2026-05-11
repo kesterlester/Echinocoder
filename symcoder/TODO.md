@@ -1,3 +1,34 @@
+## remove-pair-with-self or do something better
+
+This next OVERLAP_BLOCK shows that pair-with-self is still sneaking in, not deleted by 5c prining as here there are four jets {u,v,w,x}.
+
+[120:132]  dot×dot  SS  u=(0,0,2)  v=(0,0,2)  shared=(0,0,0)  len=12  | dot(u,v)×dot(w,x)
+    [4.2750, 4.2750, 0.0000, 14.3759, -6.4346, 6.4346, 0.5108, 0.0000, 15.5026, 15.5026, 0.0000, -55.0714]
+[132:132]  dot×dot  SS  u=(0,0,2)  v=(0,0,2)  shared=(0,0,1)  len=0  NULL_ENCODING(deducible_from_uv_overlap_block)  | dot(u,v)×dot(u,w)
+    [(empty)]
+[132:144]  dot×dot  SS  u=(0,0,2)  v=(0,0,2)  shared=(0,0,2)  len=12  | dot(u,v)×dot(u,v)
+    [4.2750, 4.2750, 0.0000, 1.9035, 17.6316, -17.6316, 6.5976, 0.0000, -14.7793, -14.7793, 0.0000, 3.1666]
+
+Notes to self:
+
+I was surprised that the code was ever iterating over row-paired-with-self because I had never done that "by hand" since indeed it adds no information. Now, in our ~few hours ago discussion on that point I mentioned that these pair-with-self rows are thrown out by 5c since "pair-with-self rows will form monolithic OVERLAP_BLOCKS.
+
+We can see now that I was only half right.I was right that self-pair rows add no information and should be thrown out, but I was wrong to say that they alwaus form monolithic OVERLAP_BLOCKS and so get thrown out by 5c.  I was fooled into thinking that at the time as I was looking at a dot(p,q) with dot(p,q) pairing where p and q where the only vectors in the muons. WHereas the example above (with four vectors in the jets {u,v,w,x}) shows that pair-with-self of dot(u,v) is NOT thrown out by 5c as the extra jets provide extra overlap structure.
+
+So, this tells us that we could modify 5c so that it is not just:
+
+(i) "throw out the largest ASSOCIATION within each OVERLAP BLOCK as it is fixed by complementarity, but keep the N-1 others."
+
+but can instead be:
+
+(i) "within each OVERLAP BLOCK throw out every pair-with-self ASSOCIATION as it contains no information byeond that already in the orbit storage for that row,
+(ii) then keep all but the largest of the ASSOCIATIONS that remain, if any remain.
+
+That certainly could be done (though it would need edits to the latex encode.tex pedagogical document in parallel to explain why and when this happens and why it is correct) .... BUT ... it's just a particular special case. pair-with-self is uniquely bad and so should be thrown out.  Your correct point above is that the pair-not-quite-with-self things still have a lot of structure, and so can likely be not thrown out but at least reduced themselves by some as-yet not defined process.
+
+
+## Idea
+
 Move def _force_positive_side_key(op, flavour): out of symcoder/encode.py and into symatom somwhere?   Yes it's valid where it already is, but conceptually if there is a need for sign-blind atoms or operations (this is not the same thing as taking their modulus when evaluated as +eps(a,b,c) can still evaluate to a negative number!) then it is porbably better to have then in symatom as the current implementation is using implementation details of the symatom FO representation to achieve its end.  It is potentially a worry that if the symatom FO or atom back-end changedm it would break this piece of code in symcoder.
 
 Is there a better way of doing the 
