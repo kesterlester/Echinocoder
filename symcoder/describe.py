@@ -118,17 +118,18 @@ class SegmentInfo:
     Consecutive entries within the same block are ordered by
     canonical_pair_flavours' overlap sort (lex ascending).
     """
-    kind:            str
-    start:           int
-    length:          int
-    op_u:            str
-    flavour_u:       tuple
-    op_v:            str   | None = None
-    flavour_v:       tuple | None = None
-    overlap:         tuple | None = None
-    symmetry_class:  str   | None = None
-    sign_compressed: bool  | None = None
-    example:         str   | None = None
+    kind:             str
+    start:            int
+    length:           int
+    op_u:             str
+    flavour_u:        tuple
+    op_v:             str   | None = None
+    flavour_v:        tuple | None = None
+    overlap:          tuple | None = None
+    symmetry_class:   str   | None = None
+    sign_compressed:  bool  | None = None
+    notional_length:  int   | None = None  # length before drop; None → same as length
+    example:          str   | None = None
 
     @property
     def stop(self) -> int:
@@ -148,21 +149,24 @@ class SegmentInfo:
             variant = "SC" if self.sign_compressed else "."
         else:
             variant = self.symmetry_class
+        full    = self.notional_length if self.notional_length is not None else self.length
         ex      = f"  |  {self.example}" if self.example is not None else ""
         return (
             f"{idx}  {self.kind}  {self.op_u}  {op_v}  {variant}"
             f"  u=({fl_u})  v=({fl_v})  shared=({ov})"
-            f"  len={self.length}{ex}"
+            f"  len={self.length}  full={full}{ex}"
         )
 
     def to_dict(self) -> dict:
+        full = self.notional_length if self.notional_length is not None else self.length
         d = {
-            "kind":      self.kind,
-            "start":     self.start,
-            "stop":      self.stop,
-            "length":    self.length,
-            "op_u":      self.op_u,
-            "flavour_u": list(self.flavour_u),
+            "kind":             self.kind,
+            "start":            self.start,
+            "stop":             self.stop,
+            "length":           self.length,
+            "notional_length":  full,
+            "op_u":             self.op_u,
+            "flavour_u":        list(self.flavour_u),
         }
         if self.kind == "ORBIT":
             d["sign_compressed"] = self.sign_compressed
@@ -234,6 +238,7 @@ def describe_encoding(plan) -> list[SegmentInfo]:
             kind             = "ORBIT",
             start            = cursor,
             length           = n,
+            notional_length  = n,
             op_u             = fo.operation.name,
             flavour_u        = tuple(fo.flavour.counts),
             sign_compressed  = antisym,
@@ -256,14 +261,16 @@ def describe_encoding(plan) -> list[SegmentInfo]:
                 pf.op_v.name, pf.flavour_v.counts,
                 pf.overlap, groups,
             )
+            notional = 2 * pf.count(group_sizes)
             common = dict(
-                op_u           = pf.op_u.name,
-                flavour_u      = tuple(pf.flavour_u.counts),
-                op_v           = pf.op_v.name,
-                flavour_v      = tuple(pf.flavour_v.counts),
-                overlap        = tuple(pf.overlap),
-                symmetry_class = sc,
-                example        = ex,
+                op_u            = pf.op_u.name,
+                flavour_u       = tuple(pf.flavour_u.counts),
+                op_v            = pf.op_v.name,
+                flavour_v       = tuple(pf.flavour_v.counts),
+                overlap         = tuple(pf.overlap),
+                symmetry_class  = sc,
+                notional_length = notional,
+                example         = ex,
             )
             if _is_self_pair(pf):
                 segments.append(SegmentInfo(
@@ -280,13 +287,12 @@ def describe_encoding(plan) -> list[SegmentInfo]:
                     **common,
                 ))
             else:
-                length = 2 * pf.count(group_sizes)
                 segments.append(SegmentInfo(
                     kind   = "ASSOC",
                     start  = cursor,
-                    length = length,
+                    length = notional,
                     **common,
                 ))
-                cursor += length
+                cursor += notional
 
     return segments

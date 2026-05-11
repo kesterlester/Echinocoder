@@ -354,6 +354,25 @@ def test_all_rows_same_number_of_base_tokens(plan):
         f"Rows have differing token counts: {set(counts)}"
     )
 
+def test_full_column_equals_length_for_assoc_and_orbit(plan):
+    """For ASSOC and ORBIT segments, notional_length == length."""
+    for s in describe_encoding(plan):
+        if s.kind in ("ASSOC", "ORBIT"):
+            nl = s.notional_length if s.notional_length is not None else s.length
+            assert nl == s.length, f"notional_length != length for {s.kind}: {s}"
+
+def test_full_column_positive_for_null_segments(plan):
+    """For NULL_* segments, notional_length > 0 (shows what was saved)."""
+    for s in describe_encoding(plan):
+        if s.kind in _NULL_KINDS:
+            nl = s.notional_length if s.notional_length is not None else s.length
+            assert nl > 0, f"notional_length should be > 0 for dropped segment: {s}"
+
+def test_str_contains_full_column(plan):
+    """Every row's string contains a 'full=N' token."""
+    for s in describe_encoding(plan):
+        assert "full=" in str(s), f"Missing full= in: {s}"
+
 
 # ---------------------------------------------------------------------------
 # Machine-readable export
