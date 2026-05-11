@@ -140,12 +140,11 @@ Frozen dataclass.  Fields:
 **Derived property:** `stop = start + length`.
 
 **Methods:**
-- `__str__()` — unified column-format single-line summary (all rows have the
-  same fixed token structure with `"."` for unused fields, so output can be
-  piped through `column -t`).  The `kind` token distinguishes `ORBIT`,
-  `ASSOC`, `NULL_SELF`, and `NULL_COMP` rows.  `ORBIT` rows carry
-  `"sign_compressed"` in the last field when `sign_compressed is True`,
-  `"."` otherwise.
+- `__str__()` — fixed 9-token format (pipe through `column -t` for alignment):
+  `[start:stop]  kind  op_u  op_v  variant  u=(...)  v=(...)  shared=(...)  len=N`.
+  The `variant` column carries the symmetry class (`SS`/`SA`/`AS`/`AA`) for
+  pair rows, or `SC` (sign-compressed) / `.` for `ORBIT` rows.  Unused fields
+  show `.`.  An optional `  |  example` tail follows when `example` is set.
 - `to_dict()` — JSON-serialisable dict.  `ORBIT` segments include
   `sign_compressed`; `ASSOC`/`NULL` include `op_v`, `flavour_v`, `overlap`,
   `symmetry_class`.  All segments include `kind`, `start`, `stop`, `length`,

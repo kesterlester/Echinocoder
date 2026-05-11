@@ -99,7 +99,11 @@ class SegmentInfo:
 
     Human-readable display
     ----------------------
-    str(seg)  — single-line summary.
+    str(seg)  — fixed 9-token format (suitable for pipe through `column -t`):
+        [start:stop]  kind  op_u  op_v  variant  u=(...)  v=(...)  shared=(...)  len=N
+    where `variant` is the symmetry class (SS/SA/AS/AA) for pair rows, or
+    SC (sign-compressed) / "." for ORBIT rows.  Unused fields show ".".
+    An optional "  |  example" tail follows when example is set.
 
     Machine-readable export
     -----------------------
@@ -138,13 +142,17 @@ class SegmentInfo:
                    if self.flavour_v is not None else ".")
         ov      = (",".join(str(c) for c in self.overlap)
                    if self.overlap   is not None else ".")
-        sym     = self.symmetry_class if self.symmetry_class is not None else "."
-        sc_flag = "sign_compressed" if self.sign_compressed else "."
+        # Single "variant" column: symmetry class (SS/SA/AS/AA) for pair rows,
+        # SC (sign-compressed) or "." for ORBIT rows.
+        if self.kind == "ORBIT":
+            variant = "SC" if self.sign_compressed else "."
+        else:
+            variant = self.symmetry_class
         ex      = f"  |  {self.example}" if self.example is not None else ""
         return (
-            f"{idx}  {self.kind}  {self.op_u}  {op_v}  {sym}"
+            f"{idx}  {self.kind}  {self.op_u}  {op_v}  {variant}"
             f"  u=({fl_u})  v=({fl_v})  shared=({ov})"
-            f"  len={self.length}  {sc_flag}{ex}"
+            f"  len={self.length}{ex}"
         )
 
     def to_dict(self) -> dict:

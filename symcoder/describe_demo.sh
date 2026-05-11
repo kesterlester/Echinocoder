@@ -14,7 +14,7 @@ eps3 = EvaluableOperation('eps3', rank=3, parity=-1, argument_symmetry=ArgumentS
 
 ctx = Context((
    VectorGroup('electrons', ('a','b','c')),
-   #VectorGroup('muons',     ('p','q')),
+   VectorGroup('muons',     ('p','q')),
    #VectorGroup('jets',      ('u','v','w','x')),
 ))
 plan = Plan(context=ctx, operations=(mag, dot, eps3))

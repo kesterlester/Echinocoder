@@ -328,13 +328,17 @@ def test_assoc_str_contains_symmetry_class(dot, eps3, ctx):
         if s.kind == "ASSOC":
             assert s.symmetry_class in str(s)
 
-def test_str_has_dot_placeholder_for_missing_fields(dot, ctx):
-    """ORBIT rows must have '.' tokens for unused pair fields (for column -t)."""
-    plan = Plan(context=ctx, operations=(dot,))
+def test_orbit_str_variant_column(dot, eps3, ctx):
+    """ORBIT rows show 'SC' when sign_compressed, '.' otherwise — in the variant column."""
+    plan = Plan(context=ctx, operations=(dot, eps3))
     for s in describe_encoding(plan):
         if s.kind == "ORBIT":
             tokens = str(s).split()
-            assert "." in tokens, f"ORBIT row missing '.' placeholder: {s}"
+            if s.sign_compressed:
+                assert "SC" in tokens, f"sign-compressed ORBIT missing 'SC': {s}"
+            else:
+                # op_v and v=(.) and shared=(.) still give '.' tokens
+                assert "." in tokens, f"non-compressed ORBIT missing '.' placeholder: {s}"
 
 def test_all_rows_same_number_of_base_tokens(plan):
     """Every row (ignoring the optional '| example' tail) has the same token count."""
