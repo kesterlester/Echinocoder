@@ -126,7 +126,7 @@ Frozen dataclass.  Fields:
 
 | Field | Type | ORBIT | ASSOC | NULL |
 |---|---|---|---|---|
-| `kind` | `str` | `"ORBIT"` | `"ASSOC"` | `"NULL"` |
+| `kind` | `str` | `"ORBIT"` | `"ASSOC"` | `"NULL_SELF"` or `"NULL_COMP"` |
 | `start` | `int` | ✓ | ✓ | ✓ |
 | `length` | `int` | `fo.count()` or `fo.count()//2` | `2*pf.count()` | `0` |
 | `op_u` | `str` | ✓ | ✓ | ✓ |
@@ -140,9 +140,12 @@ Frozen dataclass.  Fields:
 **Derived property:** `stop = start + length`.
 
 **Methods:**
-- `__str__()` — human-readable single-line summary.  `NULL` entries append
-  `NULL_ENCODING(deducible_from_uv_overlap_block)`.  `ORBIT` entries append
-  `[sign_compressed]` when `sign_compressed is True`.
+- `__str__()` — unified column-format single-line summary (all rows have the
+  same fixed token structure with `"."` for unused fields, so output can be
+  piped through `column -t`).  The `kind` token distinguishes `ORBIT`,
+  `ASSOC`, `NULL_SELF`, and `NULL_COMP` rows.  `ORBIT` rows carry
+  `"sign_compressed"` in the last field when `sign_compressed is True`,
+  `"."` otherwise.
 - `to_dict()` — JSON-serialisable dict.  `ORBIT` segments include
   `sign_compressed`; `ASSOC`/`NULL` include `op_v`, `flavour_v`, `overlap`,
   `symmetry_class`.  All segments include `kind`, `start`, `stop`, `length`,
@@ -191,8 +194,10 @@ Frozen dataclass.  Fields:
    Phase-2 structure).
 5. `describe_encoding` is a pure function: repeated calls return equal lists.
 6. `ORBIT` segments precede all `ASSOC`/`NULL` segments.
-7. Within each overlap block in Phase 2, exactly one segment has `kind="NULL"`.
-8. `NULL` segments have `length == 0` and `start == stop`.
-9. Non-`NULL` segments tile the output array contiguously without gaps.
+7. Within each overlap block in Phase 2, at most one segment has `kind="NULL_COMP"`;
+   zero or more segments have `kind="NULL_SELF"` (one per self-pairing association).
+   Any block with at least one non-self-pairing association has exactly one `NULL_COMP`.
+8. `NULL_SELF` and `NULL_COMP` segments have `length == 0` and `start == stop`.
+9. Non-null segments (`ORBIT` and `ASSOC`) tile the output array contiguously without gaps.
 10. `sign_compressed` is `True` iff the segment is `ORBIT` and its operation is
     `ANTISYMMETRIC`.

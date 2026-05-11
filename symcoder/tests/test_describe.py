@@ -1,9 +1,14 @@
-"""Tests for describe_encoding() and SegmentInfo (5b structure: ORBIT/ASSOC/NULL)."""
+"""Tests for describe_encoding() and SegmentInfo."""
 import json
 import numpy as np
 import pytest
+from itertools import groupby
 from symatom import ArgumentSymmetry, VectorGroup, Context, Plan, repL, canonical_pair_flavours
 from symcoder import EvaluableOperation, encode, describe_encoding, SegmentInfo
+
+_NULL_KINDS = ("NULL_SELF", "NULL_COMP")
+_PAIR_KINDS  = ("ASSOC", "NULL_SELF", "NULL_COMP")
+_ALL_KINDS   = ("ORBIT", "ASSOC", "NULL_SELF", "NULL_COMP")
 
 
 @pytest.fixture
@@ -54,7 +59,7 @@ def test_all_empty_groups_gives_empty_list(dot):
 
 
 # ---------------------------------------------------------------------------
-# Three kinds present
+# Valid kinds present
 # ---------------------------------------------------------------------------
 
 def test_orbit_segments_present(plan):
@@ -64,14 +69,14 @@ def test_orbit_segments_present(plan):
 def test_assoc_and_null_segments_present(plan):
     kinds = {s.kind for s in describe_encoding(plan)}
     assert "ASSOC" in kinds
-    assert "NULL" in kinds
+    assert kinds & set(_NULL_KINDS), f"Expected at least one null kind; got {kinds}"
 
 def test_only_valid_kinds(plan):
-    assert all(s.kind in ("ORBIT", "ASSOC", "NULL") for s in describe_encoding(plan))
+    assert all(s.kind in _ALL_KINDS for s in describe_encoding(plan))
 
 def test_orbit_segments_come_first(plan):
     segs = describe_encoding(plan)
-    orbit_indices = [i for i, s in enumerate(segs) if s.kind == "ORBIT"]
+    orbit_indices     = [i for i, s in enumerate(segs) if s.kind == "ORBIT"]
     non_orbit_indices = [i for i, s in enumerate(segs) if s.kind != "ORBIT"]
     if orbit_indices and non_orbit_indices:
         assert max(orbit_indices) < min(non_orbit_indices)
@@ -82,14 +87,14 @@ def test_orbit_segments_come_first(plan):
 # ---------------------------------------------------------------------------
 
 def test_null_segments_have_length_zero(plan):
-    assert all(s.length == 0 for s in describe_encoding(plan) if s.kind == "NULL")
+    assert all(s.length == 0 for s in describe_encoding(plan) if s.kind in _NULL_KINDS)
 
 def test_null_segments_start_equals_stop(plan):
-    assert all(s.start == s.stop for s in describe_encoding(plan) if s.kind == "NULL")
+    assert all(s.start == s.stop for s in describe_encoding(plan) if s.kind in _NULL_KINDS)
 
 def test_non_null_segments_are_contiguous(plan):
     """ORBIT and ASSOC segments must tile the output array without gaps."""
-    non_null = [s for s in describe_encoding(plan) if s.kind != "NULL"]
+    non_null = [s for s in describe_encoding(plan) if s.kind not in _NULL_KINDS]
     if not non_null:
         return
     assert non_null[0].start == 0
@@ -140,7 +145,6 @@ def test_orbit_sign_compressed_true_for_antisymmetric(eps3, ctx):
 
 def test_orbit_length_symmetric_equals_fo_count(dot, ctx):
     """SYMMETRIC: ORBIT length == fo.count() (no compression)."""
-    from symatom import repL
     plan = Plan(context=ctx, operations=(dot,))
     fo_list = repL(plan.context, plan.operations)
     fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count() for fo in fo_list}
@@ -150,8 +154,7 @@ def test_orbit_length_symmetric_equals_fo_count(dot, ctx):
             assert s.length == expected
 
 def test_orbit_length_antisymmetric_halved(eps3, ctx):
-    """ANTISYMMETRIC (5c): ORBIT length == fo.count() // 2."""
-    from symatom import repL
+    """ANTISYMMETRIC (sign-compressed): ORBIT length == fo.count() // 2."""
     plan = Plan(context=ctx, operations=(eps3,))
     fo_list = repL(plan.context, plan.operations)
     fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count() for fo in fo_list}
@@ -167,43 +170,76 @@ def test_orbit_count_for_symmetric_op(dot, ctx):
     assert all(s.length > 0 for s in orbit_segs)
 
 def test_assoc_null_sign_compressed_is_none(plan):
-    """ASSOC and NULL segments must not set sign_compressed."""
+    """ASSOC and NULL_* segments must not set sign_compressed."""
     for s in describe_encoding(plan):
-        if s.kind in ("ASSOC", "NULL"):
+        if s.kind in _PAIR_KINDS:
             assert s.sign_compressed is None
 
 
 # ---------------------------------------------------------------------------
-# NULL segment correctness
+# NULL_SELF correctness
 # ---------------------------------------------------------------------------
 
-def test_each_block_has_exactly_one_null(dot, eps3, ctx):
-    """Each OVERLAP BLOCK (fixed op_u, flavour_u, op_v, flavour_v) has exactly one NULL."""
+def test_null_self_satisfies_self_pair_condition(plan):
+    """Every NULL_SELF segment has op_u==op_v, flavour_u==flavour_v, overlap==flavour_u."""
+    for s in describe_encoding(plan):
+        if s.kind == "NULL_SELF":
+            assert s.op_u == s.op_v
+            assert s.flavour_u == s.flavour_v
+            assert s.overlap == s.flavour_u
+
+def test_no_assoc_is_self_pair(plan):
+    """No ASSOC should satisfy the self-pair condition (those must be NULL_SELF)."""
+    for s in describe_encoding(plan):
+        if s.kind == "ASSOC":
+            is_self = (s.op_u == s.op_v and s.flavour_u == s.flavour_v
+                       and s.overlap == s.flavour_u)
+            assert not is_self, f"ASSOC segment is a self-pair and should be NULL_SELF: {s}"
+
+
+# ---------------------------------------------------------------------------
+# NULL_COMP correctness
+# ---------------------------------------------------------------------------
+
+def test_each_block_has_at_most_one_null_comp(dot, eps3, ctx):
+    """Each OVERLAP BLOCK has at most one NULL_COMP."""
     segs = describe_encoding(Plan(context=ctx, operations=(dot, eps3)))
-    # Group ASSOC+NULL segments by their (op_u, flavour_u, op_v, flavour_v)
-    from itertools import groupby
-    pair_segs = [s for s in segs if s.kind in ("ASSOC", "NULL")]
+    pair_segs = [s for s in segs if s.kind in _PAIR_KINDS]
 
     def block_key(s):
         return (s.op_u, s.flavour_u, s.op_v, s.flavour_v)
 
     for _key, block in groupby(pair_segs, key=block_key):
         block = list(block)
-        null_count = sum(1 for s in block if s.kind == "NULL")
-        assert null_count == 1, f"Expected 1 NULL in block, got {null_count}: {block}"
+        null_comp_count = sum(1 for s in block if s.kind == "NULL_COMP")
+        assert null_comp_count <= 1, (
+            f"Expected at most 1 NULL_COMP per block, got {null_comp_count}: {block}"
+        )
 
-def test_null_is_largest_in_block(dot, eps3, ctx):
-    """The NULL association must have length >= all ASSOC associations in the same block."""
+def test_block_with_non_self_pair_has_exactly_one_null_comp(dot, eps3, ctx):
+    """Any block containing at least one non-self-pair has exactly one NULL_COMP."""
     segs = describe_encoding(Plan(context=ctx, operations=(dot, eps3)))
-    from itertools import groupby
-
-    pair_segs = [s for s in segs if s.kind in ("ASSOC", "NULL")]
+    pair_segs = [s for s in segs if s.kind in _PAIR_KINDS]
 
     def block_key(s):
         return (s.op_u, s.flavour_u, s.op_v, s.flavour_v)
 
-    # For NULL to be "the largest", we need to know its notional length.
-    # Recover from pf_list: the NULL's notional length equals pf.count(group_sizes).
+    for _key, block in groupby(pair_segs, key=block_key):
+        block = list(block)
+        has_non_self = any(
+            s.kind in ("ASSOC", "NULL_COMP") for s in block
+        )
+        if has_non_self:
+            null_comp_count = sum(1 for s in block if s.kind == "NULL_COMP")
+            assert null_comp_count == 1, (
+                f"Block with non-self-pairs must have exactly 1 NULL_COMP, "
+                f"got {null_comp_count}: {block}"
+            )
+
+def test_null_comp_is_largest_non_self_in_block(dot, eps3, ctx):
+    """NULL_COMP's notional length >= all ASSOC notional lengths in the same block."""
+    plan = Plan(context=ctx, operations=(dot, eps3))
+    segs = describe_encoding(plan)
     fo_list = repL(ctx, (dot, eps3))
     pf_list = canonical_pair_flavours(fo_list, ctx)
     group_sizes = tuple(g.size for g in ctx.groups)
@@ -213,21 +249,28 @@ def test_null_is_largest_in_block(dot, eps3, ctx):
         for pf in pf_list
     }
 
+    pair_segs = [s for s in segs if s.kind in _PAIR_KINDS]
+
+    def block_key(s):
+        return (s.op_u, s.flavour_u, s.op_v, s.flavour_v)
+
     for _key, block in groupby(pair_segs, key=block_key):
         block = list(block)
         assoc_lengths = [s.length for s in block if s.kind == "ASSOC"]
-        null_segs = [s for s in block if s.kind == "NULL"]
-        assert len(null_segs) == 1
-        null_key = (null_segs[0].op_u, null_segs[0].flavour_u,
-                    null_segs[0].op_v, null_segs[0].flavour_v,
-                    null_segs[0].overlap)
-        null_notional = pf_count_map[null_key]
+        null_comp_segs = [s for s in block if s.kind == "NULL_COMP"]
+        if not null_comp_segs:
+            continue
+        assert len(null_comp_segs) == 1
+        nc = null_comp_segs[0]
+        nc_notional = pf_count_map[(nc.op_u, nc.flavour_u, nc.op_v, nc.flavour_v, nc.overlap)]
         for al in assoc_lengths:
-            assert null_notional >= al
+            assert nc_notional >= al, (
+                f"NULL_COMP notional={nc_notional} < ASSOC length={al} in block"
+            )
 
 
 # ---------------------------------------------------------------------------
-# Symmetry class labels (ASSOC segments only)
+# Symmetry class labels
 # ---------------------------------------------------------------------------
 
 def test_symmetry_class_ss_for_dot_dot(dot, ctx):
@@ -242,7 +285,7 @@ def test_symmetry_class_aa_for_eps3_eps3(eps3, ctx):
 
 def test_symmetry_classes_present_in_mixed_plan(dot, eps3, ctx):
     plan = Plan(context=ctx, operations=(dot, eps3))
-    pair_segs = [s for s in describe_encoding(plan) if s.kind in ("ASSOC", "NULL")]
+    pair_segs = [s for s in describe_encoding(plan) if s.kind in _PAIR_KINDS]
     classes = {s.symmetry_class for s in pair_segs}
     assert "SS" in classes
     assert "AA" in classes
@@ -250,7 +293,7 @@ def test_symmetry_classes_present_in_mixed_plan(dot, eps3, ctx):
 
 
 # ---------------------------------------------------------------------------
-# Human-readable string
+# Human-readable string (unified column format)
 # ---------------------------------------------------------------------------
 
 def test_orbit_str_contains_ORBIT(dot, ctx):
@@ -265,10 +308,15 @@ def test_assoc_str_contains_op_names(dot, ctx):
         if s.kind == "ASSOC":
             assert "dot" in str(s)
 
-def test_null_str_contains_null_encoding(plan):
+def test_null_comp_str_contains_null_comp(plan):
     for s in describe_encoding(plan):
-        if s.kind == "NULL":
-            assert "NULL_ENCODING" in str(s)
+        if s.kind == "NULL_COMP":
+            assert "NULL_COMP" in str(s)
+
+def test_null_self_str_contains_null_self(plan):
+    for s in describe_encoding(plan):
+        if s.kind == "NULL_SELF":
+            assert "NULL_SELF" in str(s)
 
 def test_str_contains_index_range(plan):
     for s in describe_encoding(plan):
@@ -279,6 +327,28 @@ def test_assoc_str_contains_symmetry_class(dot, eps3, ctx):
     for s in describe_encoding(plan):
         if s.kind == "ASSOC":
             assert s.symmetry_class in str(s)
+
+def test_str_has_dot_placeholder_for_missing_fields(dot, ctx):
+    """ORBIT rows must have '.' tokens for unused pair fields (for column -t)."""
+    plan = Plan(context=ctx, operations=(dot,))
+    for s in describe_encoding(plan):
+        if s.kind == "ORBIT":
+            tokens = str(s).split()
+            assert "." in tokens, f"ORBIT row missing '.' placeholder: {s}"
+
+def test_all_rows_same_number_of_base_tokens(plan):
+    """Every row (ignoring the optional '| example' tail) has the same token count."""
+    segs = describe_encoding(plan)
+    def base_tokens(s):
+        line = str(s)
+        if "  |  " in line:
+            line = line[:line.index("  |  ")]
+        return line.split()
+
+    counts = [len(base_tokens(s)) for s in segs]
+    assert len(set(counts)) == 1, (
+        f"Rows have differing token counts: {set(counts)}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -296,7 +366,7 @@ def test_assoc_to_dict_has_required_keys(plan):
     required = {"kind", "start", "stop", "length", "op_u", "op_v",
                 "flavour_u", "flavour_v", "overlap", "symmetry_class"}
     for s in describe_encoding(plan):
-        if s.kind in ("ASSOC", "NULL"):
+        if s.kind in _PAIR_KINDS:
             assert required <= set(s.to_dict().keys())
 
 def test_to_dict_is_json_serialisable(plan):

@@ -6,7 +6,7 @@ from pathlib import Path
 from symatom.atoms import ArgumentSymmetry
 from symatom.rep import canonical_pair_flavours
 from symatom import repL
-from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed
+from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
 
 # Load the Echinocoder zip embedder from the repo root.  It is not a proper
 # package, so we locate it relative to this file (repo_root/symcoder/encode.py
@@ -322,13 +322,21 @@ def encode(plan, event: dict) -> np.ndarray:
         values = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
         parts.append(_sort_encode(values))
 
-    # Phase 2: group PairFlavours into OVERLAP BLOCKS, skip largest per block.
+    # Phase 2: group PairFlavours into OVERLAP BLOCKS.
+    # Drop order (both commute; self-pair first so complementation removes the
+    # largest of what remains, not accidentally the self-pair):
+    #   NULL_SELF: any self-pairing association (z_k = (1+i)*a_k, Phase 1 redundant)
+    #   NULL_COMP: largest remaining association per block (complementation drop)
     for _block_key, block_iter in groupby(pf_list, key=_overlap_block_key):
         block = list(block_iter)
-        max_idx = max(range(len(block)), key=lambda i: block[i].count(group_sizes))
+        non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
+        comp_drop = (max(non_self_idx, key=lambda i: block[i].count(group_sizes))
+                     if non_self_idx else None)
         for i, pf in enumerate(block):
-            if i == max_idx:
-                continue   # this association is deducible; omit it
+            if _is_self_pair(pf):
+                continue   # NULL_SELF: deducible from Phase 1
+            if i == comp_drop:
+                continue   # NULL_COMP: deducible by complementation
             z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
             assert len(z_pos) == pf.count(group_sizes), (
                 f"eval_pair_orbit_positive returned {len(z_pos)} values "

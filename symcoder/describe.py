@@ -4,6 +4,7 @@ from itertools import groupby
 from symatom.atoms import ArgumentSymmetry
 from symatom.rep import canonical_pair_flavours
 from symatom import repL
+from .pairs import _is_self_pair
 
 
 def _orbit_example(op_name: str, flavour_counts: tuple, groups) -> str:
@@ -53,22 +54,28 @@ class SegmentInfo:
 
     kind
     ----
-    "ORBIT"  Phase 1: sort-encoded single-operator orbit.
-             Fields op_v, flavour_v, overlap, symmetry_class are None.
-             sign_compressed=True: ANTISYMMETRIC operation — the orbit contains
-             {+u, -u} pairs; only |eval(sign=+1 atom)| is stored per combination
-             (n values, n = base label combinations).
-             sign_compressed=False: SYMMETRIC/UNSTRUCTURED — eval(u) for every
-             atom stored (fo.count() values).
+    "ORBIT"     Phase 1: sort-encoded single-operator orbit.
+                Fields op_v, flavour_v, overlap, symmetry_class are None.
+                sign_compressed=True: ANTISYMMETRIC operation — the orbit contains
+                {+u, -u} pairs; only |eval(sign=+1 atom)| is stored per combination
+                (n values, n = base label combinations).
+                sign_compressed=False: SYMMETRIC/UNSTRUCTURED — eval(u) for every
+                atom stored (fo.count() values).
 
-    "ASSOC"  Phase 2: compressed pair encoding of one association.
-             One PairFlavour within an OVERLAP BLOCK, encoded via _embed_compressed.
-             All fields are set.
+    "ASSOC"     Phase 2: compressed pair encoding of one association.
+                One PairFlavour within an OVERLAP BLOCK, encoded via _embed_compressed.
+                All fields are set.
 
-    "NULL"   Phase 2: dropped association — deducible from orbit headers + other
-             associations in the same OVERLAP BLOCK by complementation in the
-             association table.  length == 0; all fields are set.
-             These are the largest-count association per OVERLAP BLOCK.
+    "NULL_SELF" Phase 2: self-pairing association dropped because its z-values
+                are entirely determined by Phase 1.  Condition: op_u==op_v,
+                flavour_u==flavour_v, overlap==flavour_u (maximum overlap), so
+                z_k = (1+i)*a_k where a_k comes from the Phase 1 orbit.
+                length == 0; all fields are set.  Dropped before complementation.
+
+    "NULL_COMP" Phase 2: largest remaining (non-self-pair) association per OVERLAP
+                BLOCK, dropped because it is deducible by multiset complementation
+                from the stored associations and Phase 1 orbit headers.
+                length == 0; all fields are set.
 
     Fields
     ------
@@ -100,9 +107,11 @@ class SegmentInfo:
 
     Notes
     -----
-    NULL entries appear at their logical position in the OVERLAP BLOCK sequence
-    but contribute zero coefficients; start == stop for a NULL entry.
-    Consecutive ASSOC/NULL entries within the same block are ordered by
+    NULL_SELF and NULL_COMP entries appear at their logical position in the
+    OVERLAP BLOCK sequence but contribute zero coefficients; start == stop.
+    Within each block: NULL_SELF entries (if any) appear before NULL_COMP (if any),
+    because the drop order is self-pair first, complementation last.
+    Consecutive entries within the same block are ordered by
     canonical_pair_flavours' overlap sort (lex ascending).
     """
     kind:            str
@@ -122,27 +131,21 @@ class SegmentInfo:
         return self.start + self.length
 
     def __str__(self) -> str:
-        idx = f"[{self.start}:{self.stop}]"
-        fl_u = ",".join(str(c) for c in self.flavour_u)
-
-        ex = f"  | {self.example}" if self.example is not None else ""
-
-        if self.kind == "ORBIT":
-            sc = "  [sign_compressed]" if self.sign_compressed else ""
-            return f"{idx}  {self.op_u}  ORBIT  u=({fl_u})  len={self.length}{sc}{ex}"
-
-        fl_v = ",".join(str(c) for c in self.flavour_v)
-        ov   = ",".join(str(c) for c in self.overlap)
-        base = (
-            f"{idx}"
-            f"  {self.op_u}×{self.op_v}"
-            f"  {self.symmetry_class}"
+        idx     = f"[{self.start}:{self.stop}]"
+        fl_u    = ",".join(str(c) for c in self.flavour_u)
+        op_v    = self.op_v    if self.op_v    is not None else "."
+        fl_v    = (",".join(str(c) for c in self.flavour_v)
+                   if self.flavour_v is not None else ".")
+        ov      = (",".join(str(c) for c in self.overlap)
+                   if self.overlap   is not None else ".")
+        sym     = self.symmetry_class if self.symmetry_class is not None else "."
+        sc_flag = "sign_compressed" if self.sign_compressed else "."
+        ex      = f"  |  {self.example}" if self.example is not None else ""
+        return (
+            f"{idx}  {self.kind}  {self.op_u}  {op_v}  {sym}"
             f"  u=({fl_u})  v=({fl_v})  shared=({ov})"
-            f"  len={self.length}"
+            f"  len={self.length}  {sc_flag}{ex}"
         )
-        if self.kind == "NULL":
-            base += "  NULL_ENCODING(deducible_from_uv_overlap_block)"
-        return base + ex
 
     def to_dict(self) -> dict:
         d = {
@@ -230,10 +233,14 @@ def describe_encoding(plan) -> list[SegmentInfo]:
         ))
         cursor += n
 
-    # Phase 2: one ASSOC or NULL segment per PairFlavour, grouped into blocks.
+    # Phase 2: one ASSOC, NULL_SELF, or NULL_COMP segment per PairFlavour.
+    # Drop order: self-pairs first (NULL_SELF, Phase-1 redundant), then the
+    # largest remaining non-self-pair per block (NULL_COMP, complementation).
     for _bkey, block_iter in groupby(pf_list, key=_block_key):
         block = list(block_iter)
-        max_idx = max(range(len(block)), key=lambda i: block[i].count(group_sizes))
+        non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
+        comp_drop = (max(non_self_idx, key=lambda i: block[i].count(group_sizes))
+                     if non_self_idx else None)
         for i, pf in enumerate(block):
             sc = _symmetry_class(pf)
             ex = _assoc_example(
@@ -241,32 +248,36 @@ def describe_encoding(plan) -> list[SegmentInfo]:
                 pf.op_v.name, pf.flavour_v.counts,
                 pf.overlap, groups,
             )
-            if i == max_idx:
+            common = dict(
+                op_u           = pf.op_u.name,
+                flavour_u      = tuple(pf.flavour_u.counts),
+                op_v           = pf.op_v.name,
+                flavour_v      = tuple(pf.flavour_v.counts),
+                overlap        = tuple(pf.overlap),
+                symmetry_class = sc,
+                example        = ex,
+            )
+            if _is_self_pair(pf):
                 segments.append(SegmentInfo(
-                    kind           = "NULL",
-                    start          = cursor,   # cursor does not advance
-                    length         = 0,
-                    op_u           = pf.op_u.name,
-                    flavour_u      = tuple(pf.flavour_u.counts),
-                    op_v           = pf.op_v.name,
-                    flavour_v      = tuple(pf.flavour_v.counts),
-                    overlap        = tuple(pf.overlap),
-                    symmetry_class = sc,
-                    example        = ex,
+                    kind   = "NULL_SELF",
+                    start  = cursor,
+                    length = 0,
+                    **common,
+                ))
+            elif i == comp_drop:
+                segments.append(SegmentInfo(
+                    kind   = "NULL_COMP",
+                    start  = cursor,
+                    length = 0,
+                    **common,
                 ))
             else:
-                length = 2 * pf.count(group_sizes)   # n complex coeffs = 2n reals
+                length = 2 * pf.count(group_sizes)
                 segments.append(SegmentInfo(
-                    kind           = "ASSOC",
-                    start          = cursor,
-                    length         = length,
-                    op_u           = pf.op_u.name,
-                    flavour_u      = tuple(pf.flavour_u.counts),
-                    op_v           = pf.op_v.name,
-                    flavour_v      = tuple(pf.flavour_v.counts),
-                    overlap        = tuple(pf.overlap),
-                    symmetry_class = sc,
-                    example        = ex,
+                    kind   = "ASSOC",
+                    start  = cursor,
+                    length = length,
+                    **common,
                 ))
                 cursor += length
 

@@ -61,6 +61,18 @@ def eval_single_orbit_compressed(fo, plan: Plan, event: dict) -> list:
     return [evaluate(atom, event) for atom in fo.atoms()]
 
 
+def _is_self_pair(pf) -> bool:
+    """True if every atom-pair (u_k, v_k) in this PairFlavour pairs an atom with itself.
+
+    Condition: same operation, same flavour counts, and full (maximum) overlap.
+    Under this condition z_k = eval(u_k) + i*eval(u_k) = (1+i)*a_k, which is
+    entirely determined by Phase 1 orbit storage — no new information is added.
+    """
+    return (pf.op_u == pf.op_v and
+            pf.flavour_u.counts == pf.flavour_v.counts and
+            tuple(pf.overlap) == tuple(pf.flavour_u.counts))
+
+
 def eval_pair_orbit_positive(pf: PairFlavour, plan: Plan, event: dict) -> list:
     """
     Return z_k = eval(u'_k, E) + i*eval(v'_k, E) for the (u.sign=+1, v.sign=+1)

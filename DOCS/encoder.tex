@@ -386,15 +386,48 @@ the block:
 (counting sign variants on both sides for antisymmetric operations).
 \end{remark}
 
-\subsection{Dropping the Largest Association: The Complementation Argument}
-\label{sec:5b}
+\subsection{Dropping Self-Pairing Associations (\texttt{NULL\_SELF})}
+\label{sec:null-self}
 
-Within each overlap block, the association with the largest $\acount(\pf)$ is
-not encoded explicitly.  Instead, it is recovered by the decoder via a
+A \emph{self-pairing association} is one in which $\mathit{op}_u = \mathit{op}_v$,
+$F_u = F_v$, and the overlap equals the maximum: $s_i = k_{u,i}$ for all~$i$.
+Under this condition every atom-pair $(u_j, v_k)$ satisfies $u_j = v_k$, so
+\[
+  z_j = \eval(u_j, E) + i\,\eval(v_j, E) = a_j + i\,a_j = (1+i)\,a_j,
+\]
+where $a_j = \eval(u_j, E)$ is already stored in the Phase~1 orbit for
+$\mathit{fo}(\mathit{op}_u, F_u)$.  The entire $z$-multiset of the association
+is therefore $\{(1+i)\,a_j\}$, which is determined by Phase~1 alone.
+
+All self-pairing associations are dropped from the encoding regardless of their
+count $\acount(\pf)$.  They are labelled \texttt{NULL\_SELF} in the output
+metadata and contribute zero reals.
+
+\begin{example}
+In Example~\ref{ex:assoc-table}, the association $s=2$ is the self-pairing one
+(diagonal cells of the association table).  Its three $z$-values equal
+$(1+i)\,\mathit{dot}(a,b,E)$, $(1+i)\,\mathit{dot}(a,c,E)$,
+$(1+i)\,\mathit{dot}(b,c,E)$ — identical to $(1+i)$ times the Phase~1 orbit
+for $\mathit{fo}(\mathit{dot},(2))$.  It is therefore always dropped as
+\texttt{NULL\_SELF}, leaving only the $s=1$ association in the block.
+\end{example}
+
+\subsection{Dropping the Largest Remaining Association (\texttt{NULL\_COMP})}
+\label{sec:null-comp}
+
+After removing all self-pairing associations, the association with the largest
+$\acount(\pf)$ among those \emph{remaining} in each overlap block is not encoded
+explicitly.  Instead, it is recovered by the decoder via a
 multiset-complementation argument.
 
-Let $B$ be an overlap block, and let $\pf^* \in B$ be the association with the
-largest count.  Write
+Self-pairing associations are excluded before this step so that the
+complementation drop removes the largest thing that cannot already be recovered
+from Phase~1.  (If the self-pairing association happened to be the largest, a
+naïve largest-first policy would waste the complementation drop on it, leaving a
+genuine non-trivial association encoded redundantly.)
+
+Let $B'$ denote the non-self-pairing associations of block $B$, and let
+$\pf^* \in B'$ be the one with the largest count.  Write
 \[
   U = \{\eval(u_j, E) : u_j \in \fo(\mathit{op}_u, F_u)\}
   \quad\text{and}\quad
@@ -409,11 +442,17 @@ The multiset of complex numbers
   \text{ any pair with $u_j \in \fo_u$, $v_k \in \fo_v$}\}
 \]
 is the multiset product $U \oplus_\C V = \{a + ib : a \in U, b \in V\}$, which
-is determined entirely by $U$ and~$V$.  The associations partition $Z$ into
-disjoint submultisets $Z_\pf$ for $\pf \in B$.  Therefore, knowing all
-associations except $\pf^*$ determines $Z_{\pf^*}$ by complement:
+is determined entirely by $U$ and~$V$.  The associations of block $B$ partition
+$Z$ into disjoint submultisets $Z_\pf$.  The self-pairing associations
+$Z_{\pf_\mathrm{self}}$ are already known from Phase~1 (see
+\cref{sec:null-self}), so knowing all non-self-pairing associations except
+$\pf^*$ determines $Z_{\pf^*}$ by complement:
 \[
-  Z_{\pf^*} = Z \;\setminus\; \bigsqcup_{\pf \in B,\, \pf\ne \pf^*} Z_\pf.
+  Z_{\pf^*} = Z \;\setminus\; \Bigl(
+    \bigsqcup_{\pf \in B_\mathrm{self}} Z_\pf
+    \;\sqcup\;
+    \bigsqcup_{\pf \in B',\, \pf\ne \pf^*} Z_\pf
+  \Bigr).
 \]
 
 \begin{proposition}[Complementation is exact]
@@ -424,19 +463,20 @@ multisets accounts for this correctly.
 \end{proposition}
 
 \begin{remark}[Choosing which association to drop]
-The complementation argument is valid regardless of which association within the
-block is designated as dropped.  Choosing the largest minimises storage, since
-the number of reals contributed by an association scales with $\acount(\pf)$.
+The complementation argument is valid for any choice of $\pf^* \in B'$.
+Choosing the largest among $B'$ minimises storage.
 \end{remark}
 
 \begin{remark}[Single-association blocks]
-If an overlap block contains only one association (which occurs when
+If an overlap block has only one non-self-pairing association (which occurs when
 $\fo(\mathit{op}_u, F_u)$ and $\fo(\mathit{op}_v, F_v)$ draw labels from
-completely disjoint groups, forcing $s = (0,\ldots,0)$ as the only valid
-overlap), then the entire block is dropped: it is the unique and hence largest
-association in its block.  No information is lost, since the single
-association's $z$-values are a Cartesian product of $U$ and $V$, which are
-already encoded in Phase~1.
+completely disjoint groups, so $s = (0,\ldots,0)$ is the only non-self valid
+overlap), then that association is the unique $\pf^*$ and is dropped as
+\texttt{NULL\_COMP}.  No information is lost.  If \emph{all} associations in a
+block are self-pairing (possible only when $\fo_u$ and $\fo_v$ use every label
+in each group, so $k_i = n_i$), the entire block has no non-self associations
+and no \texttt{NULL\_COMP} is emitted; the block contributes nothing to the
+output.
 \end{remark}
 
 \subsection{The Z-value Embedding}
@@ -581,15 +621,17 @@ Given the Phase~1 encodings of all FlavouredOperators, the Phase~2 encoding
 \begin{proof}
 For each overlap block $B$:
 \begin{enumerate}
-  \item The stored associations' $z$-multisets $\{Z_\pf\}_{\pf \ne \pf^*}$
+  \item The stored associations' $z$-multisets $\{Z_\pf\}_{\pf \in \mathrm{ASSOC}}$
     are recovered from their polynomial embeddings (which are injective on
     multisets by the Echinocoder construction).
   \item The Phase~1 encodings supply the multisets $U$ and $V$, hence $Z = U
     \oplus_\C V$.
-  \item The dropped association satisfies $Z_{\pf^*} = Z \setminus
-    \bigsqcup_{\pf \ne \pf^*} Z_\pf$, uniquely determined as a multiset
-    complement.
-  \item The 5a sign-symmetry compression is reversible: the full orbit
+  \item Self-pairing associations (\texttt{NULL\_SELF}) satisfy
+    $Z_{\pf_\mathrm{self}} = \{(1+i)\,a_j\}$, reconstructible from Phase~1.
+  \item The complementation-dropped association (\texttt{NULL\_COMP}) satisfies
+    $Z_{\pf^*} = Z \setminus \bigl(\bigsqcup_{\pf \in B_\mathrm{self}} Z_\pf
+    \sqcup \bigsqcup_{\pf \in \mathrm{ASSOC}} Z_\pf\bigr)$, uniquely determined.
+  \item The sign-symmetry compression is reversible: the full orbit
     $z$-multiset is reconstructed from the positive-sign subset and the
     symmetry class of the association.
 \end{enumerate}
@@ -623,13 +665,20 @@ only on the plan; it is the same for every event.
   \item[\texttt{ASSOC}] One per stored association (every non-dropped member of
     each overlap block).  Length: $2\acount(\pf)$ reals.
 
-  \item[\texttt{NULL}] One per dropped association (largest per block, by
-    $\acount(\pf)$).  Length: 0 reals.  Present in the metadata at its logical
-    position in the overlap block so a decoder knows which association was
-    omitted.
+  \item[\texttt{NULL\_SELF}] One per self-pairing association (dropped because
+    its $z$-values equal $(1+i)\cdot a_j$ and are deducible from Phase~1;
+    see \cref{sec:null-self}).  Length: 0 reals.
+
+  \item[\texttt{NULL\_COMP}] One per complementation-dropped association
+    (largest non-self-pair per block; see \cref{sec:null-comp}).
+    Length: 0 reals.
 \end{description}
 
-All \texttt{ORBIT} segments precede all \texttt{ASSOC}/\texttt{NULL} segments.
+Both \texttt{NULL\_SELF} and \texttt{NULL\_COMP} entries appear at their logical
+position in the overlap block sequence so a decoder can reconstruct which
+association was omitted and by which argument.
+
+All \texttt{ORBIT} segments precede all \texttt{ASSOC}/\texttt{NULL\_SELF}/\texttt{NULL\_COMP} segments.
 Within Phase~2, segments are grouped by overlap block, ordered by a canonical
 sort key $(\mathit{op}_u\text{-key}, \mathit{op}_v\text{-key}, s)$ (where
 $\mathit{op}$-key $= (\mathrm{name}, r, p, \sigma, F)$), with overlap~$s$
@@ -639,18 +688,21 @@ ascending lexicographically within each block.
 
 \begin{equation}
   L = \underbrace{\sum_{\mathit{fo} \in \repL} \prod_i \comb{n_i}{k_i}}_{\text{Phase~1}}
-    + \underbrace{\sum_{\substack{\pf \in \text{all blocks} \\ \pf \ne \pf^*_B}}\!
+    + \underbrace{\sum_{\substack{\pf \in \text{all blocks} \\ \pf \notin B_\mathrm{self} \\ \pf \ne \pf^*_B}}\!
       2\,\acount(\pf)}_{\text{Phase~2}},
 \end{equation}
-where $\pf^*_B$ denotes the dropped (largest-count) association in block~$B$.
+where $B_\mathrm{self}$ denotes the set of self-pairing associations in block~$B$
+and $\pf^*_B$ denotes the largest non-self-pairing association (the
+\texttt{NULL\_COMP}) in block~$B$.
 
 \subsection{Human-readable metadata}
 
 The function \texttt{describe\_encoding(plan)} returns a list of
 \texttt{SegmentInfo} records, one per segment, containing: segment kind
-(\texttt{ORBIT}/\texttt{ASSOC}/\texttt{NULL}), start index, length, operation
-names, flavours, overlap, symmetry class (\texttt{SS}/\texttt{SA}/\texttt{AS}/\texttt{AA}),
-and the \texttt{sign\_compressed} flag for \texttt{ORBIT} segments.  This list
+(\texttt{ORBIT}/\texttt{ASSOC}/\texttt{NULL\_SELF}/\texttt{NULL\_COMP}),
+start index, length, operation names, flavours, overlap, symmetry class
+(\texttt{SS}/\texttt{SA}/\texttt{AS}/\texttt{AA}), and the
+\texttt{sign\_compressed} flag for \texttt{ORBIT} segments.  This list
 is a complete description of the encoder's output structure given only the
 plan — no event data is needed.
 
@@ -673,7 +725,8 @@ plan — no event data is needed.
     & \texttt{fo.atoms()}, event $E$
     & $\ell_1(\mathit{fo})$ sorted reals \\
   \midrule
-  Phase~2: choose $\pf^*$ per block & overlap blocks & dropped-association map \\
+  Phase~2: drop self-pairs (\texttt{NULL\_SELF}) & overlap blocks & self-pair map \\
+  Phase~2: choose $\pf^*$ per block (\texttt{NULL\_COMP}) & remaining assocs & dropped-association map \\
   Phase~2: $z$-values per $\pf \ne \pf^*$
     & atom pairs, event $E$
     & $\acount(\pf)$ complex numbers \\
