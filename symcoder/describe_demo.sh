@@ -20,10 +20,10 @@ ctx = Context((
 plan = Plan(context=ctx, operations=(mag, dot, eps3))
 
 segs = describe_encoding(plan)
-print("=== START ===")
+print('=== START ===')
 for s in segs:
     print(s)
-print("=== STOP ===")
+print('=== STOP ===')
 
 print()
 event = {l: np.random.randn(3) for l in ctx.all_labels}
