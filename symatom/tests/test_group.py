@@ -266,11 +266,11 @@ def test_sign_correlation_type_ss_overlap(dot, ctx4):
     assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_11
 
 def test_sign_correlation_type_aa_full_overlap(eps3, ctx3):
-    """AA full overlap: signs couple (only (++) and (--) in orbit) → TYPE_11."""
+    """AA full overlap: signs couple (only (++) and (--) in orbit) → TYPE_NEG."""
     u = Atom(eps3, ("a", "b", "c"), sign=+1)
     v = Atom(eps3, ("a", "b", "c"), sign=+1)
     g = TheGroup(ctx3)
-    assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_11
+    assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_NEG
 
 def test_sign_correlation_type_aa_zero_overlap(eps2, ctx4):
     """AA zero overlap: signs are independent → TYPE_22."""
@@ -537,3 +537,57 @@ def test_sign_correlation_type_sweep_two_groups(dot, eps3, eps2):
         assert g.sign_correlation_type(u, v) == g.sign_correlation_type_brute(u, v), (
             f"Mismatch for PairFlavour {pf!r}"
         )
+
+
+def test_sign_correlation_type_neg_two_groups(eps2):
+    """
+    eps2[(2,0)] × eps2[(2,0)] with full electron overlap gives TYPE_NEG:
+    achievable = {(+1,+1),(−1,−1)} — correlated negation only.
+
+    In a (electrons=3, muons=2) context, eps2(a,b) × eps2(a,b) shares both
+    electron labels.  Swapping a↔b negates both atoms simultaneously, but no
+    permutation can flip only one sign.
+    """
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx       = Context((electrons, muons))
+    g         = TheGroup(ctx)
+    u = Atom(eps2, ("a", "b"), +1)
+    v = Atom(eps2, ("a", "b"), +1)
+    assert g.sign_correlation_type(u, v)       == SignCorrelationType.TYPE_NEG
+    assert g.sign_correlation_type_brute(u, v) == SignCorrelationType.TYPE_NEG
+
+
+def test_sign_correlation_type_neg_partial_group_overlap(eps3, eps2):
+    """
+    eps3[(2,1)] × eps3[(2,1)] with overlap=(2,0) gives TYPE_NEG in a
+    2-group context: electrons are fully shared (u_e == v_e) → correlated
+    flip there; muons have 1 label each, no flip → neither independent.
+    """
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx       = Context((electrons, muons))
+    g         = TheGroup(ctx)
+    # u = eps3(a,b,p), v = eps3(a,b,q): same 2 electrons, different muons
+    u = Atom(eps3, ("a", "b", "p"), +1)
+    v = Atom(eps3, ("a", "b", "q"), +1)
+    assert g.sign_correlation_type(u, v)       == SignCorrelationType.TYPE_NEG
+    assert g.sign_correlation_type_brute(u, v) == SignCorrelationType.TYPE_NEG
+
+
+def test_sign_correlation_type_sa_type11_cross_group(eps2):
+    """
+    SA cross-group pair: u=dot(p,q) [SYMMETRIC], v=eps2(a,p) [ANTISYMMETRIC
+    with 1 electron + 1 muon label] gives TYPE_11, not TYPE_12.
+    v's sign can never flip because its labels (a, p) come from different
+    groups, and inter-group ordering is fixed under G = S_electrons × S_muons.
+    """
+    dot = Operation("dot", rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx       = Context((electrons, muons))
+    g         = TheGroup(ctx)
+    u = Atom(dot,  ("p", "q"), +1)
+    v = Atom(eps2, ("a", "p"), +1)
+    assert g.sign_correlation_type(u, v)       == SignCorrelationType.TYPE_11
+    assert g.sign_correlation_type_brute(u, v) == SignCorrelationType.TYPE_11

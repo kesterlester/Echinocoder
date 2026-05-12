@@ -4,6 +4,7 @@ import numpy as np
 from itertools import groupby
 from pathlib import Path
 from symatom.atoms import ArgumentSymmetry
+from symatom.group import SignCorrelationType
 from symatom.rep import canonical_pair_flavours
 from symatom import repL
 from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
@@ -49,56 +50,91 @@ def _encoding_canonical_key(pf):
     return (tuple(sorted([u_key, v_key])), tuple(pf.overlap))
 
 
+def _sign_correlation_type_from_pf(pf) -> SignCorrelationType:
+    """
+    Compute the SignCorrelationType for a PairFlavour from its structural
+    parameters alone (no specific atom instances required).
+
+    This is equivalent to TheGroup.sign_correlation_type(u, v) for any
+    representative (u, v) of this PairFlavour, since the type depends only
+    on the per-group label counts, overlap, and operation antisymmetry —
+    all of which are encoded in the PairFlavour.
+
+    The u_g == v_g condition (per-group label sets identical) is equivalent
+    to full per-group overlap: overlap_g == ku_g == kv_g.
+
+    Algorithm: per-group achievable-set product (same as TheGroup.sign_correlation_type).
+    """
+    antisym_u = pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+    antisym_v = pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+
+    achievable: set[tuple[int, int]] = {(1, 1)}
+
+    for ku_g, kv_g, s_g in zip(
+        pf.flavour_u.counts, pf.flavour_v.counts, pf.overlap
+    ):
+        pu_can_flip = antisym_u and ku_g >= 2
+        pv_can_flip = antisym_v and kv_g >= 2
+        u_g_eq_v_g  = (s_g == ku_g == kv_g)   # full per-group overlap ↔ same label set
+
+        if not pu_can_flip and not pv_can_flip:
+            g_ach: set[tuple[int, int]] = {(1, 1)}
+        elif pu_can_flip and not pv_can_flip:
+            g_ach = {(1, 1), (-1, 1)}
+        elif not pu_can_flip and pv_can_flip:
+            g_ach = {(1, 1), (1, -1)}
+        elif u_g_eq_v_g:
+            g_ach = {(1, 1), (-1, -1)}
+        else:
+            g_ach = {(1, 1), (1, -1), (-1, 1), (-1, -1)}
+
+        achievable = {
+            (pu * qu, pv * qv)
+            for (pu, pv) in achievable
+            for (qu, qv) in g_ach
+        }
+
+    u_flips   = (-1,  1) in achievable
+    v_flips   = ( 1, -1) in achievable
+    both_flip = (-1, -1) in achievable
+
+    if u_flips and v_flips:
+        return SignCorrelationType.TYPE_22
+    elif u_flips:
+        return SignCorrelationType.TYPE_21
+    elif v_flips:
+        return SignCorrelationType.TYPE_12
+    elif both_flip:
+        return SignCorrelationType.TYPE_NEG
+    else:
+        return SignCorrelationType.TYPE_11
+
+
 def _embed_compressed(z_pos: np.ndarray, pf) -> np.ndarray:
     """
     Embed the sign=(+1,+1) orbit evaluations z_pos into a permutation-invariant
     vector of exactly pf.count(...) complex numbers, exploiting the polynomial
-    symmetry structure that ANTISYMMETRIC operations impose.
+    symmetry structure imposed by the G-orbit's sign correlation type.
 
     Background
     ----------
     The characteristic polynomial of the full orbit multiset {z_k} has forced
-    structure whenever either operation is ANTISYMMETRIC, because the orbit
-    includes both a z_k and its "partner" obtained by negating that operation's
-    sign.  In z-space:
+    structure depending on the SignCorrelationType of the pair.  The type is
+    determined by _sign_correlation_type_from_pf(pf), NOT by the raw
+    ArgumentSymmetry flags of the operations.
 
-      SYM×ANTISYM  : partner of z = t+ib  is  z̄ = t-ib  (conjugate)
-      ANTISYM×SYM  : partner of z = t+ib  is −z̄ = -t+ib (anti-conjugate)
-      ANTISYM×ANTISYM: both partners present → {z, z̄, -z, -z̄}
-
-    These structures force polynomial coefficients to be real, or purely
-    imaginary, or zero, allowing a factor 2 (one ANTISYM) or 4 (both ANTISYM)
-    reduction in the number of independent scalars that must be stored.
-
-    All three non-trivial cases reduce to the same output size as SYM×SYM:
-    exactly n = pf.count(group_sizes) complex numbers, where n is the number
-    of distinct label combinations before signing.
+    CRITICAL: ArgumentSymmetry alone does NOT determine the sign correlation
+    type.  A cross-group ANTISYMMETRIC atom (≤1 label per group) has a
+    permanently +1 sign and gives TYPE_11 rather than TYPE_12/21.  Similarly
+    AA pairs with full per-group overlap give TYPE_NEG, not TYPE_22.  Always
+    use _sign_correlation_type_from_pf to determine the correct branch.
 
     Why the sign=(+1,+1) subset
     ---------------------------
     For each base label combination, the Atom constructor sorts labels and
-    absorbs permutation parity into the stored sign.  For ANTISYMMETRIC op_u
-    this yields two u-atoms with stored signs +s and -s, and similarly for
-    op_v.  Exactly one of the four (±u, ±v) pairs has stored (u.sign=+1,
-    v.sign=+1) — so this subset always has exactly n elements regardless of
-    label ordering (even pathological orderings like "toast" < "apple" <
-    "zebra" where most labels sort to sign=-1 internally).
-
-    The z_k values from this subset are z_k = eval(u_canonical, E) + i·eval(v_canonical, E),
-    where "canonical" means the Atom constructor's sorted, sign-absorbed form.
-
-    Permutation invariance of the invariant multisets
-    -------------------------------------------------
-    Under a label permutation that flips the sign of op_v (ANTISYM) atoms:
-      z_k → z̄_k.   {z_k, z̄_k} is invariant. ✓
-    Under a permutation that flips op_u sign:
-      z_k → -z̄_k.  {z_k, -z̄_k} is invariant. ✓
-    Under both flips (ANTISYM×ANTISYM):
-      z_k → ±z_k or ±z̄_k, so z_k² → z_k² or z̄_k².
-      {z_k², z̄_k²} is invariant. ✓
-    Under permutations that permute base label combinations (not sign-flipping):
-      z_k → z_{π(k)}: the multiset changes, but it is a multiset so order
-      does not matter — the polynomial is unchanged. ✓
+    absorbs permutation parity into the stored sign.  Exactly one of the
+    (±u, ±v) canonical sign variants has stored (u.sign=+1, v.sign=+1) —
+    so z_pos always has exactly n = pf.count() elements.
 
     Embedder coefficient convention
     --------------------------------
@@ -106,77 +142,79 @@ def _embed_compressed(z_pos: np.ndarray, pf) -> np.ndarray:
         polyfromroots(-data)[-2::-1]
     i.e. the polynomial with roots at -data, coefficients in DESCENDING degree
     order with the monic leading term dropped.  For n input values the output
-    has n complex entries:
-        coeffs[0] = coefficient of degree n-1
-        coeffs[1] = coefficient of degree n-2
-        ...
-        coeffs[n-1] = constant term (degree 0)
+    has n complex entries.  For a degree-2n polynomial the output has 2n entries;
+    entry i has degree-parity (2n-1-i) mod 2: i even → odd degree, i odd → even.
 
-    For a degree-2n polynomial (invariant multiset of 2n roots) the output
-    has 2n entries; the degree-parity of entry i is (2n-1-i) mod 2:
-        i even → odd degree
-        i odd  → even degree
+    Algorithm per SignCorrelationType
+    ----------------------------------
+    TYPE_11  (achievable = {(+1,+1)} — no sign changes):
+        Orbit: {z_k}  (n elements)
+        Embed z_pos directly (n roots → n complex coefficients).
 
-    Algorithm per symmetry class
-    ----------------------------
-    SYM×SYM:
-        Embed {z_k} directly (n roots → n complex coefficients). No compression.
+    TYPE_NEG (achievable = {(+1,+1),(−1,−1)} — correlated negation only):
+        Orbit: {z_k, −z_k}  (2n elements, closed under z → −z)
+        Invariant: {z_k²}   (n complex, since (−z_k)² = z_k²)
+        Embed z_pos² directly (n roots → n complex coefficients).
+        Note: forming {z_k², conj(z_k²)} (as in TYPE_22) would be wrong here —
+        conj(z_k²) is NOT in the orbit, and adding it loses information about
+        Im(z_k²) = 2·Re(z_k)·Im(z_k).
 
-    SYM×ANTISYM (op_v ANTISYM):
-        Invariant multiset: {z_k, conj(z_k)}   (conjugate-closed, 2n roots)
-        Polynomial roots: {-z_k, -conj(z_k)}   (still conjugate-closed)
-        → polynomial has real coefficients → coeffs[i].imag ≈ 0 for all i
-        Independent reals: coeffs[0].real, coeffs[1].real, ..., coeffs[2n-1].real
-        Pack as n complex: coeffs.real[0::2] + 1j * coeffs.real[1::2]
+    TYPE_12  (achievable = {(+1,+1),(+1,−1)} — v-sign flips freely):
+        Orbit: {z_k, conj(z_k)}  (2n elements, conjugate-closed)
+        Invariant multiset: {z_k, conj(z_k)}  (conjugate-closed, 2n roots)
+        → polynomial has real coefficients → coeffs[i].imag ≈ 0
+        Pack n independent reals as n complex: coeffs.real[0::2] + 1j*coeffs.real[1::2]
 
-    ANTISYM×SYM (op_u ANTISYM):
-        Invariant multiset: {z_k, -conj(z_k)}  (anti-conjugate-closed, 2n roots)
-        Polynomial roots: {-z_k, conj(z_k)}
-        Each factor: (x + z_k)(x - conj(z_k)) = (x+ib)² - t²
-                   = x² + 2ib·x - (t²+b²)
+    TYPE_21  (achievable = {(+1,+1),(−1,+1)} — u-sign flips freely):
+        Orbit: {z_k, −conj(z_k)}  (2n elements, anti-conjugate-closed)
+        Invariant multiset: {z_k, −conj(z_k)}
         → even-degree coefficients are real, odd-degree are purely imaginary
-        In descending order: even indices (0,2,4,...) hold ODD-degree (pure imag)
-                             odd  indices (1,3,5,...) hold EVEN-degree (real)
-        Independent reals: coeffs.imag[0::2] and coeffs.real[1::2]
-        Pack as n complex: coeffs.imag[0::2] + 1j * coeffs.real[1::2]
+        Pack: coeffs.imag[0::2] + 1j*coeffs.real[1::2]
 
-    ANTISYM×ANTISYM:
-        Invariant multiset: {z_k², conj(z_k²)}  (conjugate-closed, 2n roots)
-        Same structure as SYM×ANTISYM but in the squared variable w = z².
-        Polynomial has real coefficients.
-        Pack as n complex: w_coeffs.real[0::2] + 1j * w_coeffs.real[1::2]
+    TYPE_22  (achievable = {all four sign combinations}):
+        Orbit: {z_k, conj(z_k), −z_k, −conj(z_k)}  (4n elements)
+        Invariant: {z_k², conj(z_k²)}  (2n, conjugate-closed)
+        → polynomial has real coefficients
+        Pack: w_coeffs.real[0::2] + 1j*w_coeffs.real[1::2]
+
+    All branches output n complex numbers (= 2n reals when combined via
+    _complex_to_reals), so the total output size is the same as SYM×SYM.
 
     Validation
     ----------
-    Cross-check tests in test_encode.py verify that all four cases produce
-    permutation-invariant output, that the output length equals pf.count(),
-    and that the full-orbit embedding (eval_pair_orbit + _zip_embed, the brute
-    force reference) contains the same information as the compressed form.
+    Cross-check tests in test_encode.py verify permutation invariance and
+    that the output length equals pf.count() for all symmetry classes.
     """
-    antisym_u = pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-    antisym_v = pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+    sct = _sign_correlation_type_from_pf(pf)
 
-    if not antisym_u and not antisym_v:
-        # SYM×SYM: no forced structure; standard embedding.
+    if sct == SignCorrelationType.TYPE_11:
+        # No sign changes: embed z_pos directly.
         coeffs, _, _ = _zip_embed(z_pos)
         return coeffs
 
-    elif not antisym_u and antisym_v:
-        # SYM×ANTISYM: conjugate-closed invariant multiset → real polynomial.
+    elif sct == SignCorrelationType.TYPE_NEG:
+        # Correlated negation: invariant is {z_k²}, embed directly.
+        w = z_pos ** 2
+        coeffs, _, _ = _zip_embed(w)
+        return coeffs
+
+    elif sct == SignCorrelationType.TYPE_12:
+        # v-sign flips: conjugate-closed multiset → real polynomial.
         z_full = np.concatenate([z_pos, np.conj(z_pos)])
         coeffs, _, _ = _zip_embed(z_full)
         r = coeffs.real   # all imaginary parts ≈ 0
         return r[0::2] + 1j * r[1::2]
 
-    elif antisym_u and not antisym_v:
-        # ANTISYM×SYM: anti-conjugate-closed → even-real/odd-imag polynomial.
+    elif sct == SignCorrelationType.TYPE_21:
+        # u-sign flips: anti-conjugate-closed → even-real/odd-imag polynomial.
         z_full = np.concatenate([z_pos, -np.conj(z_pos)])
         coeffs, _, _ = _zip_embed(z_full)
         # even indices → odd-degree (purely imaginary); odd indices → even-degree (real)
         return coeffs.imag[0::2] + 1j * coeffs.real[1::2]
 
     else:
-        # ANTISYM×ANTISYM: squared conjugate-closed → real polynomial in w=z².
+        # TYPE_22: both signs flip freely: squared conjugate-closed → real polynomial.
+        assert sct == SignCorrelationType.TYPE_22
         w = z_pos ** 2
         w_full = np.concatenate([w, np.conj(w)])
         coeffs, _, _ = _zip_embed(w_full)

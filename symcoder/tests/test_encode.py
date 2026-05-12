@@ -359,3 +359,148 @@ def test_compressed_length_sym_antisym(ctx):
     assert len(mixed_pfs) > 0, "Need at least one SYM×ANTISYM pair for this test"
     for pf in mixed_pfs:
         assert pf.count(group_sizes) == pf.orbit_size(group_sizes) // 2
+
+
+# ---------------------------------------------------------------------------
+# TYPE_NEG: correlated-negation embedding in a 2-group context
+# ---------------------------------------------------------------------------
+
+def _make_eps2():
+    return EvaluableOperation(
+        name="eps2", rank=2, parity=-1,
+        argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+        eval_fn=lambda vecs: float(vecs[0][0]*vecs[1][1] - vecs[0][1]*vecs[1][0]),
+    )
+
+
+def test_embed_compressed_type_neg_permutation_invariant():
+    """
+    TYPE_NEG pair (AA, full per-group overlap in electron group): the encoding
+    must be invariant under label permutations that negate BOTH atom signs.
+
+    eps2[(2,0)] × eps2[(2,0)] with overlap=(2,0) in a 2-group context
+    (electrons={a,b,c}, muons={p,q}).  Swapping labels a↔b negates both
+    atom eval values simultaneously (TYPE_NEG orbit = {z_k, -z_k}).
+    """
+    from symcoder.encode import _embed_compressed
+    from symcoder.pairs import eval_pair_orbit_positive
+    eps2 = _make_eps2()
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx  = Context(groups=(electrons, muons))
+    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(eps2,))
+
+    np.random.seed(42)
+    event = {
+        "a": np.array([1.0, 0.3, 0.2]),
+        "b": np.array([0.1, 1.0, 0.4]),
+        "c": np.array([0.5, 0.2, 1.0]),
+        "p": np.array([0.7, 0.1, 0.3]),
+        "q": np.array([0.2, 0.9, 0.1]),
+    }
+    event_swapped = dict(event)
+    event_swapped["a"], event_swapped["b"] = event["b"], event["a"]
+
+    fo_list = repL(ctx, (eps2,))
+    group_sizes = tuple(g.size for g in ctx.groups)
+
+    # Find a TYPE_NEG PairFlavour (AA, full electron overlap)
+    from symcoder.encode import _sign_correlation_type_from_pf
+    from symatom.group import SignCorrelationType
+    type_neg_found = False
+    for pf in canonical_pair_flavours(fo_list, ctx):
+        sct = _sign_correlation_type_from_pf(pf)
+        z_pos         = np.array(eval_pair_orbit_positive(pf, plan, event),         dtype=complex)
+        z_pos_swapped = np.array(eval_pair_orbit_positive(pf, plan, event_swapped), dtype=complex)
+        c1 = _embed_compressed(z_pos, pf)
+        c2 = _embed_compressed(z_pos_swapped, pf)
+        np.testing.assert_array_almost_equal(
+            c1, c2,
+            err_msg=f"_embed_compressed not invariant under a↔b swap for {pf!r} (type={sct})"
+        )
+        if sct == SignCorrelationType.TYPE_NEG:
+            type_neg_found = True
+    assert type_neg_found, "No TYPE_NEG PairFlavour found — test setup may be wrong"
+
+
+def test_embed_compressed_type_neg_distinguishes_events():
+    """
+    TYPE_NEG embedding must be injective: two events with genuinely different
+    orbit values must produce different encoded vectors.
+
+    This test checks that the TYPE_NEG branch (embed z_pos²) preserves
+    Im(z²) = 2·Re(z)·Im(z), which would be lost if we incorrectly used
+    the TYPE_22 branch (embed {z², conj(z²)} → real polynomial → loses Im(z²)).
+    """
+    from symcoder.encode import _embed_compressed, _sign_correlation_type_from_pf
+    from symatom.group import SignCorrelationType
+    eps2 = _make_eps2()
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx  = Context(groups=(electrons, muons))
+    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(eps2,))
+
+    # Two events designed to yield z_k values with opposite Im(z_k²)
+    # eps2(a,b) = a[0]*b[1] - a[1]*b[0] (the 2D cross product component)
+    # Construct so that Re(z) = eps2 eval, Im(z) = another eps2 eval, with Im(z²) different
+    event1 = {
+        "a": np.array([2.0, 0.0]), "b": np.array([0.0, 1.0]),  # eps2(a,b) = 2
+        "c": np.array([0.0, 0.0]),
+        "p": np.array([1.0, 0.0]), "q": np.array([0.0, 1.0]),  # eps2(a,p) context
+    }
+    event2 = {
+        "a": np.array([2.0, 0.0]), "b": np.array([0.0, -1.0]),  # eps2(a,b) = -2
+        "c": np.array([0.0, 0.0]),
+        "p": np.array([1.0, 0.0]), "q": np.array([0.0, 1.0]),
+    }
+
+    fo_list = repL(ctx, (eps2,))
+    group_sizes = tuple(g.size for g in ctx.groups)
+
+    type_neg_pfs = [
+        pf for pf in canonical_pair_flavours(fo_list, ctx)
+        if _sign_correlation_type_from_pf(pf) == SignCorrelationType.TYPE_NEG
+    ]
+    assert len(type_neg_pfs) > 0, "No TYPE_NEG PairFlavour found — test setup may be wrong"
+
+    for pf in type_neg_pfs:
+        z1 = np.array(eval_pair_orbit_positive(pf, plan, event1), dtype=complex)
+        z2 = np.array(eval_pair_orbit_positive(pf, plan, event2), dtype=complex)
+        # Only test pairs where the z values actually differ
+        if np.allclose(z1, z2) or np.allclose(z1**2, z2**2):
+            continue
+        c1 = _embed_compressed(z1, pf)
+        c2 = _embed_compressed(z2, pf)
+        # The embeddings must differ (TYPE_NEG should preserve z² information)
+        assert not np.allclose(c1, c2), (
+            f"TYPE_NEG embedding failed to distinguish events for {pf!r}: "
+            f"z1={z1}, z2={z2}, z1²={z1**2}, z2²={z2**2}"
+        )
+
+
+def test_encode_two_groups_permutation_invariant_eps2():
+    """encode() with an ANTISYMMETRIC rank-2 op in a 2-group context is permutation-invariant.
+
+    This exercises the TYPE_NEG branch (AA pairs with full electron overlap) and
+    ensures the full encode pipeline handles it correctly.
+    """
+    eps2 = _make_eps2()
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx  = Context(groups=(electrons, muons))
+    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(eps2,))
+    event = {
+        "a": np.array([1.3, 0.2]),
+        "b": np.array([0.7, 1.1]),
+        "c": np.array([0.4, 0.9]),
+        "p": np.array([0.8, 0.3]),
+        "q": np.array([0.1, 1.4]),
+    }
+    # Swap electrons a↔b: a TYPE_NEG orbit has z_k → -z_k, so encoding must be stable
+    event_swapped = dict(event)
+    event_swapped["a"], event_swapped["b"] = event["b"], event["a"]
+    np.testing.assert_array_almost_equal(
+        encode(plan, event),
+        encode(plan, event_swapped),
+        err_msg="encode() not invariant under a↔b swap in 2-group eps2 context"
+    )

@@ -66,50 +66,84 @@ class SignCorrelationType(Enum):
     Describes how the G-orbit of an atom-pair (u, v) relates the sign degrees
     of freedom of u and v.
 
+    The achievable set is the subgroup of Z_2 × Z_2 consisting of all
+    (sign_u, sign_v) pairs that appear in the orbit.  There are exactly five
+    subgroups of Z_2 × Z_2, corresponding to the five types below.
+
     The label TYPE_XY encodes:
       X = 1  — u's sign does not flip independently within the orbit
       X = 2  — u's sign can flip independently of v's sign within the orbit
       Y = 1  — v's sign does not flip independently within the orbit
       Y = 2  — v's sign can flip independently of u's sign within the orbit
 
-    "Independently" here means: there exists an orbit element where that
-    atom's sign differs from the canonical representative but the *other*
-    atom's sign is unchanged.
-
-    Representative cases (for G = S_n acting on a single group):
+    "Independently" means: ∃ orbit element where that atom's sign differs from
+    the canonical representative but the *other* atom's sign is unchanged.
 
     TYPE_11
-        Neither sign flips independently.  This covers two structurally
-        different situations:
+        Achievable = {(+1,+1)}.
+        Neither sign can change at all.  Typical: both operations SYMMETRIC,
+        or an ANTISYMMETRIC cross-group atom (all labels from different groups,
+        so inter-group sorting never changes under G).
 
-        (a) Both operations are SYMMETRIC — signs are always +1, nothing
-            can flip at all.
+        Orbit structure: {z_k}  (n elements)
+        Embedding: embed z_pos directly.
 
-        (b) Both ANTISYMMETRIC with full label overlap (u and v share all
-            their labels).  Every permutation flips both signs by the same
-            amount, so only (u, v) and (-u, -v) appear in the orbit; the
-            mixed-sign pairs (-u, v) and (u, -v) form a *separate* orbit.
+    TYPE_NEG
+        Achievable = {(+1,+1), (-1,-1)}.
+        Neither sign flips independently; only the correlated (simultaneous)
+        negation of both signs is achievable.  Typical: both ANTISYMMETRIC
+        with full per-group overlap in every group where both have ≥2 labels,
+        e.g. AA pair where u and v share all of their labels within each group.
+
+        Orbit structure: {z_k, -z_k}  (2n elements, closed under z → -z)
+        Invariant: {z_k²}  (n complex values, since (-z_k)² = z_k²)
+        Embedding: embed z_pos² directly.
+
+        Note: the achievable set {(+1,+1), (-1,-1)} is the unique non-trivial
+        subgroup of Z_2 × Z_2 that contains the correlated element but no
+        independent flip.  It is distinct from TYPE_11 (no flip at all) and
+        requires a different polynomial embedding.
 
     TYPE_12
-        Only v's sign flips freely.  Typical: u SYMMETRIC, v ANTISYMMETRIC.
+        Achievable = {(+1,+1), (+1,-1)}.
+        Only v's sign flips freely.  Typical: u SYMMETRIC, v ANTISYMMETRIC
+        with ≥2 labels from the same group.
+
+        Orbit structure: {z_k, conj(z_k)}  (2n elements, conjugate-closed)
+        Embedding: embed z_full={z_pos, conj(z_pos)}, extract real polynomial
+        coefficients.
 
     TYPE_21
+        Achievable = {(+1,+1), (-1,+1)}.
         Only u's sign flips freely.  Typical: u ANTISYMMETRIC, v SYMMETRIC.
 
-    TYPE_22
-        Both signs flip freely (are independent).  Typical: both
-        ANTISYMMETRIC with disjoint label sets (zero overlap).
+        Orbit structure: {z_k, -conj(z_k)}  (2n elements, anti-conj-closed)
+        Embedding: embed z_full={z_pos, -conj(z_pos)}, extract even-real/
+        odd-imaginary polynomial coefficients.
 
-    Important: the type is NOT determined by ArgumentSymmetry alone.  For
-    ANTISYMMETRIC × ANTISYMMETRIC pairs it depends on the overlap structure
-    (i.e. on which concrete labels u and v share), and in principle on the
-    full group action, ParityBehaviour, etc.  TheGroup.sign_correlation_type
-    always computes it from the actual orbit.
+    TYPE_22
+        Achievable = {(+1,+1), (-1,+1), (+1,-1), (-1,-1)}.
+        Both signs flip freely (independent).  Typical: both ANTISYMMETRIC
+        with different label sets in at least one group.
+
+        Orbit structure: {z_k, conj(z_k), -z_k, -conj(z_k)}  (4n elements)
+        Invariant: {z_k², conj(z_k²)}  (2n values, conjugate-closed)
+        Embedding: embed z_sq_full={z_pos², conj(z_pos²)}, extract real
+        polynomial coefficients.
+
+    CRITICAL: the type is NOT determined by ArgumentSymmetry alone.
+    SA pairs are NOT always TYPE_12 — a cross-group ANTISYMMETRIC atom
+    (≤1 label per group) has a permanently +1 sign, giving TYPE_11 instead.
+    Similarly AS pairs can be TYPE_11, and AA pairs can be TYPE_11, TYPE_NEG,
+    or TYPE_22 depending on the per-group label overlap structure.
+    Always compute the type via TheGroup.sign_correlation_type(), never by
+    inspecting op.argument_symmetry directly.
     """
-    TYPE_11 = "11"
-    TYPE_12 = "12"
-    TYPE_21 = "21"
-    TYPE_22 = "22"
+    TYPE_11  = "11"
+    TYPE_NEG = "NEG"
+    TYPE_12  = "12"
+    TYPE_21  = "21"
+    TYPE_22  = "22"
 
 
 # ---------------------------------------------------------------------------
@@ -392,6 +426,7 @@ class TheGroup:
 
         u_flips = (-1, 1) in achievable
         v_flips = (1, -1) in achievable
+        both_flip = (-1, -1) in achievable
 
         if u_flips and v_flips:
             return SignCorrelationType.TYPE_22
@@ -399,6 +434,8 @@ class TheGroup:
             return SignCorrelationType.TYPE_21
         elif v_flips:
             return SignCorrelationType.TYPE_12
+        elif both_flip:
+            return SignCorrelationType.TYPE_NEG
         else:
             return SignCorrelationType.TYPE_11
 
@@ -428,6 +465,11 @@ class TheGroup:
             b.sign != v.sign and a.sign == u.sign
             for a, b in orb
         )
+        # both_flip: ∃ (a, b) in orbit where both signs differ from the canonical
+        both_flip = any(
+            a.sign != u.sign and b.sign != v.sign
+            for a, b in orb
+        )
 
         if u_flips_freely and v_flips_freely:
             return SignCorrelationType.TYPE_22
@@ -435,6 +477,8 @@ class TheGroup:
             return SignCorrelationType.TYPE_21
         elif v_flips_freely:
             return SignCorrelationType.TYPE_12
+        elif both_flip:
+            return SignCorrelationType.TYPE_NEG
         else:
             return SignCorrelationType.TYPE_11
 
