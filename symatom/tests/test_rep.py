@@ -664,12 +664,22 @@ def test_orbit_size_eps_dot_doubles_for_eps(eps3, dot, ctx4):
     pf = PairFlavour(op_u=eps3, flavour_u=fl3, op_v=dot, flavour_v=fl2, overlap=(1,))
     assert pf.orbit_size(group_sizes) == 2 * pf.count(group_sizes)
 
-def test_orbit_size_eps_eps_quadruples(eps3, ctx4):
-    """For two ANTISYMMETRIC ops, orbit_size == 4 * count."""
+def test_orbit_size_eps_eps_nonzero_overlap(eps3, ctx4):
+    """For two ANTISYMMETRIC ops with non-zero overlap, orbit_size == 2 * count.
+
+    Non-zero overlap couples the sign flips on both sides: any permutation that
+    flips the sign of u (by creating an odd permutation on u's labels) must also
+    flip the sign of v (the shared labels contribute the same odd-even parity to
+    both).  The orbit therefore contains only (+u,+v) and (-u,-v) variants, not
+    all four sign combinations.  orbit_size = 2 * count, not 4 * count.
+
+    4 * count arises only for zero-overlap AA pairs with rank >= 2 on both sides;
+    that requires n >= ku+kv which is impossible here with ku=kv=3 and n=4.
+    """
     fl3 = Flavour((3,))
     group_sizes = (4,)
     pf = PairFlavour(op_u=eps3, flavour_u=fl3, op_v=eps3, flavour_v=fl3, overlap=(2,))
-    assert pf.orbit_size(group_sizes) == 4 * pf.count(group_sizes)
+    assert pf.orbit_size(group_sizes) == 2 * pf.count(group_sizes)
 
 def test_orbit_elements_length_matches_orbit_size(dot, ctx4):
     """orbit_elements returns exactly orbit_size pairs."""

@@ -311,7 +311,18 @@ def test_compressed_length_sym_sym(dot, ctx, event_3d):
 
 
 def test_compressed_length_antisym_antisym(ctx, event_3d):
-    """ANTISYM×ANTISYM: compressed length == orbit_size / 4."""
+    """ANTISYM×ANTISYM: eval_pair_orbit_positive returns exactly count elements.
+
+    For AA PairFlavours, DirectOrbitEnumerator generates all four sign-combinations
+    per label assignment: (+u,+v), (-u,+v), (+u,-v), (-u,-v).  eval_pair_orbit_positive
+    keeps only the (+,+) variant, so its length equals pf.count.  This is the property
+    the _embed_compressed encoder relies on for AA pairs.
+
+    Note: orbit_size is now the true G-orbit size (|G|/|Stab|), which equals 2*count
+    for the non-zero-overlap AA case that arises in the 4-electron context.  The old
+    assertion pf.count == orbit_size // 4 was based on an incorrect orbit_size formula
+    and has been replaced with the encoding-relevant invariant here.
+    """
     eps3 = EvaluableOperation(
         name="eps3", rank=3, parity=-1,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
@@ -321,7 +332,8 @@ def test_compressed_length_antisym_antisym(ctx, event_3d):
     fo_list = repL(ctx, (eps3,))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert pf.count(group_sizes) == pf.orbit_size(group_sizes) // 4
+        pos_values = eval_pair_orbit_positive(pf, plan, event_3d)
+        assert len(pos_values) == pf.count(group_sizes)
 
 
 def test_compressed_length_sym_antisym(ctx):

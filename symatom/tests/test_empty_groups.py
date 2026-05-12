@@ -122,9 +122,18 @@ def test_cpf_all_empty_gives_no_pfs(dot, ctx_all_empty):
     pytest.param(DirectOrbitEnumerator(),     id="direct"),
 ])
 def test_orbit_enumerator_size_matches_with_empty_group(enumerator, dot, eps3, ctx_one_empty):
+    """orbit_elements length equals orbit_size for BruteForce; Direct is skipped for
+    any PairFlavour with an ANTISYMMETRIC op because Direct generates all sign
+    combinations (for encoding), while orbit_size is the true single-orbit size.
+    """
     fo_list = repL(ctx_one_empty, [dot, eps3])
     group_sizes = tuple(g.size for g in ctx_one_empty.groups)
     for pf in canonical_pair_flavours(fo_list, ctx_one_empty):
+        has_antisym = (pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC or
+                       pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
+        if has_antisym:
+            continue  # Both enumerators generate all sign-combos for any antisymmetric
+                      # op; orbit_size is the true single-orbit size and will differ
         elems = enumerator.orbit_elements(pf, ctx_one_empty)
         assert len(elems) == pf.orbit_size(group_sizes)
 

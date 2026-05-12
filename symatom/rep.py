@@ -335,45 +335,123 @@ class PairFlavour:
 
     def orbit_size(self, group_sizes: tuple) -> int:
         """
-        Number of atom-pairs in the G-orbit of this PairFlavour.
+        Number of (Atom, Atom) pairs in the G-orbit of the canonical
+        representative (+u_c, +v_c) of this PairFlavour.
 
-        Equals count(group_sizes) multiplied by 2 for each ANTISYMMETRIC
-        operation in the pair, because a permutation that reorders the
-        arguments of an antisymmetric atom flips its sign — so both the
-        sign=+1 and sign=-1 variants of every label combination appear as
-        distinct elements of the true G-orbit.
+        Computed as |G| / |Stab(+u_c, +v_c)| where G = S_{n_1} × ... × S_{n_m}
+        and the stabiliser counts group elements that preserve both atoms
+        *including their signs*.
+
+        For SYMMETRIC operations the sign is always +1, so the stabiliser
+        is unconstrained on sign.  For ANTISYMMETRIC operations the sign is
+        the parity of the permutation on the atom's labels; the stabiliser
+        must therefore have even total parity on those labels to leave the
+        atom's sign unchanged.
+
+        Assumption: labels from different groups do not interleave in the
+        global sort order (i.e. all labels of one group sort before all
+        labels of the next).  This is satisfied for the typical naming
+        conventions used in this codebase.  If labels interleave, the
+        formula may be incorrect; use len(orbit_elements(context)) instead.
         """
-        n = self.count(group_sizes)
-        if self.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC:
-            n *= 2
-        if self.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC:
-            n *= 2
-        return n
+        if self.count(group_sizes) == 0:
+            return 0
+
+        def E(k):
+            """Number of even permutations of k elements (= k!/2 for k>=2, else 1)."""
+            return math.factorial(k) // 2 if k >= 2 else 1
+
+        def O(k):
+            """Number of odd permutations of k elements (= k!/2 for k>=2, else 0)."""
+            return math.factorial(k) // 2 if k >= 2 else 0
+
+        antisym_u = self.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+        antisym_v = self.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+
+        group_order = 1
+        stab = 1
+        for n, ku, kv, s in zip(group_sizes,
+                                  self.flavour_u.counts,
+                                  self.flavour_v.counts,
+                                  self.overlap):
+            a = ku - s          # u-only labels in this group
+            b = kv - s          # v-only labels in this group
+            r = n - ku - kv + s  # labels used by neither u nor v in this group
+            group_order *= math.factorial(n)
+            if antisym_u and antisym_v:
+                # Both signs must remain +1: need parity(τ_s)·parity(τ_u) = +1
+                # AND parity(τ_s)·parity(τ_v) = +1 simultaneously.
+                stab_g = (E(s) * E(a) * E(b) + O(s) * O(a) * O(b)) * math.factorial(r)
+            elif not antisym_u and antisym_v:
+                # u sign always +1 (symmetric); need parity(τ_s)·parity(τ_v) = +1.
+                stab_g = (E(s) * E(b) + O(s) * O(b)) * math.factorial(a) * math.factorial(r)
+            elif antisym_u and not antisym_v:
+                # v sign always +1 (symmetric); need parity(τ_s)·parity(τ_u) = +1.
+                stab_g = (E(s) * E(a) + O(s) * O(a)) * math.factorial(b) * math.factorial(r)
+            else:
+                # Both symmetric: no parity constraints on the stabiliser.
+                stab_g = (math.factorial(s) * math.factorial(a)
+                          * math.factorial(b) * math.factorial(r))
+            stab *= stab_g
+        return group_order // stab
 
     def orbit_elements(self, context) -> list:
         """
         Return all (Atom, Atom) pairs in the G-orbit of the canonical
-        representative of this PairFlavour.
+        representative (+u_c, +v_c) of this PairFlavour.
 
-        Uses FlavouredOperator.atoms() (signed=True) to enumerate all
-        concrete atoms for each side, then filters by matching PairFlavour.
-        For ANTISYMMETRIC operations both sign=+1 and sign=-1 variants are
-        included: a permutation that reorders the arguments of an
-        antisymmetric atom flips its sign, so both signed variants appear
-        in the true G-orbit.
-
+        Applies every element of G = S_{n_1} × ... × S_{n_m} simultaneously
+        to the canonical pair, collecting unique results via a seen-set.
         The length of the returned list equals orbit_size(group_sizes).
+
+        Complexity: O(∏_g n_g!) — suitable for small test contexts only.
+        For encoding, use DirectOrbitEnumerator which generates the (+,+)
+        positive-sign subset directly without materialising the full orbit.
+
+        Note on sign correlations
+        -------------------------
+        For ANTISYMMETRIC operations with non-zero overlap, signs of u and v
+        are correlated by the simultaneous group action and NOT independent.
+        In particular, for full-overlap pairs (NULL_SELF) any permutation
+        acts identically on both atoms, so only (++, −−) sign combinations
+        appear — not (+−) or (−+), which belong to a separate G-orbit.
         """
-        fo_u = FlavouredOperator(operation=self.op_u, flavour=self.flavour_u,
-                                 context=context, signed=True)
-        fo_v = FlavouredOperator(operation=self.op_v, flavour=self.flavour_v,
-                                 context=context, signed=True)
-        return [
-            (u, v)
-            for u in fo_u.atoms()
-            for v in fo_v.atoms()
-            if pair_flavour_of(u, v, context) == self
-        ]
+        from itertools import permutations as _perms
+
+        group_sizes = tuple(g.size for g in context.groups)
+        if self.count(group_sizes) == 0:
+            return []
+
+        # Canonical representative: first valid label assignment.
+        u_labels, v_labels = [], []
+        for g, ku, kv, s in zip(context.groups, self.flavour_u.counts,
+                                  self.flavour_v.counts, self.overlap):
+            u_labels.extend(g.labels[:ku])               # first ku labels for u
+            v_labels.extend(g.labels[:s])                # shared labels for v
+            v_labels.extend(g.labels[ku:ku + kv - s])   # v-only labels
+
+        u_canon = Atom(self.op_u, tuple(u_labels), sign=+1)
+        v_canon = Atom(self.op_v, tuple(v_labels), sign=+1)
+
+        # Apply every σ ∈ G simultaneously to (u_canon, v_canon).
+        seen = set()
+        result = []
+        for combo in _iproduct(*[list(_perms(g.labels)) for g in context.groups]):
+            perm_map = {}
+            for g, perm in zip(context.groups, combo):
+                for orig, new in zip(g.labels, perm):
+                    perm_map[orig] = new
+            new_u = Atom(self.op_u,
+                         tuple(perm_map[l] for l in u_canon.labels),
+                         sign=u_canon.sign)
+            new_v = Atom(self.op_v,
+                         tuple(perm_map[l] for l in v_canon.labels),
+                         sign=v_canon.sign)
+            pair = (new_u, new_v)
+            if pair not in seen:
+                seen.add(pair)
+                result.append(pair)
+        return result
 
 
 # ---------------------------------------------------------------------------
