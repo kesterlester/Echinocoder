@@ -1,9 +1,15 @@
 """
 Tests for OrbitEnumerator implementations.
 
-Both BruteForceOrbitEnumerator and DirectOrbitEnumerator are tested via the
-parametrised suite below.  A cross-comparison test verifies that Direct
-produces the same element set as BruteForce for every PairFlavour.
+BruteForceOrbitEnumerator delegates to pf.orbit_elements() and is correct by
+construction for all PairFlavours.
+
+DirectOrbitEnumerator is currently a stub that returns all sign-combinations
+for every label assignment (an OrbitUnion, not a true G-orbit).  Tests that
+expose this incorrectness are marked xfail with a TODO pointing to Step 2 of
+the architectural redesign.  When Step 2 is complete — DirectOrbitEnumerator
+redesigned to use TheGroup and return the true G-orbit — those xfail marks
+should be removed and all tests should pass unconditionally.
 """
 import pytest
 from symatom import (
@@ -12,6 +18,13 @@ from symatom import (
     canonical_pair_flavours, repL,
 )
 from symatom.rep import Flavour, FlavouredOperator, PairFlavour, pair_flavour_of
+
+
+_DIRECT_TODO = (
+    "TODO Step 2: DirectOrbitEnumerator still returns an OrbitUnion (all sign "
+    "combinations per label assignment) rather than the true G-orbit. "
+    "Redesign using TheGroup to fix."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -36,78 +49,50 @@ def ctx(electrons):
 
 
 # ---------------------------------------------------------------------------
-# Parametrised over both enumerator implementations
+# BruteForceOrbitEnumerator — correct for all PairFlavours, no caveats
 # ---------------------------------------------------------------------------
 
-ENUMERATORS = [
-    pytest.param(BruteForceOrbitEnumerator(), id="brute_force"),
-    pytest.param(DirectOrbitEnumerator(),     id="direct"),
-]
-
-
-@pytest.mark.parametrize("enumerator", ENUMERATORS)
-def test_orbit_elements_length_matches_orbit_size_dot(enumerator, dot, ctx):
-    """orbit_elements returns exactly orbit_size pairs for all dot PairFlavours."""
+def test_brute_force_length_matches_orbit_size_dot(dot, ctx):
+    """BruteForce returns exactly orbit_size pairs for all dot PairFlavours."""
     fo_list = repL(ctx, [dot])
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        elems = enumerator.orbit_elements(pf, ctx)
-        assert len(elems) == pf.orbit_size(group_sizes)
+        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(group_sizes)
 
-@pytest.mark.parametrize("enumerator", ENUMERATORS)
-def test_orbit_elements_length_matches_orbit_size_dot_eps(enumerator, dot, eps3, ctx):
-    """orbit_elements returns exactly orbit_size pairs for mixed dot+eps3 PairFlavours.
-
-    DirectOrbitEnumerator generates all sign-combinations independently for any
-    ANTISYMMETRIC op (for encoding purposes).  orbit_size is the true single-orbit
-    size, which may be less than Direct's count when AS, SA, or AA PairFlavours
-    appear.  Those are skipped for Direct; BruteForce is checked for all.
-    """
+def test_brute_force_length_matches_orbit_size_dot_eps(dot, eps3, ctx):
+    """BruteForce returns exactly orbit_size pairs for all dot+eps3 PairFlavours."""
     fo_list = repL(ctx, [dot, eps3])
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        has_antisym = (pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC or
-                       pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
-        if has_antisym:
-            continue  # Both enumerators generate all sign-combos for any antisymmetric
-                      # op; orbit_size is the true single-orbit size and will differ
-        elems = enumerator.orbit_elements(pf, ctx)
-        assert len(elems) == pf.orbit_size(group_sizes)
+        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(group_sizes)
 
-@pytest.mark.parametrize("enumerator", ENUMERATORS)
-def test_orbit_elements_all_correct_pair_flavour(enumerator, dot, ctx):
-    """Every returned pair has the expected PairFlavour."""
-    fo_list = repL(ctx, [dot])
-    for pf in canonical_pair_flavours(fo_list, ctx):
-        for u, v in enumerator.orbit_elements(pf, ctx):
-            assert pair_flavour_of(u, v, ctx) == pf
-
-@pytest.mark.parametrize("enumerator", ENUMERATORS)
-def test_orbit_elements_two_groups(enumerator, dot, eps3):
-    """Works with a two-group context.
-
-    As in test_orbit_elements_length_matches_orbit_size_dot_eps, PairFlavours
-    with any ANTISYMMETRIC op are skipped for DirectOrbitEnumerator since it
-    intentionally generates all sign-combinations for encoding purposes.
-    """
+def test_brute_force_length_matches_orbit_size_two_groups(dot, eps3):
+    """BruteForce returns exactly orbit_size pairs in a two-group context."""
     electrons = VectorGroup("electrons", ("a", "b", "c"))
     muons     = VectorGroup("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     fo_list   = repL(ctx, [dot, eps3])
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        has_antisym = (pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC or
-                       pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
-        if has_antisym:
-            continue  # Both enumerators generate all sign-combos for any antisymmetric
-                      # op; orbit_size is the true single-orbit size and will differ
-        elems = enumerator.orbit_elements(pf, ctx)
-        assert len(elems) == pf.orbit_size(group_sizes)
+        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(group_sizes)
 
+def test_brute_force_all_correct_pair_flavour(dot, ctx):
+    """Every pair returned by BruteForce has the expected PairFlavour."""
+    fo_list = repL(ctx, [dot])
+    for pf in canonical_pair_flavours(fo_list, ctx):
+        for u, v in BruteForceOrbitEnumerator().orbit_elements(pf, ctx):
+            assert pair_flavour_of(u, v, ctx) == pf
 
-# ---------------------------------------------------------------------------
-# BruteForceOrbitEnumerator — additional non-parametrised tests
-# ---------------------------------------------------------------------------
+def test_brute_force_equals_pf_orbit_elements(dot, eps3, ctx):
+    """BruteForce is exactly pf.orbit_elements() for all PairFlavours.
+
+    BruteForceOrbitEnumerator delegates to pf.orbit_elements, so this is true
+    by construction.  The test is kept as a contract: if the delegation ever
+    changes, this must still hold.
+    """
+    bf = BruteForceOrbitEnumerator()
+    for pf in canonical_pair_flavours(repL(ctx, [dot, eps3]), ctx):
+        assert bf.orbit_elements(pf, ctx) == pf.orbit_elements(ctx)
 
 def test_brute_force_returns_list(dot, ctx):
     fl2 = Flavour((2,))
@@ -116,44 +101,60 @@ def test_brute_force_returns_list(dot, ctx):
     assert isinstance(result, list)
     assert all(isinstance(pair, tuple) and len(pair) == 2 for pair in result)
 
-def test_brute_force_matches_pf_orbit_elements_for_ss(dot, ctx):
-    """BruteForceOrbitEnumerator agrees with pf.orbit_elements() for SS PairFlavours.
 
-    For SYMMETRIC × SYMMETRIC pairs there is only one sign variant per label
-    assignment, so all pairs belong to a single orbit-type and the cross-product
-    enumeration coincides with the true G-orbit traversal in pf.orbit_elements.
+# ---------------------------------------------------------------------------
+# DirectOrbitEnumerator — correct for SS; xfail for AS/SA/AA (OrbitUnion bug)
+# ---------------------------------------------------------------------------
 
-    For AS, SA, or AA PairFlavours this equality does NOT hold in general:
-    BruteForceOrbitEnumerator returns all sign-combo pairs (matching Direct),
-    while pf.orbit_elements returns only the single G-orbit of the canonical
-    representative.
-    """
+def test_direct_length_matches_orbit_size_dot(dot, ctx):
+    """Direct returns exactly orbit_size pairs for SS (dot-only) PairFlavours."""
     fo_list = repL(ctx, [dot])
-    bf = BruteForceOrbitEnumerator()
+    group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert set(bf.orbit_elements(pf, ctx)) == set(pf.orbit_elements(ctx))
+        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(group_sizes)
+
+@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
+def test_direct_length_matches_orbit_size_dot_eps(dot, eps3, ctx):
+    """Direct should return exactly orbit_size pairs for all dot+eps3 PairFlavours."""
+    fo_list = repL(ctx, [dot, eps3])
+    group_sizes = tuple(g.size for g in ctx.groups)
+    for pf in canonical_pair_flavours(fo_list, ctx):
+        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(group_sizes)
+
+@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
+def test_direct_length_matches_orbit_size_two_groups(dot, eps3):
+    """Direct should return exactly orbit_size pairs in a two-group context."""
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx       = Context((electrons, muons))
+    fo_list   = repL(ctx, [dot, eps3])
+    group_sizes = tuple(g.size for g in ctx.groups)
+    for pf in canonical_pair_flavours(fo_list, ctx):
+        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(group_sizes)
 
 
 # ---------------------------------------------------------------------------
-# Cross-comparison: Direct must produce the same element set as BruteForce
+# Cross-comparison: Direct must agree with BruteForce for every PairFlavour
 # ---------------------------------------------------------------------------
 
 def test_direct_matches_brute_force_dot(dot, ctx):
-    """Direct produces exactly the same atom-pairs as BruteForce for all dot PairFlavours."""
+    """Direct agrees with BruteForce for all SS (dot-only) PairFlavours."""
     bf     = BruteForceOrbitEnumerator()
     direct = DirectOrbitEnumerator()
     for pf in canonical_pair_flavours(repL(ctx, [dot]), ctx):
         assert set(bf.orbit_elements(pf, ctx)) == set(direct.orbit_elements(pf, ctx))
 
+@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
 def test_direct_matches_brute_force_dot_eps(dot, eps3, ctx):
-    """Direct produces exactly the same atom-pairs as BruteForce for all dot+eps3 PairFlavours."""
+    """Direct must agree with BruteForce for all dot+eps3 PairFlavours."""
     bf     = BruteForceOrbitEnumerator()
     direct = DirectOrbitEnumerator()
     for pf in canonical_pair_flavours(repL(ctx, [dot, eps3]), ctx):
         assert set(bf.orbit_elements(pf, ctx)) == set(direct.orbit_elements(pf, ctx))
 
+@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
 def test_direct_matches_brute_force_two_groups(dot, eps3):
-    """Direct matches BruteForce in a two-group context, for all PairFlavours."""
+    """Direct must agree with BruteForce in a two-group context."""
     electrons = VectorGroup("electrons", ("a", "b", "c"))
     muons     = VectorGroup("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))

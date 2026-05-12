@@ -9,6 +9,7 @@ Public API:
   orbit_enum : OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
   orbits     : orbit, stabiliser_size, orbit_and_stabiliser_size
   rep        : Flavour, FlavouredOperator, repL, repS
+  group      : TheGroup, SignCorrelationType
 """
 from .atoms      import ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
 from .context    import Context, Plan
@@ -19,6 +20,7 @@ from .rep        import (Flavour, FlavouredOperator, repL, repS,
                          PairFlavour, pair_flavour_of,
                          canonical_pair_flavours,
                          brute_force_canonical_pair_flavours)
+from .group      import TheGroup, SignCorrelationType
 
 __all__ = [
     "ArgumentSymmetry",
@@ -45,4 +47,6 @@ __all__ = [
     "pair_flavour_of",
     "canonical_pair_flavours",
     "brute_force_canonical_pair_flavours",
+    "TheGroup",
+    "SignCorrelationType",
 ]

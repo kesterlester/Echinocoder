@@ -27,34 +27,19 @@ class OrbitEnumerator(ABC):
 
 class BruteForceOrbitEnumerator(OrbitEnumerator):
     """
-    Cross-product + filter implementation.
+    Delegates to pf.orbit_elements(context).
 
-    For each side of the pair, constructs a FlavouredOperator in repL mode
-    (signed=True), iterates over all its atoms (both sign variants for
-    ANTISYMMETRIC ops), takes the Cartesian product, and keeps only pairs
-    whose pair_flavour_of equals pf.
+    pf.orbit_elements applies every element of G = S_{n_1} × ... × S_{n_m}
+    simultaneously to the canonical pair representative, collecting unique
+    images.  This is correct by direct inspection of the group action and
+    serves as the permanent reference implementation against which
+    DirectOrbitEnumerator is validated.
 
-    Correct by inspection: every atom in FlavouredOperator.atoms() is a
-    distinct concrete atom with the correct labels and sign; pair_flavour_of
-    is the canonical orbit-type test.  Keep this permanently as the reference
-    against which DirectOrbitEnumerator is validated — they must agree for
-    every PairFlavour.
-
-    Note: this enumerator returns ALL pairs of this PairFlavour type across
-    all sign orbits, not just the single G-orbit of the canonical representative.
-    For the true G-orbit, use PairFlavour.orbit_elements(context) directly.
+    Both enumerators must return the same set for every PairFlavour.
     """
 
     def orbit_elements(self, pf, context) -> list:
-        from .rep import FlavouredOperator, pair_flavour_of
-        fo_u = FlavouredOperator(pf.op_u, pf.flavour_u, context, signed=True)
-        fo_v = FlavouredOperator(pf.op_v, pf.flavour_v, context, signed=True)
-        return [
-            (u, v)
-            for u in fo_u.atoms()
-            for v in fo_v.atoms()
-            if pair_flavour_of(u, v, context) == pf
-        ]
+        return pf.orbit_elements(context)
 
 
 class DirectOrbitEnumerator(OrbitEnumerator):

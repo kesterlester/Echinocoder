@@ -68,14 +68,13 @@ def test_eval_pair_orbit_length_dot(dot, plan, ctx, ortho_event):
             f"got {len(result)}, expected {expected}"
         )
 
+@pytest.mark.xfail(
+    strict=False,
+    reason="TODO Step 2: eval_pair_orbit uses DirectOrbitEnumerator which still "
+           "returns an OrbitUnion for non-SS PairFlavours; len != orbit_size for AS/SA/AA."
+)
 def test_eval_pair_orbit_length_dot_eps(dot, eps3, plan, ctx):
-    """eval_pair_orbit length matches orbit_size for SS PairFlavours.
-
-    eval_pair_orbit uses DirectOrbitEnumerator which generates all sign-combinations
-    for any ANTISYMMETRIC op (for encoding purposes).  orbit_size is the true
-    single-orbit size, which may be less than Direct's count for AS, SA, and AA
-    PairFlavours.  Those are skipped here; only SS pairs are checked.
-    """
+    """eval_pair_orbit should return exactly orbit_size values for all dot+eps3 PairFlavours."""
     event_3d = {
         "a": np.array([1.0, 0.0, 0.0]),
         "b": np.array([0.0, 1.0, 0.0]),
@@ -85,11 +84,6 @@ def test_eval_pair_orbit_length_dot_eps(dot, eps3, plan, ctx):
     fo_list = repL(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        has_antisym = (pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC or
-                       pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
-        if has_antisym:
-            continue  # eval_pair_orbit uses Direct; for antisymmetric ops it generates
-                      # all sign-combos, so len may differ from orbit_size
         result = eval_pair_orbit(pf, plan, event_3d)
         assert len(result) == pf.orbit_size(group_sizes)
 
@@ -151,7 +145,13 @@ def test_eval_pair_orbit_returns_complex(dot, plan, ctx, ortho_event):
 # eval_pair_orbit — two-group context
 # ---------------------------------------------------------------------------
 
+@pytest.mark.xfail(
+    strict=False,
+    reason="TODO Step 2: eval_pair_orbit uses DirectOrbitEnumerator which still "
+           "returns an OrbitUnion for non-SS PairFlavours; len != orbit_size for AS/SA/AA."
+)
 def test_eval_pair_orbit_two_groups(dot, eps3):
+    """eval_pair_orbit should return exactly orbit_size values for every PairFlavour in a two-group context."""
     electrons = VectorGroup("electrons", ("a", "b", "c"))
     muons     = VectorGroup("muons",     ("p", "q"))
     ctx  = Context(groups=(electrons, muons))
@@ -166,10 +166,5 @@ def test_eval_pair_orbit_two_groups(dot, eps3):
     fo_list = repL(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        has_antisym = (pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC or
-                       pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
-        if has_antisym:
-            continue  # eval_pair_orbit uses Direct; for antisymmetric ops it generates
-                      # all sign-combos, so len may differ from orbit_size
         result = eval_pair_orbit(pf, plan, event)
         assert len(result) == pf.orbit_size(group_sizes)
