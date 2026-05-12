@@ -17,13 +17,36 @@ SignCorrelationType
 
 TheGroup
     Frozen dataclass.  Constructed from a Context.  Provides:
-      order()                     — |G|
-      orbit(u, v)                 — the G-orbit of the atom-pair
-      stabiliser_size(u, v)       — |Stab_G(u, v)|
-      orbit_size(u, v)            — |G| / |Stab_G(u, v)|
-      in_orbit(candidate, rep)    — membership test
-      sign_correlation_type(u, v) — how signs are coupled inside the orbit
-      companion_orbits(u, v)      — all distinct orbits related by sign flips
+
+    Primary methods (use these):
+      order()                       — |G|
+      orbit(u, v)                   — the G-orbit of the atom-pair
+      stabiliser_size(u, v)         — |Stab_G(u, v)|  (algebraic, O(n))
+      orbit_size(u, v)              — |G| / |Stab_G(u, v)|  (algebraic, O(n))
+      in_orbit(candidate, rep)      — membership test
+      sign_correlation_type(u, v)   — how signs are coupled  (algebraic, O(n))
+      companion_orbits(u, v)        — all distinct sign-related orbits
+
+    Brute-force reference methods (*_brute suffix):
+      orbit_brute(u, v)             — same as orbit(), O(∏ n_g!)
+      in_orbit_brute(candidate, rep)— same as in_orbit(), O(∏ n_g!)
+      sign_correlation_type_brute(u, v) — same as sign_correlation_type(), O(∏ n_g!)
+      companion_orbits_brute(u, v)  — same as companion_orbits(), O(∏ n_g!)
+
+    All *_brute methods are permanent O(∏ n_g!) reference implementations.
+    They must not be removed; they serve as ground-truth for validating faster
+    replacements.  Cross-validation tests in test_group.py verify that every
+    primary method agrees with its *_brute counterpart.
+
+Step history
+------------
+Step 2: DirectOrbitEnumerator rewritten to use TheGroup.orbit() rather than the
+    old OrbitUnion approach.
+Step 3: sign_correlation_type() made algebraic O(n); *_brute variants added for
+    all four orbit-related methods; in_orbit/orbit/companion_orbits primary
+    methods still delegate to their *_brute counterparts pending Step 4.
+Step 4 (planned): replace orbit(), in_orbit(), companion_orbits() with O(orbit_size)
+    direct combinatorial algorithms.
 """
 from __future__ import annotations
 import math
@@ -174,6 +197,15 @@ class TheGroup:
         """
         Return all distinct (Atom, Atom) pairs in the G-orbit of (u, v).
 
+        Currently delegates to orbit_brute().  A direct O(orbit_size)
+        combinatorial implementation is planned for Step 4.
+        """
+        return self.orbit_brute(u, v)
+
+    def orbit_brute(self, u: Atom, v: Atom) -> list[tuple[Atom, Atom]]:
+        """
+        Brute-force O(∏ n_g!) orbit enumeration.  Permanent reference.
+
         Every σ ∈ G is applied simultaneously to both atoms.  The Atom
         constructor handles label sorting and absorbs permutation parity into
         the sign for ANTISYMMETRIC operations, so the result is always a
@@ -260,11 +292,23 @@ class TheGroup:
         """
         Return True iff candidate ∈ G · representative.
 
-        Equivalent to asking whether candidate and representative are in the
-        same G-orbit.  Currently O(|G|) brute-force; algebraic shortcut
-        is planned for Step 3.
+        Currently delegates to in_orbit_brute().  An algebraic O(n)
+        implementation is planned for Step 4.
         """
-        orb_set = set(self.orbit(representative[0], representative[1]))
+        return self.in_orbit_brute(candidate, representative)
+
+    def in_orbit_brute(
+        self,
+        candidate: tuple[Atom, Atom],
+        representative: tuple[Atom, Atom],
+    ) -> bool:
+        """
+        Brute-force O(∏ n_g!) membership test.  Permanent reference.
+
+        Equivalent to asking whether candidate and representative are in the
+        same G-orbit.
+        """
+        orb_set = set(self.orbit_brute(representative[0], representative[1]))
         return candidate in orb_set
 
     # ------------------------------------------------------------------
@@ -273,7 +317,94 @@ class TheGroup:
 
     def sign_correlation_type(self, u: Atom, v: Atom) -> SignCorrelationType:
         """
-        Determine how the G-orbit of (u, v) relates the sign degrees of freedom.
+        Algebraic O(n) determination of how the G-orbit couples signs.
+
+        Algorithm — per-group achievable-set product
+        --------------------------------------------
+        The overall sign of an ANTISYMMETRIC atom is the product of per-group
+        parities: sign = ∏_g parity_g, where parity_g is the parity of
+        sorting the atom's labels from group g into ascending order.  Because
+        labels from different groups never interleave (each group's labels sort
+        as a contiguous block), different groups contribute independently.
+
+        For each group g we compute the set of achievable (parity_u_g, parity_v_g)
+        pairs under all σ_g ∈ S_{n_g}:
+
+        • parity_u_g can only be −1 if u is ANTISYMMETRIC AND ku_g ≥ 2.
+        • parity_v_g can only be −1 if v is ANTISYMMETRIC AND kv_g ≥ 2.
+        • If neither can flip: achievable_g = {(+1, +1)}.
+        • If only u can flip:  achievable_g = {(+1,+1), (−1,+1)}.
+        • If only v can flip:  achievable_g = {(+1,+1), (+1,−1)}.
+        • If both can flip AND u_g == v_g (full overlap in g):
+              achievable_g = {(+1,+1), (−1,−1)}  — signs coupled.
+        • If both can flip AND u_g ≠ v_g (partial/zero overlap in g):
+              achievable_g = {(+1,+1), (+1,−1), (−1,+1), (−1,−1)} — independent.
+
+        The overall achievable set is the group-product of per-group sets
+        (one factor per group, independent choices across groups).
+
+        Sign-correlation type is then read from the overall set:
+          (−1,+1) ∈ achievable ↔ u_flips_freely  → bit X of the type label
+          (+1,−1) ∈ achievable ↔ v_flips_freely  → bit Y of the type label
+
+        Cross-validation: sign_correlation_type_brute() computes the same
+        value by inspecting the actual orbit; both must always agree.
+        """
+        antisym_u = u.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+        antisym_v = v.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+
+        u_set = set(u.labels)
+        v_set = set(v.labels)
+
+        # achievable: subset of {(+1,+1),(+1,-1),(-1,+1),(-1,-1)}
+        # Represented as a Python set; start with the identity element.
+        achievable: set[tuple[int, int]] = {(1, 1)}
+
+        for g in self.context.groups:
+            g_set = set(g.labels)
+            u_g = u_set & g_set
+            v_g = v_set & g_set
+            ku_g = len(u_g)
+            kv_g = len(v_g)
+
+            pu_can_flip = antisym_u and ku_g >= 2
+            pv_can_flip = antisym_v and kv_g >= 2
+
+            if not pu_can_flip and not pv_can_flip:
+                g_ach: set[tuple[int, int]] = {(1, 1)}
+            elif pu_can_flip and not pv_can_flip:
+                g_ach = {(1, 1), (-1, 1)}
+            elif not pu_can_flip and pv_can_flip:
+                g_ach = {(1, 1), (1, -1)}
+            elif u_g == v_g:
+                # Both can flip but full overlap in g: parities locked together.
+                g_ach = {(1, 1), (-1, -1)}
+            else:
+                # Both can flip, partial/zero overlap: fully independent.
+                g_ach = {(1, 1), (1, -1), (-1, 1), (-1, -1)}
+
+            # Extend achievable by multiplying with this group's achievable set.
+            achievable = {
+                (pu * qu, pv * qv)
+                for (pu, pv) in achievable
+                for (qu, qv) in g_ach
+            }
+
+        u_flips = (-1, 1) in achievable
+        v_flips = (1, -1) in achievable
+
+        if u_flips and v_flips:
+            return SignCorrelationType.TYPE_22
+        elif u_flips:
+            return SignCorrelationType.TYPE_21
+        elif v_flips:
+            return SignCorrelationType.TYPE_12
+        else:
+            return SignCorrelationType.TYPE_11
+
+    def sign_correlation_type_brute(self, u: Atom, v: Atom) -> SignCorrelationType:
+        """
+        Brute-force O(∏ n_g!) sign-correlation computation.  Permanent reference.
 
         A sign "flips freely" for one atom iff there exists an orbit element
         where that atom's sign differs from the canonical representative while
@@ -285,7 +416,7 @@ class TheGroup:
 
         See SignCorrelationType for a full description of each type.
         """
-        orb = self.orbit(u, v)
+        orb = self.orbit_brute(u, v)
 
         # u_flips_freely: ∃ (a, b) in orbit where a.sign ≠ u.sign AND b.sign == v.sign
         u_flips_freely = any(
@@ -316,6 +447,17 @@ class TheGroup:
     ) -> list[list[tuple[Atom, Atom]]]:
         """
         Return all distinct G-orbits that are sign-related to orbit(u, v).
+
+        Currently delegates to companion_orbits_brute().  An algebraic O(n)
+        implementation is planned for Step 4.
+        """
+        return self.companion_orbits_brute(u, v)
+
+    def companion_orbits_brute(
+        self, u: Atom, v: Atom
+    ) -> list[list[tuple[Atom, Atom]]]:
+        """
+        Brute-force O(∏ n_g!) companion-orbit enumeration.  Permanent reference.
 
         The sign-related variants of (u, v) are:
           (u,   v)   — always included
@@ -350,7 +492,7 @@ class TheGroup:
         seen_orbit_sets: list[frozenset[tuple[Atom, Atom]]] = []
         result: list[list[tuple[Atom, Atom]]] = []
         for su, sv in sign_variants:
-            orb = self.orbit(su, sv)
+            orb = self.orbit_brute(su, sv)
             orb_key = frozenset(orb)
             if orb_key not in seen_orbit_sets:
                 seen_orbit_sets.append(orb_key)

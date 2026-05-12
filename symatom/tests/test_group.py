@@ -426,3 +426,114 @@ def test_orbit_length_two_groups(dot, ctx_two_groups):
     u = Atom(dot, ("a", "b"), sign=+1)
     v = Atom(dot, ("p", "q"), sign=+1)
     assert len(g.orbit(u, v)) == g.orbit_size(u, v)
+
+
+# ---------------------------------------------------------------------------
+# Step 3 cross-validation: primary methods must agree with *_brute variants
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def pairs_for_xval(dot, eps3, eps2, ctx4):
+    """Representative atom-pairs for cross-validation sweeps."""
+    return [
+        # SS: dot × dot
+        (Atom(dot,  ("a", "b"),      +1), Atom(dot,  ("c", "d"),      +1)),
+        (Atom(dot,  ("a", "b"),      +1), Atom(dot,  ("a", "c"),      +1)),
+        (Atom(dot,  ("a", "b"),      +1), Atom(dot,  ("a", "b"),      +1)),
+        # SA: dot × eps3
+        (Atom(dot,  ("a", "b"),      +1), Atom(eps3, ("a", "b", "c"), +1)),
+        (Atom(dot,  ("a", "b"),      +1), Atom(eps3, ("b", "c", "d"), +1)),
+        # AS: eps3 × dot
+        (Atom(eps3, ("a", "b", "c"), +1), Atom(dot,  ("a", "b"),      +1)),
+        # AA full overlap
+        (Atom(eps3, ("a", "b", "c"), +1), Atom(eps3, ("a", "b", "c"), +1)),
+        (Atom(eps2, ("a", "b"),      +1), Atom(eps2, ("a", "b"),      +1)),
+        # AA zero overlap
+        (Atom(eps2, ("a", "b"),      +1), Atom(eps2, ("c", "d"),      +1)),
+        # AA partial overlap
+        (Atom(eps2, ("a", "b"),      +1), Atom(eps2, ("a", "c"),      +1)),
+        (Atom(eps3, ("a", "b", "c"), +1), Atom(eps3, ("a", "b", "d"), +1)),
+    ]
+
+
+def test_sign_correlation_type_agrees_with_brute(pairs_for_xval, ctx4):
+    """Algebraic sign_correlation_type() == sign_correlation_type_brute() for all pairs."""
+    g = TheGroup(ctx4)
+    for u, v in pairs_for_xval:
+        algebraic = g.sign_correlation_type(u, v)
+        brute     = g.sign_correlation_type_brute(u, v)
+        assert algebraic == brute, (
+            f"sign_correlation_type mismatch for ({u!r}, {v!r}): "
+            f"algebraic={algebraic}, brute={brute}"
+        )
+
+
+def test_orbit_agrees_with_brute(pairs_for_xval, ctx4):
+    """orbit() and orbit_brute() return the same set of pairs."""
+    g = TheGroup(ctx4)
+    for u, v in pairs_for_xval:
+        assert set(g.orbit(u, v)) == set(g.orbit_brute(u, v))
+
+
+def test_in_orbit_agrees_with_brute(dot, eps3, ctx4):
+    """in_orbit() and in_orbit_brute() agree on all orbit elements."""
+    g = TheGroup(ctx4)
+    u = Atom(dot,  ("a", "b"),      +1)
+    v = Atom(eps3, ("a", "b", "c"), +1)
+    orb = g.orbit_brute(u, v)
+    rep = (u, v)
+    for pair in orb:
+        assert g.in_orbit(pair, rep) == g.in_orbit_brute(pair, rep)
+
+
+def test_companion_orbits_agrees_with_brute(pairs_for_xval, ctx4):
+    """companion_orbits() and companion_orbits_brute() return the same orbit sets."""
+    g = TheGroup(ctx4)
+    for u, v in pairs_for_xval:
+        primary     = [frozenset(orb) for orb in g.companion_orbits(u, v)]
+        brute       = [frozenset(orb) for orb in g.companion_orbits_brute(u, v)]
+        assert primary == brute, (
+            f"companion_orbits mismatch for ({u!r}, {v!r})"
+        )
+
+
+def test_sign_correlation_type_brute_aa_partial_overlap(eps2, ctx4):
+    """sign_correlation_type_brute gives TYPE_22 for AA partial overlap."""
+    g = TheGroup(ctx4)
+    u = Atom(eps2, ("a", "b"), +1)
+    v = Atom(eps2, ("a", "c"), +1)
+    assert g.sign_correlation_type_brute(u, v) == SignCorrelationType.TYPE_22
+
+
+def test_sign_correlation_type_algebraic_vs_brute_sa_rank1(eps2):
+    """Algebraic and brute sign_correlation_type agree for rank-1 SA pairs."""
+    dot1 = Operation("dot1", rank=1, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+    ctx2 = Context((VectorGroup("e", ("a", "b")),))
+    g = TheGroup(ctx2)
+    u = Atom(dot1, ("a",),      +1)
+    v = Atom(eps2, ("a", "b"), +1)
+    assert g.sign_correlation_type(u, v) == g.sign_correlation_type_brute(u, v)
+
+
+def test_sign_correlation_type_sweep_two_groups(dot, eps3, eps2):
+    """Algebraic and brute agree across all PairFlavours in a two-group context."""
+    from symatom import repL, canonical_pair_flavours
+    from symatom.rep import PairFlavour
+    electrons = VectorGroup("electrons", ("a", "b", "c"))
+    muons     = VectorGroup("muons",     ("p", "q"))
+    ctx       = Context((electrons, muons))
+    g         = TheGroup(ctx)
+    fo_list   = repL(ctx, [dot, eps3, eps2])
+    for pf in canonical_pair_flavours(fo_list, ctx):
+        # Build the canonical representative pair for this PairFlavour
+        u_labels, v_labels = [], []
+        for grp, ku, kv, s in zip(ctx.groups, pf.flavour_u.counts,
+                                   pf.flavour_v.counts, pf.overlap):
+            u_labels.extend(grp.labels[:ku])
+            v_labels.extend(grp.labels[:s])
+            v_labels.extend(grp.labels[ku:ku + kv - s])
+        u = Atom(pf.op_u, tuple(u_labels), +1)
+        v = Atom(pf.op_v, tuple(v_labels), +1)
+        assert g.sign_correlation_type(u, v) == g.sign_correlation_type_brute(u, v), (
+            f"Mismatch for PairFlavour {pf!r}"
+        )
