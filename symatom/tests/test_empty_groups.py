@@ -117,11 +117,6 @@ def test_cpf_all_empty_gives_no_pfs(dot, ctx_all_empty):
 # OrbitEnumerators with an empty group
 # ---------------------------------------------------------------------------
 
-_DIRECT_TODO = (
-    "TODO Step 2: DirectOrbitEnumerator still returns an OrbitUnion (all sign "
-    "combinations per label assignment) rather than the true G-orbit."
-)
-
 def test_orbit_enumerator_size_matches_with_empty_group_brute_force(dot, eps3, ctx_one_empty):
     """BruteForce returns exactly orbit_size pairs for every PairFlavour when a group is empty."""
     fo_list = repL(ctx_one_empty, [dot, eps3])
@@ -129,9 +124,8 @@ def test_orbit_enumerator_size_matches_with_empty_group_brute_force(dot, eps3, c
     for pf in canonical_pair_flavours(fo_list, ctx_one_empty):
         assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx_one_empty)) == pf.orbit_size(group_sizes)
 
-@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
 def test_orbit_enumerator_size_matches_with_empty_group_direct(dot, eps3, ctx_one_empty):
-    """Direct should return exactly orbit_size pairs for every PairFlavour when a group is empty."""
+    """Direct returns exactly orbit_size pairs for every PairFlavour when a group is empty."""
     fo_list = repL(ctx_one_empty, [dot, eps3])
     group_sizes = tuple(g.size for g in ctx_one_empty.groups)
     for pf in canonical_pair_flavours(fo_list, ctx_one_empty):
@@ -146,9 +140,8 @@ def test_orbit_enumerators_agree_with_empty_group_ss(dot, ctx_one_empty):
         assert set(bf.orbit_elements(pf, ctx_one_empty)) == \
                set(direct.orbit_elements(pf, ctx_one_empty))
 
-@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
 def test_orbit_enumerators_agree_with_empty_group(dot, eps3, ctx_one_empty):
-    """BruteForce and Direct must produce identical element sets when a group is empty."""
+    """BruteForce and Direct produce identical element sets when a group is empty."""
     bf     = BruteForceOrbitEnumerator()
     direct = DirectOrbitEnumerator()
     fo_list = repL(ctx_one_empty, [dot, eps3])

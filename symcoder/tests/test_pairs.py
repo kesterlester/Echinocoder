@@ -68,13 +68,8 @@ def test_eval_pair_orbit_length_dot(dot, plan, ctx, ortho_event):
             f"got {len(result)}, expected {expected}"
         )
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="TODO Step 2: eval_pair_orbit uses DirectOrbitEnumerator which still "
-           "returns an OrbitUnion for non-SS PairFlavours; len != orbit_size for AS/SA/AA."
-)
 def test_eval_pair_orbit_length_dot_eps(dot, eps3, plan, ctx):
-    """eval_pair_orbit should return exactly orbit_size values for all dot+eps3 PairFlavours."""
+    """eval_pair_orbit returns exactly orbit_size values for all dot+eps3 PairFlavours."""
     event_3d = {
         "a": np.array([1.0, 0.0, 0.0]),
         "b": np.array([0.0, 1.0, 0.0]),
@@ -145,13 +140,8 @@ def test_eval_pair_orbit_returns_complex(dot, plan, ctx, ortho_event):
 # eval_pair_orbit — two-group context
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(
-    strict=False,
-    reason="TODO Step 2: eval_pair_orbit uses DirectOrbitEnumerator which still "
-           "returns an OrbitUnion for non-SS PairFlavours; len != orbit_size for AS/SA/AA."
-)
 def test_eval_pair_orbit_two_groups(dot, eps3):
-    """eval_pair_orbit should return exactly orbit_size values for every PairFlavour in a two-group context."""
+    """eval_pair_orbit returns exactly orbit_size values for every PairFlavour in a two-group context."""
     electrons = VectorGroup("electrons", ("a", "b", "c"))
     muons     = VectorGroup("muons",     ("p", "q"))
     ctx  = Context(groups=(electrons, muons))

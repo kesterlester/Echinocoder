@@ -1,15 +1,13 @@
 """
 Tests for OrbitEnumerator implementations.
 
-BruteForceOrbitEnumerator delegates to pf.orbit_elements() and is correct by
-construction for all PairFlavours.
+BruteForceOrbitEnumerator delegates to pf.orbit_elements() and is the
+permanent reference implementation — correct by construction for all
+PairFlavours.
 
-DirectOrbitEnumerator is currently a stub that returns all sign-combinations
-for every label assignment (an OrbitUnion, not a true G-orbit).  Tests that
-expose this incorrectness are marked xfail with a TODO pointing to Step 2 of
-the architectural redesign.  When Step 2 is complete — DirectOrbitEnumerator
-redesigned to use TheGroup and return the true G-orbit — those xfail marks
-should be removed and all tests should pass unconditionally.
+DirectOrbitEnumerator (Step 2) uses TheGroup(context).orbit() to return the
+true G-orbit.  Both enumerators must return the same set for every PairFlavour;
+the parametrised cross-comparison tests at the bottom verify this.
 """
 import pytest
 from symatom import (
@@ -19,12 +17,6 @@ from symatom import (
 )
 from symatom.rep import Flavour, FlavouredOperator, PairFlavour, pair_flavour_of
 
-
-_DIRECT_TODO = (
-    "TODO Step 2: DirectOrbitEnumerator still returns an OrbitUnion (all sign "
-    "combinations per label assignment) rather than the true G-orbit. "
-    "Redesign using TheGroup to fix."
-)
 
 
 # ---------------------------------------------------------------------------
@@ -113,17 +105,15 @@ def test_direct_length_matches_orbit_size_dot(dot, ctx):
     for pf in canonical_pair_flavours(fo_list, ctx):
         assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(group_sizes)
 
-@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
 def test_direct_length_matches_orbit_size_dot_eps(dot, eps3, ctx):
-    """Direct should return exactly orbit_size pairs for all dot+eps3 PairFlavours."""
+    """Direct returns exactly orbit_size pairs for all dot+eps3 PairFlavours."""
     fo_list = repL(ctx, [dot, eps3])
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
         assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(group_sizes)
 
-@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
 def test_direct_length_matches_orbit_size_two_groups(dot, eps3):
-    """Direct should return exactly orbit_size pairs in a two-group context."""
+    """Direct returns exactly orbit_size pairs in a two-group context."""
     electrons = VectorGroup("electrons", ("a", "b", "c"))
     muons     = VectorGroup("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
@@ -144,17 +134,15 @@ def test_direct_matches_brute_force_dot(dot, ctx):
     for pf in canonical_pair_flavours(repL(ctx, [dot]), ctx):
         assert set(bf.orbit_elements(pf, ctx)) == set(direct.orbit_elements(pf, ctx))
 
-@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
 def test_direct_matches_brute_force_dot_eps(dot, eps3, ctx):
-    """Direct must agree with BruteForce for all dot+eps3 PairFlavours."""
+    """Direct agrees with BruteForce for all dot+eps3 PairFlavours."""
     bf     = BruteForceOrbitEnumerator()
     direct = DirectOrbitEnumerator()
     for pf in canonical_pair_flavours(repL(ctx, [dot, eps3]), ctx):
         assert set(bf.orbit_elements(pf, ctx)) == set(direct.orbit_elements(pf, ctx))
 
-@pytest.mark.xfail(strict=False, reason=_DIRECT_TODO)
 def test_direct_matches_brute_force_two_groups(dot, eps3):
-    """Direct must agree with BruteForce in a two-group context."""
+    """Direct agrees with BruteForce in a two-group context."""
     electrons = VectorGroup("electrons", ("a", "b", "c"))
     muons     = VectorGroup("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
