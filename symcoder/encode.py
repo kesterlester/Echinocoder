@@ -343,17 +343,17 @@ def encode_described(
                 print(f"  [{type(enc).__name__}] proposes  method={cap.method_name}  "
                       f"output_dim={cap.output_dim}  priority={cap.priority}"
                       f"  fo={fo}")
-            first_enc, first_cap = capable[0]
-            result = first_enc.encode(spec, event, plan)
+            chosen_enc, chosen_cap = capable[0]
+            result = chosen_enc.encode(spec, event, plan)
             parts.append(result.values)
-            length = first_cap.output_dim   # authoritative from assess()
+            length = chosen_cap.output_dim   # authoritative from assess()
             segments.append(SegmentInfo(
                 kind        = "ORBIT",
                 start       = cursor,
                 length      = length,
                 op_u        = fo.operation.name,
                 flavour_u   = tuple(fo.flavour.counts),
-                method_name = first_cap.method_name,
+                method_name = chosen_cap.method_name,
                 example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
             ))
         else:
@@ -474,15 +474,15 @@ def describe_encoding(
             spec    = OrbitSpec.from_flavoured_operator(fo)
             capable = registry.query_all(spec, plan)
             if capable:
-                first_enc, first_cap = capable[0]
-                length = first_cap.output_dim
+                chosen_enc, chosen_cap = capable[0]
+                length = chosen_cap.output_dim
                 segments.append(SegmentInfo(
                     kind        = "ORBIT",
                     start       = cursor,
                     length      = length,
                     op_u        = fo.operation.name,
                     flavour_u   = tuple(fo.flavour.counts),
-                    method_name = first_cap.method_name,
+                    method_name = chosen_cap.method_name,
                     example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
                 ))
                 cursor += length
