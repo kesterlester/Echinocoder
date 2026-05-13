@@ -233,8 +233,8 @@ def describe_encoding(plan) -> list[SegmentInfo]:
         if fo.count() == 0:
             continue
         antisym = fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-        n = fo.count() // 2 if antisym else fo.count() # TODO .. likely wrong, posibly needs FIXME
-        n = fo.count() # TODO .. likely wrong, posibly needs FIXME -- but this is guessed temporary hotfix for line above
+        n = fo.count() // 2 if antisym else fo.count() # TODO .. likely wrong, possibly needs FIXME
+        n = fo.count() # TODO .. likely wrong, possibly needs FIXME -- but this is guessed temporary hotfix for line above
         segments.append(SegmentInfo(
             kind             = "ORBIT",
             start            = cursor,
