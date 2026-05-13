@@ -19,15 +19,6 @@ ctx = Context((
 ))
 plan = Plan(context=ctx, operations=(mag, dot, eps3))
 
-segs = describe_encoding(plan)
-print('=== START ===')
-for s in segs:
-    print(s)
-print('=== STOP ===')
-
-print()
-event = {l: np.random.randn(3) for l in ctx.all_labels}
-
 # --- stub: pass a registry into encode() ---
 # To exercise the encoder registry path, create a registry, register at least
 # one encoder, and pass it as the third argument to encode().  Currently
@@ -37,10 +28,20 @@ event = {l: np.random.randn(3) for l in ctx.all_labels}
 from symcoder.encoders import AtomOrbitEncoderRegistry, SortEncoder
 registry = AtomOrbitEncoderRegistry()
 registry.register(SortEncoder())
-out = encode(plan, event, registry)
+
 # --- end stub ---
 
-#out = encode(plan, event)
+segs = describe_encoding(plan, registry)
+print('=== START ===')
+for s in segs:
+    print(s)
+print('=== STOP ===')
+
+print()
+event = {l: np.random.randn(3) for l in ctx.all_labels}
+
+out = encode(plan, event, registry) # Use registry
+#out = encode(plan, event) # Don't use registry
 
 print(f'Total output length: {len(out)}  (sum of segment lengths: {sum(s.length for s in segs)})')
 print()

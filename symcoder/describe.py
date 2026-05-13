@@ -129,6 +129,7 @@ class SegmentInfo:
     symmetry_class:   str   | None = None
     sign_compressed:  bool  | None = None
     notional_length:  int   | None = None  # length before drop; None → same as length
+    method_name:      str   | None = None  # encoder method that produced this segment
     example:          str   | None = None
 
     @property
@@ -146,7 +147,10 @@ class SegmentInfo:
         # Single "variant" column: symmetry class (SS/SA/AS/AA) for pair rows,
         # SC (sign-compressed) or "." for ORBIT rows.
         if self.kind == "ORBIT":
-            variant = "SC" if self.sign_compressed else "."
+            if self.method_name is not None:
+                variant = self.method_name
+            else:
+                variant = "SC" if self.sign_compressed else "."
         else:
             variant = self.symmetry_class
         full    = self.notional_length if self.notional_length is not None else self.length
@@ -170,6 +174,7 @@ class SegmentInfo:
         }
         if self.kind == "ORBIT":
             d["sign_compressed"] = self.sign_compressed
+            d["method_name"]     = self.method_name
         else:
             d.update({
                 "op_v":           self.op_v,
@@ -180,120 +185,6 @@ class SegmentInfo:
         return d
 
 
-def describe_encoding(plan) -> list[SegmentInfo]:
-    """
-    Return a list of SegmentInfo objects describing the full structure of the
-    vector produced by encode(plan, event).
-
-    The list mirrors encode()'s two-phase structure exactly:
-
-      Phase 1 — ORBIT segments (one per distinct FlavouredOperator in repS):
-        kind="ORBIT", length=ceil(fo.count()/2).  Appear first.
-
-      Phase 2 — ASSOC and NULL segments (one per PairFlavour):
-        Within each OVERLAP BLOCK (fixed op_u/flavour_u/op_v/flavour_v) the
-        largest-count PairFlavour is marked kind="NULL" (length=0, cursor does
-        not advance); all others are kind="ASSOC".
-
-    NULL segments present as real encoding entries with zero length — their
-    position in the block sequence is preserved so a decoder can reconstruct
-    which association was dropped.
-
-    Usage examples
-    --------------
-    # Human-readable table:
-    for seg in describe_encoding(plan):
-        print(seg)
-
-    # Machine-readable JSON:
-    import json
-    json.dumps([s.to_dict() for s in describe_encoding(plan)])
-
-    # Total encoded length (should match len(encode(plan, event))):
-    sum(s.length for s in describe_encoding(plan))
-
-    This function is pure — it does not evaluate any event data.
-    """
-    fo_list = repS(plan.context, plan.operations)
-    pf_list = canonical_pair_flavours(fo_list, plan.context)
-    type_sizes = tuple(g.size for g in plan.context.types)
-    types = plan.context.types
-
-    segments = []
-    cursor = 0
-
-    # Phase 1: one ORBIT segment per distinct FlavouredOperator.
-    seen_fo_keys: set = set()
-    for fo in fo_list:
-        fo_key = (fo.operation.name, fo.operation.rank, fo.operation.parity,
-                  fo.operation.argument_symmetry.value, fo.flavour.counts)
-        if fo_key in seen_fo_keys:
-            continue
-        seen_fo_keys.add(fo_key)
-        if fo.count() == 0:
-            continue
-        antisym = fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-        n = fo.count() // 2 if antisym else fo.count() # TODO .. likely wrong, possibly needs FIXME
-        n = fo.count() # TODO .. likely wrong, possibly needs FIXME -- but this is guessed temporary hotfix for line above
-        segments.append(SegmentInfo(
-            kind             = "ORBIT",
-            start            = cursor,
-            length           = n,
-            notional_length  = n,
-            op_u             = fo.operation.name,
-            flavour_u        = tuple(fo.flavour.counts),
-            sign_compressed  = antisym,
-            example          = _orbit_example(fo.operation.name, fo.flavour.counts, types),
-        ))
-        cursor += n
-
-    # Phase 2: one ASSOC, NULL_SELF, or NULL_COMP segment per PairFlavour.
-    # Drop order: self-pairs first (NULL_SELF, Phase-1 redundant), then the
-    # largest remaining non-self-pair per block (NULL_COMP, complementation).
-    for _bkey, block_iter in groupby(pf_list, key=_block_key):
-        block = list(block_iter)
-        non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
-        comp_drop = (max(non_self_idx, key=lambda i: block[i].count(type_sizes))
-                     if non_self_idx else None)
-        for i, pf in enumerate(block):
-            sc = _symmetry_class(pf)
-            ex = _assoc_example(
-                pf.op_u.name, pf.flavour_u.counts,
-                pf.op_v.name, pf.flavour_v.counts,
-                pf.overlap, types,
-            )
-            notional = 2 * pf.count(type_sizes)
-            common = dict(
-                op_u            = pf.op_u.name,
-                flavour_u       = tuple(pf.flavour_u.counts),
-                op_v            = pf.op_v.name,
-                flavour_v       = tuple(pf.flavour_v.counts),
-                overlap         = tuple(pf.overlap),
-                symmetry_class  = sc,
-                notional_length = notional,
-                example         = ex,
-            )
-            if _is_self_pair(pf):
-                segments.append(SegmentInfo(
-                    kind   = "NULL_SELF",
-                    start  = cursor,
-                    length = 0,
-                    **common,
-                ))
-            elif i == comp_drop:
-                segments.append(SegmentInfo(
-                    kind   = "NULL_COMP",
-                    start  = cursor,
-                    length = 0,
-                    **common,
-                ))
-            else:
-                segments.append(SegmentInfo(
-                    kind   = "ASSOC",
-                    start  = cursor,
-                    length = notional,
-                    **common,
-                ))
-                cursor += notional
-
-    return segments
+# describe_encoding() has moved to encode.py so that it shares the same
+# encoding loop as encode(), deriving all metadata from the registry's
+# assess() responses rather than from a separate algebraic computation.

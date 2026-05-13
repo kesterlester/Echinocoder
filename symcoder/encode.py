@@ -9,6 +9,7 @@ from symatom.rep import canonical_pair_flavours
 from symatom import repS
 from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
 from .encoders import AtomOrbitEncoderRegistry, OrbitSpec
+from .describe import SegmentInfo, _orbit_example, _assoc_example, _symmetry_class
 
 # Load the Echinocoder zip embedder from the repo root.  It is not a proper
 # package, so we locate it relative to this file (repo_root/symcoder/encode.py
@@ -295,97 +296,258 @@ def encode_brute(plan, event: dict) -> np.ndarray:
     return np.concatenate(parts)
 
 
-def encode(plan, event: dict, registry: AtomOrbitEncoderRegistry | None = None) -> np.ndarray:
+def encode_described(
+    plan,
+    event: dict,
+    registry: AtomOrbitEncoderRegistry | None = None,
+) -> tuple[np.ndarray, list[SegmentInfo]]:
     """
-    Encode a physics event as a permutation-invariant vector (optimised: 5a + 5b).
+    Core encoding function.  Runs the full two-phase encoding and simultaneously
+    collects a SegmentInfo descriptor for every segment produced.
 
-    Two-phase encoding
-    ------------------
-    Phase 1 — single-orbit sort encoding:
-        For each distinct FlavouredOperator fo in repS(plan), sort the real
-        values {eval(u, event) : u in fo.atoms()} and pack adjacent pairs as
-        complex numbers.  Each fo contributes ceil(fo.count() / 2) complex
-        values.  A fo is stored exactly once even if it appears as the u-side
-        or v-side of many PairFlavours.
+    Returns (values, segments) where:
+      values   — 1-D float64 numpy array (the permutation-invariant embedding)
+      segments — list[SegmentInfo] mirroring the structure of values exactly
 
-    Phase 2 — compressed pair encoding with largest association dropped:
-        PairFlavours from canonical_pair_flavours are grouped into OVERLAP
-        BLOCKS: consecutive PairFlavours sharing (op_u, flavour_u, op_v,
-        flavour_v).  Within each block the association (PairFlavour) with the
-        largest pf.count() is omitted — its values are deducible from the
-        Phase 1 orbit headers plus the other stored associations in the block
-        (by complementation in the association table).  All remaining
-        associations are encoded via _embed_compressed (5a compression).
+    Phase 1 metadata (method_name, output_dim) is sourced from the registry's
+    assess() responses when a registry is supplied, making describe_encoding()
+    automatically consistent with encode() — both use the same selection logic.
 
-    Information completeness
-    ------------------------
-    The dropped association's z-values {eval(u_k)+i*eval(v_k)} can be
-    recovered as the complement of the stored associations' (real, imag) pairs
-    within the full Cartesian product of Phase-1 u-values × Phase-1 v-values.
-    The complementation operates on multisets, so repeated eval values (e.g.
-    two particles with identical position vectors) are handled correctly: their
-    z-values appear with the right multiplicity in the complement, and the
-    polynomial embedding captures that multiplicity exactly.  No information
-    about the event is lost for any event — degenerate or otherwise.  (Particles
-    that are numerically identical are correctly represented as indistinguishable,
-    which is the desired behaviour for a permutation-invariant encoding.)
+    Phase 2 is currently always the algebraic _embed_compressed path (no registry
+    connection yet); its SegmentInfo fields are computed algebraically.
 
-    Output structure
-    ----------------
-    [Phase 1 ORBIT segments ... | Phase 2 ASSOC segments ...]
-    Use describe_encoding(plan) for a segment-by-segment map.
-
-    Returns a 1-D numpy array of float64.  The output is entirely real:
-    ORBIT segments contribute fo.count() reals (sorted eval values);
-    ASSOC segments contribute 2*pf.count() reals (complex polynomial
-    coefficients viewed as interleaved (re, im) pairs).
+    Note: the diagnostic print in Phase 1 is temporary scaffolding and will be
+    gated by a bool flag in a future performance pass.
     """
-    fo_list = repS(plan.context, plan.operations)
-    pf_list = canonical_pair_flavours(fo_list, plan.context)
+    fo_list    = repS(plan.context, plan.operations)
+    pf_list    = canonical_pair_flavours(fo_list, plan.context)
     type_sizes = tuple(g.size for g in plan.context.types)
+    types      = plan.context.types
 
-    parts = []
+    parts    = []
+    segments = []
+    cursor   = 0
 
-    # Phase 1: sort-encode the orbit of each distinct FlavouredOperator.
+    # ------------------------------------------------------------------
+    # Phase 1: encode each FlavouredOperator orbit.
+    # ------------------------------------------------------------------
     for fo in fo_list:
-        assert fo.count()>0, "No FlavouredOperator generaed by repS should have an empty orbit."
+        assert fo.count() > 0, "No FlavouredOperator generated by repS should have an empty orbit."
+
         if registry is not None:
-            spec = OrbitSpec.from_flavoured_operator(fo)
+            spec   = OrbitSpec.from_flavoured_operator(fo)
             capable = registry.query_all(spec, plan)
-            # Diagnostic: show what each capable encoder claims it would produce
+            # Diagnostic: show what each capable encoder claims it would produce.
+            # TODO: gate this behind a bool flag when performance matters.
             for enc, cap in capable:
                 print(f"  [{type(enc).__name__}] proposes  method={cap.method_name}  "
-                      f"output_dim={cap.output_dim}  priority={cap.priority} when given {spec} in {plan}")
-            # Use the first capable encoder in the list
+                      f"output_dim={cap.output_dim}  priority={cap.priority}"
+                      f"  fo={fo}")
             first_enc, first_cap = capable[0]
-            parts.append(first_enc.encode(spec, event, plan).values)
+            result = first_enc.encode(spec, event, plan)
+            parts.append(result.values)
+            length = first_cap.output_dim   # authoritative from assess()
+            segments.append(SegmentInfo(
+                kind        = "ORBIT",
+                start       = cursor,
+                length      = length,
+                op_u        = fo.operation.name,
+                flavour_u   = tuple(fo.flavour.counts),
+                method_name = first_cap.method_name,
+                example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
+            ))
         else:
-            values = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
-            parts.append(_sort_encode(values))
+            raw    = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
+            sorted_vals = _sort_encode(raw)
+            parts.append(sorted_vals)
+            length = len(sorted_vals)
+            antisym = fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+            segments.append(SegmentInfo(
+                kind            = "ORBIT",
+                start           = cursor,
+                length          = length,
+                op_u            = fo.operation.name,
+                flavour_u       = tuple(fo.flavour.counts),
+                sign_compressed = antisym,
+                example         = _orbit_example(fo.operation.name, fo.flavour.counts, types),
+            ))
 
-    # Phase 2: group PairFlavours into OVERLAP BLOCKS.
-    # Drop order (both commute; self-pair first so complementation removes the
-    # largest of what remains, not accidentally the self-pair):
-    #   NULL_SELF: any self-pairing association (z_k = (1+i)*a_k, Phase 1 redundant)
-    #   NULL_COMP: largest remaining association per block (complementation drop)
-    for _block_key, block_iter in groupby(pf_list, key=_overlap_block_key):
-        block = list(block_iter)
+        cursor += length
+
+    # ------------------------------------------------------------------
+    # Phase 2: compressed pair encoding with largest association dropped.
+    # Drop order: NULL_SELF first (Phase-1 redundant), then NULL_COMP
+    # (complementation drop of the largest remaining per block).
+    # ------------------------------------------------------------------
+    for _bk, block_iter in groupby(pf_list, key=_overlap_block_key):
+        block        = list(block_iter)
         non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
-        comp_drop = (max(non_self_idx, key=lambda i: block[i].count(type_sizes))
-                     if non_self_idx else None)
-        for i, pf in enumerate(block):
-            if _is_self_pair(pf):
-                continue   # NULL_SELF: deducible from Phase 1
-            if i == comp_drop:
-                continue   # NULL_COMP: deducible by complementation
-            z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
-            assert len(z_pos) == pf.count(type_sizes), (
-                f"eval_pair_orbit_positive returned {len(z_pos)} values "
-                f"but expected pf.count={pf.count(type_sizes)} for {pf!r}"
-            )
-            parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
+        comp_drop    = (max(non_self_idx, key=lambda i: block[i].count(type_sizes))
+                        if non_self_idx else None)
 
-    return np.concatenate(parts) if parts else np.array([], dtype=float)
+        for i, pf in enumerate(block):
+            sc       = _symmetry_class(pf)
+            ex       = _assoc_example(
+                pf.op_u.name, pf.flavour_u.counts,
+                pf.op_v.name, pf.flavour_v.counts,
+                pf.overlap, types,
+            )
+            notional = 2 * pf.count(type_sizes)
+            common   = dict(
+                op_u            = pf.op_u.name,
+                flavour_u       = tuple(pf.flavour_u.counts),
+                op_v            = pf.op_v.name,
+                flavour_v       = tuple(pf.flavour_v.counts),
+                overlap         = tuple(pf.overlap),
+                symmetry_class  = sc,
+                notional_length = notional,
+                example         = ex,
+            )
+            if _is_self_pair(pf):
+                segments.append(SegmentInfo(kind="NULL_SELF", start=cursor, length=0, **common))
+            elif i == comp_drop:
+                segments.append(SegmentInfo(kind="NULL_COMP", start=cursor, length=0, **common))
+            else:
+                z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
+                assert len(z_pos) == pf.count(type_sizes), (
+                    f"eval_pair_orbit_positive returned {len(z_pos)} values "
+                    f"but expected pf.count={pf.count(type_sizes)} for {pf!r}"
+                )
+                parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
+                segments.append(SegmentInfo(kind="ASSOC", start=cursor, length=notional, **common))
+                cursor += notional
+
+    values = np.concatenate(parts) if parts else np.array([], dtype=float)
+    return values, segments
+
+
+def encode(plan, event: dict, registry: AtomOrbitEncoderRegistry | None = None) -> np.ndarray:
+    """
+    Encode a physics event as a permutation-invariant vector.
+    See encode_described() for full documentation of the two-phase algorithm.
+    Returns a 1-D float64 numpy array.
+    """
+    values, _segments = encode_described(plan, event, registry)
+    return values
+
+
+def describe_encoding(
+    plan,
+    registry: AtomOrbitEncoderRegistry | None = None,
+) -> list[SegmentInfo]:
+    """
+    Return a list of SegmentInfo objects describing the full structure of the
+    vector produced by encode(plan, event, registry).
+
+    When a registry is supplied, Phase 1 metadata (method_name, output_dim) is
+    derived from the registry's assess() responses — the same selection logic
+    used by encode() — so the description is always in sync with the encoding.
+    Phase 2 remains algebraic for now.
+
+    When no registry is supplied, falls back to the purely algebraic description
+    (compatible with the pre-registry legacy behaviour).
+
+    Usage
+    -----
+    for seg in describe_encoding(plan, registry):
+        print(seg)
+
+    import json
+    json.dumps([s.to_dict() for s in describe_encoding(plan, registry)])
+
+    sum(s.length for s in describe_encoding(plan, registry))  # == len(encode(...))
+    """
+    fo_list    = repS(plan.context, plan.operations)
+    pf_list    = canonical_pair_flavours(fo_list, plan.context)
+    type_sizes = tuple(g.size for g in plan.context.types)
+    types      = plan.context.types
+
+    segments = []
+    cursor   = 0
+
+    # Phase 1: one ORBIT segment per FlavouredOperator.
+    for fo in fo_list:
+        if fo.count() == 0:
+            continue
+
+        if registry is not None:
+            spec    = OrbitSpec.from_flavoured_operator(fo)
+            capable = registry.query_all(spec, plan)
+            if capable:
+                first_enc, first_cap = capable[0]
+                length = first_cap.output_dim
+                segments.append(SegmentInfo(
+                    kind        = "ORBIT",
+                    start       = cursor,
+                    length      = length,
+                    op_u        = fo.operation.name,
+                    flavour_u   = tuple(fo.flavour.counts),
+                    method_name = first_cap.method_name,
+                    example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
+                ))
+                cursor += length
+            else:
+                # No encoder capable — record with zero length so the segment
+                # still appears in the description (length 0, method "NONE").
+                segments.append(SegmentInfo(
+                    kind        = "ORBIT",
+                    start       = cursor,
+                    length      = 0,
+                    op_u        = fo.operation.name,
+                    flavour_u   = tuple(fo.flavour.counts),
+                    method_name = "NONE",
+                    example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
+                ))
+        else:
+            # Legacy algebraic path (no registry).
+            antisym = fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+            n = fo.count()
+            segments.append(SegmentInfo(
+                kind            = "ORBIT",
+                start           = cursor,
+                length          = n,
+                notional_length = n,
+                op_u            = fo.operation.name,
+                flavour_u       = tuple(fo.flavour.counts),
+                sign_compressed = antisym,
+                example         = _orbit_example(fo.operation.name, fo.flavour.counts, types),
+            ))
+            cursor += n
+
+    # Phase 2: algebraic (unchanged; no registry connection yet).
+    for _bk, block_iter in groupby(pf_list, key=_overlap_block_key):
+        block        = list(block_iter)
+        non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
+        comp_drop    = (max(non_self_idx, key=lambda i: block[i].count(type_sizes))
+                        if non_self_idx else None)
+
+        for i, pf in enumerate(block):
+            sc       = _symmetry_class(pf)
+            ex       = _assoc_example(
+                pf.op_u.name, pf.flavour_u.counts,
+                pf.op_v.name, pf.flavour_v.counts,
+                pf.overlap, types,
+            )
+            notional = 2 * pf.count(type_sizes)
+            common   = dict(
+                op_u            = pf.op_u.name,
+                flavour_u       = tuple(pf.flavour_u.counts),
+                op_v            = pf.op_v.name,
+                flavour_v       = tuple(pf.flavour_v.counts),
+                overlap         = tuple(pf.overlap),
+                symmetry_class  = sc,
+                notional_length = notional,
+                example         = ex,
+            )
+            if _is_self_pair(pf):
+                segments.append(SegmentInfo(kind="NULL_SELF", start=cursor, length=0, **common))
+            elif i == comp_drop:
+                segments.append(SegmentInfo(kind="NULL_COMP", start=cursor, length=0, **common))
+            else:
+                segments.append(SegmentInfo(kind="ASSOC", start=cursor, length=notional, **common))
+                cursor += notional
+
+    return segments
 
 
 """

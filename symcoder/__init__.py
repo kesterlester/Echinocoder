@@ -10,14 +10,15 @@ Public API:
   describe : describe_encoding, SegmentInfo
 """
 from .eval     import EvaluableOperation, evaluate
-from .encode   import encode, encode_brute
-from .describe import describe_encoding, SegmentInfo
+from .encode   import encode, encode_brute, encode_described, describe_encoding
+from .describe import SegmentInfo
 
 __all__ = [
     "EvaluableOperation",
     "evaluate",
     "encode",
     "encode_brute",
+    "encode_described",
     "describe_encoding",
     "SegmentInfo",
 ]
