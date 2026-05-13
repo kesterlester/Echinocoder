@@ -5,7 +5,7 @@ Prints atoms, flavoured operators, and pair flavours for a small physics context
 from .atoms   import ArgumentSymmetry, Operation, VectorGroup
 from .context import Context, Plan
 from .canon   import SimpleCanonicaliser
-from .rep     import repL, repS, canonical_pair_flavours
+from .rep     import repS, canonical_pair_flavours
 
 
 # ---------------------------------------------------------------------------
@@ -40,14 +40,14 @@ def demo():
     for g in ctx.groups:
         print(f"  {g!r}")
 
-    _section("repL — FlavouredOperators")
-    fo_list = repL(ctx, plan.operations)
+    _section("repS — FlavouredOperators")
+    fo_list = repS(ctx, plan.operations)
     for fo in fo_list:
         rep = fo.canonical_representative(plan.canonicaliser)
         print(f"  {fo!r}  →  {fo.count()} atoms, in the orbit of {rep!r}")
 
     numPrintPerPage = 40
-    _section(f"repL — all atoms (first {numPrintPerPage})")
+    _section(f"repS — all atoms (first {numPrintPerPage})")
     all_atoms = [atom for fo in fo_list for atom in fo.atoms()]
     for i, atom in enumerate(all_atoms[:numPrintPerPage]):
         print(f"  [{i:3d}]  {atom!r}")
@@ -68,12 +68,6 @@ def demo():
             f"  →  {n} ordered pairs"
         )
     print(f"\n  distinct pair-flavours: {len(pfs)}")
-
-    _section("repS — FlavouredOperators (for comparison)")
-    fo_list_s = repS(ctx, plan.operations)
-    atoms_s = [atom for fo in fo_list_s for atom in fo.atoms()]
-    print(f"  repS total atoms : {len(atoms_s)}")
-    print(f"  repL total atoms : {len(all_atoms)}")
 
 
 if __name__ == "__main__":
