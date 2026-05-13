@@ -183,29 +183,29 @@ def test_atoms_labels_distinct(eps3, ctx2):
 
 def test_contains_dot_true(dot, ctx1):
     fo = FlavouredOperator(operation=dot, flavour=Flavour((2,)), context=ctx1)
-    assert fo.contains(Atom(dot, ("a", "b")))
+    assert fo.contains(Atom(dot, ("a", "b"), sign=+1))
 
 def test_contains_dot_wrong_operation(mass, dot, ctx1):
     fo = FlavouredOperator(operation=dot, flavour=Flavour((2,)), context=ctx1)
-    assert not fo.contains(Atom(mass, ("a",)))
+    assert not fo.contains(Atom(mass, ("a",), sign=+1))
 
 def test_contains_eps_positive(eps3, ctx1):
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((3,)), context=ctx1)
-    assert fo.contains(Atom(eps3, ("a", "b", "c")))
+    assert fo.contains(Atom(eps3, ("a", "b", "c"), sign=+1))
 
 def test_contains_eps_negative(eps3, ctx1):
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((3,)), context=ctx1)
-    assert fo.contains(Atom(eps3, ("a", "b", "c")))
+    assert fo.contains(Atom(eps3, ("a", "b", "c"), sign=-1))
 
 def test_contains_wrong_flavour(dot, ctx2):
     # dot(a,b) has flavour (2,0); FlavouredOperator has flavour (1,1)
     fo = FlavouredOperator(operation=dot, flavour=Flavour((1, 1)), context=ctx2)
-    assert not fo.contains(Atom(dot, ("a", "b")))
+    assert not fo.contains(Atom(dot, ("a", "b"), sign=+1))
 
 def test_contains_cross_group_dot(dot, ctx2):
     fo = FlavouredOperator(operation=dot, flavour=Flavour((1, 1)), context=ctx2)
-    assert fo.contains(Atom(dot, ("a", "p")))
-    assert fo.contains(Atom(dot, ("b", "q")))  # label order doesn't matter
+    assert fo.contains(Atom(dot, ("a", "p"), sign=+1))
+    assert fo.contains(Atom(dot, ("b", "q"), sign=+1))  # label order doesn't matter
 
 
 # ---------------------------------------------------------------------------
@@ -235,8 +235,8 @@ def test_repS_two_groups_multiple_ops(mass, dot, eps3, ctx2):
     assert len(fos) == 8
 
 def test_repS_total_atom_count(eps3, ctx1):
-    # repL with one eps3 and 4 electrons: C(4,3) = 4 atoms total
-    fos = repL(ctx1, [eps3])
+    # repS with one eps3 and 4 electrons: C(4,3) = 4 atoms total
+    fos = repS(ctx1, [eps3])
     total = sum(fo.count() for fo in fos)
     assert total == 4
 
@@ -264,10 +264,7 @@ def test_repS_total_atom_count(eps3, ctx1):
 # ---------------------------------------------------------------------------
 
 def test_three_group_fo_count(mass, dot, eps3, ctx3):
-    assert len(repL(ctx3, [mass, dot, eps3])) == 18
-
-def test_three_group_repL_repS_same_fo_count(mass, dot, eps3, ctx3):
-    assert len(repL(ctx3, [mass, dot, eps3])) == len(repS(ctx3, [mass, dot, eps3]))
+    assert len(repS(ctx3, [mass, dot, eps3])) == 18
 
 def test_three_group_mass_fo_count(mass, ctx3):
     fos = repS(ctx3, [mass])
@@ -298,14 +295,13 @@ def test_three_group_grand_total_repS(mass, dot, eps3, ctx3):
 
 def test_three_group_atoms_matches_count(mass, dot, eps3, ctx3):
     # For every FlavouredOperator, atoms() must yield exactly count() atoms.
-    for fo in repL(ctx3, [mass, dot, eps3]):
+    for fo in repS(ctx3, [mass, dot, eps3]):
         assert len(list(fo.atoms())) == fo.count()
 
 def test_three_group_eps3_mixed_flavour_spot_check(eps3, ctx3):
     # Flavour (1,1,1): C(4,1)*C(2,1)*C(3,1) = 4*2*3 = 24 atoms in repS, 48 in repL.
     fo_s = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3)
     assert fo_s.count() == 24
-    assert len(list(fo_s.atoms())) == 24
 
 def test_three_group_atoms_labels_distinct(eps3, ctx3):
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3)

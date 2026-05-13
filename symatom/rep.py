@@ -155,11 +155,12 @@ class FlavouredOperator:
 
         Checks operation identity, that every label belongs to the correct group
         in the correct count (matching the flavour). Does not require the
-        atom's labels to be in any particular order.
+        atom's labels to be in any particular order or that the sign matches.
         """
         # TODO: Refactor this method to be named "matches"
         # as use of "contains" without qualification can mislead people into thinking 
-        # this is a container inclusion test, which it is not.
+        # this is a container inclusion test, which it is not, as (among other thins)
+        # the sign can differ.
         if atom.operation != self.operation:
             return False
         label_group = {

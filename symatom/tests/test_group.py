@@ -199,11 +199,11 @@ def test_orbit_agrees_with_pf_orbit_elements(dot, eps3):
     For the canonical representative of every PairFlavour, TheGroup.orbit and
     pf.orbit_elements must return the same set of pairs.
     """
-    from symatom import repL, canonical_pair_flavours
+    from symatom import repS, canonical_pair_flavours
     electrons = VectorGroup("electrons", ("a", "b", "c", "d"))
     ctx = Context((electrons,))
     g = TheGroup(ctx)
-    for pf in canonical_pair_flavours(repL(ctx, [dot, eps3]), ctx):
+    for pf in canonical_pair_flavours(repS(ctx, [dot, eps3]), ctx):
         # canonical representative: first labels of each group up to flavour count
         ku = pf.flavour_u.counts[0]
         kv = pf.flavour_v.counts[0]
@@ -389,13 +389,13 @@ def test_sign_correlation_type_algebraic_vs_brute_sa_rank1(eps2):
 
 def test_sign_correlation_type_sweep_two_groups(dot, eps3, eps2):
     """Algebraic and brute agree across all PairFlavours in a two-group context."""
-    from symatom import repL, canonical_pair_flavours
+    from symatom import repS, canonical_pair_flavours
     from symatom.rep import PairFlavour
     electrons = VectorGroup("electrons", ("a", "b", "c"))
     muons     = VectorGroup("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     g         = TheGroup(ctx)
-    fo_list   = repL(ctx, [dot, eps3, eps2])
+    fo_list   = repS(ctx, [dot, eps3, eps2])
     for pf in canonical_pair_flavours(fo_list, ctx):
         # Build the canonical representative pair for this PairFlavour
         u_labels, v_labels = [], []
