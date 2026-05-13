@@ -9,6 +9,7 @@ from symatom.rep import (
     Flavour, FlavouredOperator, repS,
     PairFlavour, pair_flavour_of,
     canonical_pair_flavours, brute_force_canonical_pair_flavours,
+    _valid_flavours_rear_first, _valid_flavours_front_first, _valid_flavours,
 )
 
 
@@ -731,3 +732,101 @@ def test_cpf_overlap_blocks_contiguous_three_groups(dot, eps3, ctx3):
                 f"last seen at index {prev_idx}, reappears at index {idx}"
             )
         seen_blocks[key] = idx
+
+
+# ---------------------------------------------------------------------------
+# _valid_flavours_rear_first and _valid_flavours_front_first
+# ---------------------------------------------------------------------------
+
+# Shared helper: build VectorType objects from (name, labels) pairs.
+def _types(*specs):
+    return tuple(VectorType(name, labels) for name, labels in specs)
+
+
+def test_valid_flavours_unconstrained_rear_first():
+    """
+    With three groups each of size ≥ rank, rear_first iterates k=0..max at each
+    level, so later types fill first.
+    Types (2,2,2), rank 2 → expected ascending-lex order.
+    """
+    types = _types(("e", ("a","b")), ("m", ("c","d")), ("j", ("u","v")))
+    result = list(_valid_flavours_rear_first(types, 2))
+    expected = [
+        Flavour((0,0,2)), Flavour((0,1,1)), Flavour((0,2,0)),
+        Flavour((1,0,1)), Flavour((1,1,0)), Flavour((2,0,0)),
+    ]
+    assert result == expected
+
+
+def test_valid_flavours_unconstrained_front_first():
+    """
+    With three groups each of size ≥ rank, front_first iterates k=max..0 at each
+    level, so earlier types fill first.
+    Types (2,2,2), rank 2 → expected descending-lex order.
+    """
+    types = _types(("e", ("a","b")), ("m", ("c","d")), ("j", ("u","v")))
+    result = list(_valid_flavours_front_first(types, 2))
+    expected = [
+        Flavour((2,0,0)), Flavour((1,1,0)), Flavour((1,0,1)),
+        Flavour((0,2,0)), Flavour((0,1,1)), Flavour((0,0,2)),
+    ]
+    assert result == expected
+
+
+def test_valid_flavours_front_is_exact_reverse_of_rear_unconstrained():
+    """front_first is always the exact reverse of rear_first (unconstrained sizes)."""
+    types = _types(("e", ("a","b")), ("m", ("c","d")), ("j", ("u","v")))
+    rear  = list(_valid_flavours_rear_first(types, 2))
+    front = list(_valid_flavours_front_first(types, 2))
+    assert front == list(reversed(rear))
+
+
+def test_valid_flavours_constrained_sizes():
+    """
+    With types of sizes (1, 2, 2) and rank 2, the flavour (2,*,*) is excluded.
+    rear_first:  (0,0,2), (0,1,1), (0,2,0), (1,0,1), (1,1,0)
+    front_first: (1,1,0), (1,0,1), (0,2,0), (0,1,1), (0,0,2)
+    """
+    types = _types(("e", ("a",)), ("m", ("c","d")), ("j", ("u","v")))
+    rear  = list(_valid_flavours_rear_first(types, 2))
+    front = list(_valid_flavours_front_first(types, 2))
+    expected_rear = [
+        Flavour((0,0,2)), Flavour((0,1,1)), Flavour((0,2,0)),
+        Flavour((1,0,1)), Flavour((1,1,0)),
+    ]
+    assert rear  == expected_rear
+    assert front == list(reversed(expected_rear))
+    # (2,*,*) must never appear — size of first group is 1
+    assert all(f.counts[0] <= 1 for f in rear)
+    assert all(f.counts[0] <= 1 for f in front)
+
+
+def test_valid_flavours_front_is_exact_reverse_of_rear_constrained():
+    """front_first is the exact reverse of rear_first even when sizes are constrained."""
+    types = _types(("e", ("a",)), ("m", ("c","d")), ("j", ("u","v")))
+    rear  = list(_valid_flavours_rear_first(types, 2))
+    front = list(_valid_flavours_front_first(types, 2))
+    assert front == list(reversed(rear))
+
+
+def test_valid_flavours_same_set_both_orders():
+    """Both variants enumerate exactly the same set of Flavours."""
+    types = _types(("e", ("a","b","c","d")), ("m", ("p","q")), ("j", ("u","v","w")))
+    for rank in (1, 2, 3):
+        rear  = set(_valid_flavours_rear_first(types, rank))
+        front = set(_valid_flavours_front_first(types, rank))
+        assert rear == front, f"Sets differ at rank {rank}"
+
+
+def test_valid_flavours_rank_zero():
+    """Rank 0 yields exactly one Flavour: all zeros."""
+    types = _types(("e", ("a","b")), ("m", ("c","d")))
+    assert list(_valid_flavours_rear_first(types, 0))  == [Flavour((0, 0))]
+    assert list(_valid_flavours_front_first(types, 0)) == [Flavour((0, 0))]
+
+
+def test_valid_flavours_alias_is_front_first():
+    """The _valid_flavours alias must point to the front-first variant."""
+    types = _types(("e", ("a","b")), ("m", ("c","d")), ("j", ("u","v")))
+    assert (list(_valid_flavours(types, 2))
+            == list(_valid_flavours_front_first(types, 2)))

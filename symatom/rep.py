@@ -64,8 +64,14 @@ class Flavour:
 # Internal helper
 # ---------------------------------------------------------------------------
 
-def _valid_flavours(types: tuple, rank: int):
-    """Yield every Flavour consistent with group sizes and the given rank."""
+def _valid_flavours_rear_first(types: tuple, rank: int):
+    """Yield every Flavour consistent with group sizes and the given rank.
+
+    Enumerates rear-first: iterates k from 0 upward at each position, so
+    later types tend to be filled before earlier ones.
+    Example with types of sizes (2, 2, 2) and rank 2:
+      (0,0,2), (0,1,1), (0,2,0), (1,0,1), (1,1,0), (2,0,0)
+    """
     def _rec(remaining, idx, acc):
         if idx == len(types):
             if remaining == 0:
@@ -74,6 +80,28 @@ def _valid_flavours(types: tuple, rank: int):
         for k in range(min(remaining, types[idx].size) + 1):
             yield from _rec(remaining - k, idx + 1, acc + [k])
     yield from _rec(rank, 0, [])
+
+
+def _valid_flavours_front_first(types: tuple, rank: int):
+    """Yield every Flavour consistent with group sizes and the given rank.
+
+    Enumerates front-first: iterates k from max downward at each position, so
+    earlier types tend to be filled before later ones.
+    Example with types of sizes (2, 2, 2) and rank 2:
+      (2,0,0), (1,1,0), (1,0,1), (0,2,0), (0,1,1), (0,0,2)
+    """
+    def _rec(remaining, idx, acc):
+        if idx == len(types):
+            if remaining == 0:
+                yield Flavour(tuple(acc))
+            return
+        for k in range(min(remaining, types[idx].size), -1, -1):
+            yield from _rec(remaining - k, idx + 1, acc + [k])
+    yield from _rec(rank, 0, [])
+
+
+# Convenience alias — default enumeration order is front-first.
+_valid_flavours = _valid_flavours_front_first
 
 
 # ---------------------------------------------------------------------------
