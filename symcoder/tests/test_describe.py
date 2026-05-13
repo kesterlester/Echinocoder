@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pytest
 from itertools import groupby
-from symatom import ArgumentSymmetry, VectorGroup, Context, Plan, repL, canonical_pair_flavours
+from symatom import ArgumentSymmetry, VectorGroup, Context, Plan, repS, canonical_pair_flavours
 from symcoder import EvaluableOperation, encode, describe_encoding, SegmentInfo
 
 _NULL_KINDS = ("NULL_SELF", "NULL_COMP")
@@ -146,7 +146,7 @@ def test_orbit_sign_compressed_true_for_antisymmetric(eps3, ctx):
 def test_orbit_length_symmetric_equals_fo_count(dot, ctx):
     """SYMMETRIC: ORBIT length == fo.count() (no compression)."""
     plan = Plan(context=ctx, operations=(dot,))
-    fo_list = repL(plan.context, plan.operations)
+    fo_list = repS(plan.context, plan.operations)
     fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count() for fo in fo_list}
     for s in describe_encoding(plan):
         if s.kind == "ORBIT":
@@ -156,7 +156,7 @@ def test_orbit_length_symmetric_equals_fo_count(dot, ctx):
 def test_orbit_length_antisymmetric_halved(eps3, ctx):
     """ANTISYMMETRIC (sign-compressed): ORBIT length == fo.count() // 2."""
     plan = Plan(context=ctx, operations=(eps3,))
-    fo_list = repL(plan.context, plan.operations)
+    fo_list = repS(plan.context, plan.operations)
     fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count() for fo in fo_list}
     for s in describe_encoding(plan):
         if s.kind == "ORBIT":
@@ -240,7 +240,7 @@ def test_null_comp_is_largest_non_self_in_block(dot, eps3, ctx):
     """NULL_COMP's notional length >= all ASSOC notional lengths in the same block."""
     plan = Plan(context=ctx, operations=(dot, eps3))
     segs = describe_encoding(plan)
-    fo_list = repL(ctx, (dot, eps3))
+    fo_list = repS(ctx, (dot, eps3))
     pf_list = canonical_pair_flavours(fo_list, ctx)
     group_sizes = tuple(g.size for g in ctx.groups)
     pf_count_map = {

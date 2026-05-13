@@ -6,7 +6,7 @@ from pathlib import Path
 from symatom.atoms import ArgumentSymmetry
 from symatom.group import SignCorrelationType
 from symatom.rep import canonical_pair_flavours
-from symatom import repL
+from symatom import repS
 from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
 
 # Load the Echinocoder zip embedder from the repo root.  It is not a proper
@@ -270,7 +270,7 @@ def encode_brute(plan, event: dict) -> np.ndarray:
     reals (the complex polynomial coefficients viewed as (re, im) pairs).
     If the plan has no registered operations, returns an empty array.
     """
-    fo_list = repL(plan.context, plan.operations)
+    fo_list = repS(plan.context, plan.operations)
     pf_list = canonical_pair_flavours(fo_list, plan.context)
     if not pf_list:
         return np.array([], dtype=float)
@@ -301,7 +301,7 @@ def encode(plan, event: dict) -> np.ndarray:
     Two-phase encoding
     ------------------
     Phase 1 — single-orbit sort encoding:
-        For each distinct FlavouredOperator fo in repL(plan), sort the real
+        For each distinct FlavouredOperator fo in repS(plan), sort the real
         values {eval(u, event) : u in fo.atoms()} and pack adjacent pairs as
         complex numbers.  Each fo contributes ceil(fo.count() / 2) complex
         values.  A fo is stored exactly once even if it appears as the u-side
@@ -339,7 +339,7 @@ def encode(plan, event: dict) -> np.ndarray:
     ASSOC segments contribute 2*pf.count() reals (complex polynomial
     coefficients viewed as interleaved (re, im) pairs).
     """
-    fo_list = repL(plan.context, plan.operations)
+    fo_list = repS(plan.context, plan.operations)
     pf_list = canonical_pair_flavours(fo_list, plan.context)
     group_sizes = tuple(g.size for g in plan.context.groups)
 

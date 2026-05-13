@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from itertools import groupby
 from symatom.atoms import ArgumentSymmetry
 from symatom.rep import canonical_pair_flavours
-from symatom import repL
+from symatom import repS
 from .pairs import _is_self_pair
 
 
@@ -187,7 +187,7 @@ def describe_encoding(plan) -> list[SegmentInfo]:
 
     The list mirrors encode()'s two-phase structure exactly:
 
-      Phase 1 — ORBIT segments (one per distinct FlavouredOperator in repL):
+      Phase 1 — ORBIT segments (one per distinct FlavouredOperator in repS):
         kind="ORBIT", length=ceil(fo.count()/2).  Appear first.
 
       Phase 2 — ASSOC and NULL segments (one per PairFlavour):
@@ -214,7 +214,7 @@ def describe_encoding(plan) -> list[SegmentInfo]:
 
     This function is pure — it does not evaluate any event data.
     """
-    fo_list = repL(plan.context, plan.operations)
+    fo_list = repS(plan.context, plan.operations)
     pf_list = canonical_pair_flavours(fo_list, plan.context)
     group_sizes = tuple(g.size for g in plan.context.groups)
     groups = plan.context.groups
