@@ -9,51 +9,58 @@
   op      : Operation('eps', rank=3, parity=-1, ANTISYMMETRIC)
 
 ============================================================
-  VectorGroups
+  VectorTypes
 ============================================================
-  VectorGroup('electrons': A, B, C)
-  VectorGroup('muons': P, Q)
+  VectorType('electrons': A, B, C)
+  VectorType('muons': P, Q)
 
 ============================================================
   repS — FlavouredOperators
 ============================================================
-  FO(m, 1 muons)  →  2 atoms, in the orbit of +m(P)
   FO(m, 1 electrons)  →  3 atoms, in the orbit of +m(A)
-  FO(dot, 2 muons)  →  1 atoms, in the orbit of +dot(P, Q)
-  FO(dot, 1 electrons + 1 muons)  →  6 atoms, in the orbit of +dot(A, P)
+  FO(m, 1 muons)  →  2 atoms, in the orbit of +m(P)
   FO(dot, 2 electrons)  →  3 atoms, in the orbit of +dot(A, B)
-  FO(eps, 1 electrons + 2 muons)  →  3 atoms, in the orbit of +eps(A, P, Q)
-  FO(eps, 2 electrons + 1 muons)  →  6 atoms, in the orbit of +eps(A, B, P)
+  FO(dot, 1 electrons + 1 muons)  →  6 atoms, in the orbit of +dot(A, P)
+  FO(dot, 2 muons)  →  1 atoms, in the orbit of +dot(P, Q)
   FO(eps, 3 electrons)  →  1 atoms, in the orbit of +eps(A, B, C)
+  FO(eps, 2 electrons + 1 muons)  →  6 atoms, in the orbit of +eps(A, B, P)
+  FO(eps, 1 electrons + 2 muons)  →  3 atoms, in the orbit of +eps(A, P, Q)
 
 ============================================================
-  repS — all atoms (first 40)
+  repS — all atoms
 ============================================================
-  [  0]  +m(P)
-  [  1]  +m(Q)
-  [  2]  +m(A)
-  [  3]  +m(B)
-  [  4]  +m(C)
-  [  5]  +dot(P, Q)
-  [  6]  +dot(A, P)
-  [  7]  +dot(A, Q)
-  [  8]  +dot(B, P)
-  [  9]  +dot(B, Q)
-  [ 10]  +dot(C, P)
-  [ 11]  +dot(C, Q)
-  [ 12]  +dot(A, B)
-  [ 13]  +dot(A, C)
-  [ 14]  +dot(B, C)
-  [ 15]  +eps(A, P, Q)
-  [ 16]  +eps(B, P, Q)
-  [ 17]  +eps(C, P, Q)
-  [ 18]  +eps(A, B, P)
-  [ 19]  +eps(A, B, Q)
-  [ 20]  +eps(A, C, P)
-  [ 21]  +eps(A, C, Q)
-  [ 22]  +eps(B, C, P)
-  [ 23]  +eps(B, C, Q)
-  [ 24]  +eps(A, B, C)
+  [  0]  +m(A)
+  [  1]  +m(B)
+  [  2]  +m(C)
+---------------------
+  [  3]  +m(P)
+  [  4]  +m(Q)
+---------------------
+  [  5]  +dot(A, B)
+  [  6]  +dot(A, C)
+  [  7]  +dot(B, C)
+---------------------
+  [  8]  +dot(A, P)
+  [  9]  +dot(A, Q)
+  [ 10]  +dot(B, P)
+  [ 11]  +dot(B, Q)
+  [ 12]  +dot(C, P)
+  [ 13]  +dot(C, Q)
+---------------------
+  [ 14]  +dot(P, Q)
+---------------------
+  [ 15]  +eps(A, B, C)
+---------------------
+  [ 16]  +eps(A, B, P)
+  [ 17]  +eps(A, B, Q)
+  [ 18]  +eps(A, C, P)
+  [ 19]  +eps(A, C, Q)
+  [ 20]  +eps(B, C, P)
+  [ 21]  +eps(B, C, Q)
+---------------------
+  [ 22]  +eps(A, P, Q)
+  [ 23]  +eps(B, P, Q)
+  [ 24]  +eps(C, P, Q)
 
   total atoms: 25
 

@@ -46,14 +46,15 @@ def demo():
         rep = fo.canonical_representative(plan.canonicaliser)
         print(f"  {fo!r}  →  {fo.count()} atoms, in the orbit of {rep!r}")
 
-    numPrintPerPage = 40
-    _section(f"repS — all atoms (first {numPrintPerPage})")
-    all_atoms = [atom for fo in fo_list for atom in fo.atoms()]
-    for i, atom in enumerate(all_atoms[:numPrintPerPage]):
+    _section(f"repS — all atoms")
+    all_atoms_and_fos = [(atom, fo) for fo in fo_list for atom in fo.atoms()]
+    last_fo = None
+    for i, (atom,fo) in enumerate(all_atoms_and_fos):
+        if last_fo != fo and i !=0:
+            print("---------------------")
+        last_fo = fo
         print(f"  [{i:3d}]  {atom!r}")
-    if len(all_atoms) > numPrintPerPage:
-        print(f"  ... ({len(all_atoms) - numPrintPerPage} more)")
-    print(f"\n  total atoms: {len(all_atoms)}")
+    print(f"\n  total atoms: {len(all_atoms_and_fos)}")
 
     _section("Canonical PairFlavours")
     pfs = canonical_pair_flavours(fo_list, ctx)
