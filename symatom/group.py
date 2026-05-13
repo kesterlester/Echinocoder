@@ -1,8 +1,8 @@
 """
-symatom.group — TheGroup: the discrete symmetry group acting on atom-pairs.
+symatom.group — TheGroup: the discrete symmetry group acting on atoms and atom-pairs.
 
-TheGroup encapsulates the group G that acts simultaneously on both atoms of a
-pair.  In the common case G = S_{n_1} × ... × S_{n_m} (the direct product of
+TheGroup encapsulates the group G that acts simultaneously on atoms and on pairs
+of atoms.  In the common case G = S_{n_1} × ... × S_{n_m} (the direct product of
 symmetric groups, one per species), but the class is designed for extension to
 additional symmetries such as spatial parity (ParityOp), BeamExchange, or other
 discrete operations that may be incorporated in future without breaking the
@@ -18,18 +18,28 @@ SignCorrelationType
 TheGroup
     Frozen dataclass.  Constructed from a Context.  Provides:
 
-    Primary methods (use these):
-      order()                       — |G|
-      orbit(u, v)                   — the G-orbit of the atom-pair
-      stabiliser_size(u, v)         — |Stab_G(u, v)|  (algebraic, O(n))
-      orbit_size(u, v)              — |G| / |Stab_G(u, v)|  (algebraic, O(n))
-      in_orbit(candidate, rep)      — membership test
-      sign_correlation_type(u, v)   — how signs are coupled  (algebraic, O(n))
-
-    Brute-force reference methods (*_brute suffix):
-      orbit_brute(u, v)             — same as orbit(), O(∏ n_g!)
+    Single-atom methods (short names):
+      orbit(u)                      — the G-orbit of a single atom
+      stabiliser_size(u)            — |Stab_G(u)|  (algebraic, O(n))
+      orbit_size(u)                 — |G| / |Stab_G(u)|  (algebraic, O(n))
+      in_orbit(candidate, rep)      — single-atom membership test
+      orbit_brute(u)                — same as orbit(), O(∏ n_g!)
       in_orbit_brute(candidate, rep)— same as in_orbit(), O(∏ n_g!)
-      sign_correlation_type_brute(u, v) — same as sign_correlation_type(), O(∏ n_g!)
+
+    Atom-pair methods (_pair suffix):
+      orbit_pair(u, v)              — the G-orbit of the atom-pair
+      stabiliser_size_pair(u, v)    — |Stab_G(u, v)|  (algebraic, O(n))
+      orbit_size_pair(u, v)         — |G| / |Stab_G(u, v)|  (algebraic, O(n))
+      in_orbit_pair(candidate, rep) — pair membership test
+      orbit_brute_pair(u, v)        — same as orbit_pair(), O(∏ n_g!)
+      in_orbit_brute_pair(c, rep)   — same as in_orbit_pair(), O(∏ n_g!)
+
+    Group structure:
+      order()                       — |G|
+
+    Sign-correlation (pair only):
+      sign_correlation_type(u, v)   — how signs are coupled  (algebraic, O(n))
+      sign_correlation_type_brute(u, v) — same, O(∏ n_g!)
 
     All *_brute methods are permanent O(∏ n_g!) reference implementations.
     They must not be removed; they serve as ground-truth for validating faster
@@ -38,12 +48,12 @@ TheGroup
 
 Step history
 ------------
-Step 2: DirectOrbitEnumerator rewritten to use TheGroup.orbit() rather than the
-    old OrbitUnion approach.
+Step 2: DirectOrbitEnumerator rewritten to use TheGroup.orbit_pair() rather than
+    the old OrbitUnion approach.
 Step 3: sign_correlation_type() made algebraic O(n); *_brute variants added for
-    all four orbit-related methods; in_orbit/orbit primary
+    all four orbit-related methods; in_orbit_pair/orbit_pair primary
     methods still delegate to their *_brute counterparts pending Step 4.
-Step 4 (planned): replace orbit(), in_orbit() with O(orbit_size)
+Step 4 (planned): replace orbit_pair(), in_orbit_pair() with O(orbit_size)
     direct combinatorial algorithms.
 """
 from __future__ import annotations
@@ -164,12 +174,13 @@ def _O(k: int) -> int:
 @dataclass(frozen=True)
 class TheGroup:
     """
-    A discrete group acting on atom-pairs.
+    A discrete group acting on atoms and atom-pairs.
 
     In the common case the group is G = S_{n_1} × ... × S_{n_m}: each factor
     S_{n_g} permutes the labels of the g-th VectorType, and the permutation is
-    applied *simultaneously* to both atoms of a pair.  This is the physically
-    natural symmetry for systems of indistinguishable particles.
+    applied simultaneously to one atom (single-atom methods) or to both atoms
+    of a pair (_pair methods).  This is the physically natural symmetry for
+    systems of indistinguishable particles.
 
     The class is designed to accommodate extensions without breaking the
     interface.  Future variants may add ParityOp (spatial inversion),
@@ -233,21 +244,101 @@ class TheGroup:
             yield perm_map
 
     # ------------------------------------------------------------------
-    # Orbit and stabiliser
+    # Single-atom orbit and stabiliser
     # ------------------------------------------------------------------
 
-    def orbit(self, u: Atom, v: Atom) -> list[tuple[Atom, Atom]]:
+    def orbit(self, u: Atom) -> list[Atom]:
         """
-        Return all distinct (Atom, Atom) pairs in the G-orbit of (u, v).
+        Return all distinct Atoms in the G-orbit of u.
 
         Currently delegates to orbit_brute().  A direct O(orbit_size)
         combinatorial implementation is planned for Step 4.   TODO !!
         """
-        return self.orbit_brute(u, v)
+        return self.orbit_brute(u)
 
-    def orbit_brute(self, u: Atom, v: Atom) -> list[tuple[Atom, Atom]]:
+    def orbit_brute(self, u: Atom) -> list[Atom]:
         """
-        Brute-force O(∏ n_g!) orbit enumeration.  Permanent reference.
+        Brute-force O(∏ n_g!) single-atom orbit enumeration.  Permanent reference.
+
+        Every σ ∈ G is applied to u.  The Atom constructor handles label sorting
+        and absorbs permutation parity into the sign for ANTISYMMETRIC operations,
+        so the result is always a list of canonical (sorted-labels) atoms.
+
+        Returns a list with no duplicates in the same order as first encountered
+        while iterating over G.  The first element is always u itself (from the
+        identity permutation).
+        """
+        seen: set[Atom] = set()
+        result: list[Atom] = []
+        for perm_map in self._all_perm_maps():
+            a = self._apply(perm_map, u)
+            if a not in seen:
+                seen.add(a)
+                result.append(a)
+        return result
+
+    def stabiliser_size(self, u: Atom) -> int:
+        """
+        Return |Stab_G(u)| — the number of σ ∈ G with σ·u = u.
+
+        Computed algebraically.  For each group g let ku_g be the number of
+        u's labels drawn from g, and r = n_g - ku_g the remaining labels.
+
+          SYMMETRIC:     stab_g = ku_g! · r!
+          ANTISYMMETRIC: stab_g = E(ku_g) · r!
+
+        For ANTISYMMETRIC atoms only even permutations of u's labels within
+        each group preserve the sign, so only those elements fix u.
+        The total stabiliser size is the product across all groups.
+        """
+        antisym = u.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+        u_set = set(u.labels)
+        stab = 1
+        for g in self.types:
+            ku = len(u_set & set(g.labels))
+            r = g.size - ku
+            stab_g = (_E(ku) if antisym else math.factorial(ku)) * math.factorial(r)
+            stab *= stab_g
+        return stab
+
+    def orbit_size(self, u: Atom) -> int:
+        """Return |orbit(u)| = |G| / |Stab_G(u)|."""
+        return self.order() // self.stabiliser_size(u)
+
+    # ------------------------------------------------------------------
+    # Single-atom membership
+    # ------------------------------------------------------------------
+
+    def in_orbit(self, candidate: Atom, representative: Atom) -> bool:
+        """
+        Return True iff candidate ∈ G · representative.
+
+        Currently delegates to in_orbit_brute().
+        """
+        return self.in_orbit_brute(candidate, representative)
+
+    def in_orbit_brute(self, candidate: Atom, representative: Atom) -> bool:
+        """
+        Brute-force O(∏ n_g!) single-atom membership test.  Permanent reference.
+        """
+        return candidate in self.orbit_brute(representative)
+
+    # ------------------------------------------------------------------
+    # Atom-pair orbit and stabiliser
+    # ------------------------------------------------------------------
+
+    def orbit_pair(self, u: Atom, v: Atom) -> list[tuple[Atom, Atom]]:
+        """
+        Return all distinct (Atom, Atom) pairs in the G-orbit of (u, v).
+
+        Currently delegates to orbit_brute_pair().  A direct O(orbit_size)
+        combinatorial implementation is planned for Step 4.   TODO !!
+        """
+        return self.orbit_brute_pair(u, v)
+
+    def orbit_brute_pair(self, u: Atom, v: Atom) -> list[tuple[Atom, Atom]]:
+        """
+        Brute-force O(∏ n_g!) pair-orbit enumeration.  Permanent reference.
 
         Every σ ∈ G is applied simultaneously to both atoms.  The Atom
         constructor handles label sorting and absorbs permutation parity into
@@ -267,7 +358,7 @@ class TheGroup:
                 result.append(pair)
         return result
 
-    def stabiliser_size(self, u: Atom, v: Atom) -> int:
+    def stabiliser_size_pair(self, u: Atom, v: Atom) -> int:
         """
         Return |Stab_G(u, v)| — the number of σ ∈ G with σ·(u, v) = (u, v).
 
@@ -319,15 +410,15 @@ class TheGroup:
             stab *= stab_g
         return stab
 
-    def orbit_size(self, u: Atom, v: Atom) -> int:
-        """Return |orbit(u, v)| = |G| / |Stab_G(u, v)|."""
-        return self.order() // self.stabiliser_size(u, v)
+    def orbit_size_pair(self, u: Atom, v: Atom) -> int:
+        """Return |orbit_pair(u, v)| = |G| / |Stab_G(u, v)|."""
+        return self.order() // self.stabiliser_size_pair(u, v)
 
     # ------------------------------------------------------------------
-    # Membership
+    # Atom-pair membership
     # ------------------------------------------------------------------
 
-    def in_orbit(
+    def in_orbit_pair(
         self,
         candidate: tuple[Atom, Atom],
         representative: tuple[Atom, Atom],
@@ -335,23 +426,23 @@ class TheGroup:
         """
         Return True iff candidate ∈ G · representative.
 
-        Currently delegates to in_orbit_brute().  An algebraic O(n)
+        Currently delegates to in_orbit_brute_pair().  An algebraic O(n)
         implementation is planned for Step 4.
         """
-        return self.in_orbit_brute(candidate, representative)
+        return self.in_orbit_brute_pair(candidate, representative)
 
-    def in_orbit_brute(
+    def in_orbit_brute_pair(
         self,
         candidate: tuple[Atom, Atom],
         representative: tuple[Atom, Atom],
     ) -> bool:
         """
-        Brute-force O(∏ n_g!) membership test.  Permanent reference.
+        Brute-force O(∏ n_g!) pair membership test.  Permanent reference.
 
         Equivalent to asking whether candidate and representative are in the
         same G-orbit.
         """
-        orb_set = self.orbit_brute(representative[0], representative[1])
+        orb_set = self.orbit_brute_pair(representative[0], representative[1])
         return candidate in orb_set
 
     # ------------------------------------------------------------------
@@ -462,7 +553,7 @@ class TheGroup:
 
         See SignCorrelationType for a full description of each type.
         """
-        orb = self.orbit_brute(u, v)
+        orb = self.orbit_brute_pair(u, v)
 
         # u_flips_freely: ∃ (a, b) in orbit where a.sign ≠ u.sign AND b.sign == v.sign
         u_flips_freely = any(
@@ -490,4 +581,3 @@ class TheGroup:
             return SignCorrelationType.TYPE_NEG
         else:
             return SignCorrelationType.TYPE_11
-

@@ -45,7 +45,7 @@ class DirectOrbitEnumerator(OrbitEnumerator):
     """
     Returns the true G-orbit of a PairFlavour's canonical representative.
 
-    This implementation delegates to context.the_group.orbit(u_canon, v_canon),
+    This implementation delegates to context.the_group.orbit_pair(u_canon, v_canon),
     where (u_canon, v_canon) is constructed from pf in the same way as
     pf.orbit_elements.  The result is identical to BruteForceOrbitEnumerator
     for all PairFlavours — the parametrised cross-comparison tests in
@@ -57,7 +57,7 @@ class DirectOrbitEnumerator(OrbitEnumerator):
     pf.orbit_elements(context) and must never be changed.
 
     DirectOrbitEnumerator is the production path: it currently uses
-    TheGroup.orbit (also brute-force O(∏ n_g!)), but is designed to be
+    TheGroup.orbit_pair (also brute-force O(∏ n_g!)), but is designed to be
     progressively replaced by algebraic shortcut methods in Step 3 of the
     architecture redesign — without touching BruteForce.
 
@@ -93,4 +93,4 @@ class DirectOrbitEnumerator(OrbitEnumerator):
         u_canon = Atom(pf.op_u, tuple(u_labels), sign=+1)
         v_canon = Atom(pf.op_v, tuple(v_labels), sign=+1)
 
-        return context.the_group.orbit(u_canon, v_canon)
+        return context.the_group.orbit_pair(u_canon, v_canon)
