@@ -142,15 +142,39 @@ A **TheGroup** represents the full symmetry group G = S_{n₁} × … × S_{nₘ
 the direct product of one symmetric group per vector type.  It is the
 group-theory counterpart to the collection of VectorTypes: the VectorTypes
 name and enumerate the labels; TheGroup encodes the symmetry that acts on them.
+TheGroup acts on both individual atoms and on atom-pairs.
 
 TheGroup stores `types: tuple[VectorType]` and exposes:
 
-- `orbit(u, v) -> list[(Atom, Atom)]` — all atom-pairs in the G-orbit of the
-  canonical representative of the given pair.
-- `stabiliser_size(atom_tuple) -> int` — size of the stabiliser subgroup.
-- `sign_correlation_type(pf) -> SignCorrelationType` — classifies how the
-  G-orbit of a PairFlavour couples the signs of the two atoms.
+*Single-atom methods* (short names — the simpler, more fundamental case):
+
+- `orbit(u) -> list[Atom]` — all atoms in the G-orbit of `u`.
+- `orbit_brute(u) -> list[Atom]` — same, brute-force reference implementation.
+- `stabiliser_size(u) -> int` — `|Stab_G(u)|`, computed algebraically.
+- `orbit_size(u) -> int` — `|G| / |Stab_G(u)|`, computed algebraically.
+- `in_orbit(candidate, rep) -> bool` — True iff `candidate ∈ G·rep`.
+- `in_orbit_brute(candidate, rep) -> bool` — same, brute-force reference.
+
+*Atom-pair methods* (`_pair` suffix):
+
+- `orbit_pair(u, v) -> list[(Atom, Atom)]` — all atom-pairs in the G-orbit of `(u, v)`.
+- `orbit_brute_pair(u, v) -> list[(Atom, Atom)]` — same, brute-force reference.
+- `stabiliser_size_pair(u, v) -> int` — `|Stab_G(u, v)|`, computed algebraically.
+- `orbit_size_pair(u, v) -> int` — `|G| / |Stab_G(u, v)|`, computed algebraically.
+- `in_orbit_pair(candidate, rep) -> bool` — True iff `candidate ∈ G·rep` (both args are `(Atom, Atom)` tuples).
+- `in_orbit_brute_pair(candidate, rep) -> bool` — same, brute-force reference.
+
+*Sign correlation (pair only):*
+
+- `sign_correlation_type(u, v) -> SignCorrelationType` — classifies how the G-orbit of `(u, v)` couples the signs of the two atoms.  Algebraic O(n).
+- `sign_correlation_type_brute(u, v) -> SignCorrelationType` — same, brute-force reference.
+
+*Group structure:*
+
 - `order() -> int` — `|G| = n₁! × … × nₘ!`.
+
+All `*_brute` methods are permanent O(∏ n_g!) reference implementations kept
+for cross-validation; they must not be removed.
 
 TheGroup stores VectorType objects (rather than just sizes) because the
 brute-force enumeration methods need actual label sequences to generate
