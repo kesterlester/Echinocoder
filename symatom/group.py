@@ -340,7 +340,7 @@ class TheGroup:
         Equivalent to asking whether candidate and representative are in the
         same G-orbit.
         """
-        orb_set = set(self.orbit_brute(representative[0], representative[1]))
+        orb_set = self.orbit_brute(representative[0], representative[1])
         return candidate in orb_set
 
     # ------------------------------------------------------------------
