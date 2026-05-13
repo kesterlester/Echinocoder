@@ -2,7 +2,7 @@
 import pytest
 import numpy as np
 from symatom import (
-    ArgumentSymmetry, VectorGroup, Context, Plan, SimpleCanonicaliser,
+    ArgumentSymmetry, VectorType, Context, Plan, SimpleCanonicaliser,
     repS, canonical_pair_flavours,
 )
 from symcoder import EvaluableOperation, encode, encode_brute, describe_encoding
@@ -32,11 +32,11 @@ def eps3():
 
 @pytest.fixture
 def electrons():
-    return VectorGroup("electrons", ("a", "b", "c", "d"))
+    return VectorType("electrons", ("a", "b", "c", "d"))
 
 @pytest.fixture
 def ctx(electrons):
-    return Context(groups=(electrons,))
+    return Context(types=(electrons,))
 
 @pytest.fixture
 def plan(dot, eps3, ctx):
@@ -78,9 +78,9 @@ def test_encode_dot_only_length(dot, ctx, event_3d):
 def test_encode_brute_length_matches_sum_of_counts(dot, eps3, plan, ctx, event_3d):
     """encode_brute() gives 2*sum(pf.count()) reals — n complex coeffs × 2 reals each."""
     fo_list = repS(ctx, (dot, eps3))
-    group_sizes = tuple(g.size for g in ctx.groups)
+    type_sizes = tuple(g.size for g in ctx.types)
     expected_len = 2 * sum(
-        pf.count(group_sizes)
+        pf.count(type_sizes)
         for pf in canonical_pair_flavours(fo_list, ctx)
     )
     assert len(encode_brute(plan, event_3d)) == expected_len
@@ -146,9 +146,9 @@ def test_encode_deterministic(dot, plan, ctx, event_3d):
 # ---------------------------------------------------------------------------
 
 def test_encode_two_groups(dot, eps3):
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
-    ctx  = Context(groups=(electrons, muons))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
+    ctx  = Context(types=(electrons, muons))
     plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot, eps3))
     event = {
         "a": np.array([1.0, 0.0, 0.0]),
@@ -164,9 +164,9 @@ def test_encode_two_groups(dot, eps3):
 
 def test_encode_two_groups_permutation_invariant(dot):
     """Swapping muon labels p↔q leaves the encoding unchanged."""
-    electrons = VectorGroup("electrons", ("a", "b"))
-    muons     = VectorGroup("muons",     ("p", "q"))
-    ctx  = Context(groups=(electrons, muons))
+    electrons = VectorType("electrons", ("a", "b"))
+    muons     = VectorType("muons",     ("p", "q"))
+    ctx  = Context(types=(electrons, muons))
     plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
     event = {
         "a": np.array([1.0, 2.0, 0.0]),
@@ -211,13 +211,13 @@ def _make_ops_and_event():
 def test_eval_pair_orbit_positive_count(dot, eps3, ctx):
     """eval_pair_orbit_positive always returns exactly pf.count() values."""
     fo_list = repS(ctx, (dot, eps3))
-    group_sizes = tuple(g.size for g in ctx.groups)
+    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
         plan = Plan(context=ctx, operations=(dot, eps3))
         event = {l: np.random.randn(3) for l in ctx.all_labels}
         pos = eval_pair_orbit_positive(pf, plan, event)
-        assert len(pos) == pf.count(group_sizes), (
-            f"Expected {pf.count(group_sizes)}, got {len(pos)} for {pf!r}"
+        assert len(pos) == pf.count(type_sizes), (
+            f"Expected {pf.count(type_sizes)}, got {len(pos)} for {pf!r}"
         )
 
 
@@ -237,16 +237,16 @@ def test_eval_pair_orbit_positive_count_unusual_label_order():
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
     )
-    g = VectorGroup("particles", labels)
+    g = VectorType("particles", labels)
     ctx = Context((g,))
     plan = Plan(context=ctx, operations=(dot, eps3))
     event = {l: np.random.randn(3) for l in labels}
     fo_list = repS(ctx, (dot, eps3))
-    group_sizes = tuple(g.size for g in ctx.groups)
+    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
         pos = eval_pair_orbit_positive(pf, plan, event)
-        assert len(pos) == pf.count(group_sizes), (
-            f"Expected {pf.count(group_sizes)}, got {len(pos)} for {pf!r}"
+        assert len(pos) == pf.count(type_sizes), (
+            f"Expected {pf.count(type_sizes)}, got {len(pos)} for {pf!r}"
         )
 
 
@@ -306,9 +306,9 @@ def test_compressed_length_sym_sym(dot, ctx, event_3d):
     """SYM×SYM: compressed length == orbit_size (no compression)."""
     plan = Plan(context=ctx, operations=(dot,))
     fo_list = repS(ctx, (dot,))
-    group_sizes = tuple(g.size for g in ctx.groups)
+    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert pf.count(group_sizes) == pf.orbit_size(group_sizes)
+        assert pf.count(type_sizes) == pf.orbit_size(type_sizes)
 
 
 def test_compressed_length_antisym_antisym(ctx, event_3d):
@@ -332,10 +332,10 @@ def test_compressed_length_antisym_antisym(ctx, event_3d):
     )
     plan = Plan(context=ctx, operations=(eps3,))
     fo_list = repS(ctx, (eps3,))
-    group_sizes = tuple(g.size for g in ctx.groups)
+    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
         pos_values = eval_pair_orbit_positive(pf, plan, event_3d)
-        assert len(pos_values) == pf.count(group_sizes)
+        assert len(pos_values) == pf.count(type_sizes)
 
 
 def test_compressed_length_sym_antisym(ctx):
@@ -353,7 +353,7 @@ def test_compressed_length_sym_antisym(ctx):
     )
     plan = Plan(context=ctx, operations=(dot, eps3))
     fo_list = repS(ctx, (dot, eps3))
-    group_sizes = tuple(g.size for g in ctx.groups)
+    type_sizes = tuple(g.size for g in ctx.types)
     mixed_pfs = [
         pf for pf in canonical_pair_flavours(fo_list, ctx)
         if (pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
@@ -361,7 +361,7 @@ def test_compressed_length_sym_antisym(ctx):
     ]
     assert len(mixed_pfs) > 0, "Need at least one SYM×ANTISYM pair for this test"
     for pf in mixed_pfs:
-        assert pf.count(group_sizes) == pf.orbit_size(group_sizes) // 2
+        assert pf.count(type_sizes) == pf.orbit_size(type_sizes) // 2
 
 
 # ---------------------------------------------------------------------------
@@ -391,9 +391,9 @@ def test_embed_compressed_type_neg_permutation_invariant():
     from symcoder.encode import _embed_compressed
     from symcoder.pairs import eval_pair_orbit_positive
     eps2 = _make_eps2()
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
-    ctx  = Context(groups=(electrons, muons))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
+    ctx  = Context(types=(electrons, muons))
     plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(eps2,))
 
     np.random.seed(42)
@@ -408,7 +408,7 @@ def test_embed_compressed_type_neg_permutation_invariant():
     event_swapped["a"], event_swapped["b"] = event["b"], event["a"]
 
     fo_list = repS(ctx, (eps2,))
-    group_sizes = tuple(g.size for g in ctx.groups)
+    type_sizes = tuple(g.size for g in ctx.types)
 
     # Find a TYPE_NEG PairFlavour (AA, full electron overlap)
     from symcoder.encode import _sign_correlation_type_from_pf
@@ -441,9 +441,9 @@ def test_embed_compressed_type_neg_distinguishes_events():
     from symcoder.encode import _embed_compressed, _sign_correlation_type_from_pf
     from symatom.group import SignCorrelationType
     eps2 = _make_eps2()
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
-    ctx  = Context(groups=(electrons, muons))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
+    ctx  = Context(types=(electrons, muons))
     plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(eps2,))
 
     # Two events designed to yield z_k values with opposite Im(z_k²)
@@ -461,7 +461,7 @@ def test_embed_compressed_type_neg_distinguishes_events():
     }
 
     fo_list = repS(ctx, (eps2,))
-    group_sizes = tuple(g.size for g in ctx.groups)
+    type_sizes = tuple(g.size for g in ctx.types)
 
     type_neg_pfs = [
         pf for pf in canonical_pair_flavours(fo_list, ctx)
@@ -491,9 +491,9 @@ def test_encode_two_groups_permutation_invariant_eps2():
     ensures the full encode pipeline handles it correctly.
     """
     eps2 = _make_eps2()
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
-    ctx  = Context(groups=(electrons, muons))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
+    ctx  = Context(types=(electrons, muons))
     plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(eps2,))
     event = {
         "a": np.array([1.3, 0.2]),

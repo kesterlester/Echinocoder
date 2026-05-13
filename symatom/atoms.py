@@ -55,7 +55,7 @@ class Operation:
 
 
 @dataclass(frozen=True)
-class VectorGroup:
+class VectorType:
     """
     A named, ordered collection of vector labels all of the same physical type.
     The symmetric group S_n acts on it by permuting its labels.
@@ -67,11 +67,11 @@ class VectorGroup:
         if not isinstance(self.labels, tuple):
             raise TypeError(f"labels must be a tuple, got {type(self.labels)}")
         if len(set(self.labels)) != len(self.labels):
-            raise ValueError(f"VectorGroup labels must be distinct, got {self.labels!r}")
+            raise ValueError(f"VectorType labels must be distinct, got {self.labels!r}")
 
     def __repr__(self):
         lbls = ", ".join(str(l) for l in self.labels)
-        return f"VectorGroup('{self.name}': {lbls})"
+        return f"VectorType('{self.name}': {lbls})"
 
     @property
     def size(self) -> int:

@@ -2,7 +2,7 @@
 import math
 import pytest
 import numpy as np
-from symatom import ArgumentSymmetry, Atom, Context, VectorGroup
+from symatom import ArgumentSymmetry, Atom, Context, VectorType
 from symcoder import EvaluableOperation, evaluate
 
 

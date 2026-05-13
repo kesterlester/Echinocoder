@@ -2,7 +2,7 @@
 import math
 import pytest
 from symatom import (
-    ArgumentSymmetry, Operation, VectorGroup, Atom,
+    ArgumentSymmetry, Operation, VectorType, Atom,
     Context, Plan, SimpleCanonicaliser,
     orbit, stabiliser_size, orbit_and_stabiliser_size,
 )
@@ -22,7 +22,7 @@ def eps3():
 
 @pytest.fixture
 def electrons():
-    return VectorGroup("electrons", ("a", "b", "c", "d"))
+    return VectorType("electrons", ("a", "b", "c", "d"))
 
 @pytest.fixture
 def plan(dot, eps3, electrons):
@@ -137,8 +137,8 @@ def test_mass_and_dot_different_orbits(plan, dot, mass):
 # ---------------------------------------------------------------------------
 
 def test_two_group_orbit(dot):
-    electrons = VectorGroup("electrons", ("a", "b"))
-    muons     = VectorGroup("muons",     ("p", "q"))
+    electrons = VectorType("electrons", ("a", "b"))
+    muons     = VectorType("muons",     ("p", "q"))
     ctx  = Context((electrons, muons))
     plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
 
@@ -150,8 +150,8 @@ def test_two_group_orbit(dot):
     assert len(orbit(x, plan)) == 1
 
 def test_two_group_orbit_stabiliser_theorem(dot):
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
     ctx  = Context((electrons, muons))
     plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
     G    = math.factorial(3) * math.factorial(2)  # 6 * 2 = 12

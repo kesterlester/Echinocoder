@@ -44,7 +44,7 @@ class SimpleCanonicaliser:
 
     Canonical form = the lexicographically smallest atom tuple obtained by:
       1. Trying every combination of permutations of the labels in each
-         VectorGroup (i.e. every element of the full symmetry group).
+         VectorType (i.e. every element of the full symmetry group).
       2. For each relabeling: construct relabeled Atoms (the Atom constructor
          automatically sorts each atom's own argument list and adjusts sign
          for ANTISYMMETRIC operations).
@@ -64,13 +64,13 @@ class SimpleCanonicaliser:
         best_key = None
         best     = None
 
-        group_perms = [list(_iperms(g.labels)) for g in context.groups]
+        type_perms = [list(_iperms(g.labels)) for g in context.types]
 
-        for perm_combo in _product(*group_perms):
+        for perm_combo in _product(*type_perms):
             # Build the label relabeling for this group-permutation combination.
             relabeling = {}
-            for group, perm in zip(context.groups, perm_combo):
-                for orig, new in zip(group.labels, perm):
+            for vt, perm in zip(context.types, perm_combo):
+                for orig, new in zip(vt.labels, perm):
                     relabeling[orig] = new
 
             # Apply relabeling; the Atom constructor handles internal arg sorting.
@@ -102,7 +102,7 @@ class DirectCanonicaliser:
     Background and motivation
     --------------------------
     SimpleCanonicaliser tries every element of the full symmetry group
-    G = S_{n1} x S_{n2} x ... (one symmetric group per VectorGroup).  For a
+    G = S_{n1} x S_{n2} x ... (one symmetric group per VectorType).  For a
     group of size n, that is n! permutations.  At n=10 this is ~3.6 million;
     at n=30 it is ~2.7e32 — completely intractable.
 
@@ -135,7 +135,7 @@ class DirectCanonicaliser:
 
     Algorithm (per canonicalise call)
     -----------------------------------
-    For each VectorGroup g:
+    For each VectorType g:
       1. Collect active_g = labels from g that appear in at least one atom.
          (Inactive labels are ignored entirely.)
       2. Set canonical_targets_g = sorted(g.labels)[:len(active_g)].
@@ -185,7 +185,7 @@ class DirectCanonicaliser:
 
         # For each group build the list of bijections: active -> canonical targets
         group_bijection_lists = []
-        for g in context.groups:
+        for g in context.types:
             active = [l for l in g.labels if l in all_active]
             if not active:
                 group_bijection_lists.append([{}])

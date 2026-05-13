@@ -23,8 +23,8 @@ def _op_fl_key(op: Operation, fl: Flavour) -> tuple:
 class Flavour:
     """
     Label-composition tuple: how many arguments an operation draws from each
-    vector group.  For a context with m groups, Flavour((k_1,...,k_m)) means
-    k_i arguments come from group i.  The rank of the associated operation
+    vector type.  For a context with m vector types, Flavour((k_1,...,k_m)) means
+    k_i arguments come from vector type i.  The rank of the associated operation
     must equal sum(counts).
 
     Flavour is context-agnostic — it only carries counts; the context is held
@@ -45,9 +45,9 @@ class Flavour:
     def rank(self) -> int:
         return sum(self.counts)
 
-    def describe(self, group_names) -> str:
+    def describe(self, type_names) -> str:
         """Return a human-readable string using group names, e.g. '2 electrons + 1 muon'."""
-        parts = [f"{k} {name}" for k, name in zip(self.counts, group_names) if k > 0]
+        parts = [f"{k} {name}" for k, name in zip(self.counts, type_names) if k > 0]
         return " + ".join(parts) if parts else "empty"
 
     def __repr__(self):
@@ -64,14 +64,14 @@ class Flavour:
 # Internal helper
 # ---------------------------------------------------------------------------
 
-def _valid_flavours(groups: tuple, rank: int):
+def _valid_flavours(types: tuple, rank: int):
     """Yield every Flavour consistent with group sizes and the given rank."""
     def _rec(remaining, idx, acc):
-        if idx == len(groups):
+        if idx == len(types):
             if remaining == 0:
                 yield Flavour(tuple(acc))
             return
-        for k in range(min(remaining, groups[idx].size) + 1):
+        for k in range(min(remaining, types[idx].size) + 1):
             yield from _rec(remaining - k, idx + 1, acc + [k])
     yield from _rec(rank, 0, [])
 
@@ -95,19 +95,19 @@ class FlavouredOperator:
     context:    Context
 
     def __post_init__(self):
-        if len(self.flavour) != len(self.context.groups):
+        if len(self.flavour) != len(self.context.types):
             raise ValueError(
                 f"Flavour has {len(self.flavour)} counts but context has "
-                f"{len(self.context.groups)} groups"
+                f"{len(self.context.types)} vector types"
             )
         if self.flavour.rank != self.operation.rank:
             raise ValueError(
                 f"Flavour rank {self.flavour.rank} != operation rank {self.operation.rank}"
             )
-        for group, k in zip(self.context.groups, self.flavour):
-            if k > group.size:
+        for vt, k in zip(self.context.types, self.flavour):
+            if k > vt.size:
                 raise ValueError(
-                    f"Flavour count {k} exceeds group '{group.name}' size {group.size}"
+                    f"Flavour count {k} exceeds vector type '{vt.name}' size {vt.size}"
                 )
 
     def count(self) -> int:
@@ -117,7 +117,7 @@ class FlavouredOperator:
         """
         base = math.prod(
             math.comb(g.size, k)
-            for g, k in zip(self.context.groups, self.flavour)
+            for g, k in zip(self.context.types, self.flavour)
         )
         return base
 
@@ -131,17 +131,17 @@ class FlavouredOperator:
 
         TODO: This should move to a lazy use of TheGroup.
         """
-        per_group = [
+        per_type = [
             list(_combinations(g.labels, k))
-            for g, k in zip(self.context.groups, self.flavour)
+            for g, k in zip(self.context.types, self.flavour)
         ]
-        for combo_parts in _iproduct(*per_group):
+        for combo_parts in _iproduct(*per_type):
             labels = tuple(lbl for part in combo_parts for lbl in part)
             yield Atom(self.operation, labels, sign=+1)
 
     def __repr__(self):
-        group_names = [g.name for g in self.context.groups]
-        fl_str = self.flavour.describe(group_names)
+        type_names = [g.name for g in self.context.types]
+        fl_str = self.flavour.describe(type_names)
         return f"FO({self.operation.name}, {fl_str})"
 
     def canonical_representative(self, canonicaliser) -> Atom:
@@ -163,14 +163,14 @@ class FlavouredOperator:
         # the sign can differ.
         if atom.operation != self.operation:
             return False
-        label_group = {
+        label_type = {
             lbl: i
-            for i, g in enumerate(self.context.groups)
+            for i, g in enumerate(self.context.types)
             for lbl in g.labels
         }
-        counts = [0] * len(self.context.groups)
+        counts = [0] * len(self.context.types)
         for lbl in atom.labels:
-            idx = label_group.get(lbl)
+            idx = label_type.get(lbl)
             if idx is None:
                 return False
             counts[idx] += 1
@@ -192,7 +192,7 @@ def repS(context: Context, operations) -> list:
     return [
         FlavouredOperator(operation=op, flavour=fl, context=context)
         for op in operations
-        for fl in _valid_flavours(context.groups, op.rank)
+        for fl in _valid_flavours(context.types, op.rank)
     ]
 
 
@@ -233,16 +233,16 @@ class PairFlavour:
     overlap:   tuple        # one non-negative int per group
 
     def __post_init__(self):
-        n_groups = len(self.overlap)
-        if len(self.flavour_u.counts) != n_groups:
+        n_types = len(self.overlap)
+        if len(self.flavour_u.counts) != n_types:
             raise ValueError(
                 f"flavour_u has {len(self.flavour_u.counts)} entries but "
-                f"overlap has {n_groups}"
+                f"overlap has {n_types}"
             )
-        if len(self.flavour_v.counts) != n_groups:
+        if len(self.flavour_v.counts) != n_types:
             raise ValueError(
                 f"flavour_v has {len(self.flavour_v.counts)} entries but "
-                f"overlap has {n_groups}"
+                f"overlap has {n_types}"
             )
         for i, (ku, kv, s) in enumerate(
             zip(self.flavour_u.counts, self.flavour_v.counts, self.overlap)
@@ -277,7 +277,7 @@ class PairFlavour:
             f" × {_side(self.op_v, self.flavour_v)}, overlap=({ov_str}))"
         )
 
-    def count(self, group_sizes: tuple) -> int:
+    def count(self, type_sizes: tuple) -> int:
         """
         Number of ordered atom-pairs (u, v) with this PairFlavour.
 
@@ -289,14 +289,14 @@ class PairFlavour:
         op_u == op_v and flavour_u == flavour_v, each unordered pair {u, v}
         with u != v appears twice.  Sign variants are not counted here.
         """
-        if len(group_sizes) != len(self.overlap):
+        if len(type_sizes) != len(self.overlap):
             raise ValueError(
-                f"group_sizes has {len(group_sizes)} entries but "
+                f"type_sizes has {len(type_sizes)} entries but "
                 f"overlap has {len(self.overlap)}"
             )
         total = 1
         for n, ku, kv, s in zip(
-            group_sizes, self.flavour_u.counts, self.flavour_v.counts, self.overlap
+            type_sizes, self.flavour_u.counts, self.flavour_v.counts, self.overlap
         ):
             if n - ku - kv + s < 0:
                 return 0    # group too small; should not arise for valid PairFlavours
@@ -307,7 +307,7 @@ class PairFlavour:
             )
         return total
 
-    def orbit_size(self, group_sizes: tuple) -> int:
+    def orbit_size(self, type_sizes: tuple) -> int:
         """
         Number of (Atom, Atom) pairs in the G-orbit of the canonical
         representative (+u_c, +v_c) of this PairFlavour.
@@ -328,7 +328,7 @@ class PairFlavour:
         conventions used in this codebase.  If labels interleave, the
         formula may be incorrect; use len(orbit_elements(context)) instead.
         """
-        if self.count(group_sizes) == 0:
+        if self.count(type_sizes) == 0:
             return 0
 
         def E(k):
@@ -344,7 +344,7 @@ class PairFlavour:
 
         group_order = 1
         stab = 1
-        for n, ku, kv, s in zip(group_sizes,
+        for n, ku, kv, s in zip(type_sizes,
                                   self.flavour_u.counts,
                                   self.flavour_v.counts,
                                   self.overlap):
@@ -376,7 +376,7 @@ class PairFlavour:
 
         Applies every element of G = S_{n_1} × ... × S_{n_m} simultaneously
         to the canonical pair, collecting unique results via a seen-set.
-        The length of the returned list equals orbit_size(group_sizes).
+        The length of the returned list equals orbit_size(type_sizes).
 
         Complexity: O(∏_g n_g!) — suitable for small test contexts only.
         For encoding, use DirectOrbitEnumerator which generates the (+,+)
@@ -392,13 +392,13 @@ class PairFlavour:
         """
         from itertools import permutations as _perms
 
-        group_sizes = tuple(g.size for g in context.groups)
-        if self.count(group_sizes) == 0:
+        type_sizes = tuple(g.size for g in context.types)
+        if self.count(type_sizes) == 0:
             return []
 
         # Canonical representative: first valid label assignment.
         u_labels, v_labels = [], []
-        for g, ku, kv, s in zip(context.groups, self.flavour_u.counts,
+        for g, ku, kv, s in zip(context.types, self.flavour_u.counts,
                                   self.flavour_v.counts, self.overlap):
             u_labels.extend(g.labels[:ku])               # first ku labels for u
             v_labels.extend(g.labels[:s])                # shared labels for v
@@ -410,9 +410,9 @@ class PairFlavour:
         # Apply every σ ∈ G simultaneously to (u_canon, v_canon).
         seen = set()
         result = []
-        for combo in _iproduct(*[list(_perms(g.labels)) for g in context.groups]):
+        for combo in _iproduct(*[list(_perms(g.labels)) for g in context.types]):
             perm_map = {}
-            for g, perm in zip(context.groups, combo):
+            for g, perm in zip(context.types, combo):
                 for orig, new in zip(g.labels, perm):
                     perm_map[orig] = new
             new_u = Atom(self.op_u,
@@ -441,7 +441,7 @@ def pair_flavour_of(atom_u: Atom, atom_v: Atom, context: Context) -> PairFlavour
     """
     labels_v_set = set(atom_v.labels)
     flu, flv, ov = [], [], []
-    for g in context.groups:
+    for g in context.types:
         g_set = set(g.labels)
         ku = sum(1 for lbl in atom_u.labels if lbl in g_set)
         kv = sum(1 for lbl in atom_v.labels if lbl in g_set)
@@ -484,24 +484,24 @@ def canonical_pair_flavours(fo_list, context: Context) -> list:
     describe_encoding()) relies on this contiguity and must continue to do so.
     Any alternative implementation of canonical_pair_flavours must preserve it.
     """
-    group_sizes = tuple(g.size for g in context.groups)
+    type_sizes = tuple(g.size for g in context.types)
     seen = set()
     for fo_u in fo_list:
         for fo_v in fo_list:
-            per_group = []
+            per_type = []
             valid = True
             for n, ku, kv in zip(
-                group_sizes, fo_u.flavour.counts, fo_v.flavour.counts
+                type_sizes, fo_u.flavour.counts, fo_v.flavour.counts
             ):
                 s_lo = max(0, ku + kv - n)
                 s_hi = min(ku, kv)
                 if s_lo > s_hi:
                     valid = False
                     break
-                per_group.append(range(s_lo, s_hi + 1))
+                per_type.append(range(s_lo, s_hi + 1))
             if not valid:
                 continue
-            for overlap in _iproduct(*per_group):
+            for overlap in _iproduct(*per_type):
                 pf = PairFlavour(
                     op_u=fo_u.operation, flavour_u=fo_u.flavour,
                     op_v=fo_v.operation, flavour_v=fo_v.flavour,

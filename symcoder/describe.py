@@ -7,20 +7,20 @@ from symatom import repS
 from .pairs import _is_self_pair
 
 
-def _orbit_example(op_name: str, flavour_counts: tuple, groups) -> str:
+def _orbit_example(op_name: str, flavour_counts: tuple, types) -> str:
     """Canonical label example for an ORBIT, e.g. 'dot(a,p)'."""
     labels = []
-    for group, k in zip(groups, flavour_counts):
-        labels.extend(list(group.labels)[:k])
+    for vt, k in zip(types, flavour_counts):
+        labels.extend(list(vt.labels)[:k])
     return f"{op_name}({','.join(str(l) for l in labels)})"
 
 
 def _assoc_example(op_u: str, flavour_u: tuple, op_v: str, flavour_v: tuple,
-                   overlap: tuple, groups) -> str:
+                   overlap: tuple, types) -> str:
     """Canonical label example for an ASSOC/NULL, e.g. 'dot(p,q)×dot(a,p)'."""
     u_labels, v_labels = [], []
-    for group, ku, kv, s in zip(groups, flavour_u, flavour_v, overlap):
-        glabels = list(group.labels)
+    for vt, ku, kv, s in zip(types, flavour_u, flavour_v, overlap):
+        glabels = list(vt.labels)
         u_g = glabels[:ku]
         shared = u_g[:s]
         remaining = [l for l in glabels if l not in u_g]
@@ -216,8 +216,8 @@ def describe_encoding(plan) -> list[SegmentInfo]:
     """
     fo_list = repS(plan.context, plan.operations)
     pf_list = canonical_pair_flavours(fo_list, plan.context)
-    group_sizes = tuple(g.size for g in plan.context.groups)
-    groups = plan.context.groups
+    type_sizes = tuple(g.size for g in plan.context.types)
+    types = plan.context.types
 
     segments = []
     cursor = 0
@@ -243,7 +243,7 @@ def describe_encoding(plan) -> list[SegmentInfo]:
             op_u             = fo.operation.name,
             flavour_u        = tuple(fo.flavour.counts),
             sign_compressed  = antisym,
-            example          = _orbit_example(fo.operation.name, fo.flavour.counts, groups),
+            example          = _orbit_example(fo.operation.name, fo.flavour.counts, types),
         ))
         cursor += n
 
@@ -253,16 +253,16 @@ def describe_encoding(plan) -> list[SegmentInfo]:
     for _bkey, block_iter in groupby(pf_list, key=_block_key):
         block = list(block_iter)
         non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
-        comp_drop = (max(non_self_idx, key=lambda i: block[i].count(group_sizes))
+        comp_drop = (max(non_self_idx, key=lambda i: block[i].count(type_sizes))
                      if non_self_idx else None)
         for i, pf in enumerate(block):
             sc = _symmetry_class(pf)
             ex = _assoc_example(
                 pf.op_u.name, pf.flavour_u.counts,
                 pf.op_v.name, pf.flavour_v.counts,
-                pf.overlap, groups,
+                pf.overlap, types,
             )
-            notional = 2 * pf.count(group_sizes)
+            notional = 2 * pf.count(type_sizes)
             common = dict(
                 op_u            = pf.op_u.name,
                 flavour_u       = tuple(pf.flavour_u.counts),

@@ -3,7 +3,7 @@ symatom — symbolic atom and orbit machinery for permutation + continuous
 symmetry encodings.
 
 Public API:
-  atoms      : ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
+  atoms      : ArgumentSymmetry, Operation, VectorType, Atom, are_negatives
   context    : Context, Plan
   canon      : Canonicaliser (Protocol), SimpleCanonicaliser, DirectCanonicaliser
   orbit_enum : OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
@@ -11,7 +11,7 @@ Public API:
   rep        : Flavour, FlavouredOperator, repS
   group      : TheGroup, SignCorrelationType
 """
-from .atoms      import ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
+from .atoms      import ArgumentSymmetry, Operation, VectorType, Atom, are_negatives
 from .context    import Context, Plan
 from .canon      import Canonicaliser, SimpleCanonicaliser, DirectCanonicaliser
 from .orbit_enum import OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
@@ -25,7 +25,7 @@ from .group      import TheGroup, SignCorrelationType
 __all__ = [
     "ArgumentSymmetry",
     "Operation",
-    "VectorGroup",
+    "VectorType",
     "Atom",
     "are_negatives",
     "Context",

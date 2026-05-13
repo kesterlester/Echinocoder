@@ -168,7 +168,7 @@ class TheGroup:
     A discrete group acting on atom-pairs.
 
     In the common case the group is G = S_{n_1} × ... × S_{n_m}: each factor
-    S_{n_g} permutes the labels of the g-th VectorGroup, and the permutation is
+    S_{n_g} permutes the labels of the g-th VectorType, and the permutation is
     applied *simultaneously* to both atoms of a pair.  This is the physically
     natural symmetry for systems of indistinguishable particles.
 
@@ -198,7 +198,7 @@ class TheGroup:
     def order(self) -> int:
         """Return |G| = ∏_g n_g!  (total number of group elements)."""
         result = 1
-        for g in self.context.groups:
+        for g in self.context.types:
             result *= math.factorial(g.size)
         return result
 
@@ -213,10 +213,10 @@ class TheGroup:
 
     def _all_perm_maps(self):
         """Yield every σ ∈ G as a {label → label} substitution dict."""
-        group_perm_lists = [list(_perms(g.labels)) for g in self.context.groups]
+        group_perm_lists = [list(_perms(g.labels)) for g in self.context.types]
         for combo in _iproduct(*group_perm_lists):
             perm_map = {}
-            for g, perm in zip(self.context.groups, combo):
+            for g, perm in zip(self.context.types, combo):
                 for orig, new in zip(g.labels, perm):
                     perm_map[orig] = new
             yield perm_map
@@ -277,7 +277,7 @@ class TheGroup:
         u_label_set = set(u.labels)
         v_label_set = set(v.labels)
         stab = 1
-        for g in self.context.groups:
+        for g in self.context.types:
             g_set = set(g.labels)
             u_g = u_label_set & g_set
             v_g = v_label_set & g_set
@@ -392,7 +392,7 @@ class TheGroup:
         # Represented as a Python set; start with the identity element.
         achievable: set[tuple[int, int]] = {(1, 1)}
 
-        for g in self.context.groups:
+        for g in self.context.types:
             g_set = set(g.labels)
             u_g = u_set & g_set
             v_g = v_set & g_set

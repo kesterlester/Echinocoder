@@ -276,7 +276,7 @@ def encode_brute(plan, event: dict) -> np.ndarray:
         return np.array([], dtype=float)
 
     seen_keys = set()
-    group_sizes = tuple(g.size for g in plan.context.groups)
+    type_sizes = tuple(g.size for g in plan.context.types)
     parts = []
     for pf in pf_list:
         key = _encoding_canonical_key(pf)
@@ -285,9 +285,9 @@ def encode_brute(plan, event: dict) -> np.ndarray:
             continue
         seen_keys.add(key)
         z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
-        assert len(z_pos) == pf.count(group_sizes), (
+        assert len(z_pos) == pf.count(type_sizes), (
             f"eval_pair_orbit_positive returned {len(z_pos)} values "
-            f"but expected pf.count={pf.count(group_sizes)} for {pf!r}"
+            f"but expected pf.count={pf.count(type_sizes)} for {pf!r}"
         )
         parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
 
@@ -341,7 +341,7 @@ def encode(plan, event: dict) -> np.ndarray:
     """
     fo_list = repS(plan.context, plan.operations)
     pf_list = canonical_pair_flavours(fo_list, plan.context)
-    group_sizes = tuple(g.size for g in plan.context.groups)
+    type_sizes = tuple(g.size for g in plan.context.types)
 
     parts = []
 
@@ -359,7 +359,7 @@ def encode(plan, event: dict) -> np.ndarray:
     for _block_key, block_iter in groupby(pf_list, key=_overlap_block_key):
         block = list(block_iter)
         non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
-        comp_drop = (max(non_self_idx, key=lambda i: block[i].count(group_sizes))
+        comp_drop = (max(non_self_idx, key=lambda i: block[i].count(type_sizes))
                      if non_self_idx else None)
         for i, pf in enumerate(block):
             if _is_self_pair(pf):
@@ -367,9 +367,9 @@ def encode(plan, event: dict) -> np.ndarray:
             if i == comp_drop:
                 continue   # NULL_COMP: deducible by complementation
             z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
-            assert len(z_pos) == pf.count(group_sizes), (
+            assert len(z_pos) == pf.count(type_sizes), (
                 f"eval_pair_orbit_positive returned {len(z_pos)} values "
-                f"but expected pf.count={pf.count(group_sizes)} for {pf!r}"
+                f"but expected pf.count={pf.count(type_sizes)} for {pf!r}"
             )
             parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
 

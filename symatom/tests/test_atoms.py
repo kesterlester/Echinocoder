@@ -1,6 +1,6 @@
-"""Tests for Operation, VectorGroup, Atom construction and are_negatives."""
+"""Tests for Operation, VectorType, Atom construction and are_negatives."""
 import pytest
-from symatom import ArgumentSymmetry, Operation, VectorGroup, Atom, are_negatives
+from symatom import ArgumentSymmetry, Operation, VectorType, Atom, are_negatives
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -43,31 +43,31 @@ def test_operation_frozen(dot):
 
 
 # ---------------------------------------------------------------------------
-# VectorGroup
+# VectorType
 # ---------------------------------------------------------------------------
 
-def test_vector_group_valid():
-    g = VectorGroup("electrons", ("a", "b", "c", "d"))
+def test_vector_type_valid():
+    g = VectorType("electrons", ("a", "b", "c", "d"))
     assert g.size == 4
     assert g.labels == ("a", "b", "c", "d")
 
-def test_vector_group_empty():
+def test_vector_type_empty():
     # Empty groups are allowed: S_0 is the trivial group, 0!=1, C(0,0)=1.
     # They carry meaningful identity information (e.g. muon_count=0 vs jet_count=0).
-    g = VectorGroup("empty", ())
+    g = VectorType("empty", ())
     assert g.size == 0
     assert g.labels == ()
 
-def test_vector_group_duplicate_labels():
+def test_vector_type_duplicate_labels():
     with pytest.raises(ValueError, match="distinct"):
-        VectorGroup("bad", ("a", "a", "b"))
+        VectorType("bad", ("a", "a", "b"))
 
-def test_vector_group_requires_tuple():
+def test_vector_type_requires_tuple():
     with pytest.raises(TypeError):
-        VectorGroup("bad", ["a", "b"])
+        VectorType("bad", ["a", "b"])
 
-def test_vector_group_frozen():
-    g = VectorGroup("g", ("a", "b"))
+def test_vector_type_frozen():
+    g = VectorType("g", ("a", "b"))
     with pytest.raises(Exception):
         g.name = "other"
 

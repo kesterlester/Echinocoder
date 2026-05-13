@@ -2,7 +2,7 @@
 import math
 import pytest
 from symatom import (
-    ArgumentSymmetry, Operation, VectorGroup, Atom, Context,
+    ArgumentSymmetry, Operation, VectorType, Atom, Context,
     Plan, SimpleCanonicaliser,
 )
 from symatom.rep import (
@@ -30,11 +30,11 @@ def eps3():
 
 @pytest.fixture
 def electrons():
-    return VectorGroup("electrons", ("a", "b", "c", "d"))
+    return VectorType("electrons", ("a", "b", "c", "d"))
 
 @pytest.fixture
 def muons():
-    return VectorGroup("muons", ("p", "q"))
+    return VectorType("muons", ("p", "q"))
 
 @pytest.fixture
 def ctx1(electrons):
@@ -43,7 +43,7 @@ def ctx1(electrons):
 
 @pytest.fixture
 def jets():
-    return VectorGroup("jets", ("u", "v", "w"))
+    return VectorType("jets", ("u", "v", "w"))
 
 @pytest.fixture
 def ctx2(electrons, muons):
@@ -90,7 +90,7 @@ def test_flavoured_operator_valid(dot, ctx1):
     assert fo.flavour == Flavour((2,))
 
 def test_flavoured_operator_wrong_group_count(dot, ctx1):
-    with pytest.raises(ValueError, match="groups"):
+    with pytest.raises(ValueError, match="vector types"):
         FlavouredOperator(operation=dot, flavour=Flavour((1, 1)), context=ctx1)
 
 def test_flavoured_operator_wrong_rank(dot, ctx1):
@@ -99,7 +99,7 @@ def test_flavoured_operator_wrong_rank(dot, ctx1):
 
 def test_flavoured_operator_count_exceeds_group(dot):
     # A group of size 1 cannot supply 2 labels for a rank-2 dot.
-    tiny_ctx = Context((VectorGroup("tiny", ("x",)),))
+    tiny_ctx = Context((VectorType("tiny", ("x",)),))
     with pytest.raises(ValueError, match="size"):
         FlavouredOperator(operation=dot, flavour=Flavour((2,)), context=tiny_ctx)
 
@@ -386,10 +386,10 @@ def test_pair_flavour_count_dot_dot_single_group(dot):
     Total = 36 = 6² (6 dot atoms, all ordered pairs).
     """
     fl2 = Flavour((2,))
-    group_sizes = (4,)
+    type_sizes = (4,)
     counts = {
         s: PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2,
-                       overlap=(s,)).count(group_sizes)
+                       overlap=(s,)).count(type_sizes)
         for s in (0, 1, 2)
     }
     assert counts[0] == 6
@@ -538,8 +538,8 @@ def test_cpf_count_satisfies_total_pair_count(dot, ctx1):
     For 4 electrons with dot: 6 atoms, 36 ordered pairs.
     """
     fo_list = repS(ctx1, [dot])
-    group_sizes = (4,)
-    total = sum(pf.count(group_sizes) for pf in canonical_pair_flavours(fo_list, ctx1))
+    type_sizes = (4,)
+    total = sum(pf.count(type_sizes) for pf in canonical_pair_flavours(fo_list, ctx1))
     assert total == 36   # 6 dot atoms → 6² ordered pairs
 
 def test_cpf_is_sorted_deterministically(dot, eps3, ctx1):
@@ -586,18 +586,18 @@ def ctx4(electrons):
 def test_orbit_size_dot_dot_matches_count(dot, ctx4):
     """For SYMMETRIC ops, orbit_size == count (no antisymmetric doubling)."""
     fl2 = Flavour((2,))
-    group_sizes = (4,)
+    type_sizes = (4,)
     for s in (0, 1, 2):
         pf = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(s,))
-        assert pf.orbit_size(group_sizes) == pf.count(group_sizes)
+        assert pf.orbit_size(type_sizes) == pf.count(type_sizes)
 
 def test_orbit_size_eps_dot_doubles_for_eps(eps3, dot, ctx4):
     """For one ANTISYMMETRIC op, orbit_size == 2 * count."""
     fl3 = Flavour((3,))
     fl2 = Flavour((2,))
-    group_sizes = (4,)
+    type_sizes = (4,)
     pf = PairFlavour(op_u=eps3, flavour_u=fl3, op_v=dot, flavour_v=fl2, overlap=(1,))
-    assert pf.orbit_size(group_sizes) == 2 * pf.count(group_sizes)
+    assert pf.orbit_size(type_sizes) == 2 * pf.count(type_sizes)
 
 def test_orbit_size_eps_eps_nonzero_overlap(eps3, ctx4):
     """For two ANTISYMMETRIC ops with non-zero overlap, orbit_size == 2 * count.
@@ -612,29 +612,29 @@ def test_orbit_size_eps_eps_nonzero_overlap(eps3, ctx4):
     that requires n >= ku+kv which is impossible here with ku=kv=3 and n=4.
     """
     fl3 = Flavour((3,))
-    group_sizes = (4,)
+    type_sizes = (4,)
     pf = PairFlavour(op_u=eps3, flavour_u=fl3, op_v=eps3, flavour_v=fl3, overlap=(2,))
-    assert pf.orbit_size(group_sizes) == 2 * pf.count(group_sizes)
+    assert pf.orbit_size(type_sizes) == 2 * pf.count(type_sizes)
 
 def test_orbit_elements_length_matches_orbit_size(dot, ctx4):
     """orbit_elements returns exactly orbit_size pairs."""
     fl2 = Flavour((2,))
-    group_sizes = (4,)
+    type_sizes = (4,)
     for s in (0, 1, 2):
         pf = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(s,))
         elems = pf.orbit_elements(ctx4)
-        assert len(elems) == pf.orbit_size(group_sizes)
+        assert len(elems) == pf.orbit_size(type_sizes)
 
 def test_orbit_elements_length_with_eps(eps3, dot):
     """orbit_elements length matches orbit_size for mixed ANTISYMMETRIC pair."""
-    electrons = VectorGroup("electrons", ("a", "b", "c", "d"))
+    electrons = VectorType("electrons", ("a", "b", "c", "d"))
     ctx = Context((electrons,))
     fl3 = Flavour((3,))
     fl2 = Flavour((2,))
-    group_sizes = (4,)
+    type_sizes = (4,)
     pf = PairFlavour(op_u=eps3, flavour_u=fl3, op_v=dot, flavour_v=fl2, overlap=(1,))
     elems = pf.orbit_elements(ctx)
-    assert len(elems) == pf.orbit_size(group_sizes)
+    assert len(elems) == pf.orbit_size(type_sizes)
 
 def test_orbit_elements_all_have_correct_pair_flavour(dot, ctx4):
     """Every element returned by orbit_elements has the correct PairFlavour."""
@@ -650,8 +650,8 @@ def test_orbit_elements_sum_over_all_pf_equals_total_pairs(dot, ctx4):
     count() when all ops are SYMMETRIC, as is the case here).
     """
     fo_list = repS(ctx4, [dot])
-    group_sizes = tuple(g.size for g in ctx4.groups)
-    total_orbit = sum(pf.orbit_size(group_sizes) for pf in canonical_pair_flavours(fo_list, ctx4))
+    type_sizes = tuple(g.size for g in ctx4.types)
+    total_orbit = sum(pf.orbit_size(type_sizes) for pf in canonical_pair_flavours(fo_list, ctx4))
     total_atoms = sum(fo.count() for fo in fo_list)
     assert total_orbit == total_atoms ** 2
 

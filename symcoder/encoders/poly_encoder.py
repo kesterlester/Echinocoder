@@ -57,7 +57,7 @@ elif spec.form == OrbitSpecForm.REPRESENTATIVE_ATOM:
     atom = spec.payload
     flavour = Flavour(tuple(
         sum(1 for lbl in atom.labels if lbl in set(g.labels))
-        for g in plan.context.groups
+        for g in plan.context.types
     ))
     fo = FlavouredOperator(atom.operation, flavour, plan.context)
 else:

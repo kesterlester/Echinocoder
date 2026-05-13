@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from .atoms import VectorGroup, Operation, Atom
+from .atoms import VectorType, Operation, Atom
 from .orbit_enum import OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
 from .canon import DirectCanonicaliser
 
@@ -8,51 +8,51 @@ from .canon import DirectCanonicaliser
 @dataclass(frozen=True)
 class Context:
     """
-    The set of VectorGroups in scope for a computation.  Immutable once created.
+    The set of VectorTypes in scope for a computation.  Immutable once created.
     The full symmetry group is the direct product of the S_n for each group.
     """
-    groups: tuple   # tuple of VectorGroup
+    types: tuple   # tuple of VectorType
 
     def __post_init__(self):
-        if not isinstance(self.groups, tuple):
-            raise TypeError(f"groups must be a tuple, got {type(self.groups)}")
-        names = [g.name for g in self.groups]
+        if not isinstance(self.types, tuple):
+            raise TypeError(f"types must be a tuple, got {type(self.types)}")
+        names = [g.name for g in self.types]
         if len(set(names)) != len(names):
-            raise ValueError(f"VectorGroup names must be distinct, got {names!r}")
+            raise ValueError(f"VectorType names must be distinct, got {names!r}")
         all_labels = []
-        for g in self.groups:
+        for g in self.types:
             all_labels.extend(g.labels)
         if len(set(all_labels)) != len(all_labels):
-            raise ValueError("Labels must be distinct across all VectorGroups")
+            raise ValueError("Labels must be distinct across all VectorTypes")
 
-    def group_of(self, label) -> VectorGroup:
-        """Return the VectorGroup that contains label, or raise KeyError."""
-        for g in self.groups:
+    def type_of(self, label) -> VectorType:
+        """Return the VectorType that contains label, or raise KeyError."""
+        for g in self.types:
             if label in g.labels:
                 return g
-        raise KeyError(f"Label {label!r} not found in any VectorGroup")
+        raise KeyError(f"Label {label!r} not found in any VectorType")
 
     @property
     def all_labels(self) -> tuple:
         result = []
-        for g in self.groups:
+        for g in self.types:
             result.extend(g.labels)
         return tuple(result)
 
     def check_atom(self, atom: Atom) -> None:
         """Raise ValueError if any label in atom is not in this context."""
         for label in atom.labels:
-            self.group_of(label)   # raises KeyError if absent
+            self.type_of(label)   # raises KeyError if absent
 
     def __repr__(self):
-        parts = ", ".join(f"{g.name}[{g.size}]" for g in self.groups)
+        parts = ", ".join(f"{g.name}[{g.size}]" for g in self.types)
         return f"Context({parts})"
 
 
 @dataclass
 class Plan:
     """
-    Bundles the local configuration for a computation: which vector groups are
+    Bundles the local configuration for a computation: which vector types are
     in scope, which canonicalisation implementation to use, which operations
     are registered, and which orbit enumeration strategy to use.
 

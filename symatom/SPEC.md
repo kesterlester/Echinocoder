@@ -37,7 +37,7 @@ Labels have no intrinsic geometry; they are purely symbolic.
 
 ### 2.2 Vector group
 
-A **vector group** is a named, ordered collection of vector labels all of the
+A **vector type** is a named, ordered collection of vector labels all of the
 same physical type (e.g. all electron momenta, all muon momenta).  
 
 Properties:
@@ -46,14 +46,14 @@ Properties:
   group, e.g. `("a", "b", "c", "d")`.
 - `size: int` — `len(labels)`.
 
-The **symmetric group** $S_n$ (where $n$ = `size`) acts on a vector group by
-permuting its labels. This is the only group action a vector group declares.
+The **symmetric group** $S_n$ (where $n$ = `size`) acts on a vector type by
+permuting its labels. This is the only group action a vector type declares.
 
-Multiple vector groups may coexist in a calculation. The full symmetry group
-acting on a collection of vector groups is the direct product of their
+Multiple vector types may coexist in a calculation. The full symmetry group
+acting on a collection of vector types is the direct product of their
 individual symmetric groups.
 
-A label belongs to exactly one vector group.
+A label belongs to exactly one vector type.
 
 ### 2.3 Operation
 
@@ -81,7 +81,7 @@ together with an overall sign.
 Properties:
 - `operation: Operation`
 - `labels: tuple[label, ...]` — length must equal `operation.rank`. Labels may
-  come from different vector groups. **Note:** the constructor reorders the
+  come from different vector types. **Note:** the constructor reorders the
   stored labels into a canonical form depending on `argument_symmetry` (see
   Section 3.2); the caller should not assume the stored order matches the
   order passed in.
@@ -96,7 +96,7 @@ atoms, not the same atom with an external multiplier.
 
 An atom is **well-formed** if:
 1. `len(labels) == operation.rank`,
-2. every label belongs to a known vector group in the current context,
+2. every label belongs to a known vector type in the current context,
 3. `sign == +1` whenever `operation.argument_symmetry != ANTISYMMETRIC`, and
 4. all labels in the tuple are **distinct**.
 
@@ -121,7 +121,7 @@ hook (Section 8) is invoked.
 The `argument_symmetry` of an operation describes what happens when the atom's
 *own* labels are permuted among themselves — e.g. `dot("a","b") = dot("b","a")`
 because dot is symmetric. This is entirely separate from what happens when the
-*vector group pool* acts on the atom — e.g. the permutation `a↔c` acting on
+*vector type pool* acts on the atom — e.g. the permutation `a↔c` acting on
 `dot("a","b")` replaces `"a"` with `"c"` to give `dot("c","b")`, which is a
 *different atom* with a potentially unrelated value. The orbit machinery
 (Section 7) tracks the second kind; `argument_symmetry` only informs
@@ -180,7 +180,7 @@ representative of its equivalence class under the action of the full symmetry
 group. Two atom tuples are considered equivalent if one can be obtained from
 the other by:
 
-1. Applying a permutation drawn from the product of the vector groups' symmetric
+1. Applying a permutation drawn from the product of the vector types' symmetric
    groups (relabelling vectors), **and**
 2. Adjusting signs consistently with the `argument_symmetry` and `parity`
    declarations of each operation involved.
@@ -264,7 +264,7 @@ size once all canonicalisations and redundancy-eliminations are applied.
 
 ## 5. Vector group context
 
-A **context** is a collection of vector groups that are in scope for a given
+A **context** is a collection of vector types that are in scope for a given
 computation. It provides:
 
 - Lookup: given a label, which group does it belong to?
@@ -282,7 +282,7 @@ it as an explicit parameter.
 A **plan** bundles together the configuration needed for a particular
 computation:
 
-- A **context** (Section 5): which vector groups are in scope.
+- A **context** (Section 5): which vector types are in scope.
 - A **canonicalisation implementation**: any conforming implementation of the
   canonicalisation contract (Section 4.2).
 - An **operation registry**: the set of named operations available in this
@@ -305,7 +305,7 @@ reference implementation.
 
 Given a canonical atom tuple `t` and a plan, the **orbit** of `t` is the set
 of all distinct atom tuples reachable by applying elements of the full symmetry
-group (the product of the symmetric groups of all vector groups in the
+group (the product of the symmetric groups of all vector types in the
 context). Each element of the orbit is itself in canonical form.
 
 Required operations:
@@ -552,7 +552,7 @@ concerns, and are handled separately above `symatom`.
 
 **`count(group_sizes: tuple[int, ...]) -> int`**: returns the number of
 ordered atom-pairs `(u, v)` with this PairFlavour, given the sizes of the
-vector groups.  Pure combinatorics; no atoms are materialised.  For group *i*
+vector types.  Pure combinatorics; no atoms are materialised.  For group *i*
 with size *nᵢ*, flavour counts *kᵤᵢ* and *kᵥᵢ*, and overlap *sᵢ*:
 
     ways_i = C(nᵢ, sᵢ) × C(nᵢ − sᵢ, kᵤᵢ − sᵢ) × C(nᵢ − kᵤᵢ, kᵥᵢ − sᵢ)

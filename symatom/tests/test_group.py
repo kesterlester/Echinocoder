@@ -11,7 +11,7 @@ which faster future implementations will be validated.
 import math
 import pytest
 from symatom import (
-    ArgumentSymmetry, Operation, VectorGroup, Atom, Context,
+    ArgumentSymmetry, Operation, VectorType, Atom, Context,
     TheGroup, SignCorrelationType,
 )
 
@@ -35,11 +35,11 @@ def eps2():
 
 @pytest.fixture
 def electrons4():
-    return VectorGroup("electrons", ("a", "b", "c", "d"))
+    return VectorType("electrons", ("a", "b", "c", "d"))
 
 @pytest.fixture
 def electrons3():
-    return VectorGroup("electrons", ("a", "b", "c"))
+    return VectorType("electrons", ("a", "b", "c"))
 
 @pytest.fixture
 def ctx4(electrons4):
@@ -51,8 +51,8 @@ def ctx3(electrons3):
 
 @pytest.fixture
 def ctx_two_groups():
-    e = VectorGroup("electrons", ("a", "b", "c"))
-    mu = VectorGroup("muons", ("p", "q"))
+    e = VectorType("electrons", ("a", "b", "c"))
+    mu = VectorType("muons", ("p", "q"))
     return Context((e, mu))
 
 
@@ -74,7 +74,7 @@ def test_order_two_groups(ctx_two_groups):
     assert g.order() == math.factorial(3) * math.factorial(2)
 
 def test_order_empty_context():
-    ctx = Context((VectorGroup("e", ()),))
+    ctx = Context((VectorType("e", ()),))
     g = TheGroup(ctx)
     assert g.order() == 1  # 0! = 1
 
@@ -200,7 +200,7 @@ def test_orbit_agrees_with_pf_orbit_elements(dot, eps3):
     pf.orbit_elements must return the same set of pairs.
     """
     from symatom import repS, canonical_pair_flavours
-    electrons = VectorGroup("electrons", ("a", "b", "c", "d"))
+    electrons = VectorType("electrons", ("a", "b", "c", "d"))
     ctx = Context((electrons,))
     g = TheGroup(ctx)
     for pf in canonical_pair_flavours(repS(ctx, [dot, eps3]), ctx):
@@ -380,7 +380,7 @@ def test_sign_correlation_type_brute_aa_partial_overlap(eps2, ctx4):
 def test_sign_correlation_type_algebraic_vs_brute_sa_rank1(eps2):
     """Algebraic and brute sign_correlation_type agree for rank-1 SA pairs."""
     dot1 = Operation("dot1", rank=1, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-    ctx2 = Context((VectorGroup("e", ("a", "b")),))
+    ctx2 = Context((VectorType("e", ("a", "b")),))
     g = TheGroup(ctx2)
     u = Atom(dot1, ("a",),      +1)
     v = Atom(eps2, ("a", "b"), +1)
@@ -391,19 +391,19 @@ def test_sign_correlation_type_sweep_two_groups(dot, eps3, eps2):
     """Algebraic and brute agree across all PairFlavours in a two-group context."""
     from symatom import repS, canonical_pair_flavours
     from symatom.rep import PairFlavour
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     g         = TheGroup(ctx)
     fo_list   = repS(ctx, [dot, eps3, eps2])
     for pf in canonical_pair_flavours(fo_list, ctx):
         # Build the canonical representative pair for this PairFlavour
         u_labels, v_labels = [], []
-        for grp, ku, kv, s in zip(ctx.groups, pf.flavour_u.counts,
+        for vt, ku, kv, s in zip(ctx.types, pf.flavour_u.counts,
                                    pf.flavour_v.counts, pf.overlap):
-            u_labels.extend(grp.labels[:ku])
-            v_labels.extend(grp.labels[:s])
-            v_labels.extend(grp.labels[ku:ku + kv - s])
+            u_labels.extend(vt.labels[:ku])
+            v_labels.extend(vt.labels[:s])
+            v_labels.extend(vt.labels[ku:ku + kv - s])
         u = Atom(pf.op_u, tuple(u_labels), +1)
         v = Atom(pf.op_v, tuple(v_labels), +1)
         assert g.sign_correlation_type(u, v) == g.sign_correlation_type_brute(u, v), (
@@ -420,8 +420,8 @@ def test_sign_correlation_type_neg_two_groups(eps2):
     electron labels.  Swapping a↔b negates both atoms simultaneously, but no
     permutation can flip only one sign.
     """
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     g         = TheGroup(ctx)
     u = Atom(eps2, ("a", "b"), +1)
@@ -436,8 +436,8 @@ def test_sign_correlation_type_neg_partial_group_overlap(eps3, eps2):
     2-group context: electrons are fully shared (u_e == v_e) → correlated
     flip there; muons have 1 label each, no flip → neither independent.
     """
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     g         = TheGroup(ctx)
     # u = eps3(a,b,p), v = eps3(a,b,q): same 2 electrons, different muons
@@ -455,8 +455,8 @@ def test_sign_correlation_type_sa_type11_cross_group(eps2):
     groups, and inter-group ordering is fixed under G = S_electrons × S_muons.
     """
     dot = Operation("dot", rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     g         = TheGroup(ctx)
     u = Atom(dot,  ("p", "q"), +1)

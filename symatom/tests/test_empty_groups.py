@@ -1,5 +1,5 @@
 """
-Tests verifying that the symatom stack handles VectorGroups with zero labels.
+Tests verifying that the symatom stack handles VectorTypes with zero labels.
 
 An empty group represents a particle species with zero members.  It is
 mathematically harmless (S_0 is the trivial group, 0!=1, C(0,0)=1) and
@@ -13,7 +13,7 @@ are empty, ensuring nothing silently breaks.
 """
 import pytest
 from symatom import (
-    ArgumentSymmetry, Operation, VectorGroup, Atom,
+    ArgumentSymmetry, Operation, VectorType, Atom,
     Context, Plan,
     SimpleCanonicaliser, DirectCanonicaliser,
     BruteForceOrbitEnumerator, DirectOrbitEnumerator,
@@ -36,11 +36,11 @@ def eps3():
 
 @pytest.fixture
 def electrons():
-    return VectorGroup("electrons", ("a", "b", "c"))
+    return VectorType("electrons", ("a", "b", "c"))
 
 @pytest.fixture
 def empty_muons():
-    return VectorGroup("muons", ())
+    return VectorType("muons", ())
 
 @pytest.fixture
 def ctx_one_empty(electrons, empty_muons):
@@ -48,7 +48,7 @@ def ctx_one_empty(electrons, empty_muons):
 
 @pytest.fixture
 def ctx_all_empty():
-    return Context((VectorGroup("electrons", ()), VectorGroup("muons", ())))
+    return Context((VectorType("electrons", ()), VectorType("muons", ())))
 
 
 # ---------------------------------------------------------------------------
@@ -56,8 +56,8 @@ def ctx_all_empty():
 # ---------------------------------------------------------------------------
 
 def test_context_with_one_empty_group(ctx_one_empty):
-    assert len(ctx_one_empty.groups) == 2
-    assert ctx_one_empty.groups[1].size == 0
+    assert len(ctx_one_empty.types) == 2
+    assert ctx_one_empty.types[1].size == 0
 
 def test_context_repr_includes_empty_group(ctx_one_empty):
     r = repr(ctx_one_empty)
@@ -67,7 +67,7 @@ def test_context_all_labels_omits_empty_group(ctx_one_empty):
     assert set(ctx_one_empty.all_labels) == {"a", "b", "c"}
 
 def test_context_all_empty_groups():
-    ctx = Context((VectorGroup("e", ()), VectorGroup("mu", ())))
+    ctx = Context((VectorType("e", ()), VectorType("mu", ())))
     assert ctx.all_labels == ()
 
 
@@ -120,16 +120,16 @@ def test_cpf_all_empty_gives_no_pfs(dot, ctx_all_empty):
 def test_orbit_enumerator_size_matches_with_empty_group_brute_force(dot, eps3, ctx_one_empty):
     """BruteForce returns exactly orbit_size pairs for every PairFlavour when a group is empty."""
     fo_list = repS(ctx_one_empty, [dot, eps3])
-    group_sizes = tuple(g.size for g in ctx_one_empty.groups)
+    type_sizes = tuple(g.size for g in ctx_one_empty.types)
     for pf in canonical_pair_flavours(fo_list, ctx_one_empty):
-        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx_one_empty)) == pf.orbit_size(group_sizes)
+        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx_one_empty)) == pf.orbit_size(type_sizes)
 
 def test_orbit_enumerator_size_matches_with_empty_group_direct(dot, eps3, ctx_one_empty):
     """Direct returns exactly orbit_size pairs for every PairFlavour when a group is empty."""
     fo_list = repS(ctx_one_empty, [dot, eps3])
-    group_sizes = tuple(g.size for g in ctx_one_empty.groups)
+    type_sizes = tuple(g.size for g in ctx_one_empty.types)
     for pf in canonical_pair_flavours(fo_list, ctx_one_empty):
-        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx_one_empty)) == pf.orbit_size(group_sizes)
+        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx_one_empty)) == pf.orbit_size(type_sizes)
 
 def test_orbit_enumerators_agree_with_empty_group_ss(dot, ctx_one_empty):
     """BruteForce and Direct agree for SS PairFlavours when a group is empty."""

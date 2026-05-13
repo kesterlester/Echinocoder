@@ -77,13 +77,13 @@ class DirectOrbitEnumerator(OrbitEnumerator):
         from .group import TheGroup
 
         # Build the canonical representative in the same way pf.orbit_elements does
-        group_sizes = tuple(g.size for g in context.groups)
-        if pf.count(group_sizes) == 0:
+        type_sizes = tuple(g.size for g in context.types)
+        if pf.count(type_sizes) == 0:
             return []
 
         u_labels, v_labels = [], []
         for g, ku, kv, s in zip(
-            context.groups,
+            context.types,
             pf.flavour_u.counts,
             pf.flavour_v.counts,
             pf.overlap,

@@ -9,7 +9,7 @@ in `docs/encoder.tex`.
 
 ## Dependencies
 
-- **symatom** — provides `Plan`, `Context`, `VectorGroup`, `Operation`,
+- **symatom** — provides `Plan`, `Context`, `VectorType`, `Operation`,
   `ArgumentSymmetry`, `Atom`, `repL`, `canonical_pair_flavours`,
   `FlavouredOperator`, `PairFlavour`.
 - **numpy** — all numerical output is `np.ndarray` of dtype `float64`.

@@ -7,7 +7,7 @@ Cross-comparison tests assert they produce identical output on every case.
 """
 import pytest
 from symatom import (
-    ArgumentSymmetry, Operation, VectorGroup, Atom,
+    ArgumentSymmetry, Operation, VectorType, Atom,
     Context, Plan, SimpleCanonicaliser, DirectCanonicaliser,
 )
 from symatom.orbits import orbit
@@ -27,7 +27,7 @@ def eps3():
 
 @pytest.fixture
 def electrons():
-    return VectorGroup("electrons", ("a", "b", "c", "d"))
+    return VectorType("electrons", ("a", "b", "c", "d"))
 
 
 # ---------------------------------------------------------------------------
@@ -257,8 +257,8 @@ def test_direct_matches_simple_single_group(dot, eps3, electrons):
 
 def test_direct_matches_simple_two_groups(dot, eps3):
     """DirectCanonicaliser agrees with SimpleCanonicaliser in a two-group context."""
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ("p", "q"))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     simple = SimpleCanonicaliser()
     direct = DirectCanonicaliser()
@@ -279,8 +279,8 @@ def test_direct_matches_simple_two_groups(dot, eps3):
 
 def test_direct_matches_simple_two_groups_of_which_one_is_empty(dot, eps3):
     """DirectCanonicaliser agrees with SimpleCanonicaliser in a two-group context."""
-    electrons = VectorGroup("electrons", ("a", "b", "c", "d"))
-    muons     = VectorGroup("muons",     tuple())
+    electrons = VectorType("electrons", ("a", "b", "c", "d"))
+    muons     = VectorType("muons",     tuple())
     ctx       = Context((electrons, muons))
     simple = SimpleCanonicaliser()
     direct = DirectCanonicaliser()
@@ -302,9 +302,9 @@ def test_direct_matches_simple_two_groups_of_which_one_is_empty(dot, eps3):
 
 def test_direct_matches_simple_three_groups_with_funny_names(dot, eps3):
     """DirectCanonicaliser agrees with SimpleCanonicaliser in a two-group context."""
-    electrons = VectorGroup("electrons", ("u", "q", "c"))
-    muons     = VectorGroup("muons",     ("p", "b"))
-    jets      = VectorGroup("jets",      ("a", "v","w","z"))
+    electrons = VectorType("electrons", ("u", "q", "c"))
+    muons     = VectorType("muons",     ("p", "b"))
+    jets      = VectorType("jets",      ("a", "v","w","z"))
     ctx       = Context((electrons, muons))
     simple = SimpleCanonicaliser()
     direct = DirectCanonicaliser()

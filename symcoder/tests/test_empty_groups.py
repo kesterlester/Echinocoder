@@ -1,9 +1,9 @@
 """
-Tests verifying that symcoder.encode() handles contexts with empty VectorGroups.
+Tests verifying that symcoder.encode() handles contexts with empty VectorTypes.
 """
 import numpy as np
 import pytest
-from symatom import ArgumentSymmetry, VectorGroup, Context, Plan
+from symatom import ArgumentSymmetry, VectorType, Context, Plan
 from symcoder import EvaluableOperation, encode
 
 
@@ -25,8 +25,8 @@ def event():
 
 
 def test_encode_with_empty_group_returns_ndarray(dot, event):
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ())
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ())
     ctx  = Context((electrons, muons))
     plan = Plan(context=ctx, operations=(dot,))
     result = encode(plan, event)
@@ -39,8 +39,8 @@ def test_encode_with_empty_group_same_as_without(dot, event):
     Encoding with an empty muons group gives the same result as encoding
     with no muons group at all (the empty group contributes nothing).
     """
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    ctx_with    = Context((electrons, VectorGroup("muons", ())))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    ctx_with    = Context((electrons, VectorType("muons", ())))
     ctx_without = Context((electrons,))
     plan_with    = Plan(context=ctx_with,    operations=(dot,))
     plan_without = Plan(context=ctx_without, operations=(dot,))
@@ -48,8 +48,8 @@ def test_encode_with_empty_group_same_as_without(dot, event):
 
 def test_encode_with_empty_group_permutation_invariant(dot, event):
     """Swapping electron labels leaves the encoding unchanged."""
-    electrons = VectorGroup("electrons", ("a", "b", "c"))
-    muons     = VectorGroup("muons",     ())
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ())
     ctx  = Context((electrons, muons))
     plan = Plan(context=ctx, operations=(dot,))
     event_swapped = dict(event)
@@ -58,7 +58,7 @@ def test_encode_with_empty_group_permutation_invariant(dot, event):
 
 def test_encode_all_empty_groups_returns_empty(dot):
     """With all groups empty there are no atoms, so encode returns an empty array."""
-    ctx  = Context((VectorGroup("electrons", ()), VectorGroup("muons", ())))
+    ctx  = Context((VectorType("electrons", ()), VectorType("muons", ())))
     plan = Plan(context=ctx, operations=(dot,))
     result = encode(plan, {})
     assert isinstance(result, np.ndarray)

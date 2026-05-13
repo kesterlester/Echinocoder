@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pytest
 from itertools import groupby
-from symatom import ArgumentSymmetry, VectorGroup, Context, Plan, repS, canonical_pair_flavours
+from symatom import ArgumentSymmetry, VectorType, Context, Plan, repS, canonical_pair_flavours
 from symcoder import EvaluableOperation, encode, describe_encoding, SegmentInfo
 
 _NULL_KINDS = ("NULL_SELF", "NULL_COMP")
@@ -29,7 +29,7 @@ def eps3():
 
 @pytest.fixture
 def ctx():
-    return Context((VectorGroup("electrons", ("a", "b", "c", "d")),))
+    return Context((VectorType("electrons", ("a", "b", "c", "d")),))
 
 @pytest.fixture
 def plan(dot, eps3, ctx):
@@ -53,7 +53,7 @@ def test_empty_ops_gives_empty_list(ctx):
     assert describe_encoding(plan) == []
 
 def test_all_empty_groups_gives_empty_list(dot):
-    ctx  = Context((VectorGroup("e", ()), VectorGroup("mu", ())))
+    ctx  = Context((VectorType("e", ()), VectorType("mu", ())))
     plan = Plan(context=ctx, operations=(dot,))
     assert describe_encoding(plan) == []
 
@@ -244,10 +244,10 @@ def test_null_comp_is_largest_non_self_in_block(dot, eps3, ctx):
     segs = describe_encoding(plan)
     fo_list = repS(ctx, (dot, eps3))
     pf_list = canonical_pair_flavours(fo_list, ctx)
-    group_sizes = tuple(g.size for g in ctx.groups)
+    type_sizes = tuple(g.size for g in ctx.types)
     pf_count_map = {
         (pf.op_u.name, tuple(pf.flavour_u.counts), pf.op_v.name,
-         tuple(pf.flavour_v.counts), tuple(pf.overlap)): 2 * pf.count(group_sizes)
+         tuple(pf.flavour_v.counts), tuple(pf.overlap)): 2 * pf.count(type_sizes)
         for pf in pf_list
     }
 

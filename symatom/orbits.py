@@ -7,7 +7,7 @@ from .context import Plan
 
 def _full_group_size(plan: Plan) -> int:
     """Size of the full symmetry group: product of factorials of group sizes."""
-    return math.prod(math.factorial(g.size) for g in plan.context.groups)
+    return math.prod(math.factorial(g.size) for g in plan.context.types)
 
 
 def orbit(atom_tuple: tuple, plan: Plan) -> list:
@@ -22,12 +22,12 @@ def orbit(atom_tuple: tuple, plan: Plan) -> list:
     seen       = set()
     result     = []
 
-    group_perms = [list(_iperms(g.labels)) for g in context.groups]
+    type_perms = [list(_iperms(g.labels)) for g in context.types]
 
-    for perm_combo in _product(*group_perms):
+    for perm_combo in _product(*type_perms):
         relabeling = {}
-        for group, perm in zip(context.groups, perm_combo):
-            for orig, new in zip(group.labels, perm):
+        for vt, perm in zip(context.types, perm_combo):
+            for orig, new in zip(vt.labels, perm):
                 relabeling[orig] = new
 
         relabeled = tuple(

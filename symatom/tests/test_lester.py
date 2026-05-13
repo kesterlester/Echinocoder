@@ -1,7 +1,7 @@
 import math
 import pytest
 from symatom import (
-    ArgumentSymmetry, Operation, VectorGroup, Atom, Context,
+    ArgumentSymmetry, Operation, VectorType, Atom, Context,
     Plan, SimpleCanonicaliser,
 )
 from symatom.rep import (
@@ -29,11 +29,11 @@ def eps3():
 
 @pytest.fixture
 def electrons():
-    return VectorGroup("electrons", ("a", "b", "c",))
+    return VectorType("electrons", ("a", "b", "c",))
 
 @pytest.fixture
 def muons():
-    return VectorGroup("muons", ("p", "q"))
+    return VectorType("muons", ("p", "q"))
 
 @pytest.fixture
 def ctx1(electrons):
@@ -42,7 +42,7 @@ def ctx1(electrons):
 
 @pytest.fixture
 def jets():
-    return VectorGroup("jets", ("u", "v", "w"))
+    return VectorType("jets", ("u", "v", "w"))
 
 @pytest.fixture
 def ctx2(electrons, muons):
@@ -65,13 +65,13 @@ def test_lester_1(ctx1, eps3, electrons):
     pf = PairFlavour(op_u=eps3, flavour_u=Flavour((3,)), 
                      op_v=eps3, flavour_v=Flavour((3,)), overlap=(3,))
 
-    group_sizes = tuple(g.size for g in ctx1.groups)
+    type_sizes = tuple(g.size for g in ctx1.types)
 
     print(f"\npf {pf} has atoms:")
     atoms = pf.orbit_elements(ctx1)
     for atom in atoms:
         print("     ",atom)
-    os = pf.orbit_size(group_sizes)
+    os = pf.orbit_size(type_sizes)
     print(f"Orbit size is {os}.")
     print(f"It should have 2 atoms, namely\n    +{atoms[0]} and\n    -{atoms[0]}")
     print("""It should have 2 atoms, namely

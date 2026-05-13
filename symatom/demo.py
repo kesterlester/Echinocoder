@@ -2,7 +2,7 @@
 symatom demo — run with:  python -m symatom.demo
 Prints atoms, flavoured operators, and pair flavours for a small physics context.
 """
-from .atoms   import ArgumentSymmetry, Operation, VectorGroup
+from .atoms   import ArgumentSymmetry, Operation, VectorType
 from .context import Context, Plan
 from .canon   import SimpleCanonicaliser
 from .rep     import repS, canonical_pair_flavours
@@ -16,10 +16,10 @@ mass = Operation("m",  rank=1, parity=+1, argument_symmetry=ArgumentSymmetry.SYM
 dot  = Operation("dot",  rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
 eps3 = Operation("eps", rank=3, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
 
-electrons = VectorGroup("electrons", labels=("A", "B", "C", ))
-muons     = VectorGroup("muons",     labels=("P", "Q", ))
+electrons = VectorType("electrons", labels=("A", "B", "C", ))
+muons     = VectorType("muons",     labels=("P", "Q", ))
 
-ctx  = Context(groups=(electrons, muons))
+ctx  = Context(types=(electrons, muons))
 plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(mass, dot, eps3))
 
 
@@ -36,8 +36,8 @@ def demo():
     for op in plan.operations:
         print(f"  op      : {op!r}")
 
-    _section("VectorGroups")
-    for g in ctx.groups:
+    _section("VectorTypes")
+    for g in ctx.types:
         print(f"  {g!r}")
 
     _section("repS — FlavouredOperators")
@@ -57,11 +57,11 @@ def demo():
 
     _section("Canonical PairFlavours")
     pfs = canonical_pair_flavours(fo_list, ctx)
-    group_names = [g.name for g in ctx.groups]
+    type_names = [g.name for g in ctx.types]
     for pf in pfs:
-        n = pf.count(tuple(g.size for g in ctx.groups))
-        fl_u = pf.flavour_u.describe(group_names)
-        fl_v = pf.flavour_v.describe(group_names)
+        n = pf.count(tuple(g.size for g in ctx.types))
+        fl_u = pf.flavour_u.describe(type_names)
+        fl_v = pf.flavour_v.describe(type_names)
         print(
             f"  {pf!r}\n"
             f"       u={pf.op_u.name}({fl_u}), v={pf.op_v.name}({fl_v})"
