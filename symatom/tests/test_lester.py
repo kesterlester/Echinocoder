@@ -1,4 +1,3 @@
-"""Tests for Flavour, FlavouredOperator, repL, repS, PairFlavour."""
 import math
 import pytest
 from symatom import (
@@ -6,7 +5,7 @@ from symatom import (
     Plan, SimpleCanonicaliser,
 )
 from symatom.rep import (
-    Flavour, FlavouredOperator, repL, repS,
+    Flavour, FlavouredOperator, repS,
     PairFlavour, pair_flavour_of,
     canonical_pair_flavours, brute_force_canonical_pair_flavours,
 )
