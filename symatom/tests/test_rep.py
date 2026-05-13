@@ -183,7 +183,7 @@ def test_atoms_labels_distinct(eps3, ctx2):
 
 def test_contains_dot_true(dot, ctx1):
     fo = FlavouredOperator(operation=dot, flavour=Flavour((2,)), context=ctx1)
-    assert fo.contains(Atom(dot, ("a", "b"))
+    assert fo.contains(Atom(dot, ("a", "b")))
 
 def test_contains_dot_wrong_operation(mass, dot, ctx1):
     fo = FlavouredOperator(operation=dot, flavour=Flavour((2,)), context=ctx1)
