@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from .atoms import VectorType, Operation, Atom
+from .group import TheGroup
 from .orbit_enum import OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
 from .canon import DirectCanonicaliser
 
@@ -11,7 +12,8 @@ class Context:
     The set of VectorTypes in scope for a computation.  Immutable once created.
     The full symmetry group is the direct product of the S_n for each group.
     """
-    types: tuple   # tuple of VectorType
+    types:     tuple     # tuple of VectorType
+    the_group: TheGroup  = field(init=False, repr=False)
 
     def __post_init__(self):
         if not isinstance(self.types, tuple):
@@ -24,6 +26,7 @@ class Context:
             all_labels.extend(g.labels)
         if len(set(all_labels)) != len(all_labels):
             raise ValueError("Labels must be distinct across all VectorTypes")
+        object.__setattr__(self, 'the_group', TheGroup(self.types))
 
     def type_of(self, label) -> VectorType:
         """Return the VectorType that contains label, or raise KeyError."""
