@@ -25,13 +25,11 @@ TheGroup
       orbit_size(u, v)              — |G| / |Stab_G(u, v)|  (algebraic, O(n))
       in_orbit(candidate, rep)      — membership test
       sign_correlation_type(u, v)   — how signs are coupled  (algebraic, O(n))
-      companion_orbits(u, v)        — all distinct sign-related orbits
 
     Brute-force reference methods (*_brute suffix):
       orbit_brute(u, v)             — same as orbit(), O(∏ n_g!)
       in_orbit_brute(candidate, rep)— same as in_orbit(), O(∏ n_g!)
       sign_correlation_type_brute(u, v) — same as sign_correlation_type(), O(∏ n_g!)
-      companion_orbits_brute(u, v)  — same as companion_orbits(), O(∏ n_g!)
 
     All *_brute methods are permanent O(∏ n_g!) reference implementations.
     They must not be removed; they serve as ground-truth for validating faster
@@ -43,9 +41,9 @@ Step history
 Step 2: DirectOrbitEnumerator rewritten to use TheGroup.orbit() rather than the
     old OrbitUnion approach.
 Step 3: sign_correlation_type() made algebraic O(n); *_brute variants added for
-    all four orbit-related methods; in_orbit/orbit/companion_orbits primary
+    all four orbit-related methods; in_orbit/orbit primary
     methods still delegate to their *_brute counterparts pending Step 4.
-Step 4 (planned): replace orbit(), in_orbit(), companion_orbits() with O(orbit_size)
+Step 4 (planned): replace orbit(), in_orbit() with O(orbit_size)
     direct combinatorial algorithms.
 """
 from __future__ import annotations
@@ -482,63 +480,3 @@ class TheGroup:
         else:
             return SignCorrelationType.TYPE_11
 
-    # ------------------------------------------------------------------
-    # Companion orbits
-    # ------------------------------------------------------------------
-
-    def companion_orbits(
-        self, u: Atom, v: Atom
-    ) -> list[list[tuple[Atom, Atom]]]:
-        """
-        Return all distinct G-orbits that are sign-related to orbit(u, v).
-
-        Currently delegates to companion_orbits_brute().  An algebraic O(n)
-        implementation is planned for Step 4.
-        """
-        return self.companion_orbits_brute(u, v)
-
-    def companion_orbits_brute(
-        self, u: Atom, v: Atom
-    ) -> list[list[tuple[Atom, Atom]]]:
-        """
-        Brute-force O(∏ n_g!) companion-orbit enumeration.  Permanent reference.
-
-        The sign-related variants of (u, v) are:
-          (u,   v)   — always included
-          (-u,  v)   — only if u.operation is ANTISYMMETRIC
-          (u,  -v)   — only if v.operation is ANTISYMMETRIC
-          (-u, -v)   — only if both are ANTISYMMETRIC
-
-        Each variant's orbit is computed and compared to those already seen.
-        G-orbits partition the space, so two orbits are identical iff they
-        share any element.
-
-        Returns a list of unique orbits (each a list of (Atom, Atom) pairs),
-        with the primary orbit(u, v) as the first entry.
-        """
-        antisym_u = u.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-        antisym_v = v.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-
-        # Build the sign variants to consider
-        sign_variants: list[tuple[Atom, Atom]] = [(u, v)]
-        if antisym_u:
-            neg_u = Atom(u.operation, u.labels, -u.sign)
-            sign_variants.append((neg_u, v))
-        if antisym_v:
-            neg_v = Atom(v.operation, v.labels, -v.sign)
-            sign_variants.append((u, neg_v))
-        if antisym_u and antisym_v:
-            neg_u = Atom(u.operation, u.labels, -u.sign)
-            neg_v = Atom(v.operation, v.labels, -v.sign)
-            sign_variants.append((neg_u, neg_v))
-
-        # Collect unique orbits (orbits are either identical or disjoint)
-        seen_orbit_sets: list[frozenset[tuple[Atom, Atom]]] = []
-        result: list[list[tuple[Atom, Atom]]] = []
-        for su, sv in sign_variants:
-            orb = self.orbit_brute(su, sv)
-            orb_key = frozenset(orb)
-            if orb_key not in seen_orbit_sets:
-                seen_orbit_sets.append(orb_key)
-                result.append(orb)
-        return result

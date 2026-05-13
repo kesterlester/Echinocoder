@@ -2,8 +2,7 @@
 Tests for symatom.group: TheGroup and SignCorrelationType.
 
 TheGroup wraps a Context and provides orbit enumeration, stabiliser size,
-orbit-membership testing, sign-correlation typing, and companion-orbit
-enumeration for atom-pairs.
+orbit-membership testing and sign-correlation typing.
 
 All methods are currently brute-force O(∏n_g!).  These tests verify
 correctness (not performance) and serve as the permanent reference against
@@ -293,122 +292,6 @@ def test_sign_correlation_type_sa(dot, eps3, ctx4):
     g = TheGroup(ctx4)
     assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_12
 
-
-# ---------------------------------------------------------------------------
-# companion_orbits()
-# ---------------------------------------------------------------------------
-
-def test_companion_orbits_ss_one_orbit(dot, ctx4):
-    """SS pair has only one companion orbit (signs are always +1)."""
-    u = Atom(dot, ("a", "b"), sign=+1)
-    v = Atom(dot, ("c", "d"), sign=+1)
-    g = TheGroup(ctx4)
-    companions = g.companion_orbits(u, v)
-    assert len(companions) == 1
-
-def test_companion_orbits_primary_is_first(dot, eps3, ctx4):
-    """Primary orbit is always the first element."""
-    u = Atom(dot,  ("a", "b"),      sign=+1)
-    v = Atom(eps3, ("a", "b", "c"), sign=+1)
-    g = TheGroup(ctx4)
-    companions = g.companion_orbits(u, v)
-    primary = g.orbit(u, v)
-    assert set(companions[0]) == set(primary)
-
-def test_companion_orbits_aa_full_overlap_two_orbits(eps3, ctx3):
-    """AA full overlap: only (++) orbit and (+−)/(−+) orbit are distinct → 2 companions."""
-    u = Atom(eps3, ("a", "b", "c"), sign=+1)
-    v = Atom(eps3, ("a", "b", "c"), sign=+1)
-    g = TheGroup(ctx3)
-    companions = g.companion_orbits(u, v)
-    assert len(companions) == 2
-
-def test_companion_orbits_aa_full_overlap_disjoint(eps3, ctx3):
-    """The two companion orbits for AA full overlap must be disjoint."""
-    u = Atom(eps3, ("a", "b", "c"), sign=+1)
-    v = Atom(eps3, ("a", "b", "c"), sign=+1)
-    g = TheGroup(ctx3)
-    c0, c1 = g.companion_orbits(u, v)
-    assert set(c0).isdisjoint(set(c1))
-
-def test_companion_orbits_aa_full_overlap_union_size(eps3, ctx3):
-    """The union of the two AA full-overlap companion orbits covers all sign variants."""
-    u = Atom(eps3, ("a", "b", "c"), sign=+1)
-    v = Atom(eps3, ("a", "b", "c"), sign=+1)
-    g = TheGroup(ctx3)
-    companions = g.companion_orbits(u, v)
-    union = set()
-    for orb in companions:
-        union.update(orb)
-    # 2 companions × 2 pairs each = 4 total sign-variant orbit elements
-    assert len(union) == 4
-
-def test_companion_orbits_aa_zero_overlap_one_orbit(eps2, ctx4):
-    """AA zero overlap: all 4 sign variants are in the same orbit → 1 companion."""
-    u = Atom(eps2, ("a", "b"), sign=+1)
-    v = Atom(eps2, ("c", "d"), sign=+1)
-    g = TheGroup(ctx4)
-    companions = g.companion_orbits(u, v)
-    assert len(companions) == 1
-
-def test_companion_orbits_no_duplicates(dot, eps3, ctx4):
-    """No orbit appears twice in companion_orbits()."""
-    u = Atom(dot,  ("a", "b"),      sign=+1)
-    v = Atom(eps3, ("a", "b", "c"), sign=+1)
-    g = TheGroup(ctx4)
-    companions = g.companion_orbits(u, v)
-    orbit_keys = [frozenset(orb) for orb in companions]
-    assert len(orbit_keys) == len(set(orbit_keys))
-
-def test_companion_orbits_sa_one_orbit_shared_labels(dot, eps3, ctx4):
-    """
-    SA pair where u and v share labels (overlap>0): still 1 companion orbit.
-
-    u = dot(a,b), v = eps3(a,b,c) with n=4.  The permutation (a↔b) fixes
-    dot(a,b) (symmetric) and flips eps3(a,b,c) → -eps3(a,b,c), so
-    (dot(a,b), -eps3(a,b,c)) lies in the primary orbit.  Therefore
-    orbit(u, -v) == orbit(u, v) → only 1 companion orbit.
-    """
-    u = Atom(dot,  ("a", "b"),      sign=+1)
-    v = Atom(eps3, ("a", "b", "c"), sign=+1)
-    g = TheGroup(ctx4)
-    companions = g.companion_orbits(u, v)
-    assert len(companions) == 1
-
-def test_companion_orbits_as_one_orbit_shared_labels(eps3, dot, ctx4):
-    """
-    AS pair where u and v share labels: still 1 companion orbit.
-
-    u = eps3(a,b,c), v = dot(a,b) with n=4.  The permutation (a↔b)
-    flips eps3(a,b,c) → -eps3(a,b,c) while fixing dot(a,b), so
-    (-eps3(a,b,c), dot(a,b)) is in the primary orbit → 1 companion.
-    """
-    u = Atom(eps3, ("a", "b", "c"), sign=+1)
-    v = Atom(dot,  ("a", "b"),      sign=+1)
-    g = TheGroup(ctx4)
-    companions = g.companion_orbits(u, v)
-    assert len(companions) == 1
-
-def test_companion_orbits_sa_two_orbits_rank1(eps2):
-    """
-    SA pair where no permutation can flip v while keeping the *same* u atom:
-    → 2 distinct companion orbits.
-
-    u = rank-1 symmetric op on label 'a' (rank 1, so u only ever uses a single
-    label); v = rank-2 antisymmetric op on ('a','b').  With n=2:
-      orbit(u, v)  = {(+dot1(a), +eps2(a,b)), (+dot1(b), -eps2(a,b))}
-      orbit(u, -v) = {(+dot1(a), -eps2(a,b)), (+dot1(b), +eps2(a,b))}
-    The two orbits are disjoint, giving 2 companion orbits.
-    """
-    dot1 = Operation("dot1", rank=1, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-    ctx2 = Context((VectorGroup("e", ("a", "b")),))
-    g    = TheGroup(ctx2)
-    u = Atom(dot1, ("a",),      sign=+1)
-    v = Atom(eps2, ("a", "b"), sign=+1)
-    companions = g.companion_orbits(u, v)
-    assert len(companions) == 2
-
-
 # ---------------------------------------------------------------------------
 # Two-group context
 # ---------------------------------------------------------------------------
@@ -484,17 +367,6 @@ def test_in_orbit_agrees_with_brute(dot, eps3, ctx4):
     rep = (u, v)
     for pair in orb:
         assert g.in_orbit(pair, rep) == g.in_orbit_brute(pair, rep)
-
-
-def test_companion_orbits_agrees_with_brute(pairs_for_xval, ctx4):
-    """companion_orbits() and companion_orbits_brute() return the same orbit sets."""
-    g = TheGroup(ctx4)
-    for u, v in pairs_for_xval:
-        primary     = [frozenset(orb) for orb in g.companion_orbits(u, v)]
-        brute       = [frozenset(orb) for orb in g.companion_orbits_brute(u, v)]
-        assert primary == brute, (
-            f"companion_orbits mismatch for ({u!r}, {v!r})"
-        )
 
 
 def test_sign_correlation_type_brute_aa_partial_overlap(eps2, ctx4):
