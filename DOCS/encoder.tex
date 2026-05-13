@@ -63,7 +63,7 @@ The construction proceeds in two phases.
 \begin{enumerate}
   \item \textbf{Phase 1 — single-orbit encoding.}  For each distinct
     \emph{FlavouredOperator} (an operation with a fixed recipe for drawing
-    argument labels from the particle groups), evaluate the operation on every
+    argument labels from the particle types), evaluate the operation on every
     valid label combination and sort the results.  This yields a
     permutation-invariant sequence of real numbers describing the marginal
     distribution of each scalar feature.
@@ -84,30 +84,30 @@ correlations between features.
 \section{Mathematical Setup}
 % ---------------------------------------------------------------------------
 
-\subsection{Events, Groups, and Labels}
+\subsection{Events, Types, and Labels}
 
-\begin{definition}[Vector group]
-A \emph{vector group} $\mathcal{V} = (\mathcal{L}, d)$ consists of a finite
+\begin{definition}[Vector type]
+A \emph{vector type} $\mathcal{V} = (\mathcal{L}, d)$ consists of a finite
 label set $\mathcal{L} = \{\ell_1,\ldots,\ell_n\}$ and a dimension $d \in
-\N$.  The \emph{size} of the group is $|\mathcal{L}| = n$.
+\N$.  The \emph{size} of the type is $|\mathcal{L}| = n$.
 \end{definition}
 
 \begin{definition}[Context]
 A \emph{context} $\mathcal{C} = (\mathcal{V}_1,\ldots,\mathcal{V}_m)$ is an
-ordered tuple of vector groups with disjoint label sets.  Let $n_i =
-|\mathcal{V}_i|$ be the size of group~$i$.
+ordered tuple of vector types with disjoint label sets.  Let $n_i =
+|\mathcal{V}_i|$ be the size of type~$i$.
 \end{definition}
 
 \begin{definition}[Event]
 An \emph{event} $E$ is an assignment $\ell \mapsto \mathbf{v}_\ell \in \R^d$
-of a $d$-dimensional vector to every label $\ell$ across all groups.
+of a $d$-dimensional vector to every label $\ell$ across all types.
 \end{definition}
 
 The symmetry group acting on events is the product of symmetric groups
 \[
   G = \Sym_{n_1} \times \cdots \times \Sym_{n_m},
 \]
-where each $\Sym_{n_i}$ permutes the labels of group~$i$.  Two events are
+where each $\Sym_{n_i}$ permutes the labels of type~$i$.  Two events are
 \emph{physically equivalent} if one is obtained from the other by a $G$-action,
 i.e.\ by relabelling particles within each type.  The encoder must produce the
 same output for physically equivalent events.
@@ -148,7 +148,7 @@ either one or two atoms.
 \begin{definition}[Atom]
 Let $\mathit{op}$ be an operation of rank~$r$ and let
 $(\ell_1,\ldots,\ell_r)$ be a tuple of distinct labels in canonical
-(lexicographic) order within each group.  An \emph{atom} is a triple
+(lexicographic) order within each type.  An \emph{atom} is a triple
 \[
   u = (\mathit{op},\, (\ell_1,\ldots,\ell_r),\, \varepsilon)
 \]
@@ -179,10 +179,10 @@ $\mathit{op}_{fn}$.
 
 \subsection{Flavours and FlavouredOperators}
 
-Atoms are organised by how many labels each argument draws from each group.
+Atoms are organised by how many labels each argument draws from each type.
 
 \begin{definition}[Flavour]
-A \emph{flavour} for a context with $m$ groups is a tuple $F = (k_1,\ldots,k_m)$
+A \emph{flavour} for a context with $m$ types is a tuple $F = (k_1,\ldots,k_m)$
 of non-negative integers with $\sum_i k_i = r$ (the rank of the associated
 operation).  We require $k_i \le n_i$ for all~$i$.
 \end{definition}
@@ -308,7 +308,7 @@ A \emph{PairFlavour} is a tuple
 \]
 where $(op_u, F_u)$ and $(\mathit{op}_v, F_v)$ are the operation-flavour pairs
 of atoms $u$ and~$v$, and $s = (s_1,\ldots,s_m)$ is the \emph{overlap} vector:
-$s_i$ is the number of labels shared between $u$ and $v$ from group~$i$.
+$s_i$ is the number of labels shared between $u$ and $v$ from type~$i$.
 We require $0 \le s_i \le \min(k_{u,i}, k_{v,i})$ for all~$i$.
 
 By convention the two sides are canonically ordered so that $(\mathit{op}_u,
@@ -339,7 +339,7 @@ Fix an overlap block $B = \{(\mathit{op}_u, F_u, \mathit{op}_v, F_v, s) : s
 $\fo(\mathit{op}_u, F_u)$ and whose rows are labelled by the atoms of
 $\fo(\mathit{op}_v, F_v)$.  Each cell $(u_j, v_k)$ belongs to exactly one
 association: the one whose overlap $s_i$ equals the number of labels shared by
-$u_j$ and $v_k$ from group~$i$.
+$u_j$ and $v_k$ from type~$i$.
 
 \begin{example}
 \label{ex:assoc-table}
@@ -474,7 +474,7 @@ completely disjoint groups, so $s = (0,\ldots,0)$ is the only non-self valid
 overlap), then that association is the unique $\pf^*$ and is dropped as
 \texttt{NULL\_COMP}.  No information is lost.  If \emph{all} associations in a
 block are self-pairing (possible only when $\fo_u$ and $\fo_v$ use every label
-in each group, so $k_i = n_i$), the entire block has no non-self associations
+in each type, so $k_i = n_i$), the entire block has no non-self associations
 and no \texttt{NULL\_COMP} is emitted; the block contributes nothing to the
 output.
 \end{remark}
@@ -753,11 +753,11 @@ plan — no event data is needed.
   \toprule
   \textbf{Symbol} & \textbf{Meaning} \\
   \midrule
-  $m$ & number of particle groups in the context \\
-  $n_i$ & size of group $i$ (number of labels) \\
+  $m$ & number of particle types in the context \\
+  $n_i$ & size of type $i$ (number of labels) \\
   $G = \Sym_{n_1}\times\cdots\times\Sym_{n_m}$ & symmetry group \\
   $r$ & rank of an operation (number of vector arguments) \\
-  $F = (k_1,\ldots,k_m)$ & flavour: label counts per group, $\sum k_i = r$ \\
+  $F = (k_1,\ldots,k_m)$ & flavour: label counts per type, $\sum k_i = r$ \\
   $\fo(\mathit{op}, F)$ & FlavouredOperator \\
   $\varepsilon \in \{+1,-1\}$ & sign of an atom \\
   $\eval(u, E)$ & scalar evaluation of atom $u$ on event $E$ \\
