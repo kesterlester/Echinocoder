@@ -25,10 +25,7 @@ def eval_single_orbit(fo, plan: Plan, event: dict) -> list:
     Return eval(u, event) for every atom u in the orbit of a single
     FlavouredOperator fo.
 
-    Uses fo.atoms() directly — no pair machinery needed.  The returned values
-    are real scalars; for ANTISYMMETRIC operations both sign=+1 and sign=-1
-    atoms are included (fo was created by repL with signed=True), so the list
-    contains {a_k, -a_k} pairs.
+    Uses fo.atoms() directly — no pair machinery needed.
 
     Used in Phase 1 of encode() to sort-encode the single-atom orbit before
     processing pair associations.
@@ -37,6 +34,13 @@ def eval_single_orbit(fo, plan: Plan, event: dict) -> list:
 
 
 def eval_single_orbit_compressed(fo, plan: Plan, event: dict) -> list:
+    raise NotImplementedError()
+    # TODO FIXME As now using repS rather than repL we might try to output an
+    # eval of sort([eps2(a,b)]) which is not perm invariant.  (Under reps we would
+    # have returned sort([+eps2(a,b), -eps2(a,b)]) which would be OK.
+    # Furthermore it is wrong that sign compression happens only when the
+    # operations are antisymmetric.  Consider, for example, that eps2(a,p)
+    # does not change sign under any permutation of vectors. So lots wrong below.
     """
     Return Phase 1 values for fo, exploiting sign compression (5c) for
     ANTISYMMETRIC operations.

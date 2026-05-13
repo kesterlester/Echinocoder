@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 from symatom import (
     ArgumentSymmetry, VectorGroup, Context, Plan,
-    SimpleCanonicaliser, repL,
+    SimpleCanonicaliser, repS,
     canonical_pair_flavours,
 )
 from symcoder import EvaluableOperation, evaluate
@@ -58,7 +58,7 @@ def ortho_event():
 # ---------------------------------------------------------------------------
 
 def test_eval_pair_orbit_length_dot(dot, plan, ctx, ortho_event):
-    fo_list = repL(ctx, (dot,))
+    fo_list = repS(ctx, (dot,))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
         result = eval_pair_orbit(pf, plan, ortho_event)
@@ -76,7 +76,7 @@ def test_eval_pair_orbit_length_dot_eps(dot, eps3, plan, ctx):
         "c": np.array([0.0, 0.0, 1.0]),
         "d": np.array([1.0, 1.0, 1.0]) / 3.0**0.5,
     }
-    fo_list = repL(ctx, (dot, eps3))
+    fo_list = repS(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
         result = eval_pair_orbit(pf, plan, event_3d)
@@ -130,7 +130,7 @@ def test_eval_pair_orbit_diagonal_pair(dot, plan, ctx):
         )
 
 def test_eval_pair_orbit_returns_complex(dot, plan, ctx, ortho_event):
-    fo_list = repL(ctx, (dot,))
+    fo_list = repS(ctx, (dot,))
     for pf in canonical_pair_flavours(fo_list, ctx):
         result = eval_pair_orbit(pf, plan, ortho_event)
         assert all(isinstance(z, complex) for z in result)
@@ -153,7 +153,7 @@ def test_eval_pair_orbit_two_groups(dot, eps3):
         "p": np.array([1.0, 1.0, 0.0]) / 2.0**0.5,
         "q": np.array([0.0, 1.0, 1.0]) / 2.0**0.5,
     }
-    fo_list = repL(ctx, (dot, eps3))
+    fo_list = repS(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
         result = eval_pair_orbit(pf, plan, event)

@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 from symatom import (
     ArgumentSymmetry, VectorGroup, Context, Plan, SimpleCanonicaliser,
-    repL, canonical_pair_flavours,
+    repS, canonical_pair_flavours,
 )
 from symcoder import EvaluableOperation, encode, encode_brute, describe_encoding
 from symcoder.pairs import eval_pair_orbit, eval_pair_orbit_positive
@@ -77,7 +77,7 @@ def test_encode_dot_only_length(dot, ctx, event_3d):
 
 def test_encode_brute_length_matches_sum_of_counts(dot, eps3, plan, ctx, event_3d):
     """encode_brute() gives 2*sum(pf.count()) reals — n complex coeffs × 2 reals each."""
-    fo_list = repL(ctx, (dot, eps3))
+    fo_list = repS(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
     expected_len = 2 * sum(
         pf.count(group_sizes)
@@ -210,7 +210,7 @@ def _make_ops_and_event():
 
 def test_eval_pair_orbit_positive_count(dot, eps3, ctx):
     """eval_pair_orbit_positive always returns exactly pf.count() values."""
-    fo_list = repL(ctx, (dot, eps3))
+    fo_list = repS(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
         plan = Plan(context=ctx, operations=(dot, eps3))
@@ -241,7 +241,7 @@ def test_eval_pair_orbit_positive_count_unusual_label_order():
     ctx = Context((g,))
     plan = Plan(context=ctx, operations=(dot, eps3))
     event = {l: np.random.randn(3) for l in labels}
-    fo_list = repL(ctx, (dot, eps3))
+    fo_list = repS(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
         pos = eval_pair_orbit_positive(pf, plan, event)
@@ -281,6 +281,7 @@ def test_compressed_encoding_permutation_invariant_dot(perm, ctx):
     {"a": "b", "b": "c", "c": "d", "d": "a"},
 ])
 def test_compressed_encoding_permutation_invariant_eps3(perm, ctx):
+    # TODO Make this a much better test that looks at cases that can't be comressed too, e.e. eps3(a,p,v)
     """Compressed encoding with ANTISYMMETRIC eps3 is permutation-invariant."""
     eps3 = EvaluableOperation(
         name="eps3", rank=3, parity=-1,
@@ -304,13 +305,14 @@ def test_compressed_encoding_permutation_invariant_eps3(perm, ctx):
 def test_compressed_length_sym_sym(dot, ctx, event_3d):
     """SYM×SYM: compressed length == orbit_size (no compression)."""
     plan = Plan(context=ctx, operations=(dot,))
-    fo_list = repL(ctx, (dot,))
+    fo_list = repS(ctx, (dot,))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
         assert pf.count(group_sizes) == pf.orbit_size(group_sizes)
 
 
 def test_compressed_length_antisym_antisym(ctx, event_3d):
+    # TODO FIXME : This is wrong, referring to ANTISYMM etc rather than TYPE_11,12,21,22
     """ANTISYM×ANTISYM: eval_pair_orbit_positive returns exactly count elements.
 
     For AA PairFlavours, DirectOrbitEnumerator generates all four sign-combinations
@@ -329,7 +331,7 @@ def test_compressed_length_antisym_antisym(ctx, event_3d):
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
     )
     plan = Plan(context=ctx, operations=(eps3,))
-    fo_list = repL(ctx, (eps3,))
+    fo_list = repS(ctx, (eps3,))
     group_sizes = tuple(g.size for g in ctx.groups)
     for pf in canonical_pair_flavours(fo_list, ctx):
         pos_values = eval_pair_orbit_positive(pf, plan, event_3d)
@@ -337,6 +339,7 @@ def test_compressed_length_antisym_antisym(ctx, event_3d):
 
 
 def test_compressed_length_sym_antisym(ctx):
+    # TODO FIXME : This is wrong, referring to ANTISYMM etc rather than TYPE_11,12,21,22
     """SYM×ANTISYM or ANTISYM×SYM: compressed length == orbit_size / 2."""
     dot = EvaluableOperation(
         name="dot", rank=2, parity=+1,
@@ -349,7 +352,7 @@ def test_compressed_length_sym_antisym(ctx):
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
     )
     plan = Plan(context=ctx, operations=(dot, eps3))
-    fo_list = repL(ctx, (dot, eps3))
+    fo_list = repS(ctx, (dot, eps3))
     group_sizes = tuple(g.size for g in ctx.groups)
     mixed_pfs = [
         pf for pf in canonical_pair_flavours(fo_list, ctx)
@@ -374,6 +377,9 @@ def _make_eps2():
 
 
 def test_embed_compressed_type_neg_permutation_invariant():
+    # TODO: I don't like TYPE_NEG intruding on TYPES 11,12,21,22. That's not what they were for.
+    # But TYPE_NEG is not all bad. It does represent a case where a special form of compression
+    # can be used. It is just measuring a different thing to the 12/21/12/22 TYPES.
     """
     TYPE_NEG pair (AA, full per-group overlap in electron group): the encoding
     must be invariant under label permutations that negate BOTH atom signs.
@@ -401,7 +407,7 @@ def test_embed_compressed_type_neg_permutation_invariant():
     event_swapped = dict(event)
     event_swapped["a"], event_swapped["b"] = event["b"], event["a"]
 
-    fo_list = repL(ctx, (eps2,))
+    fo_list = repS(ctx, (eps2,))
     group_sizes = tuple(g.size for g in ctx.groups)
 
     # Find a TYPE_NEG PairFlavour (AA, full electron overlap)
@@ -454,7 +460,7 @@ def test_embed_compressed_type_neg_distinguishes_events():
         "p": np.array([1.0, 0.0]), "q": np.array([0.0, 1.0]),
     }
 
-    fo_list = repL(ctx, (eps2,))
+    fo_list = repS(ctx, (eps2,))
     group_sizes = tuple(g.size for g in ctx.groups)
 
     type_neg_pfs = [
