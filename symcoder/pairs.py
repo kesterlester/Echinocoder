@@ -34,13 +34,14 @@ def eval_single_orbit(fo, plan: Plan, event: dict) -> list:
 
 
 def eval_single_orbit_compressed(fo, plan: Plan, event: dict) -> list:
-    raise NotImplementedError()
+    print("FIXME : eval_single_orbit_compressed is wrong at present:")
     # TODO FIXME As now using repS rather than repL we might try to output an
     # eval of sort([eps2(a,b)]) which is not perm invariant.  (Under reps we would
     # have returned sort([+eps2(a,b), -eps2(a,b)]) which would be OK.
     # Furthermore it is wrong that sign compression happens only when the
     # operations are antisymmetric.  Consider, for example, that eps2(a,p)
     # does not change sign under any permutation of vectors. So lots wrong below.
+    # TODO: What is really needed is a way of ouputting the phase 1 numbers in a perm invariant way when that is needed, but as they are when they are already fine.
     """
     Return Phase 1 values for fo, exploiting sign compression (5c) for
     ANTISYMMETRIC operations.
