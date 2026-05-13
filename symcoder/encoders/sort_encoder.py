@@ -14,6 +14,7 @@ import numpy as np
 
 from symatom.context import Plan
 
+from ..eval import evaluate
 from ._base import (
     AtomOrbitEncoder,
     OrbitSpec,
@@ -119,6 +120,7 @@ class SortEncoder(AtomOrbitEncoder):
                 can_encode=True,
                 output_dim=len(orbit),
                 method_name="sortMOOMOOMOO",
+                priority=_PRIORITY,
                 metadata={"orbit_size_moo": 100},
             )
         if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
@@ -127,12 +129,12 @@ class SortEncoder(AtomOrbitEncoder):
                 can_encode=True,
                 output_dim=fo.count(),
                 method_name="sortMOOMOOMOO",
+                priority=_PRIORITY,
                 metadata={"orbit_size_moo": 100},
             )
         print(f"sort_encoder did not recognise type of OrbitSpec supplied {spec.form}")
         return EncodingCapability(
                 can_encode=False,
-                output_dim=0, #TODO: Get rid of the need to specify his when can_encode=False
             )
 
     def encode(self, spec: OrbitSpec, event: dict, plan: Plan) -> EncodingResult:

@@ -128,7 +128,7 @@ class EncodingCapability:
         compute cost, whether the embedding is injective, precision notes, etc.
     """
     can_encode:  bool
-    output_dim:  int | None
+    output_dim:  int | None = None
     method_name: str | None = ""
     priority:    float = 0
     metadata:    dict[str, Any] = field(default_factory=dict)

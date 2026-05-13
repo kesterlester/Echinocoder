@@ -40,7 +40,7 @@ registry.register(SortEncoder())
 out = encode(plan, event, registry)
 # --- end stub ---
 
-# OLD: out = encode(plan, event)
+#out = encode(plan, event)
 
 print(f'Total output length: {len(out)}  (sum of segment lengths: {sum(s.length for s in segs)})')
 print()
