@@ -241,7 +241,7 @@ class TheGroup:
         Return all distinct (Atom, Atom) pairs in the G-orbit of (u, v).
 
         Currently delegates to orbit_brute().  A direct O(orbit_size)
-        combinatorial implementation is planned for Step 4.
+        combinatorial implementation is planned for Step 4.   TODO !!
         """
         return self.orbit_brute(u, v)
 
