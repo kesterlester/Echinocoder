@@ -51,8 +51,7 @@ import math
 from dataclasses import dataclass
 from enum import Enum
 from itertools import permutations as _perms, product as _iproduct
-from .atoms import Atom, ArgumentSymmetry
-from .context import Context
+from .atoms import Atom, ArgumentSymmetry, VectorType
 
 
 # ---------------------------------------------------------------------------
@@ -185,11 +184,23 @@ class TheGroup:
 
     Parameters
     ----------
-    context : Context
-        Defines the groups and their label sets.  TheGroup acts on atoms whose
-        labels are drawn from context.all_labels.
+    types : tuple[VectorType]
+        The VectorTypes whose labels this group acts on.  Each VectorType
+        contributes one symmetric-group factor S_{n_i}, permuting its labels.
+        TheGroup stores the label sets directly rather than a full Context so
+        that Context can hold a TheGroup without a circular dependency.
+
+    Long-run design note
+    --------------------
+    The algebraic methods (stabiliser_size, sign_correlation_type, order) only
+    need the per-type label *sets* to partition an atom's labels into per-group
+    counts.  In principle those methods are label-agnostic: they could work
+    from pre-computed per-type counts without storing VectorType objects at all.
+    The brute-force enumeration methods (_all_perm_maps, orbit_brute) need the
+    actual label sequences to generate concrete permutations.  A future step
+    could decouple these two concerns and reduce TheGroup to TheGroup(sizes).
     """
-    context: Context
+    types: tuple  # tuple[VectorType]
 
     # ------------------------------------------------------------------
     # Group structure
@@ -198,7 +209,7 @@ class TheGroup:
     def order(self) -> int:
         """Return |G| = ∏_g n_g!  (total number of group elements)."""
         result = 1
-        for g in self.context.types:
+        for g in self.types:
             result *= math.factorial(g.size)
         return result
 
@@ -213,10 +224,10 @@ class TheGroup:
 
     def _all_perm_maps(self):
         """Yield every σ ∈ G as a {label → label} substitution dict."""
-        group_perm_lists = [list(_perms(g.labels)) for g in self.context.types]
+        group_perm_lists = [list(_perms(g.labels)) for g in self.types]
         for combo in _iproduct(*group_perm_lists):
             perm_map = {}
-            for g, perm in zip(self.context.types, combo):
+            for g, perm in zip(self.types, combo):
                 for orig, new in zip(g.labels, perm):
                     perm_map[orig] = new
             yield perm_map
@@ -277,7 +288,7 @@ class TheGroup:
         u_label_set = set(u.labels)
         v_label_set = set(v.labels)
         stab = 1
-        for g in self.context.types:
+        for g in self.types:
             g_set = set(g.labels)
             u_g = u_label_set & g_set
             v_g = v_label_set & g_set
@@ -392,7 +403,7 @@ class TheGroup:
         # Represented as a Python set; start with the identity element.
         achievable: set[tuple[int, int]] = {(1, 1)}
 
-        for g in self.context.types:
+        for g in self.types:
             g_set = set(g.labels)
             u_g = u_set & g_set
             v_g = v_set & g_set
