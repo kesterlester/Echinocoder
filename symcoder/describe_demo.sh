@@ -2,7 +2,7 @@
 
 cd /Users/lester/github/Echinocoder && venv/bin/python -c "
 import numpy as np
-from symatom import ArgumentSymmetry, VectorGroup, Context, Plan
+from symatom import ArgumentSymmetry, VectorType, Context, Plan
 from symcoder import EvaluableOperation, encode, describe_encoding
 
 mag  = EvaluableOperation('mag',  rank=1, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
@@ -13,9 +13,9 @@ eps3 = EvaluableOperation('eps3', rank=3, parity=-1, argument_symmetry=ArgumentS
                            eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))))
 
 ctx = Context((
-   VectorGroup('electrons', ('a','b','c')),
-   VectorGroup('muons',     ('p','q')),
-   #VectorGroup('jets',      ('u','v','w','x')),
+   VectorType('electrons', ('a','b','c')),
+   VectorType('muons',     ('p','q')),
+   #VectorType('jets',      ('u','v','w','x')),
 ))
 plan = Plan(context=ctx, operations=(mag, dot, eps3))
 
@@ -27,6 +27,19 @@ print('=== STOP ===')
 
 print()
 event = {l: np.random.randn(3) for l in ctx.all_labels}
+
+# --- stub: pass a registry into encode() ---
+# To exercise the encoder registry path, create a registry, register at least
+# one encoder, and pass it as the third argument to encode().  Currently
+# commented out because the concrete encoders (SortEncoder, PolyEncoder) are
+# not yet implemented (they raise NotImplementedError).
+#
+# from symcoder.encoders import AtomOrbitEncoderRegistry, SortEncoder
+# registry = AtomOrbitEncoderRegistry()
+# registry.register(SortEncoder())
+# out = encode(plan, event, registry)
+# --- end stub ---
+
 out = encode(plan, event)
 print(f'Total output length: {len(out)}  (sum of segment lengths: {sum(s.length for s in segs)})')
 print()

@@ -8,6 +8,7 @@ from symatom.group import SignCorrelationType
 from symatom.rep import canonical_pair_flavours
 from symatom import repS
 from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
+from .encoders import AtomOrbitEncoderRegistry, OrbitSpec
 
 # Load the Echinocoder zip embedder from the repo root.  It is not a proper
 # package, so we locate it relative to this file (repo_root/symcoder/encode.py
@@ -294,7 +295,7 @@ def encode_brute(plan, event: dict) -> np.ndarray:
     return np.concatenate(parts)
 
 
-def encode(plan, event: dict) -> np.ndarray:
+def encode(plan, event: dict, registry: AtomOrbitEncoderRegistry | None = None) -> np.ndarray:
     """
     Encode a physics event as a permutation-invariant vector (optimised: 5a + 5b).
 
@@ -348,8 +349,19 @@ def encode(plan, event: dict) -> np.ndarray:
     # Phase 1: sort-encode the orbit of each distinct FlavouredOperator.
     for fo in fo_list:
         assert fo.count()>0, "No FlavouredOperator generaed by repS should have an empty orbit."
-        values = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
-        parts.append(_sort_encode(values))
+        if registry is not None:
+            spec = OrbitSpec.from_flavoured_operator(fo)
+            capable = registry.query_all(spec, plan)
+            # Diagnostic: show what each capable encoder claims it would produce
+            for enc, cap in capable:
+                print(f"  [{type(enc).__name__}]  method={cap.method_name}  "
+                      f"output_dim={cap.output_dim}  priority={cap.priority}")
+            # Use the first capable encoder in the list
+            first_enc, first_cap = capable[0]
+            parts.append(first_enc.encode(spec, event, plan).values)
+        else:
+            values = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
+            parts.append(_sort_encode(values))
 
     # Phase 2: group PairFlavours into OVERLAP BLOCKS.
     # Drop order (both commute; self-pair first so complementation removes the
