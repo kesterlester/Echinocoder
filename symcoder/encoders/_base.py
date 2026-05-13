@@ -129,8 +129,8 @@ class EncodingCapability:
     """
     can_encode:  bool
     output_dim:  int | None
-    method_name: str | None
-    priority:    float
+    method_name: str | None = ""
+    priority:    float = 0
     metadata:    dict[str, Any] = field(default_factory=dict)
 
 

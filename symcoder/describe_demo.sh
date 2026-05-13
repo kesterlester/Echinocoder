@@ -34,13 +34,14 @@ event = {l: np.random.randn(3) for l in ctx.all_labels}
 # commented out because the concrete encoders (SortEncoder, PolyEncoder) are
 # not yet implemented (they raise NotImplementedError).
 #
-# from symcoder.encoders import AtomOrbitEncoderRegistry, SortEncoder
-# registry = AtomOrbitEncoderRegistry()
-# registry.register(SortEncoder())
-# out = encode(plan, event, registry)
+from symcoder.encoders import AtomOrbitEncoderRegistry, SortEncoder
+registry = AtomOrbitEncoderRegistry()
+registry.register(SortEncoder())
+out = encode(plan, event, registry)
 # --- end stub ---
 
-out = encode(plan, event)
+# OLD: out = encode(plan, event)
+
 print(f'Total output length: {len(out)}  (sum of segment lengths: {sum(s.length for s in segs)})')
 print()
 for s in segs[:100]:

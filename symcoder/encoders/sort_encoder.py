@@ -105,15 +105,50 @@ class SortEncoder(AtomOrbitEncoder):
     """
 
     def assess(self, spec: OrbitSpec, plan: Plan) -> EncodingCapability:
-        # TODO: implement orbit-size logic (see class docstring for all three forms)
-        raise NotImplementedError(
-            "SortEncoder.assess() is a stub — implement the orbit-size calculation "
-            "for all three OrbitSpecForm variants (see class docstring)"
-        )
+        # A sort encoder can simply sort a set PROVIDED that the set itself is invariant under the group action contained within the plan.
+        # e.g.:
+        #    * if the plan's group G permutes {a,b,c} then it's     fine to sort encode S={a.b, a.c, b.c} since G.S = {S}.
+        #    * if the plan's group G permutes {a,b,c} then it's NOT fine to sort encode S={a.b, a.c} since G.S != {S}.
+        #    * if the plan's group G permutes {a,b} then it's     fine to sort encode S={a.b} since G.S = {S}.
+        #    * if the plan's group G permutes {a,b} then it's NOT fine to sort encode S={eps2(a.b)} since G.S != {S}.
+        # So, most naive implementation takes every element of the group, uses it to modify a list of atoms, and then see if that list is invariant:
+
+        if spec.form == OrbitSpecForm.EXPLICIT_ORBIT:
+            orbit = spec.payload
+            return EncodingCapability(
+                can_encode=True,
+                output_dim=len(orbit),
+                method_name="sortMOOMOOMOO",
+                metadata={"orbit_size_moo": 100},
+            )
+        if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
+            fo = spec.payload
+            return EncodingCapability(
+                can_encode=True,
+                output_dim=fo.count(),
+                method_name="sortMOOMOOMOO",
+                metadata={"orbit_size_moo": 100},
+            )
+        print(f"sort_encoder did not recognise type of OrbitSpec supplied {spec.form}")
+        return EncodingCapability(
+                can_encode=False,
+                output_dim=0, #TODO: Get rid of the need to specify his when can_encode=False
+            )
 
     def encode(self, spec: OrbitSpec, event: dict, plan: Plan) -> EncodingResult:
-        # TODO: implement atom enumeration + evaluate + sort (see class docstring)
-        raise NotImplementedError(
-            "SortEncoder.encode() is a stub — implement atom evaluation and sorting "
-            "(see class docstring)"
+        if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
+            fo = spec.payload
+            atoms = list(fo.atoms())
+            assert len(atoms) == fo.count()
+        else:
+            print(f"sort_encoder did not recognise type of OrbitSpec supplied {spec.form}")
+            raise NotImplementedError(
+                "SortEncoder.encode() is a stub — implement atom evaluation and sorting "
+                "(see class docstring)"
+            )
+        vals = [evaluate(a, event) for a in atoms]
+        values = np.sort(np.array(vals, dtype=np.float64))
+        return EncodingResult(
+            values=values,
+            metadata={"method": "sort", "orbit_size": len(atoms)},
         )

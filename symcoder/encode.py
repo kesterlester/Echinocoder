@@ -354,8 +354,8 @@ def encode(plan, event: dict, registry: AtomOrbitEncoderRegistry | None = None) 
             capable = registry.query_all(spec, plan)
             # Diagnostic: show what each capable encoder claims it would produce
             for enc, cap in capable:
-                print(f"  [{type(enc).__name__}]  method={cap.method_name}  "
-                      f"output_dim={cap.output_dim}  priority={cap.priority}")
+                print(f"  [{type(enc).__name__}] proposes  method={cap.method_name}  "
+                      f"output_dim={cap.output_dim}  priority={cap.priority} when given {spec} in {plan}")
             # Use the first capable encoder in the list
             first_enc, first_cap = capable[0]
             parts.append(first_enc.encode(spec, event, plan).values)
