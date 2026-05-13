@@ -346,20 +346,8 @@ def encode(plan, event: dict) -> np.ndarray:
     parts = []
 
     # Phase 1: sort-encode the orbit of each distinct FlavouredOperator.
-    # fo is identified by (op.name, op.rank, op.parity, op.argument_symmetry, flavour.counts)
-    # so that we don't depend on FlavouredOperator.__hash__ including Context.
-    # TODO: delete : seen_fo_keys: set = set()
     for fo in fo_list:
-        # TODO:delete fo_key = (fo.operation.name, fo.operation.rank, fo.operation.parity,
-        # TODO:delete           fo.operation.argument_symmetry.value, fo.flavour.counts)
-        # TODO:delete if fo_key in seen_fo_keys:
-        # TODO:delete     print("Warning in encode.py encode.")
-        # TODO:delete     assert False # TODO : Give this a message to say "We should not get here as repS should only return one of each flavour type.
-        # TODO:delete     continue
-        # TODO:delete seen_fo_keys.add(fo_key)
-        if fo.count() == 0:
-            assert False, "This should not happen"
-            continue
+        assert fo.count()>0, "No FlavouredOperator generaed by repS should have an empty orbit."
         values = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
         parts.append(_sort_encode(values))
 
