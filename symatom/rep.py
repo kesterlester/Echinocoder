@@ -87,19 +87,12 @@ class FlavouredOperator:
     Acts as a lazy recipe for the group of atoms sharing the same operation and
     label-composition.
 
-    signed=True  → repL semantics: for ANTISYMMETRIC operations both sign=+1
-                   and sign=-1 atoms are included for each label combination.
-    signed=False → repS semantics: for ANTISYMMETRIC operations only the sign=+1
-                   atom per combination is included.
-    Symmetric and UNSTRUCTURED operations are identical under repL and repS.
-
     Mixed-symmetry operations are not yet supported and will raise
     NotImplementedError if encountered (future extension point).
     """
     operation:  Operation
     flavour:    Flavour
     context:    Context
-    signed:     bool
 
     def __post_init__(self):
         if len(self.flavour) != len(self.context.groups):
@@ -126,8 +119,6 @@ class FlavouredOperator:
             math.comb(g.size, k)
             for g, k in zip(self.context.groups, self.flavour)
         )
-        if self.signed and self.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC:
-            return base * 2
         return base
 
     def atoms(self):
@@ -136,31 +127,26 @@ class FlavouredOperator:
 
         Labels are generated via combinations (one per species group), so each
         combination is visited exactly once with labels in sorted order within
-        each group.  For ANTISYMMETRIC operations with signed=True (repL), both
-        sign=+1 and sign=-1 variants are yielded for every combination.
+        each group.
+
+        TODO: This should move to a lazy use of TheGroup.
         """
         per_group = [
             list(_combinations(g.labels, k))
             for g, k in zip(self.context.groups, self.flavour)
         ]
-        antisym_and_signed = (
-            self.signed and
-            self.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-        )
         for combo_parts in _iproduct(*per_group):
             labels = tuple(lbl for part in combo_parts for lbl in part)
             yield Atom(self.operation, labels, sign=+1)
-            if antisym_and_signed:
-                yield Atom(self.operation, labels, sign=-1)
 
     def __repr__(self):
         group_names = [g.name for g in self.context.groups]
         fl_str = self.flavour.describe(group_names)
-        mode = "repL" if self.signed else "repS"
-        return f"FO({self.operation.name}, {fl_str}, {mode})"
+        return f"FO({self.operation.name}, {fl_str})"
 
     def canonical_representative(self, canonicaliser) -> Atom:
         """Return the canonical orbit representative for this FlavouredOperator."""
+        # No orbit should be empty as every group contains at least the identity element, so calling next() below should be safe..
         return canonicaliser.canonicalise((next(self.atoms()),), self.context)[0]
 
     def contains(self, atom: Atom) -> bool:
@@ -168,10 +154,12 @@ class FlavouredOperator:
         Return True if atom belongs to the vocabulary of this FlavouredOperator.
 
         Checks operation identity, that every label belongs to the correct group
-        in the correct count (matching the flavour), and that the sign is
-        consistent with the signed/unsigned semantics.  Does not require the
+        in the correct count (matching the flavour). Does not require the
         atom's labels to be in any particular order.
         """
+        # TODO: Refactor this method to be named "matches"
+        # as use of "contains" without qualification can mislead people into thinking 
+        # this is a container inclusion test, which it is not.
         if atom.operation != self.operation:
             return False
         label_group = {
@@ -187,36 +175,21 @@ class FlavouredOperator:
             counts[idx] += 1
         if tuple(counts) != self.flavour.counts:
             return False
-        if atom.sign == -1 and not self.signed:
-            return False
         return True
 
 
 # ---------------------------------------------------------------------------
-# repL and repS
+# repS
 # ---------------------------------------------------------------------------
-
-def repL(context: Context, operations) -> list:
-    """
-    Return a list of FlavouredOperator (signed=True) covering every valid
-    (operation, Flavour) combination for the given context and operations.
-
-    "Valid" means each species contributes no more labels than its pool allows.
-    """
-    return [
-        FlavouredOperator(operation=op, flavour=fl, context=context, signed=True)
-        for op in operations
-        for fl in _valid_flavours(context.groups, op.rank)
-    ]
 
 
 def repS(context: Context, operations) -> list:
     """
-    Return a list of FlavouredOperator (signed=False) covering every valid
+    Return a list of FlavouredOperator) covering every valid
     (operation, Flavour) combination for the given context and operations.
     """
     return [
-        FlavouredOperator(operation=op, flavour=fl, context=context, signed=False)
+        FlavouredOperator(operation=op, flavour=fl, context=context)
         for op in operations
         for fl in _valid_flavours(context.groups, op.rank)
     ]
