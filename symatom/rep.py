@@ -157,8 +157,7 @@ class FlavouredOperator:
         combination is visited exactly once with labels in sorted order within
         each group.
 
-        TODO: This should move to a lazy use of TheGroup. However note that
-        atom_one_per_sign does NOT (and is NOT intended to) generate an orbit.
+        Note that atom_one_per_sign does NOT (and is NOT intended to) generate an orbit.
         E.g. it could in principle yield:
 
             [+eps2(a,b), +eps2(a,c), +eps2(b,c)]
@@ -167,7 +166,7 @@ class FlavouredOperator:
         
             [+dot(a,b), +dot(a,c), +dot(b,c)]
 
-        which is an orbit! It can even yield stranger things like:
+        which is an orbit! It can even yield stranger things with mixes signs like:
 
             [ -eps2(apple, zebra), -eps2(toast, zebra), +eps2(apple, toast)]
 
@@ -221,6 +220,12 @@ class FlavouredOperator:
 
         signs: [-1, -1, 1]  ← mix of +1 and -1 despite all constructed with sign=+1
         ###################################################################################
+
+        TODO: Think about (1) whether it would be better for this algorithm to simply make
+        operators all with +signs, (it could use the Atom.pinned_sign constructor), and/or
+        (2) whether it should lean more on tools in TheGroup even though it is NOT a
+        genrator of orbits. Thought (1) may be easy if nothing relies upon the historically
+        strange sign conventions seen in the output of this method.
         """
 
         # For each vector type g and its required label count k, enumerate all
