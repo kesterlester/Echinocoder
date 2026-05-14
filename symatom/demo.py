@@ -43,7 +43,9 @@ def demo():
     _section("repS — FlavouredOperators")
     fo_list = repS(ctx, plan.operations)
     for fo in fo_list:
-        rep = fo.canonical_representative(plan.canonicaliser)
+        rep = fo.canonical_representative(
+        #plan.canonicaliser
+        )
         print(f"  {fo!r}  →  {fo.count()} atoms, in the orbit of {rep!r}")
 
     _section(f"repS — all atoms")

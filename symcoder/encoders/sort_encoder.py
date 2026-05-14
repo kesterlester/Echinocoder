@@ -116,6 +116,8 @@ class SortEncoder(AtomOrbitEncoder):
 
         if spec.form == OrbitSpecForm.EXPLICIT_ORBIT:
             orbit = spec.payload
+            assert len(orbit)>=1
+            assert len(orbit) == plan.context.the_group.orbit_size(orbit[0])
             return EncodingCapability(
                 can_encode=True,
                 output_dim=len(orbit),
@@ -125,9 +127,11 @@ class SortEncoder(AtomOrbitEncoder):
             )
         if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
             fo = spec.payload
+            u = fo.canonical_representative()
             return EncodingCapability(
                 can_encode=True,
-                output_dim=fo.count(),
+                ##### output_dim=fo.count(),
+                output_dim=plan.context.the_group.orbit_size(u),
                 method_name="sortMOOMOOMOO",
                 priority=_PRIORITY,
                 metadata={"orbit_size_moo": 100},
