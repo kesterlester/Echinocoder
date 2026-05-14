@@ -176,7 +176,7 @@ class FlavouredOperator:
         """Return the first atom from atoms_one_per_sign() as the orbit representative."""
         return next(self.atoms_one_per_sign())
 
-    def contains(self, atom: Atom) -> bool:
+    def matches_ignoring_sign(self, atom: Atom) -> bool:
         """
         Return True if atom belongs to the vocabulary of this FlavouredOperator.
 
@@ -184,10 +184,6 @@ class FlavouredOperator:
         in the correct count (matching the flavour). Does not require the
         atom's labels to be in any particular order or that the sign matches.
         """
-        # TODO: Refactor this method to be named "matches_ignoring_sign"
-        # as use of "contains" without qualification can mislead people into thinking 
-        # this is a container inclusion test, which it is not, as (among other thins)
-        # the sign can differ.
         if atom.operation != self.operation:
             return False
         label_type = {

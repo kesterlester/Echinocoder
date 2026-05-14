@@ -410,8 +410,8 @@ Required methods:
   generation is acceptable in unit tests to cross-check, but the direct
   combination strategy is preferred in production because species pools may
   be large.
-- `.contains(atom) -> bool` — returns `True` if the atom belongs to the
-  vocabulary of this `FlavouredOperator`. For `SYMMETRIC` and `ANTISYMMETRIC`
+- `.matches_ignoring_sign(atom) -> bool` — returns `True` if the atom belongs to the
+  vocabulary of this `FlavouredOperator` (ignoring sign). For `SYMMETRIC` and `ANTISYMMETRIC`
   operations this can usually be determined without full enumeration (see
   below).
 - `.canonical_representative() -> Atom` — returns the first atom from

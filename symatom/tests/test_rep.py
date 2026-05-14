@@ -178,34 +178,34 @@ def test_atoms_one_per_sign_labels_distinct(eps3, ctx2):
 
 
 # ---------------------------------------------------------------------------
-# FlavouredOperator.contains()
+# FlavouredOperator.matches_ignoring_sign()
 # ---------------------------------------------------------------------------
 
-def test_contains_dot_true(dot, ctx1):
+def test_matches_ignoring_sign_dot_true(dot, ctx1):
     fo = FlavouredOperator(operation=dot, flavour=Flavour((2,)), context=ctx1)
-    assert fo.contains(Atom(dot, ("a", "b"), sign=+1))
+    assert fo.matches_ignoring_sign(Atom(dot, ("a", "b"), sign=+1))
 
-def test_contains_dot_wrong_operation(mass, dot, ctx1):
+def test_matches_ignoring_sign_dot_wrong_operation(mass, dot, ctx1):
     fo = FlavouredOperator(operation=dot, flavour=Flavour((2,)), context=ctx1)
-    assert not fo.contains(Atom(mass, ("a",), sign=+1))
+    assert not fo.matches_ignoring_sign(Atom(mass, ("a",), sign=+1))
 
-def test_contains_eps_positive(eps3, ctx1):
+def test_matches_ignoring_sign_eps_positive(eps3, ctx1):
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((3,)), context=ctx1)
-    assert fo.contains(Atom(eps3, ("a", "b", "c"), sign=+1))
+    assert fo.matches_ignoring_sign(Atom(eps3, ("a", "b", "c"), sign=+1))
 
-def test_contains_eps_negative(eps3, ctx1):
+def test_matches_ignoring_sign_eps_negative(eps3, ctx1):
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((3,)), context=ctx1)
-    assert fo.contains(Atom(eps3, ("a", "b", "c"), sign=-1))
+    assert fo.matches_ignoring_sign(Atom(eps3, ("a", "b", "c"), sign=-1))
 
-def test_contains_wrong_flavour(dot, ctx2):
+def test_matches_ignoring_sign_wrong_flavour(dot, ctx2):
     # dot(a,b) has flavour (2,0); FlavouredOperator has flavour (1,1)
     fo = FlavouredOperator(operation=dot, flavour=Flavour((1, 1)), context=ctx2)
-    assert not fo.contains(Atom(dot, ("a", "b"), sign=+1))
+    assert not fo.matches_ignoring_sign(Atom(dot, ("a", "b"), sign=+1))
 
-def test_contains_cross_group_dot(dot, ctx2):
+def test_matches_ignoring_sign_cross_group_dot(dot, ctx2):
     fo = FlavouredOperator(operation=dot, flavour=Flavour((1, 1)), context=ctx2)
-    assert fo.contains(Atom(dot, ("a", "p"), sign=+1))
-    assert fo.contains(Atom(dot, ("b", "q"), sign=+1))  # label order doesn't matter
+    assert fo.matches_ignoring_sign(Atom(dot, ("a", "p"), sign=+1))
+    assert fo.matches_ignoring_sign(Atom(dot, ("b", "q"), sign=+1))  # label order doesn't matter
 
 
 # ---------------------------------------------------------------------------
