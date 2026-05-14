@@ -4,7 +4,7 @@ Prints atoms, flavoured operators, and pair flavours for a small physics context
 """
 from .atoms   import ArgumentSymmetry, Operation, VectorType
 from .context import Context, Plan
-from .rep     import repS, canonical_pair_flavours
+from .rep     import repS, canonical_pair_flavours, FlavouredOperator, Flavour
 
 
 # ---------------------------------------------------------------------------
@@ -70,5 +70,38 @@ def demo():
     print(f"\n  distinct pair-flavours: {len(pfs)}")
 
 
+def demo_scrambled_labels():
+    """
+    Show that atoms_one_per_sign() can yield atoms with MIXED signs when the
+    VectorType's label tuple is not in sorted order.
+
+    Root cause: combinations() preserves the declaration order of g.labels.
+    If that order is not sorted, the Atom constructor's label-sorting step
+    requires an odd permutation for some choices, flipping their sign to -1.
+
+    Example: labels=("zebra","apple","toast") with a rank-2 ANTISYMMETRIC op.
+    combinations(("zebra","apple","toast"), 2) yields:
+        ("zebra","apple")  →  Atom sorts to ("apple","zebra"), 1 swap → sign=-1
+        ("zebra","toast")  →  Atom sorts to ("toast","zebra"), 1 swap → sign=-1
+        ("apple","toast")  →  already sorted                         → sign=+1
+    Output: a mix of + and - atoms despite all being passed sign=+1.
+    """
+    eps2 = Operation("eps2", rank=2, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    scrambled = VectorType("scrambled", labels=("zebra", "apple", "toast"))
+    ctx_s = Context(types=(scrambled,))
+    fo = FlavouredOperator(operation=eps2, flavour=Flavour((2,)), context=ctx_s)
+
+    _section("atoms_one_per_sign with scrambled labels — mixed sign output")
+    print("  VectorType labels (declaration order): ('zebra', 'apple', 'toast')")
+    print("  combinations yield pairs in that order, not in sorted order.")
+    print()
+    atoms = list(fo.atoms_one_per_sign())
+    for atom in atoms:
+        print(f"  {atom!r}")
+    signs = [a.sign for a in atoms]
+    print(f"\n  signs: {signs}  ← mix of +1 and -1 despite all constructed with sign=+1")
+
+
 if __name__ == "__main__":
     demo()
+    demo_scrambled_labels()

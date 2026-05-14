@@ -78,6 +78,54 @@ class VectorType:
         return len(self.labels)
 
 
+def _canonicalise_fields(
+    operation: Operation, labels: tuple, sign: int, *, pin_sign: bool
+) -> tuple[tuple, int]:
+    """
+    Validate and canonicalise (labels, sign) for an Atom.  Shared by both
+    construction paths so that changing the canonicalisation rule only ever
+    requires editing this one function.
+
+    pin_sign=False  (normal path): for ANTISYMMETRIC operations the sign is
+                    multiplied by the parity of the label-sorting permutation.
+    pin_sign=True   (pinned path): the sign is stored exactly as given;
+                    labels are still sorted but parity is never computed.
+
+    Returns (canonical_labels, final_sign).
+    Raises TypeError / ValueError on malformed input.
+    """
+    if not isinstance(labels, tuple):
+        raise TypeError(f"labels must be a tuple, got {type(labels)}")
+    if len(labels) != operation.rank:
+        raise ValueError(
+            f"Operation '{operation.name}' has rank {operation.rank} "
+            f"but {len(labels)} label(s) were supplied: {labels!r}"
+        )
+    if sign not in (+1, -1):
+        raise ValueError(f"sign must be +1 or -1, got {sign!r}")
+    if sign == -1 and operation.argument_symmetry != ArgumentSymmetry.ANTISYMMETRIC:
+        raise ValueError(
+            f"sign=-1 is not valid for operation '{operation.name}' whose "
+            f"argument_symmetry is {operation.argument_symmetry}; "
+            f"only ANTISYMMETRIC operations may carry sign=-1"
+        )
+    if len(set(labels)) != len(labels):
+        raise ValueError(f"Atom labels must be distinct, got {labels!r}")
+
+    sym = operation.argument_symmetry
+    if sym == ArgumentSymmetry.UNSTRUCTURED:
+        return labels, sign
+
+    if pin_sign:
+        # Sort labels but ignore parity — caller's sign is stored as-is.
+        sorted_labels, _ = _sort_sign(labels)
+        return sorted_labels, sign
+    else:
+        sorted_labels, perm_sign = _sort_sign(labels)
+        final_sign = sign * perm_sign if sym == ArgumentSymmetry.ANTISYMMETRIC else sign
+        return sorted_labels, final_sign
+
+
 @dataclass(frozen=True)
 class Atom:
     """
@@ -102,39 +150,42 @@ class Atom:
     (the unsorted eps atom self-canonicalizes to the sorted form with sign -1).
 
     Rule 2 (label membership in a context) is checked separately by Context.
+
+    Alternative constructor
+    -----------------------
+    Atom.with_pinned_sign(operation, labels, sign) sorts the labels into
+    canonical order but preserves the given sign exactly. The parity of the
+    sorting permutation is not folded in.  Use this when the sign is already
+    known to be correct for the canonical label arrangement.
     """
     operation:  Operation
     labels:     tuple   # stored in canonical argument order (see above)
     sign:       int     # +1 or -1
 
     def __post_init__(self):
-        if not isinstance(self.labels, tuple):
-            raise TypeError(f"labels must be a tuple, got {type(self.labels)}")
-        if len(self.labels) != self.operation.rank:
-            raise ValueError(
-                f"Operation '{self.operation.name}' has rank {self.operation.rank} "
-                f"but {len(self.labels)} label(s) were supplied: {self.labels!r}"
-            )
-        if self.sign not in (+1, -1):
-            raise ValueError(f"sign must be +1 or -1, got {self.sign!r}")
-        if (self.sign == -1 and
-                self.operation.argument_symmetry != ArgumentSymmetry.ANTISYMMETRIC):
-            raise ValueError(
-                f"sign=-1 is not valid for operation '{self.operation.name}' whose "
-                f"argument_symmetry is {self.operation.argument_symmetry}; "
-                f"only ANTISYMMETRIC operations may carry sign=-1"
-            )
-        if len(set(self.labels)) != len(self.labels):
-            raise ValueError(
-                f"Atom labels must be distinct, got {self.labels!r}"
-            )
-        # Internal argument canonicalization for SYMMETRIC and ANTISYMMETRIC ops.
-        sym = self.operation.argument_symmetry
-        if sym in (ArgumentSymmetry.SYMMETRIC, ArgumentSymmetry.ANTISYMMETRIC):
-            sorted_labels, perm_sign = _sort_sign(self.labels)
-            new_sign = self.sign * perm_sign if sym == ArgumentSymmetry.ANTISYMMETRIC else self.sign
-            object.__setattr__(self, 'labels', sorted_labels)
-            object.__setattr__(self, 'sign',   new_sign)
+        labels, sign = _canonicalise_fields(
+            self.operation, self.labels, self.sign, pin_sign=False
+        )
+        object.__setattr__(self, 'labels', labels)
+        object.__setattr__(self, 'sign',   sign)
+
+    @classmethod
+    def with_pinned_sign(cls, operation: Operation, labels, sign: int = +1) -> "Atom":
+        """
+        Construct an Atom with canonical (sorted) label order, but preserving sign
+        exactly as given; the parity of the sorting permutation is NOT folded in.
+
+        Bypasses __init__ / __post_init__ entirely so no perm-parity is computed
+        only to be discarded.  All validation still runs via _canonicalise_fields.
+        """
+        canon_labels, _ = _canonicalise_fields(
+            operation, tuple(labels), sign, pin_sign=True
+        )
+        inst = object.__new__(cls)
+        object.__setattr__(inst, 'operation', operation)
+        object.__setattr__(inst, 'labels',    canon_labels)
+        object.__setattr__(inst, 'sign',      sign)   # pin_sign=True guarantees no change
+        return inst
 
     def __repr__(self):
         sign_str = "+" if self.sign == 1 else "-"

@@ -167,15 +167,80 @@ class FlavouredOperator:
         
             [+dot(a,b), +dot(a,c), +dot(b,c)]
 
-        which is an orbit!
+        which is an orbit! It can even yield stranger things like:
+
+            [ -eps2(apple, zebra), -eps2(toast, zebra), +eps2(apple, toast)]
+
+        For example, the demo program below:
+
+        ###################################################################################
+        def demo_scrambled_labels():
+    
+            # Show that atoms_one_per_sign() can yield atoms with MIXED signs when the
+            # VectorType's label tuple is not in sorted order.
+
+            # Root cause: combinations() preserves the declaration order of g.labels.
+            # If that order is not sorted, the Atom constructor's label-sorting step
+            # requires an odd permutation for some choices, flipping their sign to -1.
+
+            # Example: labels=("zebra","apple","toast") with a rank-2 ANTISYMMETRIC op.
+            # combinations(("zebra","apple","toast"), 2) yields:
+            #     ("zebra","apple")  →  Atom sorts to ("apple","zebra"), 1 swap → sign=-1
+            #     ("zebra","toast")  →  Atom sorts to ("toast","zebra"), 1 swap → sign=-1
+            #     ("apple","toast")  →  already sorted                         → sign=+1
+            # Output: a mix of + and - atoms despite all being passed sign=+1.
+    
+            eps2 = Operation("eps2", rank=2, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+            scrambled = VectorType("scrambled", labels=("zebra", "apple", "toast"))
+            ctx_s = Context(types=(scrambled,))
+            fo = FlavouredOperator(operation=eps2, flavour=Flavour((2,)), context=ctx_s)
+
+            _section("atoms_one_per_sign with scrambled labels — mixed sign output")
+            print("  VectorType labels (declaration order): ('zebra', 'apple', 'toast')")
+            print("  combinations yield pairs in that order, not in sorted order.")
+            print()
+            atoms = list(fo.atoms_one_per_sign())
+            for atom in atoms:
+                print(f"  {atom!r}")
+            signs = [a.sign for a in atoms]
+            print(f"\n  signs: {signs}  ← mix of +1 and -1 despite all constructed with sign=+1")
+        ###################################################################################
+
+        yields as output:
+
+        ###################################################################################
+        ============================================================
+        atoms_one_per_sign with scrambled labels — mixed sign output
+        ============================================================
+        VectorType labels (declaration order): ('zebra', 'apple', 'toast')
+        combinations yield pairs in that order, not in sorted order.
+
+        -eps2(apple, zebra)
+        -eps2(toast, zebra)
+        +eps2(apple, toast)
+
+        signs: [-1, -1, 1]  ← mix of +1 and -1 despite all constructed with sign=+1
+        ###################################################################################
         """
 
+        # For each vector type g and its required label count k, enumerate all
+        # ways to choose k labels from g.labels using combinations (so order
+        # within each group follows the declaration order of g.labels, not
+        # sorted order).  The result is one list-of-tuples per type.
         per_type = [
             list(_combinations(g.labels, k))
             for g, k in zip(self.context.types, self.flavour)
         ]
+        # Take the Cartesian product across all types: one choice per type per
+        # iteration.  Flatten each multi-type choice into a single label tuple
+        # by concatenating the per-type label tuples in type order.
         for combo_parts in _iproduct(*per_type):
             labels = tuple(lbl for part in combo_parts for lbl in part)
+            # Construct with sign=+1.  The Atom constructor will sort the labels
+            # and, for ANTISYMMETRIC operations, multiply sign by the parity of
+            # the sorting permutation.  If the labels arrived in a non-sorted
+            # order (possible when g.labels itself is not sorted), the stored
+            # sign may end up -1.  See demo_scrambled_labels() in demo.py.
             yield Atom(self.operation, labels, sign=+1)
 
     def __repr__(self):
