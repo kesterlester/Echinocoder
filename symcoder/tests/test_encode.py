@@ -2,7 +2,7 @@
 import pytest
 import numpy as np
 from symatom import (
-    ArgumentSymmetry, VectorType, Context, Plan, SimpleCanonicaliser,
+    ArgumentSymmetry, VectorType, Context, Plan,
     repS, canonical_pair_flavours,
 )
 from symcoder import EvaluableOperation, encode, encode_brute, describe_encoding
@@ -40,7 +40,7 @@ def ctx(electrons):
 
 @pytest.fixture
 def plan(dot, eps3, ctx):
-    return Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot, eps3))
+    return Plan(context=ctx, operations=(dot, eps3))
 
 @pytest.fixture
 def event_3d():
@@ -71,7 +71,7 @@ def test_encode_length_matches_describe(dot, eps3, plan, ctx, event_3d):
 
 def test_encode_dot_only_length(dot, ctx, event_3d):
     """Length check for dot-only plan matches describe_encoding()."""
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
+    plan = Plan(context=ctx, operations=(dot,))
     result = encode(plan, event_3d)
     assert len(result) == sum(s.length for s in describe_encoding(plan))
 
@@ -95,7 +95,7 @@ def test_encode_invariant_under_label_permutation(dot, ctx):
     Swapping two particle labels must not change the encoding.
     encode(E) == encode(E') where E' is E with labels a and b swapped.
     """
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
+    plan = Plan(context=ctx, operations=(dot,))
     event = {
         "a": np.array([1.0, 2.0, 3.0]),
         "b": np.array([4.0, 5.0, 6.0]),
@@ -111,7 +111,7 @@ def test_encode_invariant_under_label_permutation(dot, ctx):
 
 def test_encode_invariant_under_cyclic_permutation(dot, ctx):
     """Cyclic permutation a→b→c→d→a leaves the encoding unchanged."""
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
+    plan = Plan(context=ctx, operations=(dot,))
     event = {
         "a": np.array([1.0, 0.0, 0.0]),
         "b": np.array([0.0, 1.0, 0.0]),
@@ -149,7 +149,7 @@ def test_encode_two_groups(dot, eps3):
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ("p", "q"))
     ctx  = Context(types=(electrons, muons))
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot, eps3))
+    plan = Plan(context=ctx, operations=(dot, eps3))
     event = {
         "a": np.array([1.0, 0.0, 0.0]),
         "b": np.array([0.0, 1.0, 0.0]),
@@ -167,7 +167,7 @@ def test_encode_two_groups_permutation_invariant(dot):
     electrons = VectorType("electrons", ("a", "b"))
     muons     = VectorType("muons",     ("p", "q"))
     ctx  = Context(types=(electrons, muons))
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
+    plan = Plan(context=ctx, operations=(dot,))
     event = {
         "a": np.array([1.0, 2.0, 0.0]),
         "b": np.array([3.0, 0.0, 1.0]),
@@ -394,7 +394,7 @@ def test_embed_compressed_type_neg_permutation_invariant():
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ("p", "q"))
     ctx  = Context(types=(electrons, muons))
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(eps2,))
+    plan = Plan(context=ctx, operations=(eps2,))
 
     np.random.seed(42)
     event = {
@@ -444,7 +444,7 @@ def test_embed_compressed_type_neg_distinguishes_events():
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ("p", "q"))
     ctx  = Context(types=(electrons, muons))
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(eps2,))
+    plan = Plan(context=ctx, operations=(eps2,))
 
     # Two events designed to yield z_k values with opposite Im(z_k²)
     # eps2(a,b) = a[0]*b[1] - a[1]*b[0] (the 2D cross product component)
@@ -494,7 +494,7 @@ def test_encode_two_groups_permutation_invariant_eps2():
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ("p", "q"))
     ctx  = Context(types=(electrons, muons))
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(eps2,))
+    plan = Plan(context=ctx, operations=(eps2,))
     event = {
         "a": np.array([1.3, 0.2]),
         "b": np.array([0.7, 1.1]),

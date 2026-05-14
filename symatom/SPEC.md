@@ -218,97 +218,6 @@ added without breaking existing code.
 
 ---
 
-## 4. Canonicalisation
-
-### 4.1 What canonicalisation is
-
-Canonicalisation maps an atom tuple to a **canonical form**: a chosen
-representative of its equivalence class under the action of the full symmetry
-group. Two atom tuples are considered equivalent if one can be obtained from
-the other by:
-
-1. Applying a permutation drawn from the product of the vector types' symmetric
-   groups (relabelling vectors), **and**
-2. Adjusting signs consistently with the `argument_symmetry` and `parity`
-   declarations of each operation involved.
-
-The canonical form is itself a valid atom tuple. All sign changes introduced
-during canonicalisation are absorbed into the `sign` fields of the atoms in
-the canonical form; no sign is returned separately to the caller.
-
-**Joint canonicalisation of multi-atom tuples.** For a tuple of two or more
-atoms, the canonicalisation must apply a *single* group element to *all* atoms
-simultaneously. It is **not** equivalent to canonicalising each atom
-independently and then assembling the results. Formally, the canonical form of
-`(U, V)` is
-
-    argmin_{g ∈ G}  (g·U arg-sorted,  g·V arg-sorted)
-
-where the same `g` is used for both atoms. Applying the individually-optimal
-group elements for `U` and `V` separately would in general yield a different
-result that may not even lie in the orbit of `(U, V)`. As a concrete example,
-`(dot(a,b), dot(c,d))` (four distinct labels) and `(dot(a,b), dot(a,c))`
-(three distinct labels, one shared) are in different orbits, yet each atom
-individually canonicalises to the same form — so independent atom-by-atom
-canonicalisation would wrongly collapse them to the same tuple.
-
-### 4.2 The canonicalisation contract
-
-Any conforming canonicalisation implementation must satisfy all of the
-following:
-
-**C1 — Idempotent**: `canon(canon(x)) == canon(x)` for all atom tuples `x`.
-
-**C2 — Representative**: `x` and `canon(x)` lie in the same orbit under the
-full symmetry group.
-
-**C3 — Consistent**: `canon(x) == canon(y)` if and only if `x` and `y` lie in
-the same orbit.
-
-**C4 — Deterministic**: `canon(x)` returns the same result on every call with
-the same input.
-
-### 4.3 What the spec does NOT mandate
-
-- Any particular ordering of labels (alphabetical, appearance-order, etc.).
-- Any particular ordering of atoms within a tuple.
-- Any particular strategy for breaking ties.
-
-These are implementation choices. Different implementations satisfying C1–C4
-are all conforming, and the test suite (Section 10) tests the contract, not the
-specific canonical form produced.
-
-### 4.4 Canonicalisation plans
-
-A **canonicalisation plan** is an explicit object encapsulating a chosen
-canonicalisation implementation together with any configuration it requires.
-Plans are **local**: they are passed explicitly to every function that needs
-to canonicalise. There is no global or default plan.
-
-This allows multiple plans to be run side-by-side in the same process — for
-example, running a repS-based plan and a repL-based plan simultaneously to
-cross-validate results.
-
-**Vocabulary.** A plan implicitly declares a **vocabulary**: the set of signed
-atoms that are considered named, first-class members of the representation.
-This is what distinguishes a repL-style plan from a repS-style plan:
-
-- A *repL-style* vocabulary includes both `(+1, op, labels)` and
-  `(−1, op, labels)` for antisymmetric operations. A vector-type permutation
-  that would flip the sign of such an atom merely maps it to another named
-  vocabulary member — no sign "escapes" the vocabulary.
-- A *repS-style* vocabulary includes only `(+1, op, labels)` for antisymmetric
-  operations. A sign-flipping permutation produces `(−1, op, labels)`, which
-  is a valid signed atom but not a positively-signed vocabulary member.
-
-Both styles use the same signed-atom representation and the same
-canonicalisation and orbit machinery. The vocabulary is a property of the
-layer above `symatom`; it is recorded here only to explain why two plans that
-differ only in vocabulary are expected to produce encodings of the same final
-size once all canonicalisations and redundancy-eliminations are applied.
-
----
-
 ## 5. Context
 
 A **context** bundles the label-side and group-theory-side information for a
@@ -339,8 +248,6 @@ A **plan** bundles together the configuration needed for a particular
 computation:
 
 - A **context** (Section 5): the label types in scope and their symmetry group.
-- A **canonicalisation implementation**: any conforming implementation of the
-  canonicalisation contract (Section 4.2).
 - An **operation registry**: the set of named operations available in this
   plan.
 - An **orbit enumerator** (Section 8.8): the strategy used to enumerate
@@ -507,13 +414,11 @@ Required methods:
   vocabulary of this `FlavouredOperator`. For `SYMMETRIC` and `ANTISYMMETRIC`
   operations this can usually be determined without full enumeration (see
   below).
-- `.canonical_representative(canonicaliser) -> Atom` — returns the canonical
-  orbit representative for this `FlavouredOperator`: picks any atom from
-  `.atoms()`, canonicalises it as a 1-tuple using the supplied canonicaliser
-  and the `FlavouredOperator`'s own context, and returns the resulting atom.
-  All atoms in a `FlavouredOperator` share the same operation and Flavour and
-  therefore lie in the same G-orbit, so the representative is well-defined
-  (independent of which atom is picked).
+- `.canonical_representative() -> Atom` — returns the first atom from
+  `.atoms()` as the orbit representative for this `FlavouredOperator`.  All
+  atoms in a `FlavouredOperator` share the same operation and Flavour and
+  therefore lie in the same G-orbit, so any choice of representative is equally
+  valid.
 
 Mixed-symmetry operations are **not supported** in this version and are not
 yet handled by `FlavouredOperator`. Support is deferred to a future version.
@@ -710,38 +615,12 @@ for it without requiring a refactor.
 
 ---
 
-## 10. Test contracts
-
-The test suite must include tests for the canonicalisation contract properties
-C1–C4 (Section 4.2) against any conforming implementation. These tests should:
-
-- **C1**: Apply `canon` twice and assert the result equals applying it once.
-- **C2**: Assert that `canon(x)` and `x` produce the same orbit (i.e. `x`
-  appears in `orbit(canon(x), plan)`).
-- **C3**: For pairs `(x, y)` known to be in the same orbit, assert
-  `canon(x) == canon(y)`. For pairs known to be in different orbits, assert
-  `canon(x) != canon(y)`.
-- **C4**: Call `canon(x)` twice in the same session and assert identical
-  results.
-
-The test suite should also include at least one test demonstrating that
-multi-atom tuple canonicalisation is joint (Section 4.1): two tuples that
-differ in their label-sharing structure must be in different orbits even if
-every atom individually canonicalises to the same form.
-
-Tests should be written against the **contract**, using the plan mechanism to
-inject whichever canonicalisation implementation is under test. This ensures
-that swapping in a new implementation is immediately testable.
-
----
-
 ## 11. What this spec does not decide
 
 The following are left to the implementation:
 
 - The concrete data structures for labels, atoms, and atom tuples (named
   tuples, dataclasses, frozen dataclasses, etc.).
-- The specific canonicalisation algorithm.
 - Whether orbits are computed eagerly or lazily.
 - The file and module structure within the `symatom` package.
 - How operations are registered (decorator, explicit registry call, etc.).

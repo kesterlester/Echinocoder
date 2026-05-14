@@ -3,8 +3,7 @@ import pytest
 import numpy as np
 from symatom import (
     ArgumentSymmetry, VectorType, Context, Plan,
-    SimpleCanonicaliser, repS,
-    canonical_pair_flavours,
+    repS, canonical_pair_flavours,
 )
 from symcoder import EvaluableOperation, evaluate
 from symcoder.pairs import eval_pair_orbit
@@ -40,7 +39,7 @@ def ctx(electrons):
 
 @pytest.fixture
 def plan(dot, eps3, ctx):
-    return Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot, eps3))
+    return Plan(context=ctx, operations=(dot, eps3))
 
 @pytest.fixture
 def ortho_event():
@@ -145,7 +144,7 @@ def test_eval_pair_orbit_two_groups(dot, eps3):
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ("p", "q"))
     ctx  = Context(types=(electrons, muons))
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot, eps3))
+    plan = Plan(context=ctx, operations=(dot, eps3))
     event = {
         "a": np.array([1.0, 0.0, 0.0]),
         "b": np.array([0.0, 1.0, 0.0]),

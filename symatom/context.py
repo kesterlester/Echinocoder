@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from .atoms import VectorType, Operation, Atom
 from .group import TheGroup
 from .orbit_enum import OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
-from .canon import DirectCanonicaliser
 
 
 @dataclass(frozen=True)
@@ -56,19 +55,14 @@ class Context:
 class Plan:
     """
     Bundles the local configuration for a computation: which vector types are
-    in scope, which canonicalisation implementation to use, which operations
-    are registered, and which orbit enumeration strategy to use.
+    in scope, which operations are registered, and which orbit enumeration
+    strategy to use.
 
     Plans are passed explicitly; there is no global plan.
     """
     context:          Context
-    canonicaliser:    object           = field(default_factory=DirectCanonicaliser)
     operations:       tuple            = field(default_factory=tuple)
     orbit_enumerator: OrbitEnumerator  = field(default_factory=DirectOrbitEnumerator)
-
-    def canonicalise(self, atom_tuple: tuple) -> tuple:
-        """Delegate to the plan's canonicaliser."""
-        return self.canonicaliser.canonicalise(atom_tuple, self.context)
 
     def get_operation(self, name: str) -> Operation:
         for op in self.operations:

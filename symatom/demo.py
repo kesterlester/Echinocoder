@@ -4,7 +4,6 @@ Prints atoms, flavoured operators, and pair flavours for a small physics context
 """
 from .atoms   import ArgumentSymmetry, Operation, VectorType
 from .context import Context, Plan
-from .canon   import SimpleCanonicaliser
 from .rep     import repS, canonical_pair_flavours
 
 
@@ -20,7 +19,7 @@ electrons = VectorType("electrons", labels=("A", "B", "C", ))
 muons     = VectorType("muons",     labels=("P", "Q", ))
 
 ctx  = Context(types=(electrons, muons))
-plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(mass, dot, eps3))
+plan = Plan(context=ctx, operations=(mass, dot, eps3))
 
 
 def _section(title: str) -> None:
@@ -43,9 +42,7 @@ def demo():
     _section("repS — FlavouredOperators")
     fo_list = repS(ctx, plan.operations)
     for fo in fo_list:
-        rep = fo.canonical_representative(
-        #plan.canonicaliser
-        )
+        rep = fo.canonical_representative()
         print(f"  {fo!r}  →  {fo.count()} atoms, in the orbit of {rep!r}")
 
     _section(f"repS — all atoms")

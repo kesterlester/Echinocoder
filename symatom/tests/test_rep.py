@@ -3,7 +3,6 @@ import math
 import pytest
 from symatom import (
     ArgumentSymmetry, Operation, VectorType, Atom, Context,
-    Plan, SimpleCanonicaliser,
 )
 from symatom.rep import (
     Flavour, FlavouredOperator, repS,
@@ -549,31 +548,6 @@ def test_cpf_is_sorted_deterministically(dot, eps3, ctx1):
     r1 = canonical_pair_flavours(fo_list, ctx1)
     r2 = canonical_pair_flavours(fo_list, ctx1)
     assert r1 == r2
-
-
-# ---------------------------------------------------------------------------
-# SimpleCanonicaliser: atom-tuple order does not affect canonical form
-# ---------------------------------------------------------------------------
-
-def test_canon_pair_order_independent(dot, eps3, electrons):
-    """
-    canon((dot(a,b), eps3(a,b,c))) == canon((eps3(a,b,c), dot(a,b))).
-    The SimpleCanonicaliser sorts atoms within the tuple, so input order
-    must not affect the canonical form.
-    """
-    ctx  = Context((electrons,))
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot, eps3))
-    u = Atom(dot,  ("a", "b"),      sign=+1)
-    v = Atom(eps3, ("a", "b", "c"), sign=+1)
-    assert plan.canonicalise((u, v)) == plan.canonicalise((v, u))
-
-def test_canon_dot_dot_pair_order_independent(dot, electrons):
-    """canon((dot(a,b), dot(c,d))) == canon((dot(c,d), dot(a,b)))."""
-    ctx  = Context((electrons,))
-    plan = Plan(context=ctx, canonicaliser=SimpleCanonicaliser(), operations=(dot,))
-    u = Atom(dot, ("a", "b"), sign=+1)
-    v = Atom(dot, ("c", "d"), sign=+1)
-    assert plan.canonicalise((u, v)) == plan.canonicalise((v, u))
 
 
 # ---------------------------------------------------------------------------

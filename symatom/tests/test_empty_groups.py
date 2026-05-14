@@ -14,12 +14,10 @@ are empty, ensuring nothing silently breaks.
 import pytest
 from symatom import (
     ArgumentSymmetry, Operation, VectorType, Atom,
-    Context, Plan,
-    SimpleCanonicaliser, DirectCanonicaliser,
+    Context,
     BruteForceOrbitEnumerator, DirectOrbitEnumerator,
     repS, canonical_pair_flavours,
 )
-from symatom.orbits import orbit
 
 
 # ---------------------------------------------------------------------------
@@ -149,50 +147,3 @@ def test_orbit_enumerators_agree_with_empty_group(dot, eps3, ctx_one_empty):
         assert set(bf.orbit_elements(pf, ctx_one_empty)) == \
                set(direct.orbit_elements(pf, ctx_one_empty))
 
-
-# ---------------------------------------------------------------------------
-# orbit() with an empty group
-# ---------------------------------------------------------------------------
-
-def test_orbit_with_empty_group(dot, ctx_one_empty):
-    plan = Plan(context=ctx_one_empty, operations=(dot,))
-    x = (Atom(dot, ("a", "b"), sign=+1),)
-    orb = orbit(x, plan)
-    assert len(orb) > 0
-    assert all(isinstance(t, tuple) for t in orb)
-
-def test_orbit_canonical_in_orbit_with_empty_group(dot, eps3, ctx_one_empty):
-    plan = Plan(context=ctx_one_empty, operations=(dot, eps3))
-    x = (Atom(eps3, ("c", "a", "b"), sign=+1),)
-    assert plan.canonicalise(x) in orbit(x, plan)
-
-
-# ---------------------------------------------------------------------------
-# Canonicalisers with an empty group
-# ---------------------------------------------------------------------------
-
-@pytest.mark.parametrize("canon", [
-    pytest.param(SimpleCanonicaliser(), id="simple"),
-    pytest.param(DirectCanonicaliser(), id="direct"),
-])
-def test_canonicaliser_idempotent_with_empty_group(canon, dot, eps3, ctx_one_empty):
-    plan = Plan(context=ctx_one_empty, canonicaliser=canon, operations=(dot, eps3))
-    for x in [
-        (Atom(dot,  ("b", "a"),      sign=+1),),
-        (Atom(eps3, ("c", "a", "b"), sign=+1),),
-        (Atom(dot,  ("a", "b"),      sign=+1), Atom(dot, ("b", "c"), sign=+1)),
-    ]:
-        assert plan.canonicalise(plan.canonicalise(x)) == plan.canonicalise(x)
-
-def test_canonicalisers_agree_with_empty_group(dot, eps3, ctx_one_empty):
-    """Simple and Direct give the same result when a group is empty."""
-    simple = SimpleCanonicaliser()
-    direct = DirectCanonicaliser()
-    cases = [
-        (Atom(dot,  ("b", "a"),      sign=+1),),
-        (Atom(eps3, ("c", "a", "b"), sign=+1),),
-        (Atom(dot,  ("a", "b"),      sign=+1), Atom(dot, ("b", "c"), sign=+1)),
-    ]
-    for x in cases:
-        assert direct.canonicalise(x, ctx_one_empty) == \
-               simple.canonicalise(x, ctx_one_empty)

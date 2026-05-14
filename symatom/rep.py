@@ -172,15 +172,9 @@ class FlavouredOperator:
         fl_str = self.flavour.describe(type_names)
         return f"FO({self.operation.name}, {fl_str})"
 
-    def canonical_representative(self,
-   # canonicaliser
-    ) -> Atom:
+    def canonical_representative(self) -> Atom:
+        """Return the first atom from atoms() as the orbit representative."""
         return next(self.atoms())
-
-    def OLD_canonical_representative(self, canonicaliser) -> Atom: # TODO DELETE ME
-        """Return the canonical orbit representative for this FlavouredOperator."""
-        # No orbit should be empty as every group contains at least the identity element, so calling next() below should be safe..
-        return canonicaliser.canonicalise((next(self.atoms()),), self.context)[0]
 
     def contains(self, atom: Atom) -> bool:
         """

@@ -2,7 +2,6 @@ import math
 import pytest
 from symatom import (
     ArgumentSymmetry, Operation, VectorType, Atom, Context,
-    Plan, SimpleCanonicaliser,
 )
 from symatom.rep import (
     Flavour, FlavouredOperator, repS,
