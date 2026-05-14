@@ -300,8 +300,8 @@ def test_three_group_atoms_matches_count(mass, dot, eps3, ctx3):
 
 def test_three_group_eps3_mixed_flavour_spot_check(eps3, ctx3):
     # Flavour (1,1,1): C(4,1)*C(2,1)*C(3,1) = 4*2*3 = 24 atoms in repS, 48 in repL.
-    fo_s = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3)
-    assert fo_s.count_of_atoms_one_per_sign() == 24
+    fo = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3)
+    assert fo.count_of_atoms_one_per_sign() == 24
 
 def test_three_group_atoms_labels_distinct(eps3, ctx3):
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3)

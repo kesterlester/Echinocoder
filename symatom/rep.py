@@ -184,7 +184,7 @@ class FlavouredOperator:
         in the correct count (matching the flavour). Does not require the
         atom's labels to be in any particular order or that the sign matches.
         """
-        # TODO: Refactor this method to be named "matches"
+        # TODO: Refactor this method to be named "matches_ignoring_sign"
         # as use of "contains" without qualification can mislead people into thinking 
         # this is a container inclusion test, which it is not, as (among other thins)
         # the sign can differ.
