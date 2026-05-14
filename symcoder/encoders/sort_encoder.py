@@ -47,26 +47,6 @@ class SortEncoder(AtomOrbitEncoder):
     ~~~~~~~~
     Determine orbit_size from the spec form:
 
-    REPRESENTATIVE_ATOM:
-        atom = spec.payload  # type: Atom
-        # Build a FlavouredOperator from the representative atom to count the orbit.
-        # The flavour records how many of the atom's labels come from each group.
-        from symatom.rep import FlavouredOperator, Flavour
-        flavour = Flavour(tuple(
-            sum(1 for lbl in atom.labels if lbl in set(g.labels))
-            for g in plan.context.types
-        ))
-        fo = FlavouredOperator(atom.operation, flavour, plan.context)
-        orbit_size = fo.count()
-
-    FLAVOURED_OPERATOR:
-        fo = spec.payload  # type: FlavouredOperator
-        orbit_size = fo.count()
-
-    EXPLICIT_ORBIT:
-        orbit_size = len(spec.payload)
-
-    Then return:
         return EncodingCapability(
             can_encode=True,
             output_dim=orbit_size,
@@ -106,15 +86,22 @@ class SortEncoder(AtomOrbitEncoder):
     """
 
     def assess(self, spec: OrbitSpec, plan: Plan) -> EncodingCapability:
-        # A sort encoder can simply sort a set PROVIDED that the set itself is invariant under the group action contained within the plan.
-        # e.g.:
-        #    * if the plan's group G permutes {a,b,c} then it's     fine to sort encode S={a.b, a.c, b.c} since G.S = {S}.
-        #    * if the plan's group G permutes {a,b,c} then it's NOT fine to sort encode S={a.b, a.c} since G.S != {S}.
-        #    * if the plan's group G permutes {a,b} then it's     fine to sort encode S={a.b} since G.S = {S}.
-        #    * if the plan's group G permutes {a,b} then it's NOT fine to sort encode S={eps2(a.b)} since G.S != {S}.
-        # So, most naive implementation takes every element of the group, uses it to modify a list of atoms, and then see if that list is invariant:
+        """
+        A sort encoder can simply sort a set PROVIDED that the set itself is
+        invariant under the group action contained within the plan.
+        For example:
 
-        if spec.form == OrbitSpecForm.EXPLICIT_ORBIT:
+           * if the plan's group G permutes {a,b,c} then it's     fine to sort encode S={a.b, a.c, b.c} since G.S = {S}.
+           * if the plan's group G permutes {a,b,c} then it's NOT fine to sort encode S={a.b, a.c} since G.S != {S}.
+           * if the plan's group G permutes {a,b} then it's     fine to sort encode S={a.b} since G.S = {S}.
+           * if the plan's group G permutes {a,b} then it's NOT fine to sort encode S={eps2(a.b)} since G.S != {S}.
+
+        So, most naive implementation takes every element of the group, uses it to 
+        modify a list of atoms, and then see if that list is invariant.
+        """
+
+        if False and spec.form == OrbitSpecForm.EXPLICIT_ORBIT:
+            raise NotImplementedError("We should also check that the orbit really is an orbit, but checking that (1) it is a set, and (2) its set of elements does not change when any group elelment acts on it.")
             orbit = spec.payload
             assert len(orbit)>=1
             assert len(orbit) == plan.context.the_group.orbit_size(orbit[0])
@@ -125,18 +112,23 @@ class SortEncoder(AtomOrbitEncoder):
                 priority=_PRIORITY,
                 metadata={"orbit_size_moo": 100},
             )
+        # Set canonical representative u:
         if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
             fo = spec.payload
             u = fo.canonical_representative()
+        elif spec.form == OrbitSpecForm.REPRESENTATIVE_ATOM:
+            u = spec.payload
+        else:
+            u = None
+        if u is not None:
             return EncodingCapability(
                 can_encode=True,
-                ##### output_dim=fo.count(),
                 output_dim=plan.context.the_group.orbit_size(u),
                 method_name="sortMOOMOOMOO",
                 priority=_PRIORITY,
                 metadata={"orbit_size_moo": 100},
             )
-        print(f"sort_encoder did not recognise type of OrbitSpec supplied {spec.form}")
+        print(f"sort_encoder did not recognise type of OrbitSpec supplied {spec.form} with payload {spec.payload}.")
         return EncodingCapability(
                 can_encode=False,
             )
@@ -145,6 +137,7 @@ class SortEncoder(AtomOrbitEncoder):
         if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
             fo = spec.payload
             atoms = list(fo.atoms())
+            print(f"MOO MOO MOO {atoms} MOO MOO MOO fo.count={fo.count()}")
             assert len(atoms) == fo.count()
         else:
             print(f"sort_encoder did not recognise type of OrbitSpec supplied {spec.form}")
@@ -153,6 +146,7 @@ class SortEncoder(AtomOrbitEncoder):
                 "(see class docstring)"
             )
         vals = [evaluate(a, event) for a in atoms]
+        print(f"COW COW COW actual size was {len(vals)}.")
         values = np.sort(np.array(vals, dtype=np.float64))
         return EncodingResult(
             values=values,

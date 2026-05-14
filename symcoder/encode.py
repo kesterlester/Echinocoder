@@ -344,9 +344,10 @@ def encode_described(
                       f"output_dim={cap.output_dim}  priority={cap.priority}"
                       f"  fo={fo}")
             chosen_enc, chosen_cap = capable[0]
-            result = chosen_enc.encode(spec, event, plan)
-            parts.append(result.values)
             length = chosen_cap.output_dim   # authoritative from assess()
+            result = chosen_enc.encode(spec, event, plan)
+            assert len(result.values) == length # Checks contract was met!
+            parts.append(result.values)
             segments.append(SegmentInfo(
                 kind        = "ORBIT",
                 start       = cursor,
@@ -488,14 +489,14 @@ def describe_encoding(
                 cursor += length
             else:
                 # No encoder capable — record with zero length so the segment
-                # still appears in the description (length 0, method "NONE").
+                # still appears in the description (length 0, method "FAILED").
                 segments.append(SegmentInfo(
                     kind        = "ORBIT",
                     start       = cursor,
                     length      = 0,
                     op_u        = fo.operation.name,
                     flavour_u   = tuple(fo.flavour.counts),
-                    method_name = "NONE",
+                    method_name = "********* FAILED **********",
                     example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
                 ))
         else:
