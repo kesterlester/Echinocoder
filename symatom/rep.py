@@ -157,8 +157,19 @@ class FlavouredOperator:
         combination is visited exactly once with labels in sorted order within
         each group.
 
-        TODO: This should move to a lazy use of TheGroup.
+        TODO: This should move to a lazy use of TheGroup. However note that
+        atom_one_per_sign does NOT (and is NOT intended to) generate an orbit.
+        E.g. it could in principle yield:
+
+            [+eps2(a,b), +eps2(a,c), +eps2(b,c)]
+
+        which is not an orbit, but it could also yield:
+        
+            [+dot(a,b), +dot(a,c), +dot(b,c)]
+
+        which is an orbit!
         """
+
         per_type = [
             list(_combinations(g.labels, k))
             for g, k in zip(self.context.types, self.flavour)

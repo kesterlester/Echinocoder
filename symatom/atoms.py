@@ -88,9 +88,8 @@ class Atom:
     Well-formedness rules (enforced at construction):
       1. len(labels) == operation.rank
       2. sign in {+1, -1}
-      3. sign == +1  whenever  operation.argument_symmetry != ANTISYMMETRIC
-         (a dot product can never legitimately carry sign = -1)
-      4. all labels are distinct (dot(a,a) is ill-formed; use a rank-1 lenSq op)
+      3. all labels supplied at initialisation must be distinct. So if forming dot(a,b) is valid then (dot(a,a) is ill-formed;
+        use a rank-1 lenSq taking just a if you want to implement something equivalent to evaluatin dot(a,a).
 
     Internal argument canonicalization (also enforced at construction):
       - SYMMETRIC:     labels are sorted into ascending order; sign is unchanged.
