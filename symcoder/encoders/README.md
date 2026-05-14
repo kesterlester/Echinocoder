@@ -142,7 +142,7 @@ class MyEncoder(AtomOrbitEncoder):
         # ... inspect fo.operation, fo.flavour, fo.context ...
         return EncodingCapability(
             can_encode=True,
-            output_dim=2 * fo.count(),
+            output_dim=2 * fo.count_of_atoms_one_per_sign(),
             method_name="my_method",
             priority=1.5,
         )
@@ -150,7 +150,7 @@ class MyEncoder(AtomOrbitEncoder):
     def encode(self, spec: OrbitSpec, event: dict, plan: Plan) -> EncodingResult:
         fo = spec.payload
         # ... compute embedding ...
-        values = np.zeros(2 * fo.count(), dtype=np.float64)  # placeholder
+        values = np.zeros(2 * fo.count_of_atoms_one_per_sign(), dtype=np.float64)  # placeholder
         return EncodingResult(values=values, metadata={"method": "my_method"})
 ```
 

@@ -72,11 +72,11 @@ Main encoder.  Returns a 1-D float64 array whose length equals
 
 **Phase 1 — ORBIT segments** (one per distinct `FlavouredOperator` in
 `repL(plan.context, plan.operations)`):
-- `SYMMETRIC`: store `sorted({eval(u, event) for u in fo.atoms()})`.
-  Length: `fo.count()` reals.
+- `SYMMETRIC`: store `sorted({eval(u, event) for u in fo.atoms_one_per_sign()})`.
+  Length: `fo.count_of_atoms_one_per_sign()` reals.
 - `ANTISYMMETRIC` (sign compression): store
-  `sorted({|eval(u, event)| for u in fo.atoms() if u.sign == +1})`.
-  Length: `fo.count() // 2` reals.
+  `sorted({|eval(u, event)| for u in fo.atoms_one_per_sign() if u.sign == +1})`.
+  Length: `fo.count_of_atoms_one_per_sign() // 2` reals.
 - FlavouredOperators are deduplicated by `(name, rank, parity,
   argument_symmetry, flavour.counts)`; the first occurrence wins.
 
@@ -128,7 +128,7 @@ Frozen dataclass.  Fields:
 |---|---|---|---|---|
 | `kind` | `str` | `"ORBIT"` | `"ASSOC"` | `"NULL_SELF"` or `"NULL_COMP"` |
 | `start` | `int` | ✓ | ✓ | ✓ |
-| `length` | `int` | `fo.count()` or `fo.count()//2` | `2*pf.count()` | `0` |
+| `length` | `int` | `fo.count_of_atoms_one_per_sign()` or `fo.count_of_atoms_one_per_sign()//2` | `2*pf.count()` | `0` |
 | `op_u` | `str` | ✓ | ✓ | ✓ |
 | `flavour_u` | `tuple[int,...]` | ✓ | ✓ | ✓ |
 | `op_v` | `str\|None` | `None` | ✓ | ✓ |

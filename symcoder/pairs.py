@@ -25,12 +25,12 @@ def eval_single_orbit(fo, plan: Plan, event: dict) -> list:
     Return eval(u, event) for every atom u in the orbit of a single
     FlavouredOperator fo.
 
-    Uses fo.atoms() directly — no pair machinery needed.
+    Uses fo.atoms_one_per_sign() directly — no pair machinery needed.
 
     Used in Phase 1 of encode() to sort-encode the single-atom orbit before
     processing pair associations.
     """
-    return [evaluate(atom, event) for atom in fo.atoms()]
+    return [evaluate(atom, event) for atom in fo.atoms_one_per_sign()]
 
 
 def eval_single_orbit_compressed(fo, plan: Plan, event: dict) -> list:
@@ -51,10 +51,10 @@ def eval_single_orbit_compressed(fo, plan: Plan, event: dict) -> list:
     sign=+1 atoms are evaluated, and their absolute values are returned.
     This is permutation-invariant: label permutations may swap which atom
     carries sign=+1 vs -1, but |eval| is unchanged, and the multiset
-    {|y_i|} is invariant.  Returns fo.count() // 2 values.
+    {|y_i|} is invariant.  Returns fo.count_of_atoms_one_per_sign() // 2 values.
 
     SYMMETRIC / UNSTRUCTURED: all atoms have sign=+1 and the full eval
-    list is returned (identical to eval_single_orbit).  Returns fo.count()
+    list is returned (identical to eval_single_orbit).  Returns fo.count_of_atoms_one_per_sign()
     values.
 
     The distinction is made entirely from fo.operation.argument_symmetry —
@@ -62,8 +62,8 @@ def eval_single_orbit_compressed(fo, plan: Plan, event: dict) -> list:
     """
     from symatom.atoms import ArgumentSymmetry
     if fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC:
-        return [abs(evaluate(atom, event)) for atom in fo.atoms() if atom.sign == +1]
-    return [evaluate(atom, event) for atom in fo.atoms()]
+        return [abs(evaluate(atom, event)) for atom in fo.atoms_one_per_sign() if atom.sign == +1]
+    return [evaluate(atom, event) for atom in fo.atoms_one_per_sign()]
 
 
 def _is_self_pair(pf) -> bool:

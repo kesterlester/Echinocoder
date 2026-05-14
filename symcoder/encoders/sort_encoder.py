@@ -63,11 +63,11 @@ class SortEncoder(AtomOrbitEncoder):
         atom = spec.payload
         # Construct the FlavouredOperator as above, then iterate its atoms.
         fo = FlavouredOperator(atom.operation, flavour, plan.context)
-        atoms = list(fo.atoms())
+        atoms = list(fo.atoms_one_per_sign())
 
     FLAVOURED_OPERATOR:
         fo = spec.payload
-        atoms = list(fo.atoms())
+        atoms = list(fo.atoms_one_per_sign())
 
     EXPLICIT_ORBIT:
         atoms = spec.payload  # already a list[Atom]
@@ -136,9 +136,9 @@ class SortEncoder(AtomOrbitEncoder):
     def encode(self, spec: OrbitSpec, event: dict, plan: Plan) -> EncodingResult:
         if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
             fo = spec.payload
-            atoms = list(fo.atoms())
-            print(f"MOO MOO MOO {atoms} MOO MOO MOO fo.count={fo.count()}")
-            assert len(atoms) == fo.count()
+            atoms = list(fo.atoms_one_per_sign())
+            print(f"MOO MOO MOO {atoms} MOO MOO MOO fo.count={fo.count_of_atoms_one_per_sign()}")
+            assert len(atoms) == fo.count_of_atoms_one_per_sign()
         else:
             print(f"sort_encoder did not recognise type of OrbitSpec supplied {spec.form}")
             raise NotImplementedError(

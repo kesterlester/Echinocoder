@@ -60,7 +60,7 @@ class SegmentInfo:
                 {+u, -u} pairs; only |eval(sign=+1 atom)| is stored per combination
                 (n values, n = base label combinations).
                 sign_compressed=False: SYMMETRIC/UNSTRUCTURED — eval(u) for every
-                atom stored (fo.count() values).
+                atom stored (fo.count_of_atoms_one_per_sign() values).
 
     "ASSOC"     Phase 2: compressed pair encoding of one association.
                 One PairFlavour within an OVERLAP BLOCK, encoded via _embed_compressed.
@@ -81,7 +81,7 @@ class SegmentInfo:
     ------
     start           : first index (inclusive) in the output array (real units)
     length          : number of real values in this segment (0 for NULL).
-                      ORBIT: fo.count() // 2 if sign_compressed else fo.count().
+                      ORBIT: fo.count_of_atoms_one_per_sign() // 2 if sign_compressed else fo.count_of_atoms_one_per_sign().
                       ASSOC: two reals per association pair (2 * pf.count()),
                              since each complex polynomial coefficient = (re, im).
     op_u            : name of operation u (or the single operation for ORBIT)

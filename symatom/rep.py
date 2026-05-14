@@ -138,7 +138,7 @@ class FlavouredOperator:
                     f"Flavour count {k} exceeds vector type '{vt.name}' size {vt.size}"
                 )
 
-    def count(self) -> int:
+    def count_of_atoms_one_per_sign(self) -> int:
         """
         Number of atoms this FlavouredOperator will yield.  Pure combinatorics —
         no atoms are generated.
@@ -149,7 +149,7 @@ class FlavouredOperator:
         )
         return base
 
-    def atoms(self):
+    def atoms_one_per_sign(self):
         """
         Lazily yield all atoms for this (operation, flavour) combination.
 
@@ -173,8 +173,8 @@ class FlavouredOperator:
         return f"FO({self.operation.name}, {fl_str})"
 
     def canonical_representative(self) -> Atom:
-        """Return the first atom from atoms() as the orbit representative."""
-        return next(self.atoms())
+        """Return the first atom from atoms_one_per_sign() as the orbit representative."""
+        return next(self.atoms_one_per_sign())
 
     def contains(self, atom: Atom) -> bool:
         """
@@ -550,7 +550,7 @@ def brute_force_canonical_pair_flavours(fo_list, context: Context) -> set:
     atom-pairs, and collects their PairFlavours.  O(N²) in the total atom
     count N.  Not suitable for large contexts; use only in tests.
     """
-    all_atoms = [atom for fo in fo_list for atom in fo.atoms()]
+    all_atoms = [atom for fo in fo_list for atom in fo.atoms_one_per_sign()]
     return {
         pair_flavour_of(u, v, context)
         for u in all_atoms

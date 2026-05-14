@@ -402,9 +402,9 @@ Properties:
 
 Required methods:
 
-- `.count() -> int` — returns the number of atoms this cluster contains, by
+- `.count_of_atoms_one_per_sign() -> int` — returns the number of atoms this cluster contains, by
   pure combinatorics. No atoms are generated.
-- `.atoms() -> iterator` — lazily generates all atoms for this cluster. Labels
+- `.atoms_one_per_sign() -> iterator` — lazily generates all atoms for this cluster. Labels
   are generated as **combinations** (one per choice of labels from each
   type's pool), not as permutations-then-deduplicate. Permutation-based
   generation is acceptable in unit tests to cross-check, but the direct
@@ -415,7 +415,7 @@ Required methods:
   operations this can usually be determined without full enumeration (see
   below).
 - `.canonical_representative() -> Atom` — returns the first atom from
-  `.atoms()` as the orbit representative for this `FlavouredOperator`.  All
+  `.atoms_one_per_sign()` as the orbit representative for this `FlavouredOperator`.  All
   atoms in a `FlavouredOperator` share the same operation and Flavour and
   therefore lie in the same G-orbit, so any choice of representative is equally
   valid.
@@ -468,7 +468,7 @@ allows, i.e. `k_i ≤ |G_i|` for all *i*, and `Σ k_i = rank(operation)`.
 
 The returned list covers every combination of every operation with every
 valid Flavour. The individual atoms in any cluster are available lazily via
-`.atoms()` and are never materialised unless explicitly requested.
+`.atoms_one_per_sign()` and are never materialised unless explicitly requested.
 
 ### 8.7 PairFlavour
 
@@ -553,7 +553,7 @@ appear as distinct elements of the true G-orbit.
 
 **`orbit_elements(context) -> list[tuple[Atom, Atom]]`**: materialises and
 returns all atom-pairs in the G-orbit of the canonical representative.  Uses
-`FlavouredOperator.atoms()` (with `signed=True`) to enumerate all concrete
+`FlavouredOperator.atoms_one_per_sign()` (with `signed=True`) to enumerate all concrete
 atoms for each side, then filters by `pair_flavour_of(u, v, context) == self`.
 The length of the returned list always equals `orbit_size(type_sizes)`.  This
 is the primary entry point for the encoding layer: iterate over the returned

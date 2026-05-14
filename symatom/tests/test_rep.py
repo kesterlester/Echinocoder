@@ -105,62 +105,62 @@ def test_flavoured_operator_count_exceeds_group(dot):
 
 
 # ---------------------------------------------------------------------------
-# FlavouredOperator.count()
+# FlavouredOperator.count_of_atoms_one_per_sign()
 # ---------------------------------------------------------------------------
 
-def test_count_mass_single_group(mass, ctx1):
+def test_count_of_atoms_one_per_sign_mass_single_group(mass, ctx1):
     fo = FlavouredOperator(operation=mass, flavour=Flavour((1,)), context=ctx1)
-    assert fo.count() == 4
+    assert fo.count_of_atoms_one_per_sign() == 4
 
-def test_count_dot_single_group(dot, ctx1):
+def test_count_of_atoms_one_per_sign_dot_single_group(dot, ctx1):
     # C(4,2) = 6
     fo = FlavouredOperator(operation=dot, flavour=Flavour((2,)), context=ctx1)
-    assert fo.count() == 6
+    assert fo.count_of_atoms_one_per_sign() == 6
 
-def test_count_eps(eps3, ctx1):
+def test_count_of_atoms_one_per_sign_eps(eps3, ctx1):
     # C(4,3) = 4;
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((3,)), context=ctx1)
-    assert fo.count() == 4
+    assert fo.count_of_atoms_one_per_sign() == 4
 
-def test_count_dot_two_groups_mixed_flavour(dot, ctx2):
+def test_count_of_atoms_one_per_sign_dot_two_groups_mixed_flavour(dot, ctx2):
     # C(4,1) * C(2,1) = 4 * 2 = 8; 
     fo = FlavouredOperator(operation=dot, flavour=Flavour((1, 1)), context=ctx2)
-    assert fo.count() == 8
+    assert fo.count_of_atoms_one_per_sign() == 8
 
-def test_count_eps_two_groupsL(eps3, ctx2):
+def test_count_of_atoms_one_per_sign_eps_two_groupsL(eps3, ctx2):
     # flavour (2,1): C(4,2) * C(2,1) = 6 * 2 = 12; 
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((2, 1)), context=ctx2)
-    assert fo.count() == 12
+    assert fo.count_of_atoms_one_per_sign() == 12
 
 
 # ---------------------------------------------------------------------------
-# FlavouredOperator.atoms()
+# FlavouredOperator.atoms_one_per_sign()
 # ---------------------------------------------------------------------------
 
-def test_atoms_mass_single_group(mass, ctx1):
+def test_atoms_one_per_sign_mass_single_group(mass, ctx1):
     fo = FlavouredOperator(operation=mass, flavour=Flavour((1,)), context=ctx1)
-    atoms = list(fo.atoms())
+    atoms = list(fo.atoms_one_per_sign())
     assert len(atoms) == 4
     labels_seen = {a.labels for a in atoms}
     assert labels_seen == {("a",), ("b",), ("c",), ("d",)}
     assert all(a.sign == +1 for a in atoms)
 
-def test_atoms_dot_single_group(dot, ctx1):
+def test_atoms_one_per_sign_dot_single_group(dot, ctx1):
     fo = FlavouredOperator(operation=dot, flavour=Flavour((2,)), context=ctx1)
-    atoms = list(fo.atoms())
+    atoms = list(fo.atoms_one_per_sign())
     assert len(atoms) == 6
     # Every combination of 2 from {a,b,c,d} appears exactly once
     from itertools import combinations
     expected = {tuple(pair) for pair in combinations(("a", "b", "c", "d"), 2)}
     assert {a.labels for a in atoms} == expected
 
-def test_atoms_eps_repS_single_group(eps3, ctx1):
+def test_atoms_one_per_sign_eps_repS_single_group(eps3, ctx1):
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((3,)), context=ctx1)
-    atoms = list(fo.atoms())
+    atoms = list(fo.atoms_one_per_sign())
     assert len(atoms) == 4
     assert all(a.sign == +1 for a in atoms)
 
-def test_atoms_count_matches_count_method(dot, eps3, ctx2):
+def test_atoms_one_per_sign_count_matches_count_method(dot, eps3, ctx2):
     for op, flavour in [
         (dot,  Flavour((2, 0))),
         (dot,  Flavour((1, 1))),
@@ -168,12 +168,12 @@ def test_atoms_count_matches_count_method(dot, eps3, ctx2):
         (eps3, Flavour((2, 1))),
     ]:
         fo = FlavouredOperator(operation=op, flavour=flavour, context=ctx2)
-        assert len(list(fo.atoms())) == fo.count()
+        assert len(list(fo.atoms_one_per_sign())) == fo.count_of_atoms_one_per_sign()
 
-def test_atoms_labels_distinct(eps3, ctx2):
+def test_atoms_one_per_sign_labels_distinct(eps3, ctx2):
     # All generated atoms must satisfy Rule 4 (distinct labels).
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((2, 1)), context=ctx2)
-    for atom in fo.atoms():
+    for atom in fo.atoms_one_per_sign():
         assert len(set(atom.labels)) == len(atom.labels)
 
 
@@ -237,7 +237,7 @@ def test_repS_two_groups_multiple_ops(mass, dot, eps3, ctx2):
 def test_repS_total_atom_count(eps3, ctx1):
     # repS with one eps3 and 4 electrons: C(4,3) = 4 atoms total
     fos = repS(ctx1, [eps3])
-    total = sum(fo.count() for fo in fos)
+    total = sum(fo.count_of_atoms_one_per_sign() for fo in fos)
     assert total == 4
 
 # ---------------------------------------------------------------------------
@@ -283,29 +283,29 @@ def test_three_group_eps3_fo_count(eps3, ctx3):
     assert len(fos) == 9
 
 def test_three_group_repS_atom_totals(mass, dot, eps3, ctx3):
-    mass_total = sum(fo.count() for fo in repS(ctx3, [mass]))
-    dot_total  = sum(fo.count() for fo in repS(ctx3, [dot]))
-    eps3_total = sum(fo.count() for fo in repS(ctx3, [eps3]))
+    mass_total = sum(fo.count_of_atoms_one_per_sign() for fo in repS(ctx3, [mass]))
+    dot_total  = sum(fo.count_of_atoms_one_per_sign() for fo in repS(ctx3, [dot]))
+    eps3_total = sum(fo.count_of_atoms_one_per_sign() for fo in repS(ctx3, [eps3]))
     assert mass_total == 9
     assert dot_total  == 36
     assert eps3_total == 84
 
 def test_three_group_grand_total_repS(mass, dot, eps3, ctx3):
-    assert sum(fo.count() for fo in repS(ctx3, [mass, dot, eps3])) == 129
+    assert sum(fo.count_of_atoms_one_per_sign() for fo in repS(ctx3, [mass, dot, eps3])) == 129
 
 def test_three_group_atoms_matches_count(mass, dot, eps3, ctx3):
     # For every FlavouredOperator, atoms() must yield exactly count() atoms.
     for fo in repS(ctx3, [mass, dot, eps3]):
-        assert len(list(fo.atoms())) == fo.count()
+        assert len(list(fo.atoms_one_per_sign())) == fo.count_of_atoms_one_per_sign()
 
 def test_three_group_eps3_mixed_flavour_spot_check(eps3, ctx3):
     # Flavour (1,1,1): C(4,1)*C(2,1)*C(3,1) = 4*2*3 = 24 atoms in repS, 48 in repL.
     fo_s = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3)
-    assert fo_s.count() == 24
+    assert fo_s.count_of_atoms_one_per_sign() == 24
 
 def test_three_group_atoms_labels_distinct(eps3, ctx3):
     fo = FlavouredOperator(operation=eps3, flavour=Flavour((1,1,1)), context=ctx3)
-    for atom in fo.atoms():
+    for atom in fo.atoms_one_per_sign():
         assert len(set(atom.labels)) == len(atom.labels)
 
 
@@ -627,7 +627,7 @@ def test_orbit_elements_sum_over_all_pf_equals_total_pairs(dot, ctx4):
     fo_list = repS(ctx4, [dot])
     type_sizes = tuple(g.size for g in ctx4.types)
     total_orbit = sum(pf.orbit_size(type_sizes) for pf in canonical_pair_flavours(fo_list, ctx4))
-    total_atoms = sum(fo.count() for fo in fo_list)
+    total_atoms = sum(fo.count_of_atoms_one_per_sign() for fo in fo_list)
     assert total_orbit == total_atoms ** 2
 
 

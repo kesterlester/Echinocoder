@@ -79,10 +79,10 @@ if fo.operation.argument_symmetry != ArgumentSymmetry.ANTISYMMETRIC:
                               metadata={"reason": "no compression benefit for SYMMETRIC"})
 
 # 4. Compute output_dim.
-#    The orbit has fo.count() atoms; after squaring and polynomial embedding
-#    of the positive half the output is 2 * (fo.count() // 2) reals.
-#    (For ANTISYMMETRIC orbits fo.count() is always even.)
-n = fo.count()
+#    The orbit has fo.count_of_atoms_one_per_sign() atoms; after squaring and polynomial embedding
+#    of the positive half the output is 2 * (fo.count_of_atoms_one_per_sign() // 2) reals.
+#    (For ANTISYMMETRIC orbits fo.count_of_atoms_one_per_sign() is always even.)
+n = fo.count_of_atoms_one_per_sign()
 output_dim = n  # one complex coeff per squared root → 2n reals via _complex_to_reals
                # Revise once the exact embedding is decided.
 
@@ -91,14 +91,14 @@ return EncodingCapability(
     output_dim=output_dim,
     method_name="poly_antisym",
     priority=_PRIORITY,
-    metadata={"orbit_size": fo.count(), "fo": fo},
+    metadata={"orbit_size": fo.count_of_atoms_one_per_sign(), "fo": fo},
 )
 
 encode()
 ~~~~~~~~
 # 1. Obtain sorted evaluations from the sort encoder:
 sorted_vals = self._sort_enc.encode(spec, event, plan).values
-# sorted_vals is float64 array of length fo.count(), symmetric about 0 for ANTISYM.
+# sorted_vals is float64 array of length fo.count_of_atoms_one_per_sign(), symmetric about 0 for ANTISYM.
 
 # 2. Take the positive half (second half of sorted array for ANTISYM orbits):
 n = len(sorted_vals)

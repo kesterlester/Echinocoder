@@ -43,10 +43,10 @@ def demo():
     fo_list = repS(ctx, plan.operations)
     for fo in fo_list:
         rep = fo.canonical_representative()
-        print(f"  {fo!r}  →  {fo.count()} atoms, in the orbit of {rep!r}")
+        print(f"  {fo!r}  →  {fo.count_of_atoms_one_per_sign()} atoms, in the orbit of {rep!r}")
 
     _section(f"repS — all atoms")
-    all_atoms_and_fos = [(atom, fo) for fo in fo_list for atom in fo.atoms()]
+    all_atoms_and_fos = [(atom, fo) for fo in fo_list for atom in fo.atoms_one_per_sign()]
     last_fo = None
     for i, (atom,fo) in enumerate(all_atoms_and_fos):
         if last_fo != fo and i !=0:

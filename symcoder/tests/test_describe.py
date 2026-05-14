@@ -144,10 +144,10 @@ def test_orbit_sign_compressed_true_for_antisymmetric(eps3, ctx):
             assert s.sign_compressed is True
 
 def test_orbit_length_symmetric_equals_fo_count(dot, ctx):
-    """SYMMETRIC: ORBIT length == fo.count() (no compression)."""
+    """SYMMETRIC: ORBIT length == fo.count_of_atoms_one_per_sign() (no compression)."""
     plan = Plan(context=ctx, operations=(dot,))
     fo_list = repS(plan.context, plan.operations)
-    fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count() for fo in fo_list}
+    fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count_of_atoms_one_per_sign() for fo in fo_list}
     for s in describe_encoding(plan):
         if s.kind == "ORBIT":
             expected = fo_counts[(s.op_u, s.flavour_u)]
@@ -155,10 +155,10 @@ def test_orbit_length_symmetric_equals_fo_count(dot, ctx):
 
 def test_orbit_length_antisymmetric_halved(eps3, ctx):
     # TODO .. likely completely wrong, posisibly needs FIXME or deletion.
-    """ANTISYMMETRIC (sign-compressed): ORBIT length == fo.count() // 2."""  # TODO .. likely wrong, possibly needs FIXME
+    """ANTISYMMETRIC (sign-compressed): ORBIT length == fo.count_of_atoms_one_per_sign() // 2."""  # TODO .. likely wrong, possibly needs FIXME
     plan = Plan(context=ctx, operations=(eps3,))
     fo_list = repS(plan.context, plan.operations)
-    fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count() for fo in fo_list}
+    fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count_of_atoms_one_per_sign() for fo in fo_list}
     for s in describe_encoding(plan):
         if s.kind == "ORBIT":
             expected = fo_counts[(s.op_u, s.flavour_u)] // 2  # TODO .. likely wrong, possibly needs FIXME
