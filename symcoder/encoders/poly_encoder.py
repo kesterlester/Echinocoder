@@ -165,7 +165,7 @@ class PolyEncoder(AtomOrbitEncoder):
             "output_dim calculation)"
         )
 
-    def encode(self, spec: OrbitSpec, event: dict, plan: Plan) -> EncodingResult:
+    def encode(self, capability: EncodingCapability, event: dict, plan: Plan) -> EncodingResult:
         # TODO: implement — see module docstring for step-by-step guide
         raise NotImplementedError(
             "PolyEncoder.encode() is a stub — see module docstring for the "

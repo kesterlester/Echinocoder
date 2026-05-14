@@ -1,3 +1,5 @@
+## Make a fully fledged encoder object to pass through in metadata, rather than creating capability and then passing that back, as a user could tweak the capability (maybe) breaking the encoding. or he wrong capability could be sent back ....
+
 ## remove-pair-with-self or do something better
 
 This next OVERLAP_BLOCK shows that pair-with-self is still sneaking in, not deleted by 5c prining as here there are four jets {u,v,w,x}.

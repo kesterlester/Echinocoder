@@ -7,7 +7,8 @@ from symatom.atoms import ArgumentSymmetry
 from symatom.group import SignCorrelationType
 from symatom.rep import canonical_pair_flavours
 from symatom import repS
-from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
+## from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
+from .pairs import eval_pair_orbit, eval_pair_orbit_positive, _is_self_pair
 from .encoders import AtomOrbitEncoderRegistry, OrbitSpec
 from .describe import SegmentInfo, _orbit_example, _assoc_example, _symmetry_class
 
@@ -345,7 +346,8 @@ def encode_described(
                       f"  fo={fo}")
             chosen_enc, chosen_cap = capable[0]
             length = chosen_cap.output_dim   # authoritative from assess()
-            result = chosen_enc.encode(spec, event, plan)
+            # OLD WRONG: result = chosen_enc.encode(spec, event, plan)
+            result = chosen_enc.encode(chosen_cap, event, plan)
             assert len(result.values) == length # Checks contract was met!
             parts.append(result.values)
             segments.append(SegmentInfo(
@@ -358,20 +360,21 @@ def encode_described(
                 example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
             ))
         else:
-            raw    = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
-            sorted_vals = _sort_encode(raw)
-            parts.append(sorted_vals)
-            length = len(sorted_vals)
-            antisym = fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-            segments.append(SegmentInfo(
-                kind            = "ORBIT",
-                start           = cursor,
-                length          = length,
-                op_u            = fo.operation.name,
-                flavour_u       = tuple(fo.flavour.counts),
-                sign_compressed = antisym,
-                example         = _orbit_example(fo.operation.name, fo.flavour.counts, types),
-            ))
+            raise NotImplementedError("We no longer support evals other than by the encoder registry.") # TODO .. DELETE THIS BRANCH ALTOGETHER when confident we don't need to put it back.
+            ## raw    = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
+            ## sorted_vals = _sort_encode(raw)
+            ## parts.append(sorted_vals)
+            ## length = len(sorted_vals)
+            ## antisym = fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
+            ## segments.append(SegmentInfo(
+            ##     kind            = "ORBIT",
+            ##     start           = cursor,
+            ##     length          = length,
+            ##     op_u            = fo.operation.name,
+            ##     flavour_u       = tuple(fo.flavour.counts),
+            ##     sign_compressed = antisym,
+            ##     example         = _orbit_example(fo.operation.name, fo.flavour.counts, types),
+            ## ))
 
         cursor += length
 

@@ -102,15 +102,15 @@ class SortEncoder(AtomOrbitEncoder):
 
         if False and spec.form == OrbitSpecForm.EXPLICIT_ORBIT:
             raise NotImplementedError("We should also check that the orbit really is an orbit, but checking that (1) it is a set, and (2) its set of elements does not change when any group elelment acts on it.")
-            orbit = spec.payload
-            assert len(orbit)>=1
-            assert len(orbit) == plan.context.the_group.orbit_size(orbit[0])
-            return EncodingCapability(
+            the_orbit = spec.payload
+            assert len(the_orbit)>=1 # TODO: can remove in future.
+            assert len(the_orbit) == plan.context.the_group.orbit_size(the_orbit[0]) # TODO: can remove in future.
+            return EncodingCapability( # TODO: remove large amount of code repetition (here and ~20 lines further on).
                 can_encode=True,
-                output_dim=len(orbit),
-                method_name="sortMOOMOOMOO",
+                output_dim=len(the_orbit),
+                method_name="JustEvalAllAtomsInOrbitAndSort", # TODO: name should not be hardcoded in multiple places
                 priority=_PRIORITY,
-                metadata={"orbit_size_moo": 100},
+                metadata={"the_orbit": the_orbit},
             )
         # Set canonical representative u:
         if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
@@ -121,33 +121,30 @@ class SortEncoder(AtomOrbitEncoder):
         else:
             u = None
         if u is not None:
+            the_orbit = plan.context.the_group.orbit(u) # What we need to eval and sort encode.
+            the_orbit_size = len(the_orbit)
+            assert the_orbit_size == plan.context.the_group.orbit_size(u) # Just a check. TODO: remove if never seems to fail.
+
             return EncodingCapability(
                 can_encode=True,
-                output_dim=plan.context.the_group.orbit_size(u),
-                method_name="sortMOOMOOMOO",
+                output_dim=the_orbit_size,
+                method_name="JustEvalAllAtomsInOrbitAndSort", # TODO: name should not be hardcoded in multiple places
                 priority=_PRIORITY,
-                metadata={"orbit_size_moo": 100},
+                metadata={"the_orbit": the_orbit},
             )
         print(f"sort_encoder did not recognise type of OrbitSpec supplied {spec.form} with payload {spec.payload}.")
         return EncodingCapability(
                 can_encode=False,
             )
 
-    def encode(self, spec: OrbitSpec, event: dict, plan: Plan) -> EncodingResult:
-        if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
-            fo = spec.payload
-            atoms = list(fo.atoms_one_per_sign())
-            print(f"MOO MOO MOO {atoms} MOO MOO MOO fo.count={fo.count_of_atoms_one_per_sign()}")
-            assert len(atoms) == fo.count_of_atoms_one_per_sign()
-        else:
-            print(f"sort_encoder did not recognise type of OrbitSpec supplied {spec.form}")
-            raise NotImplementedError(
-                "SortEncoder.encode() is a stub — implement atom evaluation and sorting "
-                "(see class docstring)"
-            )
+    def encode(self, capability: EncodingCapability, event: dict, plan: Plan) -> EncodingResult:
+        atoms = capability.metadata["the_orbit"]
+        print(f"Sort encoder is evaluating {atoms} on Event {event}")
         vals = [evaluate(a, event) for a in atoms]
         print(f"COW COW COW actual size was {len(vals)}.")
+        assert len(atoms) == len(vals) # TODO: Can probably delete
         values = np.sort(np.array(vals, dtype=np.float64))
+        assert len(atoms) == len(values) # TODO: Can probably delete
         return EncodingResult(
             values=values,
             metadata={"method": "sort", "orbit_size": len(atoms)},

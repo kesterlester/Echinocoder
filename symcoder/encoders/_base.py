@@ -236,7 +236,7 @@ class AtomOrbitEncoder(ABC):
         ...
 
     @abstractmethod
-    def encode(self, spec: OrbitSpec, event: dict, plan: Plan) -> EncodingResult:
+    def encode(self, capability: EncodingCapability, event: dict, plan: Plan) -> EncodingResult: # TODO: Consider if Plan can be removed ... want all things in capability and later not even in that but embedded in a returned encoder with no config.
         """
         Perform the embedding and return a vector of reals.
 
