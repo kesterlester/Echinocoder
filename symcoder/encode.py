@@ -297,7 +297,7 @@ def encode_brute(plan, event: dict) -> np.ndarray:
     return np.concatenate(parts)
 
 
-def encode_described(
+def encode_and_describe(
     plan,
     event: dict | None,
     registry: AtomOrbitEncoderRegistry | None = None,
@@ -441,10 +441,10 @@ def encode_described(
 def encode(plan, event: dict, registry: AtomOrbitEncoderRegistry | None = None) -> np.ndarray:
     """
     Encode a physics event as a permutation-invariant vector.
-    See encode_described() for full documentation of the two-phase algorithm.
+    See encode_and_describe() for full documentation of the two-phase algorithm.
     Returns a 1-D float64 numpy array.
     """
-    values, _segments = encode_described(plan, event, registry)
+    values, _segments = encode_and_describe(plan, event, registry)
     return values
 
 
@@ -456,7 +456,7 @@ def describe_encoding(
     Return a list of SegmentInfo objects describing the full structure of the
     vector produced by encode(plan, event, registry).
 
-    Delegates to encode_described(plan, event=None, registry) — the single
+    Delegates to encode_and_describe(plan, event=None, registry) — the single
     authoritative code path — and discards the (zero) values array.
 
     Usage
@@ -469,7 +469,7 @@ def describe_encoding(
 
     sum(s.length for s in describe_encoding(plan, registry))  # == len(encode(...))
     """
-    _, segments = encode_described(plan, event=None, registry=registry)
+    _, segments = encode_and_describe(plan, event=None, registry=registry)
     return segments
 
 

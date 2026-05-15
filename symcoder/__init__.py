@@ -10,7 +10,7 @@ Public API:
   describe : describe_encoding, SegmentInfo
 """
 from .eval     import EvaluableOperation, evaluate
-from .encode   import encode, encode_brute, encode_described, describe_encoding
+from .encode   import encode, encode_brute, encode_and_describe, describe_encoding
 from .describe import SegmentInfo
 
 __all__ = [
@@ -18,7 +18,7 @@ __all__ = [
     "evaluate",
     "encode",
     "encode_brute",
-    "encode_described",
+    "encode_and_describe",
     "describe_encoding",
     "SegmentInfo",
 ]
