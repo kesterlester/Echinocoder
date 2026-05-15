@@ -25,9 +25,9 @@ plan = Plan(context=ctx, operations=(mag, dot, eps3))
 # commented out because the concrete encoders (SortEncoder, PolyEncoder) are
 # not yet implemented (they raise NotImplementedError).
 #
-from symcoder.encoders import AtomOrbitEncoderRegistry, SortEncoder
+from symcoder.encoders import AtomOrbitEncoderRegistry, SortEncoderFactory
 registry = AtomOrbitEncoderRegistry()
-registry.register(SortEncoder())
+registry.register(SortEncoderFactory())
 
 # --- end stub ---
 

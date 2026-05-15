@@ -1,15 +1,16 @@
 """
 symcoder.encoders.poly_encoder
 ================================
-PolyEncoder: polynomial (compressed) embedding of a single atom orbit.
+PolyEncoderFactory / PolyEncoder: polynomial (compressed) embedding of a
+single atom orbit.
 
-Accepts FLAVOURED_OPERATOR and REPRESENTATIVE_ATOM specs.  Returns can_encode=False
-for EXPLICIT_ORBIT because a FlavouredOperator is needed to recover the sign-
-correlation structure; if that need arises, reconstruct a FlavouredOperator from
-the explicit atoms and use from_flavoured_operator() instead.
+Accepts FLAVOURED_OPERATOR and REPRESENTATIVE_ATOM specs.  Returns [] for
+EXPLICIT_ORBIT because a FlavouredOperator is needed to recover the sign-
+correlation structure; if that need arises, reconstruct a FlavouredOperator
+from the explicit atoms and use from_flavoured_operator() instead.
 
-Priority is 1.0 — higher than SortEncoder — so it is preferred when both are
-registered and both are capable.
+Priority is 1.0 — higher than SortEncoderFactory — so it is preferred when
+both are registered and both are capable.
 
 Relationship to encode.py
 --------------------------
@@ -31,22 +32,13 @@ single-atom orbits (since the sorted list has the redundant {-a_k} entries).
 
 For SYMMETRIC operations the orbit values are all positive (or mixed sign but
 without the {a,-a} structure), and polynomial embedding gives no compression
-benefit over sorting.  In that case PolyEncoder may choose to delegate to
-SortEncoder or simply return can_encode=False for SYMMETRIC operations.
-
-Internal delegation
--------------------
-This encoder holds a SortEncoder instance internally.  After obtaining the
-sorted real evaluations it applies polynomial compression on top:
-
-    self._sort_enc.encode(spec, event, plan).values → sorted float64 array
-    # then apply polynomial compression
+benefit over sorting.  PolyEncoderFactory returns [] for SYMMETRIC operations.
 
 Implementation guide (stubs below raise NotImplementedError)
 ------------------------------------------------------------
 
-assess()
-~~~~~~~~
+PolyEncoderFactory.assess()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 from symatom.atoms import ArgumentSymmetry
 from symatom.rep import FlavouredOperator, Flavour
 
@@ -61,70 +53,55 @@ elif spec.form == OrbitSpecForm.REPRESENTATIVE_ATOM:
     ))
     fo = FlavouredOperator(atom.operation, flavour, plan.context)
 else:
-    return EncodingCapability(can_encode=False, output_dim=None,
-                              method_name=None, priority=0.0)
+    return []   # EXPLICIT_ORBIT not supported
 
 # 2. Check the operation is evaluable (has eval_fn):
 from symcoder.eval import EvaluableOperation
 if not isinstance(fo.operation, EvaluableOperation):
-    return EncodingCapability(can_encode=False, output_dim=None,
-                              method_name=None, priority=0.0,
-                              metadata={"reason": "operation has no eval_fn"})
+    return []
 
 # 3. Only ANTISYMMETRIC operations benefit from polynomial compression here.
-#    For SYMMETRIC, delegate to SortEncoder (or return can_encode=False).
 if fo.operation.argument_symmetry != ArgumentSymmetry.ANTISYMMETRIC:
-    return EncodingCapability(can_encode=False, output_dim=None,
-                              method_name=None, priority=0.0,
-                              metadata={"reason": "no compression benefit for SYMMETRIC"})
+    return []
 
 # 4. Compute output_dim.
-#    The orbit has fo.count_of_atoms_one_per_sign() atoms; after squaring and polynomial embedding
-#    of the positive half the output is 2 * (fo.count_of_atoms_one_per_sign() // 2) reals.
+#    The orbit has fo.count_of_atoms_one_per_sign() atoms; after squaring and
+#    polynomial embedding of the positive half the output is
+#    2 * (fo.count_of_atoms_one_per_sign() // 2) reals.
 #    (For ANTISYMMETRIC orbits fo.count_of_atoms_one_per_sign() is always even.)
 n = fo.count_of_atoms_one_per_sign()
-output_dim = n  # one complex coeff per squared root → 2n reals via _complex_to_reals
-               # Revise once the exact embedding is decided.
 
-return EncodingCapability(
-    can_encode=True,
-    output_dim=output_dim,
-    method_name="poly_antisym",
-    priority=_PRIORITY,
-    metadata={"orbit_size": fo.count_of_atoms_one_per_sign(), "fo": fo},
-)
+return [PolyEncoder(fo=fo, n=n)]
 
-encode()
-~~~~~~~~
-# 1. Obtain sorted evaluations from the sort encoder:
-sorted_vals = self._sort_enc.encode(spec, event, plan).values
-# sorted_vals is float64 array of length fo.count_of_atoms_one_per_sign(), symmetric about 0 for ANTISYM.
+
+PolyEncoder.encode()
+~~~~~~~~~~~~~~~~~~~~
+# 1. Obtain sorted evaluations from a SortEncoderFactory for the same orbit:
+#    (The factory holds a SortEncoderFactory and ran it during __init__.)
+sorted_vals = self._sort_encoder.encode(event).values
+# sorted_vals: float64 array of length n, symmetric about 0 for ANTISYM.
 
 # 2. Take the positive half (second half of sorted array for ANTISYM orbits):
-n = len(sorted_vals)
-pos_vals = sorted_vals[n // 2:]   # the n//2 non-negative values
+pos_vals = sorted_vals[self._n // 2:]   # the n//2 non-negative values
 
 # 3. Square to form the sign-invariant multiset:
 w = pos_vals ** 2
 
 # 4. Polynomial-embed w as a multiset of reals using _zip_embed:
 from symcoder.encode import _zip_embed, _complex_to_reals
-# _zip_embed expects complex input; cast:
 coeffs, _, _ = _zip_embed(w.astype(complex))
 values = _complex_to_reals(coeffs)  # 2*(n//2) reals
 
 return EncodingResult(
     values=values,
-    metadata={"method": "poly_antisym", "orbit_size": n},
+    metadata={"method": "poly_antisym", "orbit_size": self._n},
 )
 
 Note on future pair-orbit encoders
 ------------------------------------
 The full _embed_compressed() logic in encode.py targets *pair* orbits (PairFlavour).
-A future PolyPairEncoder should accept an OrbitSpec wrapping a PairFlavour and
-delegate directly to _embed_compressed().  That encoder would live in a separate
-file (e.g. poly_pair_encoder.py) and register alongside this one; the registry
-manager would then pick between them based on the spec form.
+A future PolyPairEncoderFactory should accept an OrbitSpec wrapping a PairFlavour
+and delegate directly to _embed_compressed().
 """
 from __future__ import annotations
 
@@ -134,40 +111,70 @@ from symatom.context import Plan
 
 from ._base import (
     AtomOrbitEncoder,
+    AtomOrbitEncoderFactory,
     OrbitSpec,
     OrbitSpecForm,
-    EncodingCapability,
     EncodingResult,
 )
-from .sort_encoder import SortEncoder
 
-_PRIORITY = 1.0
+_PRIORITY    = 1.0
+_METHOD_NAME = "poly_antisym"
 
 
 class PolyEncoder(AtomOrbitEncoder):
     """
     Polynomial-compressed embedding for ANTISYMMETRIC single-atom orbits.
 
-    Holds a SortEncoder internally and uses it to obtain Phase-1 sorted
-    evaluations before applying compression.
+    Constructed by PolyEncoderFactory.assess() with fo and n pre-computed.
+    Internally holds a SortEncoder for the same orbit to obtain Phase-1
+    sorted evaluations before applying compression.
+
+    See module docstring for the full implementation guide.
+    """
+
+    def __init__(self, fo, n: int, sort_encoder: AtomOrbitEncoder) -> None:
+        self._fo           = fo
+        self._n            = n
+        self._sort_encoder = sort_encoder  # pre-built SortEncoder for same orbit
+
+    @property
+    def output_dim(self) -> int:
+        return self._n  # 2*(n//2) reals — revise once exact embedding is decided
+
+    @property
+    def priority(self) -> float:
+        return _PRIORITY
+
+    @property
+    def method_name(self) -> str:
+        return _METHOD_NAME
+
+    def encode(self, event: dict) -> EncodingResult:
+        # TODO: implement — see module docstring for step-by-step guide
+        raise NotImplementedError(
+            "PolyEncoder.encode() is a stub — see module docstring for the "
+            "implementation guide (delegate to _sort_encoder, square, _zip_embed)"
+        )
+
+
+class PolyEncoderFactory(AtomOrbitEncoderFactory):
+    """
+    Factory that produces PolyEncoder instances for ANTISYMMETRIC single-atom orbits.
+
+    Internally uses a SortEncoderFactory to pre-build the sort encoder that
+    PolyEncoder will delegate to at encode time.
 
     See module docstring for the full implementation guide.
     """
 
     def __init__(self) -> None:
-        self._sort_enc = SortEncoder()
+        from .sort_encoder import SortEncoderFactory
+        self._sort_factory = SortEncoderFactory()
 
-    def assess(self, spec: OrbitSpec, plan: Plan) -> EncodingCapability:
+    def assess(self, spec: OrbitSpec, plan: Plan) -> list[AtomOrbitEncoder]:
         # TODO: implement — see module docstring for step-by-step guide
         raise NotImplementedError(
-            "PolyEncoder.assess() is a stub — see module docstring for the "
+            "PolyEncoderFactory.assess() is a stub — see module docstring for the "
             "implementation guide (FlavouredOperator extraction, ANTISYM check, "
             "output_dim calculation)"
-        )
-
-    def encode(self, capability: EncodingCapability, event: dict, plan: Plan) -> EncodingResult:
-        # TODO: implement — see module docstring for step-by-step guide
-        raise NotImplementedError(
-            "PolyEncoder.encode() is a stub — see module docstring for the "
-            "implementation guide (delegate to _sort_enc, square, _zip_embed)"
         )

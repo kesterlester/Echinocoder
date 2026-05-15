@@ -338,17 +338,16 @@ def encode_described(
         if registry is not None:
             spec   = OrbitSpec.from_flavoured_operator(fo)
             capable = registry.query_all(spec, plan)
-            # Diagnostic: show what each capable encoder claims it would produce.
+            # Diagnostic: show what each capable encoder proposes.
             # TODO: gate this behind a bool flag when performance matters.
-            for enc, cap in capable:
-                print(f"  [{type(enc).__name__}] proposes  method={cap.method_name}  "
-                      f"output_dim={cap.output_dim}  priority={cap.priority}"
+            for enc in capable:
+                print(f"  [{type(enc).__name__}] proposes  method={enc.method_name}  "
+                      f"output_dim={enc.output_dim}  priority={enc.priority}"
                       f"  fo={fo}")
-            chosen_enc, chosen_cap = capable[0]
-            length = chosen_cap.output_dim   # authoritative from assess()
-            # OLD WRONG: result = chosen_enc.encode(spec, event, plan)
-            result = chosen_enc.encode(chosen_cap, event, plan)
-            assert len(result.values) == length # Checks contract was met!
+            chosen_enc = min(capable, key=lambda enc: enc.output_dim)
+            length = chosen_enc.output_dim
+            result = chosen_enc.encode(event)
+            assert len(result.values) == length  # checks contract was met
             parts.append(result.values)
             segments.append(SegmentInfo(
                 kind        = "ORBIT",
@@ -356,7 +355,7 @@ def encode_described(
                 length      = length,
                 op_u        = fo.operation.name,
                 flavour_u   = tuple(fo.flavour.counts),
-                method_name = chosen_cap.method_name,
+                method_name = chosen_enc.method_name,
                 example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
             ))
         else:
@@ -478,15 +477,15 @@ def describe_encoding(
             spec    = OrbitSpec.from_flavoured_operator(fo)
             capable = registry.query_all(spec, plan)
             if capable:
-                chosen_enc, chosen_cap = capable[0]
-                length = chosen_cap.output_dim
+                chosen_enc = max(capable, key=lambda e: e.priority)
+                length = chosen_enc.output_dim
                 segments.append(SegmentInfo(
                     kind        = "ORBIT",
                     start       = cursor,
                     length      = length,
                     op_u        = fo.operation.name,
                     flavour_u   = tuple(fo.flavour.counts),
-                    method_name = chosen_cap.method_name,
+                    method_name = chosen_enc.method_name,
                     example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
                 ))
                 cursor += length
