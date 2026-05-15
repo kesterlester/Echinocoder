@@ -150,7 +150,10 @@ class AtomOrbitEncoder(ABC):
     Properties (inspected by managers before selecting an encoder)
     --------------------------------------------------------------
     output_dim  : int    — number of reals the embedding will produce
-    priority    : float  — self-assigned preference score; higher wins
+    priority    : float  — self-assigned preference score; higher wins;
+                           only used to break ties when checks on other more
+                           important thigns (e.g. output_dim) do not select
+                           a clear winner
     method_name : str    — short human-readable label for the strategy used
     """
 
