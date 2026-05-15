@@ -299,7 +299,7 @@ def encode_brute(plan, event: dict) -> np.ndarray:
 
 def encode_described(
     plan,
-    event: dict,
+    event: dict | None,
     registry: AtomOrbitEncoderRegistry | None = None,
 ) -> tuple[np.ndarray, list[SegmentInfo]]:
     """
@@ -307,8 +307,16 @@ def encode_described(
     collects a SegmentInfo descriptor for every segment produced.
 
     Returns (values, segments) where:
-      values   — 1-D float64 numpy array (the permutation-invariant embedding)
-      segments — list[SegmentInfo] mirroring the structure of values exactly
+      values   — 1-D float64 numpy array (the permutation-invariant embedding).
+                 When event is None, values is a zero array of the correct length
+                 (useful for describe-only callers that discard it).
+      segments — list[SegmentInfo] mirroring the structure of values exactly.
+
+    Passing event=None is the describe-only mode: segment lengths and metadata
+    are computed identically (they are purely algebraic / registry-derived), but
+    no atom evaluations are performed and the values array contains zeros.
+    describe_encoding() uses this mode so that both functions share exactly one
+    code path.
 
     Phase 1 metadata (method_name, output_dim) is sourced from the registry's
     assess() responses when a registry is supplied, making describe_encoding()
@@ -346,9 +354,12 @@ def encode_described(
                       f"  fo={fo}")
             chosen_enc = min(capable, key=lambda enc: enc.output_dim)
             length = chosen_enc.output_dim
-            result = chosen_enc.encode(event)
-            assert len(result.values) == length  # checks contract was met
-            parts.append(result.values)
+            if event is not None:
+                result = chosen_enc.encode(event)
+                assert len(result.values) == length  # checks contract was met
+                parts.append(result.values)
+            else:
+                parts.append(np.zeros(length, dtype=np.float64))
             segments.append(SegmentInfo(
                 kind        = "ORBIT",
                 start       = cursor,
@@ -411,12 +422,15 @@ def encode_described(
             elif i == comp_drop:
                 segments.append(SegmentInfo(kind="NULL_COMP", start=cursor, length=0, **common))
             else:
-                z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
-                assert len(z_pos) == pf.count(type_sizes), (
-                    f"eval_pair_orbit_positive returned {len(z_pos)} values "
-                    f"but expected pf.count={pf.count(type_sizes)} for {pf!r}"
-                )
-                parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
+                if event is not None:
+                    z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
+                    assert len(z_pos) == pf.count(type_sizes), (
+                        f"eval_pair_orbit_positive returned {len(z_pos)} values "
+                        f"but expected pf.count={pf.count(type_sizes)} for {pf!r}"
+                    )
+                    parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
+                else:
+                    parts.append(np.zeros(notional, dtype=np.float64))
                 segments.append(SegmentInfo(kind="ASSOC", start=cursor, length=notional, **common))
                 cursor += notional
 
@@ -442,13 +456,8 @@ def describe_encoding(
     Return a list of SegmentInfo objects describing the full structure of the
     vector produced by encode(plan, event, registry).
 
-    When a registry is supplied, Phase 1 metadata (method_name, output_dim) is
-    derived from the registry's assess() responses — the same selection logic
-    used by encode() — so the description is always in sync with the encoding.
-    Phase 2 remains algebraic for now.
-
-    When no registry is supplied, falls back to the purely algebraic description
-    (compatible with the pre-registry legacy behaviour).
+    Delegates to encode_described(plan, event=None, registry) — the single
+    authoritative code path — and discards the (zero) values array.
 
     Usage
     -----
@@ -460,96 +469,7 @@ def describe_encoding(
 
     sum(s.length for s in describe_encoding(plan, registry))  # == len(encode(...))
     """
-    fo_list    = repS(plan.context, plan.operations)
-    pf_list    = canonical_pair_flavours(fo_list, plan.context)
-    type_sizes = tuple(g.size for g in plan.context.types)
-    types      = plan.context.types
-
-    segments = []
-    cursor   = 0
-
-    # Phase 1: one ORBIT segment per FlavouredOperator.
-    for fo in fo_list:
-        if fo.count_of_atoms_one_per_sign() == 0:
-            continue
-
-        if registry is not None:
-            spec    = OrbitSpec.from_flavoured_operator(fo)
-            capable = registry.query_all(spec, plan)
-            if capable:
-                chosen_enc = max(capable, key=lambda e: e.priority)
-                length = chosen_enc.output_dim
-                segments.append(SegmentInfo(
-                    kind        = "ORBIT",
-                    start       = cursor,
-                    length      = length,
-                    op_u        = fo.operation.name,
-                    flavour_u   = tuple(fo.flavour.counts),
-                    method_name = chosen_enc.method_name,
-                    example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
-                ))
-                cursor += length
-            else:
-                # No encoder capable — record with zero length so the segment
-                # still appears in the description (length 0, method "FAILED").
-                segments.append(SegmentInfo(
-                    kind        = "ORBIT",
-                    start       = cursor,
-                    length      = 0,
-                    op_u        = fo.operation.name,
-                    flavour_u   = tuple(fo.flavour.counts),
-                    method_name = "********* FAILED **********",
-                    example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
-                ))
-        else:
-            # Legacy algebraic path (no registry).
-            antisym = fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-            n = fo.count_of_atoms_one_per_sign()
-            segments.append(SegmentInfo(
-                kind            = "ORBIT",
-                start           = cursor,
-                length          = n,
-                notional_length = n,
-                op_u            = fo.operation.name,
-                flavour_u       = tuple(fo.flavour.counts),
-                sign_compressed = antisym,
-                example         = _orbit_example(fo.operation.name, fo.flavour.counts, types),
-            ))
-            cursor += n
-
-    # Phase 2: algebraic (unchanged; no registry connection yet).
-    for _bk, block_iter in groupby(pf_list, key=_overlap_block_key):
-        block        = list(block_iter)
-        non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
-        comp_drop    = (max(non_self_idx, key=lambda i: block[i].count(type_sizes))
-                        if non_self_idx else None)
-
-        for i, pf in enumerate(block):
-            sc       = _symmetry_class(pf)
-            ex       = _assoc_example(
-                pf.op_u.name, pf.flavour_u.counts,
-                pf.op_v.name, pf.flavour_v.counts,
-                pf.overlap, types,
-            )
-            notional = 2 * pf.count(type_sizes)
-            common   = dict(
-                op_u            = pf.op_u.name,
-                flavour_u       = tuple(pf.flavour_u.counts),
-                op_v            = pf.op_v.name,
-                flavour_v       = tuple(pf.flavour_v.counts),
-                overlap         = tuple(pf.overlap),
-                symmetry_class  = sc,
-                notional_length = notional,
-                example         = ex,
-            )
-            if _is_self_pair(pf):
-                segments.append(SegmentInfo(kind="NULL_SELF", start=cursor, length=0, **common))
-            elif i == comp_drop:
-                segments.append(SegmentInfo(kind="NULL_COMP", start=cursor, length=0, **common))
-            else:
-                segments.append(SegmentInfo(kind="ASSOC", start=cursor, length=notional, **common))
-                cursor += notional
-
+    _, segments = encode_described(plan, event=None, registry=registry)
     return segments
 
 

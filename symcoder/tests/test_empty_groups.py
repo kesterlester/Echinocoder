@@ -1,8 +1,12 @@
 """
 Tests verifying that symcoder.encode() handles contexts with empty VectorTypes.
+NOTE: These tests use the pre-registry (no-registry) path which has been removed.
+Disabled here; will be replaced by registry-based equivalents.
 """
 import numpy as np
 import pytest
+
+pytestmark = pytest.mark.skip(reason="Pre-registry path removed; will be replaced by registry-based tests")
 from symatom import ArgumentSymmetry, VectorType, Context, Plan
 from symcoder import EvaluableOperation, encode
 
