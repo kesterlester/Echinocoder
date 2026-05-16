@@ -1,18 +1,21 @@
 """
-Tests for symatom.group: TheGroup and SignCorrelationType.
+Tests for symatom.group: TheGroup.
 
 TheGroup wraps a Context and provides orbit enumeration, stabiliser size,
-orbit-membership testing and sign-correlation typing.
+and orbit-membership testing.
 
 All methods are currently brute-force O(∏n_g!).  These tests verify
 correctness (not performance) and serve as the permanent reference against
 which faster future implementations will be validated.
+
+Note: sign_correlation_type() and SignCorrelationType have moved to
+symcoder/encode.py and are no longer part of symatom.
 """
 import math
 import pytest
 from symatom import (
     ArgumentSymmetry, Operation, VectorType, Atom, Context,
-    TheGroup, SignCorrelationType,
+    TheGroup,
 )
 
 
@@ -247,52 +250,6 @@ def test_not_in_orbit_pair_different_flavour(dot, ctx4):
 
 
 # ---------------------------------------------------------------------------
-# sign_correlation_type()
-# ---------------------------------------------------------------------------
-
-def test_sign_correlation_type_ss(dot, ctx4):
-    """SS pair: TYPE_11 (signs always +1, nothing flips)."""
-    u = Atom(dot, ("a", "b"), sign=+1)
-    v = Atom(dot, ("c", "d"), sign=+1)
-    g = ctx4.the_group
-    assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_11
-
-def test_sign_correlation_type_ss_overlap(dot, ctx4):
-    """SS pair with overlap: still TYPE_11."""
-    u = Atom(dot, ("a", "b"), sign=+1)
-    v = Atom(dot, ("a", "c"), sign=+1)
-    g = ctx4.the_group
-    assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_11
-
-def test_sign_correlation_type_aa_full_overlap(eps3, ctx3):
-    """AA full overlap: signs couple (only (++) and (--) in orbit) → TYPE_NEG."""
-    u = Atom(eps3, ("a", "b", "c"), sign=+1)
-    v = Atom(eps3, ("a", "b", "c"), sign=+1)
-    g = ctx3.the_group
-    assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_NEG
-
-def test_sign_correlation_type_aa_zero_overlap(eps2, ctx4):
-    """AA zero overlap: signs are independent → TYPE_22."""
-    u = Atom(eps2, ("a", "b"), sign=+1)
-    v = Atom(eps2, ("c", "d"), sign=+1)
-    g = ctx4.the_group
-    assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_22
-
-def test_sign_correlation_type_as(eps3, dot, ctx4):
-    """AS pair (u antisymmetric, v symmetric): u flips freely → TYPE_21."""
-    u = Atom(eps3, ("a", "b", "c"), sign=+1)
-    v = Atom(dot,  ("a", "b"),      sign=+1)
-    g = ctx4.the_group
-    assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_21
-
-def test_sign_correlation_type_sa(dot, eps3, ctx4):
-    """SA pair (u symmetric, v antisymmetric): v flips freely → TYPE_12."""
-    u = Atom(dot,  ("a", "b"),      sign=+1)
-    v = Atom(eps3, ("a", "b", "c"), sign=+1)
-    g = ctx4.the_group
-    assert g.sign_correlation_type(u, v) == SignCorrelationType.TYPE_12
-
-# ---------------------------------------------------------------------------
 # Two-group context
 # ---------------------------------------------------------------------------
 
@@ -339,18 +296,6 @@ def pairs_for_xval(dot, eps3, eps2, ctx4):
     ]
 
 
-def test_sign_correlation_type_agrees_with_brute(pairs_for_xval, ctx4):
-    """Algebraic sign_correlation_type() == sign_correlation_type_brute() for all pairs."""
-    g = ctx4.the_group
-    for u, v in pairs_for_xval:
-        algebraic = g.sign_correlation_type(u, v)
-        brute     = g.sign_correlation_type_brute(u, v)
-        assert algebraic == brute, (
-            f"sign_correlation_type mismatch for ({u!r}, {v!r}): "
-            f"algebraic={algebraic}, brute={brute}"
-        )
-
-
 def test_orbit_pair_agrees_with_brute(pairs_for_xval, ctx4):
     """orbit_pair() and orbit_brute_pair() return the same set of pairs."""
     g = ctx4.the_group
@@ -369,100 +314,6 @@ def test_in_orbit_pair_agrees_with_brute(dot, eps3, ctx4):
         assert g.in_orbit_pair(pair, rep) == g.in_orbit_brute_pair(pair, rep)
 
 
-def test_sign_correlation_type_brute_aa_partial_overlap(eps2, ctx4):
-    """sign_correlation_type_brute gives TYPE_22 for AA partial overlap."""
-    g = ctx4.the_group
-    u = Atom(eps2, ("a", "b"), +1)
-    v = Atom(eps2, ("a", "c"), +1)
-    assert g.sign_correlation_type_brute(u, v) == SignCorrelationType.TYPE_22
-
-
-def test_sign_correlation_type_algebraic_vs_brute_sa_rank1(eps2):
-    """Algebraic and brute sign_correlation_type agree for rank-1 SA pairs."""
-    dot1 = Operation("dot1", rank=1, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-    ctx2 = Context((VectorType("e", ("a", "b")),))
-    g = ctx2.the_group
-    u = Atom(dot1, ("a",),      +1)
-    v = Atom(eps2, ("a", "b"), +1)
-    assert g.sign_correlation_type(u, v) == g.sign_correlation_type_brute(u, v)
-
-
-def test_sign_correlation_type_sweep_two_groups(dot, eps3, eps2):
-    """Algebraic and brute agree across all PairFlavours in a two-group context."""
-    from symatom import repS, canonical_pair_flavours
-    from symatom.rep import PairFlavour
-    electrons = VectorType("electrons", ("a", "b", "c"))
-    muons     = VectorType("muons",     ("p", "q"))
-    ctx       = Context((electrons, muons))
-    g         = ctx.the_group
-    fo_list   = repS(ctx, [dot, eps3, eps2])
-    for pf in canonical_pair_flavours(fo_list, ctx):
-        # Build the canonical representative pair for this PairFlavour
-        u_labels, v_labels = [], []
-        for vt, ku, kv, s in zip(ctx.types, pf.flavour_u.counts,
-                                   pf.flavour_v.counts, pf.overlap):
-            u_labels.extend(vt.labels[:ku])
-            v_labels.extend(vt.labels[:s])
-            v_labels.extend(vt.labels[ku:ku + kv - s])
-        u = Atom(pf.op_u, tuple(u_labels), +1)
-        v = Atom(pf.op_v, tuple(v_labels), +1)
-        assert g.sign_correlation_type(u, v) == g.sign_correlation_type_brute(u, v), (
-            f"Mismatch for PairFlavour {pf!r}"
-        )
-
-
-def test_sign_correlation_type_neg_two_groups(eps2):
-    """
-    eps2[(2,0)] × eps2[(2,0)] with full electron overlap gives TYPE_NEG:
-    achievable = {(+1,+1),(−1,−1)} — correlated negation only.
-
-    In a (electrons=3, muons=2) context, eps2(a,b) × eps2(a,b) shares both
-    electron labels.  Swapping a↔b negates both atoms simultaneously, but no
-    permutation can flip only one sign.
-    """
-    electrons = VectorType("electrons", ("a", "b", "c"))
-    muons     = VectorType("muons",     ("p", "q"))
-    ctx       = Context((electrons, muons))
-    g         = ctx.the_group
-    u = Atom(eps2, ("a", "b"), +1)
-    v = Atom(eps2, ("a", "b"), +1)
-    assert g.sign_correlation_type(u, v)       == SignCorrelationType.TYPE_NEG
-    assert g.sign_correlation_type_brute(u, v) == SignCorrelationType.TYPE_NEG
-
-
-def test_sign_correlation_type_neg_partial_group_overlap(eps3, eps2):
-    """
-    eps3[(2,1)] × eps3[(2,1)] with overlap=(2,0) gives TYPE_NEG in a
-    2-group context: electrons are fully shared (u_e == v_e) → correlated
-    flip there; muons have 1 label each, no flip → neither independent.
-    """
-    electrons = VectorType("electrons", ("a", "b", "c"))
-    muons     = VectorType("muons",     ("p", "q"))
-    ctx       = Context((electrons, muons))
-    g         = ctx.the_group
-    # u = eps3(a,b,p), v = eps3(a,b,q): same 2 electrons, different muons
-    u = Atom(eps3, ("a", "b", "p"), +1)
-    v = Atom(eps3, ("a", "b", "q"), +1)
-    assert g.sign_correlation_type(u, v)       == SignCorrelationType.TYPE_NEG
-    assert g.sign_correlation_type_brute(u, v) == SignCorrelationType.TYPE_NEG
-
-
-def test_sign_correlation_type_sa_type11_cross_group(eps2):
-    """
-    SA cross-group pair: u=dot(p,q) [SYMMETRIC], v=eps2(a,p) [ANTISYMMETRIC
-    with 1 electron + 1 muon label] gives TYPE_11, not TYPE_12.
-    v's sign can never flip because its labels (a, p) come from different
-    groups, and inter-group ordering is fixed under G = S_electrons × S_muons.
-    """
-    dot = Operation("dot", rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-    electrons = VectorType("electrons", ("a", "b", "c"))
-    muons     = VectorType("muons",     ("p", "q"))
-    ctx       = Context((electrons, muons))
-    g         = ctx.the_group
-    u = Atom(dot,  ("p", "q"), +1)
-    v = Atom(eps2, ("a", "p"), +1)
-    assert g.sign_correlation_type(u, v)       == SignCorrelationType.TYPE_11
-    assert g.sign_correlation_type_brute(u, v) == SignCorrelationType.TYPE_11
 
 
 # ---------------------------------------------------------------------------

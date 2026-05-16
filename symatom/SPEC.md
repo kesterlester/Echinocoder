@@ -164,11 +164,6 @@ TheGroup stores `types: tuple[VectorType]` and exposes:
 - `in_orbit_pair(candidate, rep) -> bool` — True iff `candidate ∈ G·rep` (both args are `(Atom, Atom)` tuples).
 - `in_orbit_brute_pair(candidate, rep) -> bool` — same, brute-force reference.
 
-*Sign correlation (pair only):*
-
-- `sign_correlation_type(u, v) -> SignCorrelationType` — classifies how the G-orbit of `(u, v)` couples the signs of the two atoms.  Algebraic O(n).
-- `sign_correlation_type_brute(u, v) -> SignCorrelationType` — same, brute-force reference.
-
 *Group structure:*
 
 - `order() -> int` — `|G| = n₁! × … × nₘ!`.

@@ -1,12 +1,50 @@
 from __future__ import annotations
 import importlib.util
 import numpy as np
+from enum import Enum
 from itertools import groupby
 from pathlib import Path
 from symatom.atoms import ArgumentSymmetry
-from symatom.group import SignCorrelationType
 from symatom.rep import canonical_pair_flavours
 from symatom import repS
+
+
+# ---------------------------------------------------------------------------
+# SignCorrelationType
+# ---------------------------------------------------------------------------
+# Moved here from symatom/group.py: sign-correlation is a concept needed only
+# for encoding, not for pure group-theory orbit machinery.
+
+class SignCorrelationType(Enum):
+    """
+    Describes how the G-orbit of an atom-pair (u, v) relates the sign degrees
+    of freedom of u and v.
+
+    The achievable set is the subgroup of Z_2 × Z_2 consisting of all
+    (sign_u, sign_v) pairs that appear in the orbit.  There are exactly five
+    subgroups of Z_2 × Z_2, corresponding to the five types below.
+
+    The label TYPE_XY encodes:
+      X = 1  — u's sign does not flip independently within the orbit
+      X = 2  — u's sign can flip independently of v's sign within the orbit
+      Y = 1  — v's sign does not flip independently within the orbit
+      Y = 2  — v's sign can flip independently of u's sign within the orbit
+
+    TYPE_11   Achievable = {(+1,+1)}.  Neither sign changes.
+    TYPE_NEG  Achievable = {(+1,+1),(-1,-1)}.  Only correlated negation.
+    TYPE_12   Achievable = {(+1,+1),(+1,-1)}.  Only v's sign flips freely.
+    TYPE_21   Achievable = {(+1,+1),(-1,+1)}.  Only u's sign flips freely.
+    TYPE_22   Achievable = {(+1,+1),(-1,+1),(+1,-1),(-1,-1)}.  Both flip freely.
+
+    CRITICAL: the type is NOT determined by ArgumentSymmetry alone.
+    Always compute via _sign_correlation_type_from_pf(), never by inspecting
+    op.argument_symmetry directly.
+    """
+    TYPE_11  = "11"
+    TYPE_NEG = "NEG"
+    TYPE_12  = "12"
+    TYPE_21  = "21"
+    TYPE_22  = "22"
 ## from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
 from .pairs import eval_pair_orbit, eval_pair_orbit_positive, _is_self_pair
 from .encoders import AtomOrbitEncoderRegistry, OrbitSpec

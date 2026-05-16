@@ -7,7 +7,7 @@ Public API:
   context    : Context, Plan
   orbit_enum : OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
   rep        : Flavour, FlavouredOperator, repS
-  group      : TheGroup, SignCorrelationType
+  group      : TheGroup
 """
 from .atoms      import ArgumentSymmetry, Operation, VectorType, Atom, are_negatives
 from .context    import Context, Plan
@@ -16,7 +16,7 @@ from .rep        import (Flavour, FlavouredOperator, repS,
                          PairFlavour, pair_flavour_of,
                          canonical_pair_flavours,
                          brute_force_canonical_pair_flavours)
-from .group      import TheGroup, SignCorrelationType
+from .group      import TheGroup
 
 __all__ = [
     "ArgumentSymmetry",
@@ -37,5 +37,4 @@ __all__ = [
     "canonical_pair_flavours",
     "brute_force_canonical_pair_flavours",
     "TheGroup",
-    "SignCorrelationType",
 ]

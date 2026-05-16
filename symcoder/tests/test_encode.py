@@ -426,7 +426,7 @@ def test_embed_compressed_type_neg_permutation_invariant():
 
     # Find a TYPE_NEG PairFlavour (AA, full electron overlap)
     from symcoder.encode import _sign_correlation_type_from_pf
-    from symatom.group import SignCorrelationType
+    from symcoder.encode import SignCorrelationType
     type_neg_found = False
     for pf in canonical_pair_flavours(fo_list, ctx):
         sct = _sign_correlation_type_from_pf(pf)
@@ -453,7 +453,7 @@ def test_embed_compressed_type_neg_distinguishes_events():
     the TYPE_22 branch (embed {z², conj(z²)} → real polynomial → loses Im(z²)).
     """
     from symcoder.encode import _embed_compressed, _sign_correlation_type_from_pf
-    from symatom.group import SignCorrelationType
+    from symcoder.encode import SignCorrelationType
     eps2 = _make_eps2()
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ("p", "q"))
