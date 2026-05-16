@@ -47,7 +47,10 @@ class SignCorrelationType(Enum):
     TYPE_22  = "22"
 ## from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
 from .pairs import eval_pair_orbit, eval_pair_orbit_positive, _is_self_pair
-from .encoders import AtomOrbitEncoderRegistry, OrbitSpec
+from .encoders import (
+    AtomOrbitEncoderRegistry, OrbitSpec,
+    PairOrbitEncoderRegistry, PairOrbitSpec,
+)
 from .describe import SegmentInfo, _orbit_example, _assoc_example, _symmetry_class
 
 # Load the Echinocoder zip embedder from the repo root.  It is not a proper
@@ -339,6 +342,7 @@ def encode_and_describe(
     plan,
     event: dict | None,
     registry: AtomOrbitEncoderRegistry | None = None,
+    pair_registry: PairOrbitEncoderRegistry | None = None,
 ) -> tuple[np.ndarray, list[SegmentInfo]]:
     """
     Core encoding function.  Runs the full two-phase encoding and simultaneously
@@ -357,11 +361,13 @@ def encode_and_describe(
     code path.
 
     Phase 1 metadata (method_name, output_dim) is sourced from the registry's
-    assess() responses when a registry is supplied, making describe_encoding()
+    assess() responses when registry is supplied, making describe_encoding()
     automatically consistent with encode() — both use the same selection logic.
 
-    Phase 2 is currently always the algebraic _embed_compressed path (no registry
-    connection yet); its SegmentInfo fields are computed algebraically.
+    Phase 2 uses pair_registry when supplied: for each non-dropped ASSOC pair,
+    query_all() is called and the encoder with the smallest output_dim is chosen
+    (same manager logic as Phase 1).  When pair_registry is None, Phase 2 falls
+    back to the direct _embed_compressed call.
 
     Note: the diagnostic print in Phase 1 is temporary scaffolding and will be
     gated by a bool flag in a future performance pass.
@@ -460,54 +466,83 @@ def encode_and_describe(
             elif i == comp_drop:
                 segments.append(SegmentInfo(kind="NULL_COMP", start=cursor, length=0, **common))
             else:
-                if event is not None:
-                    z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
-                    assert len(z_pos) == pf.count(type_sizes), (
-                        f"eval_pair_orbit_positive returned {len(z_pos)} values "
-                        f"but expected pf.count={pf.count(type_sizes)} for {pf!r}"
-                    )
-                    parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
+                if pair_registry is not None:
+                    # Registry path: let the registry select the encoder.
+                    spec    = PairOrbitSpec.from_pair_flavour(pf)
+                    capable = pair_registry.query_all(spec, plan)
+                    chosen_pair_enc = min(capable, key=lambda e: e.output_dim)
+                    actual_length   = chosen_pair_enc.output_dim
+                    method          = chosen_pair_enc.method_name
+                    if event is not None:
+                        result = chosen_pair_enc.encode(event)
+                        assert len(result.values) == actual_length
+                        parts.append(result.values)
+                    else:
+                        parts.append(np.zeros(actual_length, dtype=np.float64))
                 else:
-                    parts.append(np.zeros(notional, dtype=np.float64))
-                segments.append(SegmentInfo(kind="ASSOC", start=cursor, length=notional, **common))
-                cursor += notional
+                    # Legacy direct path (no pair registry).
+                    actual_length = notional
+                    method        = "embed_compressed"
+                    if event is not None:
+                        z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
+                        assert len(z_pos) == pf.count(type_sizes), (
+                            f"eval_pair_orbit_positive returned {len(z_pos)} values "
+                            f"but expected pf.count={pf.count(type_sizes)} for {pf!r}"
+                        )
+                        parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
+                    else:
+                        parts.append(np.zeros(notional, dtype=np.float64))
+                segments.append(SegmentInfo(
+                    kind        = "ASSOC",
+                    start       = cursor,
+                    length      = actual_length,
+                    method_name = method,
+                    **common,
+                ))
+                cursor += actual_length
 
     values = np.concatenate(parts) if parts else np.array([], dtype=float)
     return values, segments
 
 
-def encode(plan, event: dict, registry: AtomOrbitEncoderRegistry | None = None) -> np.ndarray:
+def encode(
+    plan,
+    event: dict,
+    registry: AtomOrbitEncoderRegistry | None = None,
+    pair_registry: PairOrbitEncoderRegistry | None = None,
+) -> np.ndarray:
     """
     Encode a physics event as a permutation-invariant vector.
     See encode_and_describe() for full documentation of the two-phase algorithm.
     Returns a 1-D float64 numpy array.
     """
-    values, _segments = encode_and_describe(plan, event, registry)
+    values, _segments = encode_and_describe(plan, event, registry, pair_registry)
     return values
 
 
 def describe_encoding(
     plan,
     registry: AtomOrbitEncoderRegistry | None = None,
+    pair_registry: PairOrbitEncoderRegistry | None = None,
 ) -> list[SegmentInfo]:
     """
     Return a list of SegmentInfo objects describing the full structure of the
-    vector produced by encode(plan, event, registry).
+    vector produced by encode(plan, event, registry, pair_registry).
 
-    Delegates to encode_and_describe(plan, event=None, registry) — the single
+    Delegates to encode_and_describe(plan, event=None, ...) — the single
     authoritative code path — and discards the (zero) values array.
 
     Usage
     -----
-    for seg in describe_encoding(plan, registry):
+    for seg in describe_encoding(plan, registry, pair_registry):
         print(seg)
 
     import json
-    json.dumps([s.to_dict() for s in describe_encoding(plan, registry)])
+    json.dumps([s.to_dict() for s in describe_encoding(plan, registry, pair_registry)])
 
-    sum(s.length for s in describe_encoding(plan, registry))  # == len(encode(...))
+    sum(s.length for s in describe_encoding(plan, registry, pair_registry))  # == len(encode(...))
     """
-    _, segments = encode_and_describe(plan, event=None, registry=registry)
+    _, segments = encode_and_describe(plan, event=None, registry=registry, pair_registry=pair_registry)
     return segments
 
 
