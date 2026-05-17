@@ -1,0 +1,184 @@
+=== Start ===
+[0:3]  ORBIT  mag  .  sort  u=(1,0)  v=(.)  shared=(.)  len=3  full=3  |  mag(a)
+[3:5]  ORBIT  mag  .  sort  u=(0,1)  v=(.)  shared=(.)  len=2  full=2  |  mag(p)
+[5:8]  ORBIT  dot  .  sort  u=(2,0)  v=(.)  shared=(.)  len=3  full=3  |  dot(a,b)
+[8:14]  ORBIT  dot  .  sort  u=(1,1)  v=(.)  shared=(.)  len=6  full=6  |  dot(a,p)
+[14:15]  ORBIT  dot  .  sort  u=(0,2)  v=(.)  shared=(.)  len=1  full=1  |  dot(p,q)
+[15:16]  ORBIT  eps3  .  half_sort  u=(3,0)  v=(.)  shared=(.)  len=1  full=2  |  eps3(a,b,c)
+[16:22]  ORBIT  eps3  .  half_sort  u=(2,1)  v=(.)  shared=(.)  len=6  full=12  |  eps3(a,b,p)
+[22:25]  ORBIT  eps3  .  half_sort  u=(1,2)  v=(.)  shared=(.)  len=3  full=6  |  eps3(a,p,q)
+[25:25]  NULL_SELF  dot  dot  null_self  u=(0,2)  v=(0,2)  shared=(0,2)  len=0  full=2  |  dot(p,q)×dot(p,q)
+[25:25]  NULL_COMP  dot  dot  11  u=(0,2)  v=(1,1)  shared=(0,1)  len=0  full=12  |  dot(p,q)×dot(a,p)
+[25:25]  NULL_COMP  dot  dot  11  u=(0,2)  v=(2,0)  shared=(0,0)  len=0  full=6  |  dot(p,q)×dot(a,b)
+[25:25]  NULL_COMP  dot  eps3  12  u=(0,2)  v=(1,2)  shared=(0,2)  len=0  full=6  |  dot(p,q)×eps3(a,p,q)
+[25:25]  NULL_COMP  dot  eps3  12  u=(0,2)  v=(2,1)  shared=(0,1)  len=0  full=12  |  dot(p,q)×eps3(a,b,p)
+[25:25]  NULL_COMP  dot  eps3  12  u=(0,2)  v=(3,0)  shared=(0,0)  len=0  full=2  |  dot(p,q)×eps3(a,b,c)
+[25:25]  NULL_COMP  dot  mag  11  u=(0,2)  v=(0,1)  shared=(0,1)  len=0  full=4  |  dot(p,q)×mag(p)
+[25:25]  NULL_COMP  dot  mag  11  u=(0,2)  v=(1,0)  shared=(0,0)  len=0  full=6  |  dot(p,q)×mag(a)
+[25:25]  NULL_COMP  dot  dot  11  u=(1,1)  v=(1,1)  shared=(0,0)  len=0  full=24  |  dot(a,p)×dot(b,q)
+[25:49]  ASSOC  dot  dot  11  u=(1,1)  v=(1,1)  shared=(0,1)  len=24  full=24  |  dot(a,p)×dot(b,p)
+[49:61]  ASSOC  dot  dot  11  u=(1,1)  v=(1,1)  shared=(1,0)  len=12  full=12  |  dot(a,p)×dot(a,q)
+[61:61]  NULL_SELF  dot  dot  null_self  u=(1,1)  v=(1,1)  shared=(1,1)  len=0  full=12  |  dot(a,p)×dot(a,p)
+[61:73]  ASSOC  dot  dot  11  u=(1,1)  v=(2,0)  shared=(0,0)  len=12  full=12  |  dot(a,p)×dot(b,c)
+[73:73]  NULL_COMP  dot  dot  11  u=(1,1)  v=(2,0)  shared=(1,0)  len=0  full=24  |  dot(a,p)×dot(a,b)
+[73:73]  NULL_COMP  dot  eps3  11  u=(1,1)  v=(1,2)  shared=(0,1)  len=0  full=24  |  dot(a,p)×eps3(b,p,q)
+[73:85]  ASSOC  dot  eps3  11  u=(1,1)  v=(1,2)  shared=(1,1)  len=12  full=12  |  dot(a,p)×eps3(a,p,q)
+[85:97]  ASSOC  dot  eps3  12  u=(1,1)  v=(2,1)  shared=(0,0)  len=12  full=24  |  dot(a,p)×eps3(b,c,q)
+[97:109]  ASSOC  dot  eps3  12  u=(1,1)  v=(2,1)  shared=(0,1)  len=12  full=24  |  dot(a,p)×eps3(b,c,p)
+[109:109]  NULL_COMP  dot  eps3  11  u=(1,1)  v=(2,1)  shared=(1,0)  len=0  full=24  |  dot(a,p)×eps3(a,b,q)
+[109:133]  ASSOC  dot  eps3  11  u=(1,1)  v=(2,1)  shared=(1,1)  len=24  full=24  |  dot(a,p)×eps3(a,b,p)
+[133:133]  NULL_COMP  dot  eps3  12  u=(1,1)  v=(3,0)  shared=(1,0)  len=0  full=12  |  dot(a,p)×eps3(a,b,c)
+[133:133]  NULL_COMP  dot  mag  11  u=(1,1)  v=(0,1)  shared=(0,0)  len=0  full=12  |  dot(a,p)×mag(q)
+[133:145]  ASSOC  dot  mag  11  u=(1,1)  v=(0,1)  shared=(0,1)  len=12  full=12  |  dot(a,p)×mag(p)
+[145:145]  NULL_COMP  dot  mag  11  u=(1,1)  v=(1,0)  shared=(0,0)  len=0  full=24  |  dot(a,p)×mag(b)
+[145:157]  ASSOC  dot  mag  11  u=(1,1)  v=(1,0)  shared=(1,0)  len=12  full=12  |  dot(a,p)×mag(a)
+[157:157]  NULL_COMP  dot  dot  11  u=(2,0)  v=(2,0)  shared=(1,0)  len=0  full=12  |  dot(a,b)×dot(a,c)
+[157:157]  NULL_SELF  dot  dot  null_self  u=(2,0)  v=(2,0)  shared=(2,0)  len=0  full=6  |  dot(a,b)×dot(a,b)
+[157:163]  ASSOC  dot  eps3  12  u=(2,0)  v=(1,2)  shared=(0,0)  len=6  full=12  |  dot(a,b)×eps3(c,p,q)
+[163:163]  NULL_COMP  dot  eps3  12  u=(2,0)  v=(1,2)  shared=(1,0)  len=0  full=12  |  dot(a,b)×eps3(a,p,q)
+[163:163]  NULL_COMP  dot  eps3  11  u=(2,0)  v=(2,1)  shared=(1,0)  len=0  full=24  |  dot(a,b)×eps3(a,c,p)
+[163:175]  ASSOC  dot  eps3  12  u=(2,0)  v=(2,1)  shared=(2,0)  len=12  full=24  |  dot(a,b)×eps3(a,b,p)
+[175:175]  NULL_COMP  dot  eps3  12  u=(2,0)  v=(3,0)  shared=(2,0)  len=0  full=6  |  dot(a,b)×eps3(a,b,c)
+[175:175]  NULL_COMP  dot  mag  11  u=(2,0)  v=(0,1)  shared=(0,0)  len=0  full=12  |  dot(a,b)×mag(p)
+[175:181]  ASSOC  dot  mag  11  u=(2,0)  v=(1,0)  shared=(0,0)  len=6  full=6  |  dot(a,b)×mag(c)
+[181:181]  NULL_COMP  dot  mag  11  u=(2,0)  v=(1,0)  shared=(1,0)  len=0  full=12  |  dot(a,b)×mag(a)
+[181:181]  NULL_COMP  eps3  eps3  neg  u=(1,2)  v=(1,2)  shared=(0,2)  len=0  full=12  |  eps3(a,p,q)×eps3(b,p,q)
+[181:181]  NULL_SELF  eps3  eps3  null_self  u=(1,2)  v=(1,2)  shared=(1,2)  len=0  full=6  |  eps3(a,p,q)×eps3(a,p,q)
+[181:193]  ASSOC  eps3  eps3  12  u=(1,2)  v=(2,1)  shared=(0,1)  len=12  full=24  |  eps3(a,p,q)×eps3(b,c,p)
+[193:193]  NULL_COMP  eps3  eps3  11  u=(1,2)  v=(2,1)  shared=(1,1)  len=0  full=24  |  eps3(a,p,q)×eps3(a,b,p)
+[193:193]  NULL_COMP  eps3  eps3  22  u=(1,2)  v=(3,0)  shared=(1,0)  len=0  full=6  |  eps3(a,p,q)×eps3(a,b,c)
+[193:193]  NULL_COMP  eps3  mag  11  u=(1,2)  v=(0,1)  shared=(0,1)  len=0  full=12  |  eps3(a,p,q)×mag(p)
+[193:193]  NULL_COMP  eps3  mag  21  u=(1,2)  v=(1,0)  shared=(0,0)  len=0  full=12  |  eps3(a,p,q)×mag(b)
+[193:199]  ASSOC  eps3  mag  21  u=(1,2)  v=(1,0)  shared=(1,0)  len=6  full=12  |  eps3(a,p,q)×mag(a)
+[199:199]  NULL_COMP  eps3  eps3  11  u=(2,1)  v=(2,1)  shared=(1,0)  len=0  full=24  |  eps3(a,b,p)×eps3(a,c,q)
+[199:223]  ASSOC  eps3  eps3  11  u=(2,1)  v=(2,1)  shared=(1,1)  len=24  full=24  |  eps3(a,b,p)×eps3(a,c,p)
+[223:235]  ASSOC  eps3  eps3  neg  u=(2,1)  v=(2,1)  shared=(2,0)  len=12  full=24  |  eps3(a,b,p)×eps3(a,b,q)
+[235:235]  NULL_SELF  eps3  eps3  null_self  u=(2,1)  v=(2,1)  shared=(2,1)  len=0  full=12  |  eps3(a,b,p)×eps3(a,b,p)
+[235:235]  NULL_COMP  eps3  eps3  neg  u=(2,1)  v=(3,0)  shared=(2,0)  len=0  full=12  |  eps3(a,b,p)×eps3(a,b,c)
+[235:235]  NULL_COMP  eps3  mag  21  u=(2,1)  v=(0,1)  shared=(0,0)  len=0  full=12  |  eps3(a,b,p)×mag(q)
+[235:247]  ASSOC  eps3  mag  21  u=(2,1)  v=(0,1)  shared=(0,1)  len=12  full=24  |  eps3(a,b,p)×mag(p)
+[247:259]  ASSOC  eps3  mag  21  u=(2,1)  v=(1,0)  shared=(0,0)  len=12  full=24  |  eps3(a,b,p)×mag(c)
+[259:259]  NULL_COMP  eps3  mag  11  u=(2,1)  v=(1,0)  shared=(1,0)  len=0  full=24  |  eps3(a,b,p)×mag(a)
+[259:259]  NULL_SELF  eps3  eps3  null_self  u=(3,0)  v=(3,0)  shared=(3,0)  len=0  full=2  |  eps3(a,b,c)×eps3(a,b,c)
+[259:259]  NULL_COMP  eps3  mag  21  u=(3,0)  v=(0,1)  shared=(0,0)  len=0  full=4  |  eps3(a,b,c)×mag(p)
+[259:259]  NULL_COMP  eps3  mag  21  u=(3,0)  v=(1,0)  shared=(1,0)  len=0  full=6  |  eps3(a,b,c)×mag(a)
+[259:259]  NULL_COMP  mag  mag  11  u=(0,1)  v=(0,1)  shared=(0,0)  len=0  full=4  |  mag(p)×mag(q)
+[259:259]  NULL_SELF  mag  mag  null_self  u=(0,1)  v=(0,1)  shared=(0,1)  len=0  full=4  |  mag(p)×mag(p)
+[259:259]  NULL_COMP  mag  mag  11  u=(0,1)  v=(1,0)  shared=(0,0)  len=0  full=12  |  mag(p)×mag(a)
+[259:259]  NULL_COMP  mag  mag  11  u=(1,0)  v=(1,0)  shared=(0,0)  len=0  full=12  |  mag(a)×mag(b)
+[259:259]  NULL_SELF  mag  mag  null_self  u=(1,0)  v=(1,0)  shared=(1,0)  len=0  full=6  |  mag(a)×mag(a)
+=== Stop ===
+
+Event to encode is {'a': array([ 0.49671415, -0.1382643 ,  0.64768854]), 'b': array([ 1.52302986, -0.23415337, -0.23413696]), 'c': array([ 1.57921282,  0.76743473, -0.46947439]), 'p': array([ 0.54256004, -0.46341769, -0.46572975]), 'q': array([ 0.24196227, -1.91328024, -1.72491783])}
+
+Sort encoder is evaluating [+mag(a), +mag(b), +mag(c)] on Event {'a': array([ 0.49671415, -0.1382643 ,  0.64768854]), 'b': array([ 1.52302986, -0.23415337, -0.23413696]), 'c': array([ 1.57921282,  0.76743473, -0.46947439]), 'p': array([ 0.54256004, -0.46341769, -0.46572975]), 'q': array([ 0.24196227, -1.91328024, -1.72491783])}
+Sort encoder is evaluating [+mag(p), +mag(q)] on Event {'a': array([ 0.49671415, -0.1382643 ,  0.64768854]), 'b': array([ 1.52302986, -0.23415337, -0.23413696]), 'c': array([ 1.57921282,  0.76743473, -0.46947439]), 'p': array([ 0.54256004, -0.46341769, -0.46572975]), 'q': array([ 0.24196227, -1.91328024, -1.72491783])}
+Sort encoder is evaluating [+dot(a, b), +dot(a, c), +dot(b, c)] on Event {'a': array([ 0.49671415, -0.1382643 ,  0.64768854]), 'b': array([ 1.52302986, -0.23415337, -0.23413696]), 'c': array([ 1.57921282,  0.76743473, -0.46947439]), 'p': array([ 0.54256004, -0.46341769, -0.46572975]), 'q': array([ 0.24196227, -1.91328024, -1.72491783])}
+Sort encoder is evaluating [+dot(a, p), +dot(a, q), +dot(b, p), +dot(b, q), +dot(c, p), +dot(c, q)] on Event {'a': array([ 0.49671415, -0.1382643 ,  0.64768854]), 'b': array([ 1.52302986, -0.23415337, -0.23413696]), 'c': array([ 1.57921282,  0.76743473, -0.46947439]), 'p': array([ 0.54256004, -0.46341769, -0.46572975]), 'q': array([ 0.24196227, -1.91328024, -1.72491783])}
+Sort encoder is evaluating [+dot(p, q)] on Event {'a': array([ 0.49671415, -0.1382643 ,  0.64768854]), 'b': array([ 1.52302986, -0.23415337, -0.23413696]), 'c': array([ 1.57921282,  0.76743473, -0.46947439]), 'p': array([ 0.54256004, -0.46341769, -0.46572975]), 'q': array([ 0.24196227, -1.91328024, -1.72491783])}
+HalfSort encoder is evaluating [+eps3(a, b, c)] on Event {'a': array([ 0.49671415, -0.1382643 ,  0.64768854]), 'b': array([ 1.52302986, -0.23415337, -0.23413696]), 'c': array([ 1.57921282,  0.76743473, -0.46947439]), 'p': array([ 0.54256004, -0.46341769, -0.46572975]), 'q': array([ 0.24196227, -1.91328024, -1.72491783])}
+HalfSort encoder is evaluating [+eps3(a, b, p), +eps3(a, b, q), +eps3(a, c, p), +eps3(a, c, q), +eps3(b, c, p), +eps3(b, c, q)] on Event {'a': array([ 0.49671415, -0.1382643 ,  0.64768854]), 'b': array([ 1.52302986, -0.23415337, -0.23413696]), 'c': array([ 1.57921282,  0.76743473, -0.46947439]), 'p': array([ 0.54256004, -0.46341769, -0.46572975]), 'q': array([ 0.24196227, -1.91328024, -1.72491783])}
+HalfSort encoder is evaluating [+eps3(a, p, q), +eps3(b, p, q), +eps3(c, p, q)] on Event {'a': array([ 0.49671415, -0.1382643 ,  0.64768854]), 'b': array([ 1.52302986, -0.23415337, -0.23413696]), 'c': array([ 1.57921282,  0.76743473, -0.46947439]), 'p': array([ 0.54256004, -0.46341769, -0.46572975]), 'q': array([ 0.24196227, -1.91328024, -1.72491783])}
+Total output length: 259  (sum of segment lengths: 259)
+
+=== START ===
+[0:3]  ORBIT  mag  .  sort  u=(1,0)  v=(.)  shared=(.)  len=3  full=3  |  mag(a) [0.8279, 1.5586, 1.8175]
+[3:5]  ORBIT  mag  .  sort  u=(0,1)  v=(.)  shared=(.)  len=2  full=2  |  mag(p) [0.8521, 2.5874]
+[5:8]  ORBIT  dot  .  sort  u=(2,0)  v=(.)  shared=(.)  len=3  full=3  |  dot(a,b) [0.3742, 0.6372, 2.3354]
+[8:14]  ORBIT  dot  .  sort  u=(1,1)  v=(.)  shared=(.)  len=6  full=6  |  dot(a,p) [-0.7325, -0.2764, 0.0319, 0.7198, 1.0439, 1.2204]
+[14:15]  ORBIT  dot  .  sort  u=(0,2)  v=(.)  shared=(.)  len=1  full=1  |  dot(p,q) [1.8213]
+[15:16]  ORBIT  eps3  .  half_sort  u=(3,0)  v=(.)  shared=(.)  len=1  full=2  |  eps3(a,b,c) [1.0927]
+[16:22]  ORBIT  eps3  .  half_sort  u=(2,1)  v=(.)  shared=(.)  len=6  full=12  |  eps3(a,b,p) [0.4551, 0.7194, 1.0958, 2.2280, 3.2445, 3.5419]
+[22:25]  ORBIT  eps3  .  half_sort  u=(1,2)  v=(.)  shared=(.)  len=3  full=6  |  eps3(a,p,q) [0.1156, 0.7591, 0.9216]
+[25:25]  NULL_SELF  dot  dot  null_self  u=(0,2)  v=(0,2)  shared=(0,2)  len=0  full=2  |  dot(p,q)×dot(p,q) [(empty)]
+[25:25]  NULL_COMP  dot  dot  11  u=(0,2)  v=(1,1)  shared=(0,1)  len=0  full=12  |  dot(p,q)×dot(a,p) [(empty)]
+[25:25]  NULL_COMP  dot  dot  11  u=(0,2)  v=(2,0)  shared=(0,0)  len=0  full=6  |  dot(p,q)×dot(a,b) [(empty)]
+[25:25]  NULL_COMP  dot  eps3  12  u=(0,2)  v=(1,2)  shared=(0,2)  len=0  full=6  |  dot(p,q)×eps3(a,p,q) [(empty)]
+[25:25]  NULL_COMP  dot  eps3  12  u=(0,2)  v=(2,1)  shared=(0,1)  len=0  full=12  |  dot(p,q)×eps3(a,b,p) [(empty)]
+[25:25]  NULL_COMP  dot  eps3  12  u=(0,2)  v=(3,0)  shared=(0,0)  len=0  full=2  |  dot(p,q)×eps3(a,b,c) [(empty)]
+[25:25]  NULL_COMP  dot  mag  11  u=(0,2)  v=(0,1)  shared=(0,1)  len=0  full=4  |  dot(p,q)×mag(p) [(empty)]
+[25:25]  NULL_COMP  dot  mag  11  u=(0,2)  v=(1,0)  shared=(0,0)  len=0  full=6  |  dot(p,q)×mag(a) [(empty)]
+[25:25]  NULL_COMP  dot  dot  11  u=(1,1)  v=(1,1)  shared=(0,0)  len=0  full=24  |  dot(a,p)×dot(b,q) [(empty)]
+[25:49]  ASSOC  dot  dot  11  u=(1,1)  v=(1,1)  shared=(0,1)  len=24  full=24  |  dot(a,p)×dot(b,p) [4.0143, 4.0143, 0.0000, 16.5564, -21.8140, 21.8140, -37.6799, 0.0000, -19.1935, -19.1935, -0.0000, -4.1892, -8.2626, 8.2626, -7.9662, 0.0000, 3.7179, 3.7179, -0.0000, 11.1033, -4.8307, 4.8307, -1.7702, 0.0000]
+[49:61]  ASSOC  dot  dot  11  u=(1,1)  v=(1,1)  shared=(1,0)  len=12  full=12  |  dot(a,p)×dot(a,q) [2.0071, 2.0071, 0.0000, 1.9254, -0.3153, 0.3153, -0.8302, 0.0000, -0.2642, -0.2642, 0.0000, -0.8243]
+[61:61]  NULL_SELF  dot  dot  null_self  u=(1,1)  v=(1,1)  shared=(1,1)  len=0  full=12  |  dot(a,p)×dot(a,p) [(empty)]
+[61:73]  ASSOC  dot  dot  11  u=(1,1)  v=(2,0)  shared=(0,0)  len=12  full=12  |  dot(a,p)×dot(b,c) [2.0071, 6.6938, -16.2443, 13.9415, -34.3928, -13.8444, -4.8497, -36.4427, 16.6554, -11.6542, 4.7547, 2.5675]
+[73:73]  NULL_COMP  dot  dot  11  u=(1,1)  v=(2,0)  shared=(1,0)  len=0  full=24  |  dot(a,p)×dot(a,b) [(empty)]
+[73:73]  NULL_COMP  dot  eps3  11  u=(1,1)  v=(1,2)  shared=(0,1)  len=0  full=24  |  dot(a,p)×eps3(b,p,q) [(empty)]
+[73:85]  ASSOC  dot  eps3  11  u=(1,1)  v=(1,2)  shared=(1,1)  len=12  full=12  |  dot(a,p)×eps3(a,p,q) [2.0071, 0.0000, 1.5977, -0.3583, 1.4796, 0.1407, 1.5578, 1.4556, 1.7678, 0.8688, 1.1460, -0.1858]
+[85:97]  ASSOC  dot  eps3  12  u=(1,1)  v=(2,1)  shared=(0,0)  len=12  full=24  |  dot(a,p)×eps3(b,c,q) [4.0143, 34.3068, 82.0298, 335.5855, 428.9710, 931.1833, 129.1107, 555.2999, -273.4222, 2463.8403, -1271.8135, 632.5927]
+[97:109]  ASSOC  dot  eps3  12  u=(1,1)  v=(2,1)  shared=(0,1)  len=12  full=24  |  dot(a,p)×eps3(b,c,p) [4.0143, 34.3068, 102.8050, 442.3594, 1064.9514, 2481.7438, 4342.5673, 6264.8604, 5902.4621, 4069.4034, 1989.7875, 674.1635]
+[109:109]  NULL_COMP  dot  eps3  11  u=(1,1)  v=(2,1)  shared=(1,0)  len=0  full=24  |  dot(a,p)×eps3(a,b,q) [(empty)]
+[109:133]  ASSOC  dot  eps3  11  u=(1,1)  v=(2,1)  shared=(1,1)  len=24  full=24  |  dot(a,p)×eps3(a,b,p) [4.0143, 0.0000, 34.3068, -2.0911, 116.3559, -11.8347, 470.0521, -94.5828, 1199.1643, -286.1135, 2752.7325, -1143.1478, 4909.5282, -2760.3671, 6310.1736, -4985.5560, 5368.3196, -6347.8442, 2846.3740, -5636.3597, 560.3350, -2750.7255, -315.9490, -770.1436]
+[133:133]  NULL_COMP  dot  eps3  12  u=(1,1)  v=(3,0)  shared=(1,0)  len=0  full=12  |  dot(a,p)×eps3(a,b,c) [(empty)]
+[133:133]  NULL_COMP  dot  mag  11  u=(1,1)  v=(0,1)  shared=(0,0)  len=0  full=12  |  dot(a,p)×mag(q) [(empty)]
+[133:145]  ASSOC  dot  mag  11  u=(1,1)  v=(0,1)  shared=(0,1)  len=12  full=12  |  dot(a,p)×mag(p) [2.0071, 10.3184, -41.9447, 18.6331, -67.1985, -81.9060, 73.7544, -114.8929, 89.6920, 20.9377, 2.8866, 25.4910]
+[145:145]  NULL_COMP  dot  mag  11  u=(1,1)  v=(1,0)  shared=(0,0)  len=0  full=24  |  dot(a,p)×mag(b) [(empty)]
+[145:157]  ASSOC  dot  mag  11  u=(1,1)  v=(1,0)  shared=(1,0)  len=12  full=12  |  dot(a,p)×mag(a) [2.0071, 8.4079, -28.7699, 13.1207, -34.3818, -52.6644, 55.9893, -45.6475, 31.2180, 33.4058, -8.5602, 8.7225]
+[157:157]  NULL_COMP  dot  dot  11  u=(2,0)  v=(2,0)  shared=(1,0)  len=0  full=12  |  dot(a,b)×dot(a,c) [(empty)]
+[157:157]  NULL_SELF  dot  dot  null_self  u=(2,0)  v=(2,0)  shared=(2,0)  len=0  full=6  |  dot(a,b)×dot(a,b) [(empty)]
+[157:163]  ASSOC  dot  eps3  12  u=(2,0)  v=(1,2)  shared=(0,0)  len=6  full=12  |  dot(a,b)×eps3(c,p,q) [6.6938, 17.8420, 24.3704, 19.7432, 7.7453, 1.1615]
+[163:163]  NULL_COMP  dot  eps3  12  u=(2,0)  v=(1,2)  shared=(1,0)  len=0  full=12  |  dot(a,b)×eps3(a,p,q) [(empty)]
+[163:163]  NULL_COMP  dot  eps3  11  u=(2,0)  v=(2,1)  shared=(1,0)  len=0  full=24  |  dot(a,b)×eps3(a,c,p) [(empty)]
+[163:175]  ASSOC  dot  eps3  12  u=(2,0)  v=(2,1)  shared=(2,0)  len=12  full=24  |  dot(a,b)×eps3(a,b,p) [13.3875, 107.5733, 589.2766, 2441.0907, 7794.0425, 19229.5828, 36783.2568, 53571.5274, 56953.5510, 43862.3107, 21416.8658, 5344.2024]
+[175:175]  NULL_COMP  dot  eps3  12  u=(2,0)  v=(3,0)  shared=(2,0)  len=0  full=6  |  dot(a,b)×eps3(a,b,c) [(empty)]
+[175:175]  NULL_COMP  dot  mag  11  u=(2,0)  v=(0,1)  shared=(0,0)  len=0  full=12  |  dot(a,b)×mag(p) [(empty)]
+[175:181]  ASSOC  dot  mag  11  u=(2,0)  v=(1,0)  shared=(0,0)  len=6  full=6  |  dot(a,b)×mag(c) [3.3469, 4.2040, -3.0270, 10.3953, -7.4440, 1.7603]
+[181:181]  NULL_COMP  dot  mag  11  u=(2,0)  v=(1,0)  shared=(1,0)  len=0  full=12  |  dot(a,b)×mag(a) [(empty)]
+[181:181]  NULL_COMP  eps3  eps3  neg  u=(1,2)  v=(1,2)  shared=(0,2)  len=0  full=12  |  eps3(a,p,q)×eps3(b,p,q) [(empty)]
+[181:181]  NULL_SELF  eps3  eps3  null_self  u=(1,2)  v=(1,2)  shared=(1,2)  len=0  full=6  |  eps3(a,p,q)×eps3(a,p,q) [(empty)]
+[181:193]  ASSOC  eps3  eps3  12  u=(1,2)  v=(2,1)  shared=(0,1)  len=12  full=24  |  eps3(a,p,q)×eps3(b,c,p) [0.0000, 27.0828, -9.0518, 251.2170, -89.2830, 912.3577, 243.0314, 372.0937, 777.8689, 526.5648, 4.9031, 1137.1571]
+[193:193]  NULL_COMP  eps3  eps3  11  u=(1,2)  v=(2,1)  shared=(1,1)  len=0  full=24  |  eps3(a,p,q)×eps3(a,b,p) [(empty)]
+[193:193]  NULL_COMP  eps3  eps3  22  u=(1,2)  v=(3,0)  shared=(1,0)  len=0  full=6  |  eps3(a,p,q)×eps3(a,b,c) [(empty)]
+[193:193]  NULL_COMP  eps3  mag  11  u=(1,2)  v=(0,1)  shared=(0,1)  len=0  full=12  |  eps3(a,p,q)×mag(p) [(empty)]
+[193:193]  NULL_COMP  eps3  mag  21  u=(1,2)  v=(1,0)  shared=(0,0)  len=0  full=12  |  eps3(a,p,q)×mag(b) [(empty)]
+[193:199]  ASSOC  eps3  mag  21  u=(1,2)  v=(1,0)  shared=(1,0)  len=6  full=12  |  eps3(a,p,q)×mag(a) [8.4079, -30.3676, -60.0227, 68.8922, 44.3264, -12.7965]
+[199:199]  NULL_COMP  eps3  eps3  11  u=(2,1)  v=(2,1)  shared=(1,0)  len=0  full=24  |  eps3(a,b,p)×eps3(a,c,q) [(empty)]
+[199:223]  ASSOC  eps3  eps3  11  u=(2,1)  v=(2,1)  shared=(1,1)  len=24  full=24  |  eps3(a,b,p)×eps3(a,c,p) [0.0000, 0.0000, 0.0000, -26.2274, -40.5479, 40.5479, 104.1508, -0.0000, 727.3313, 727.3313, 0.0000, -6592.9943, 1144.2873, -1144.2873, -13150.1143, 0.0000, 4416.8174, 4416.8174, 0.0000, 4785.9025, 5605.6065, -5605.6065, -10969.6903, -0.0000]
+[223:235]  ASSOC  eps3  eps3  neg  u=(2,1)  v=(2,1)  shared=(2,0)  len=12  full=24  |  eps3(a,b,p)×eps3(a,b,q) [0.0000, 28.9168, -583.4315, 0.0000, -0.0000, -6171.2865, 50069.7126, -0.0000, 0.0000, 191268.1685, -616211.2585, 0.0000]
+[235:235]  NULL_SELF  eps3  eps3  null_self  u=(2,1)  v=(2,1)  shared=(2,1)  len=0  full=12  |  eps3(a,b,p)×eps3(a,b,p) [(empty)]
+[235:235]  NULL_COMP  eps3  eps3  neg  u=(2,1)  v=(3,0)  shared=(2,0)  len=0  full=12  |  eps3(a,b,p)×eps3(a,b,c) [(empty)]
+[235:235]  NULL_COMP  eps3  mag  21  u=(2,1)  v=(0,1)  shared=(0,0)  len=0  full=12  |  eps3(a,b,p)×mag(q) [(empty)]
+[235:247]  ASSOC  eps3  mag  21  u=(2,1)  v=(0,1)  shared=(0,1)  len=12  full=24  |  eps3(a,b,p)×mag(p) [20.6367, -220.6362, -1511.1806, 7256.8643, 25236.5687, -64497.2674, -120833.4717, 165033.5042, 160826.9804, -107003.4816, -43998.4827, 8636.7072]
+[247:259]  ASSOC  eps3  mag  21  u=(2,1)  v=(1,0)  shared=(0,0)  len=12  full=24  |  eps3(a,b,p)×mag(c) [16.8158, -158.5110, -1014.3575, 4797.2146, 17357.0133, -48648.1073, -105177.5807, 172042.1139, 205520.8754, -169227.6185, -86509.4150, 21275.4307]
+[259:259]  NULL_COMP  eps3  mag  11  u=(2,1)  v=(1,0)  shared=(1,0)  len=0  full=24  |  eps3(a,b,p)×mag(a) [(empty)]
+[259:259]  NULL_SELF  eps3  eps3  null_self  u=(3,0)  v=(3,0)  shared=(3,0)  len=0  full=2  |  eps3(a,b,c)×eps3(a,b,c) [(empty)]
+[259:259]  NULL_COMP  eps3  mag  21  u=(3,0)  v=(0,1)  shared=(0,0)  len=0  full=4  |  eps3(a,b,c)×mag(p) [(empty)]
+[259:259]  NULL_COMP  eps3  mag  21  u=(3,0)  v=(1,0)  shared=(1,0)  len=0  full=6  |  eps3(a,b,c)×mag(a) [(empty)]
+[259:259]  NULL_COMP  mag  mag  11  u=(0,1)  v=(0,1)  shared=(0,0)  len=0  full=4  |  mag(p)×mag(q) [(empty)]
+[259:259]  NULL_SELF  mag  mag  null_self  u=(0,1)  v=(0,1)  shared=(0,1)  len=0  full=4  |  mag(p)×mag(p) [(empty)]
+[259:259]  NULL_COMP  mag  mag  11  u=(0,1)  v=(1,0)  shared=(0,0)  len=0  full=12  |  mag(p)×mag(a) [(empty)]
+[259:259]  NULL_COMP  mag  mag  11  u=(1,0)  v=(1,0)  shared=(0,0)  len=0  full=12  |  mag(a)×mag(b) [(empty)]
+[259:259]  NULL_SELF  mag  mag  null_self  u=(1,0)  v=(1,0)  shared=(1,0)  len=0  full=6  |  mag(a)×mag(a) [(empty)]
+=== STOP ===
+
+[
+  {
+    "kind": "ORBIT",
+    "start": 0,
+    "stop": 3,
+    "length": 3,
+    "notional_length": 3,
+    "op_u": "mag",
+    "flavour_u": [
+      1,
+      0
+    ],
+    "sign_compressed": null,
+    "method_name": "sort"
+  },
+  {
+    "kind": "ORBIT",
+    "start": 3,
+    "stop": 5,
+    "length": 2,
+    "notional_length": 2,
+    "op_u": "mag",
+    "flavour_u": [
+      0,
+      1
+    ],
+    "sign_compressed": null,
+    "method_name": "sort"
+  }
+]
