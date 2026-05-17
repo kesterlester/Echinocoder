@@ -26,11 +26,10 @@ plan = Plan(context=ctx, operations=(mag, dot, eps3))
 # not yet implemented (they raise NotImplementedError).
 #
 from symcoder.encoders import (
-    AtomOrbitEncoderRegistry, SortEncoderFactory,
+    OrbitEncoderFactory, SortEncoderFactory,
     standard_row_pair_factories, OverlapBlockEncoderFactory, Phase2EncoderFactory,
 )
-registry = AtomOrbitEncoderRegistry()
-registry.register(SortEncoderFactory())
+orbit_factory = OrbitEncoderFactory([SortEncoderFactory()])
 
 phase2_factory = Phase2EncoderFactory([
     OverlapBlockEncoderFactory(standard_row_pair_factories())
@@ -38,25 +37,26 @@ phase2_factory = Phase2EncoderFactory([
 
 # --- end stub ---
 
-segs = describe_encoding(plan, registry, phase2_factory)
-print('=== START ===')
+segs = describe_encoding(plan, orbit_factory, phase2_factory)
+print('=== Start ===')
 for s in segs:
     print(s)
-print('=== STOP ===')
+print('=== Stop ===')
 
 print()
 event = {l: np.random.randn(3) for l in ctx.all_labels}
 
-out = encode(plan, event, registry, phase2_factory)
+out = encode(plan, event, orbit_factory, phase2_factory)
 #out = encode(plan, event) # Don't use registry
 
 print(f'Total output length: {len(out)}  (sum of segment lengths: {sum(s.length for s in segs)})')
 print()
+print('=== START ===')
 for s in segs[:100]:
     vals = out[s.start:s.stop]
     vals_str = ', '.join(f'{v:.4f}' for v in vals) if len(vals) else '(empty)'
-    print(f'{s}')
-    print(f'    [{vals_str}]')
+    print(f'{s} [{vals_str}]')
+print('=== STOP ===')
 print()
 import json
 print(json.dumps([s.to_dict() for s in segs[:2]], indent=2))

@@ -70,6 +70,7 @@ from .overlap_block import (
     OverlapBlockEncoderFactory,
 )
 from .phase2_encoder import Phase2Encoder, Phase2EncoderFactory
+from .orbit_encoder import OrbitEncoder, OrbitEncoderFactory
 
 __all__ = [
     # Phase 1
@@ -101,4 +102,7 @@ __all__ = [
     # Phase 2 top level
     "Phase2Encoder",
     "Phase2EncoderFactory",
+    # Phase 1 top level
+    "OrbitEncoder",
+    "OrbitEncoderFactory",
 ]

@@ -1,7 +1,7 @@
 """Shared pytest fixtures for symcoder tests."""
 import pytest
 from symcoder.encoders import (
-    AtomOrbitEncoderRegistry,
+    OrbitEncoderFactory,
     SortEncoderFactory,
     standard_row_pair_factories,
     OverlapBlockEncoderFactory,
@@ -10,10 +10,8 @@ from symcoder.encoders import (
 
 
 @pytest.fixture
-def registry():
-    r = AtomOrbitEncoderRegistry()
-    r.register(SortEncoderFactory())
-    return r
+def orbit_factory():
+    return OrbitEncoderFactory([SortEncoderFactory()])
 
 
 @pytest.fixture

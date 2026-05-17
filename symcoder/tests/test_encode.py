@@ -55,31 +55,31 @@ def event_3d():
 # Basic shape and type checks
 # ---------------------------------------------------------------------------
 
-def test_encode_returns_ndarray(plan, event_3d, registry, phase2_factory):
-    result = encode(plan, event_3d, registry, phase2_factory)
+def test_encode_returns_ndarray(plan, event_3d, orbit_factory, phase2_factory):
+    result = encode(plan, event_3d, orbit_factory, phase2_factory)
     assert isinstance(result, np.ndarray)
 
-def test_encode_returns_real(plan, event_3d, registry, phase2_factory):
-    result = encode(plan, event_3d, registry, phase2_factory)
+def test_encode_returns_real(plan, event_3d, orbit_factory, phase2_factory):
+    result = encode(plan, event_3d, orbit_factory, phase2_factory)
     assert result.dtype == np.float64
 
-def test_encode_length_matches_describe(plan, event_3d, registry, phase2_factory):
+def test_encode_length_matches_describe(plan, event_3d, orbit_factory, phase2_factory):
     """encode() output length matches sum of segment lengths from describe_encoding()."""
-    result = encode(plan, event_3d, registry, phase2_factory)
-    assert len(result) == sum(s.length for s in describe_encoding(plan, registry, phase2_factory))
+    result = encode(plan, event_3d, orbit_factory, phase2_factory)
+    assert len(result) == sum(s.length for s in describe_encoding(plan, orbit_factory, phase2_factory))
 
-def test_encode_dot_only_length(dot, ctx, event_3d, registry, phase2_factory):
+def test_encode_dot_only_length(dot, ctx, event_3d, orbit_factory, phase2_factory):
     """Length check for dot-only plan matches describe_encoding()."""
     plan = Plan(context=ctx, operations=(dot,))
-    result = encode(plan, event_3d, registry, phase2_factory)
-    assert len(result) == sum(s.length for s in describe_encoding(plan, registry, phase2_factory))
+    result = encode(plan, event_3d, orbit_factory, phase2_factory)
+    assert len(result) == sum(s.length for s in describe_encoding(plan, orbit_factory, phase2_factory))
 
 
 # ---------------------------------------------------------------------------
 # Permutation invariance
 # ---------------------------------------------------------------------------
 
-def test_encode_invariant_under_label_permutation(dot, ctx, registry, phase2_factory):
+def test_encode_invariant_under_label_permutation(dot, ctx, orbit_factory, phase2_factory):
     """
     Swapping two particle labels must not change the encoding.
     encode(E) == encode(E') where E' is E with labels a and b swapped.
@@ -95,11 +95,11 @@ def test_encode_invariant_under_label_permutation(dot, ctx, registry, phase2_fac
     event_swapped["a"], event_swapped["b"] = event["b"], event["a"]
 
     np.testing.assert_array_almost_equal(
-        encode(plan, event, registry, phase2_factory),
-        encode(plan, event_swapped, registry, phase2_factory),
+        encode(plan, event, orbit_factory, phase2_factory),
+        encode(plan, event_swapped, orbit_factory, phase2_factory),
     )
 
-def test_encode_invariant_under_cyclic_permutation(dot, ctx, registry, phase2_factory):
+def test_encode_invariant_under_cyclic_permutation(dot, ctx, orbit_factory, phase2_factory):
     """Cyclic permutation a→b→c→d→a leaves the encoding unchanged."""
     plan = Plan(context=ctx, operations=(dot,))
     event = {
@@ -115,8 +115,8 @@ def test_encode_invariant_under_cyclic_permutation(dot, ctx, registry, phase2_fa
         "d": event["a"],
     }
     np.testing.assert_array_almost_equal(
-        encode(plan, event, registry, phase2_factory),
-        encode(plan, event_cycled, registry, phase2_factory),
+        encode(plan, event, orbit_factory, phase2_factory),
+        encode(plan, event_cycled, orbit_factory, phase2_factory),
     )
 
 
@@ -124,10 +124,10 @@ def test_encode_invariant_under_cyclic_permutation(dot, ctx, registry, phase2_fa
 # Determinism and reproducibility
 # ---------------------------------------------------------------------------
 
-def test_encode_deterministic(plan, event_3d, registry, phase2_factory):
+def test_encode_deterministic(plan, event_3d, orbit_factory, phase2_factory):
     """encode() called twice on the same event returns the same vector."""
-    r1 = encode(plan, event_3d, registry, phase2_factory)
-    r2 = encode(plan, event_3d, registry, phase2_factory)
+    r1 = encode(plan, event_3d, orbit_factory, phase2_factory)
+    r2 = encode(plan, event_3d, orbit_factory, phase2_factory)
     np.testing.assert_array_equal(r1, r2)
 
 
@@ -135,7 +135,7 @@ def test_encode_deterministic(plan, event_3d, registry, phase2_factory):
 # Two-group context
 # ---------------------------------------------------------------------------
 
-def test_encode_two_groups(dot, eps3, registry, phase2_factory):
+def test_encode_two_groups(dot, eps3, orbit_factory, phase2_factory):
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ("p", "q"))
     ctx  = Context(types=(electrons, muons))
@@ -147,12 +147,12 @@ def test_encode_two_groups(dot, eps3, registry, phase2_factory):
         "p": np.array([1.0, 1.0, 0.0]) / 2.0**0.5,
         "q": np.array([0.0, 1.0, 1.0]) / 2.0**0.5,
     }
-    result = encode(plan, event, registry, phase2_factory)
+    result = encode(plan, event, orbit_factory, phase2_factory)
     assert isinstance(result, np.ndarray)
     assert result.dtype == np.float64
     assert len(result) > 0
 
-def test_encode_two_groups_permutation_invariant(dot, registry, phase2_factory):
+def test_encode_two_groups_permutation_invariant(dot, orbit_factory, phase2_factory):
     """Swapping muon labels p↔q leaves the encoding unchanged."""
     electrons = VectorType("electrons", ("a", "b"))
     muons     = VectorType("muons",     ("p", "q"))
@@ -167,8 +167,8 @@ def test_encode_two_groups_permutation_invariant(dot, registry, phase2_factory):
     event_swapped = dict(event)
     event_swapped["p"], event_swapped["q"] = event["q"], event["p"]
     np.testing.assert_array_almost_equal(
-        encode(plan, event, registry, phase2_factory),
-        encode(plan, event_swapped, registry, phase2_factory),
+        encode(plan, event, orbit_factory, phase2_factory),
+        encode(plan, event_swapped, orbit_factory, phase2_factory),
     )
 
 
@@ -242,7 +242,7 @@ def test_eval_pair_orbit_positive_count_unusual_label_order():
     {"a": "b", "b": "c", "c": "d", "d": "a"},
     {"a": "d", "b": "c", "c": "b", "d": "a"},
 ])
-def test_compressed_encoding_permutation_invariant_dot(perm, ctx, registry, phase2_factory):
+def test_compressed_encoding_permutation_invariant_dot(perm, ctx, orbit_factory, phase2_factory):
     """Compressed encoding of dot-only plan is invariant under label permutation."""
     dot = EvaluableOperation(
         name="dot", rank=2, parity=+1,
@@ -258,8 +258,8 @@ def test_compressed_encoding_permutation_invariant_dot(perm, ctx, registry, phas
     }
     event_permuted = {perm[k]: v for k, v in event.items()}
     np.testing.assert_array_almost_equal(
-        encode(plan, event, registry, phase2_factory),
-        encode(plan, event_permuted, registry, phase2_factory),
+        encode(plan, event, orbit_factory, phase2_factory),
+        encode(plan, event_permuted, orbit_factory, phase2_factory),
     )
 
 
@@ -267,7 +267,7 @@ def test_compressed_encoding_permutation_invariant_dot(perm, ctx, registry, phas
     {"a": "b", "b": "a", "c": "c", "d": "d"},
     {"a": "b", "b": "c", "c": "d", "d": "a"},
 ])
-def test_compressed_encoding_permutation_invariant_eps3(perm, ctx, registry, phase2_factory):
+def test_compressed_encoding_permutation_invariant_eps3(perm, ctx, orbit_factory, phase2_factory):
     # TODO Make this a much better test that looks at cases that can't be compressed too, e.g. eps3(a,p,v)
     """Compressed encoding with ANTISYMMETRIC eps3 is permutation-invariant."""
     eps3 = EvaluableOperation(
@@ -284,8 +284,8 @@ def test_compressed_encoding_permutation_invariant_eps3(perm, ctx, registry, pha
     }
     event_permuted = {perm[k]: v for k, v in event.items()}
     np.testing.assert_array_almost_equal(
-        encode(plan, event, registry, phase2_factory),
-        encode(plan, event_permuted, registry, phase2_factory),
+        encode(plan, event, orbit_factory, phase2_factory),
+        encode(plan, event_permuted, orbit_factory, phase2_factory),
     )
 
 
@@ -362,7 +362,7 @@ def _make_eps2():
     )
 
 
-def test_encode_two_groups_permutation_invariant_eps2(registry, phase2_factory):
+def test_encode_two_groups_permutation_invariant_eps2(orbit_factory, phase2_factory):
     """encode() with an ANTISYMMETRIC rank-2 op in a 2-group context is permutation-invariant.
 
     This exercises the TYPE_NEG branch (AA pairs with full electron overlap) and
@@ -383,7 +383,7 @@ def test_encode_two_groups_permutation_invariant_eps2(registry, phase2_factory):
     event_swapped = dict(event)
     event_swapped["a"], event_swapped["b"] = event["b"], event["a"]
     np.testing.assert_array_almost_equal(
-        encode(plan, event, registry, phase2_factory),
-        encode(plan, event_swapped, registry, phase2_factory),
+        encode(plan, event, orbit_factory, phase2_factory),
+        encode(plan, event_swapped, orbit_factory, phase2_factory),
         err_msg="encode() not invariant under a↔b swap in 2-group eps2 context"
     )

@@ -9,7 +9,7 @@ Public API:
   encode       : encode, encode_and_describe, describe_encoding
   describe     : SegmentInfo
   sign_corr    : SignCorrelationType
-  encoders     : AtomOrbitEncoderRegistry, OrbitSpec (Phase 1)
+  encoders     : OrbitEncoderFactory (Phase 1 top level)
                  SortEncoderFactory, PolyEncoderFactory
                  standard_row_pair_factories (Phase 2 row-pair convenience)
                  OverlapBlockEncoderFactory  (Phase 2 block level)
@@ -20,7 +20,7 @@ from .encode   import encode, encode_and_describe, describe_encoding
 from .describe import SegmentInfo
 from .sign_correlation import SignCorrelationType
 from .encoders import (
-    AtomOrbitEncoderRegistry, OrbitSpec,
+    OrbitEncoderFactory,
     SortEncoderFactory, PolyEncoderFactory,
     standard_row_pair_factories,
     OverlapBlockEncoderFactory,
@@ -35,8 +35,7 @@ __all__ = [
     "describe_encoding",
     "SegmentInfo",
     "SignCorrelationType",
-    "AtomOrbitEncoderRegistry",
-    "OrbitSpec",
+    "OrbitEncoderFactory",
     "SortEncoderFactory",
     "PolyEncoderFactory",
     "standard_row_pair_factories",

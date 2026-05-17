@@ -62,10 +62,7 @@ class SortEncoder(AtomOrbitEncoder):
     def encode(self, event: dict) -> EncodingResult:
         print(f"Sort encoder is evaluating {self._orbit} on Event {event}")
         vals = [evaluate(a, event) for a in self._orbit]
-        print(f"COW COW COW actual size was {len(vals)}.")
-        assert len(self._orbit) == len(vals)   # TODO: Can probably delete
         values = np.sort(np.array(vals, dtype=np.float64))
-        assert len(self._orbit) == len(values)  # TODO: Can probably delete
         return EncodingResult(
             values=values,
             metadata={"method": _METHOD_NAME, "orbit_size": len(self._orbit)},
