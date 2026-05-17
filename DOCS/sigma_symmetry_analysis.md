@@ -64,21 +64,56 @@ requires `eval(u_k) = eval(v_j)` — a measure-zero condition for generic events
 
 ## 2. Which Associations Does This Affect?
 
-- **Self-pairing blocks**: `op_u = op_v`, `F_u = F_v`. The orbit types that
-  can arise are TYPE_11 (SYMMETRIC operation) and TYPE_NEG (ANTISYMMETRIC
-  operation, physical partition confirms this for the tested contexts).
-  TYPE_12/21 cannot arise because both operations are identical.
-- Within such a block: NULL_SELF (max overlap) is already dropped. The
-  remaining stored ASSOCs (all overlap levels short of maximum) all enjoy the
-  σ-symmetry, subject to the form-1 caveat above.
-- **Non-self-pairing blocks**: no swap symmetry. No σ-closure.
+### 2a. Which orbit types can appear in self-pairing blocks?
 
-> **⚠ SUSPECT — needs checking:** For ANTISYMMETRIC self-pairing with zero
-> overlap between u and v (distinct label sets), TYPE_22 may appear instead of
-> TYPE_NEG when the group is large enough.  In tested contexts (single group of
-> 4 electrons) the only ANTISYMMETRIC self-pairing pairs have overlap=(2,) and
-> are confirmed TYPE_NEG.  The claim "ANTISYMMETRIC self-pairing always gives
-> TYPE_NEG" has NOT been verified for large groups or zero-overlap cases.
+**TYPE_12 and TYPE_21 are rigorously excluded.** The argument is a swap-closure
+proof on the achievable sign set.
+
+In a self-pairing block the roles of u and v are interchangeable: any group
+permutation σ that maps `(u_k, v_j)` to another orbit element simultaneously
+maps `(v_j, u_k)` to another orbit element in the same association (by the
+symmetric overlap-count argument of Section 1).  Therefore the achievable sign
+set must be **closed under the swap `(s_u, s_v) → (s_v, s_u)`**.
+
+Checking each type:
+
+| Type | Achievable set | Closed under swap? |
+|------|----------------|--------------------|
+| TYPE_11 | `{(+,+)}` | ✓ |
+| TYPE_NEG | `{(+,+),(−,−)}` | ✓ |
+| TYPE_22 | `{(+,+),(+,−),(−,+),(−,−)}` | ✓ |
+| TYPE_12 | `{(+,+),(+,−)}` | ✗  (swap gives TYPE_21) |
+| TYPE_21 | `{(+,+),(−,+)}` | ✗  (swap gives TYPE_12) |
+
+**Conclusion: self-pairing blocks can only be TYPE_11, TYPE_NEG, or TYPE_22.**
+TYPE_12 and TYPE_21 are impossible regardless of operation, group size, or
+overlap.
+
+### 2b. Which types actually arise?
+
+- **TYPE_11**: SYMMETRIC operation (e.g. dot × dot). Neither sign can ever
+  flip, so TYPE_11 is the only possibility.
+- **TYPE_NEG**: ANTISYMMETRIC operation, confirmed in tested contexts (single
+  group, overlap below maximum). Physically: the shared labels force correlated
+  sign flips.
+- **TYPE_22**: ANTISYMMETRIC operation, expected for large enough groups where
+  u and v have sufficiently non-overlapping labels that their sign flips can be
+  driven independently. **Not yet confirmed empirically** — see Open Question 2.
+
+> **⚠ SUSPECT:** The claim "ANTISYMMETRIC self-pairing always gives TYPE_NEG"
+> is only confirmed for small groups (4 electrons, overlap=(2,)).  TYPE_22 is
+> expected to appear for, e.g., eps3((3,)) × eps3((3,)) with overlap=(1,) in a
+> group of ≥5 labels, where the exclusive labels of u and v are disjoint and
+> can be permuted independently.
+
+### 2c. Scope of σ-compression
+
+σ-compression has been argued for TYPE_11 and TYPE_NEG self-pairing (Sections
+4 and 5).  **TYPE_22 self-pairing is not yet covered** — its achievable set is
+symmetric under swap but the σ-compression argument has not been developed for
+it.  See Open Question 2.
+
+- **Non-self-pairing blocks**: no swap symmetry. No σ-closure.
 
 ---
 
@@ -200,6 +235,14 @@ After σ-compression is implemented:
 
 The min(output_dim) selection in the overlap-block encoder naturally picks
 the σ-encoders when they apply, because they produce smaller output_dim.
+
+**Both TYPE_11 and TYPE_NEG self-pairing cases achieve category (b) compression.**
+Existing factor-2 compressors (TYPE_12, TYPE_21, NEG for non-self-pairing blocks)
+produce 2n reals for n base pairs.  σ-compression produces n reals — strictly
+better — for both TYPE_11 and TYPE_NEG self-pairing.  The σ-step is the same
+factor-of-2 halving in both cases (current 2n → n); the fact that NegPairEncoder
+has NOTIONAL_FACTOR=2 is separate accounting of prior compression and does not
+reduce the σ-step's benefit.
 
 ---
 
