@@ -25,13 +25,20 @@ plan = Plan(context=ctx, operations=(mag, dot, eps3))
 # commented out because the concrete encoders (SortEncoder, PolyEncoder) are
 # not yet implemented (they raise NotImplementedError).
 #
-from symcoder.encoders import AtomOrbitEncoderRegistry, SortEncoderFactory
+from symcoder.encoders import (
+    AtomOrbitEncoderRegistry, SortEncoderFactory,
+    standard_row_pair_factories, OverlapBlockEncoderFactory, Phase2EncoderFactory,
+)
 registry = AtomOrbitEncoderRegistry()
 registry.register(SortEncoderFactory())
 
+phase2_factory = Phase2EncoderFactory([
+    OverlapBlockEncoderFactory(standard_row_pair_factories())
+])
+
 # --- end stub ---
 
-segs = describe_encoding(plan, registry)
+segs = describe_encoding(plan, registry, phase2_factory)
 print('=== START ===')
 for s in segs:
     print(s)
@@ -40,7 +47,7 @@ print('=== STOP ===')
 print()
 event = {l: np.random.randn(3) for l in ctx.all_labels}
 
-out = encode(plan, event, registry) # Use registry
+out = encode(plan, event, registry, phase2_factory)
 #out = encode(plan, event) # Don't use registry
 
 print(f'Total output length: {len(out)}  (sum of segment lengths: {sum(s.length for s in segs)})')
