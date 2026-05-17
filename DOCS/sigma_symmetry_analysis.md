@@ -7,7 +7,11 @@ Every ASSOC segment in a **self-pairing block** (same operation, same flavour:
 The redundancy arises from a swap symmetry on atom-pairs that forces the
 z-value multiset to be closed under `z → i·conj(z)` (denoted σ).
 Exploiting this halves the storage of every such ASSOC, on top of all
-reductions already implemented (NULL_SELF, NULL_COMP, sign-compression 5c).
+reductions already implemented (NULL_SELF, NULL_COMP, half-sort compression).
+
+Self-pairing blocks contain only TYPE_11 orbits (SYMMETRIC operation) or
+TYPE_NEG orbits (ANTISYMMETRIC operation); TYPE_12/21 cannot arise because
+both operations are identical.
 
 ---
 
@@ -16,269 +20,226 @@ reductions already implemented (NULL_SELF, NULL_COMP, sign-compression 5c).
 Fix a self-pairing block: `op_u = op_v = op`, `F_u = F_v = F`.
 The u-orbit and v-orbit are the same orbit of atoms.
 
-**Lemma.** If `(u_k, v_j)` is a positive-sign atom-pair (both `sign = +1`) in
-any association of this block, then `(v_j, u_k)` is also a positive-sign
-atom-pair in the **same** association.
+**Lemma.** If `(u_k, v_j)` is an atom-pair with both atoms having `sign = +1`
+that appears in any association of this block, then `(v_j, u_k)` is also an
+atom-pair with both atoms having `sign = +1` in the **same** association.
 
-*Proof.*  
+*Proof.*
 - Overlap count: the number of shared labels between `u_k` and `v_j` equals
   the number shared between `v_j` and `u_k` (it is a symmetric count), so the
-  swapped pair falls in the same association.  
-- Signs: `v_j` was drawn from the v-orbit with `sign = +1`; in the swapped
-  pair it becomes the u-element, still with `sign = +1`.  Similarly `u_k`.
-  Both signs are `+1`. ∎
+  swapped pair falls in the same association.
+- Signs: `u_k` and `v_j` each have `sign = +1` by assumption; in the swapped
+  pair the roles are exchanged but the signs are unchanged. ∎
 
-**Corollary (σ-closure).** For any positive-sign pair `(u_k, v_j)`:
+**Corollary (σ-closure).** For any atom-pair representative `(u_k, v_j)` with
+both signs `+1`:
 
 ```
 z_{kj} = eval(u_k) + i·eval(v_j)
 z_{jk} = eval(v_j) + i·eval(u_k) = i · conj(z_{kj})
 ```
 
-Both `z_{kj}` and `i·conj(z_{kj})` appear in `eval_pair_orbit_positive`.
-Therefore the multiset `{z_k}` returned by `eval_pair_orbit_positive` is
-closed under `σ: z ↦ i·conj(z)`.
+Both `z_{kj}` and `i·conj(z_{kj})` appear in the set of z-values for
+positive-sign representatives.  Therefore the multiset `{z_k}` is closed under
+`σ: z ↦ i·conj(z)`.
 
 Note: σ² = identity (apply twice: `i·conj(i·conj(z)) = i·(−i)·z = z`), so σ
-is an involution. Generic elements have σ-orbit of size 2; the fixed point
+is an involution.  Generic elements have σ-orbit of size 2; the fixed point
 condition is `z = i·conj(z)` i.e. `Re(z) = Im(z)`, i.e. `z ∝ (1+i)`, which
 requires `eval(u_k) = eval(v_j)` — a measure-zero condition for generic events.
+
+> **⚠ SUSPECT — needs checking:** The lemma assumes the representatives have
+> both atoms with `sign = +1`.  For TYPE_11 self-pairing this is automatic
+> (SYMMETRIC operations carry no sign degree of freedom, so every orbit element
+> has sign +1).  For TYPE_NEG self-pairing the physical partition assigns reps
+> with `u.sign = +1`; the v-sign may be `+1` (form-1 orbit: `{(+u,+v),(−u,−v)}`)
+> or `−1` (form-2 orbit: `{(+u,−v),(−u,+v)}`).  The σ-closure argument goes
+> through cleanly for form-1, but for form-2 the swapped representative
+> `(v_j, u_k)` has `v_j.sign = +1` and `u_k.sign = +1`, giving
+> `z_{jk} = eval(v_j) + i·eval(u_k)`, which is NOT `i·conj(z_{kj})` when
+> `z_{kj} = eval(u_k) + i·eval(−v_j)`.  It must be verified empirically
+> whether TYPE_NEG self-pairing orbits always produce form-1 reps.
 
 ---
 
 ## 2. Which Associations Does This Affect?
 
-- **Self-pairing blocks**: `op_u = op_v`, `F_u = F_v`. Symmetry class must be
-  SS or AA (SA/AS require different operations, impossible here).
+- **Self-pairing blocks**: `op_u = op_v`, `F_u = F_v`. The orbit types that
+  can arise are TYPE_11 (SYMMETRIC operation) and TYPE_NEG (ANTISYMMETRIC
+  operation, physical partition confirms this for the tested contexts).
+  TYPE_12/21 cannot arise because both operations are identical.
 - Within such a block: NULL_SELF (max overlap) is already dropped. The
   remaining stored ASSOCs (all overlap levels short of maximum) all enjoy the
-  σ-symmetry.
+  σ-symmetry, subject to the form-1 caveat above.
 - **Non-self-pairing blocks**: no swap symmetry. No σ-closure.
 
-In the demo output (electrons a,b,c + muons p,q; dot+eps3+mag), the surviving
-ASSOC segments in self-pairing blocks are:
-
-```
-ASSOC  dot  dot  SS  u=(1,1)  v=(1,1)  shared=(0,1)  len=24  full=24
-ASSOC  dot  dot  SS  u=(1,1)  v=(1,1)  shared=(1,0)  len=12  full=12
-ASSOC  eps3 eps3 AA  u=(1,2)  v=(2,1)  shared=(0,1)  len=12  full=12
-ASSOC  eps3 eps3 AA  u=(2,1)  v=(2,1)  shared=(1,1)  len=24  full=24
-ASSOC  eps3 eps3 AA  u=(2,1)  v=(2,1)  shared=(2,0)  len=12  full=12
-```
-
-σ-compression halves each: 24→12, 12→6, 12→6, 24→12, 12→6.
-Total savings: 12+6+6+12+6 = **42 reals** out of the current total of 259.
+> **⚠ SUSPECT — needs checking:** For ANTISYMMETRIC self-pairing with zero
+> overlap between u and v (distinct label sets), TYPE_22 may appear instead of
+> TYPE_NEG when the group is large enough.  In tested contexts (single group of
+> 4 electrons) the only ANTISYMMETRIC self-pairing pairs have overlap=(2,) and
+> are confirmed TYPE_NEG.  The claim "ANTISYMMETRIC self-pairing always gives
+> TYPE_NEG" has NOT been verified for large groups or zero-overlap cases.
 
 ---
 
-## 3. Algebraic Structure and the Functional Equation
+## 3. Algebraic Structure
 
-Let `P(x) = ∏(x + z_k)` be the characteristic polynomial of the positive-sign
-orbit (n elements, roots at `{-z_k}`). Since `{z_k}` is σ-closed, the roots
-come in pairs `(-z, -iz*)`.
+Let `P(x) = ∏(x + z_k)` be the characteristic polynomial of the orbit
+representatives (n elements, roots at `{-z_k}`).  Since `{z_k}` is σ-closed,
+the roots come in σ-pairs `(-z, -iz*)`.
 
 **Claim:** `conj(P(i·conj(x))) = (-1)^n · P(x)`.
 
-*Proof.*  
-```
-conj(P(i·conj(x))) = ∏ conj(i·conj(x) + z_k) = ∏(−i·x + conj(z_k))
-```
-For each σ-pair `{z_k, i·conj(z_k)}` the two factors contribute:
-```
-(−i·x + conj(z_k)) · (−i·x + conj(i·conj(z_k)))
-= (−i·x + conj(z_k)) · (−i·x − i·z_k)
-= (−i)²(x − i·conj(z_k))(x + z_k)
-= −(x + z_k)(x − i·conj(z_k))
-```
-The product over all n/2 pairs gives `(−1)^{n/2} · ∏(x+z_k)(x−i·conj(z_k))`.
-Since `{z_k}` is σ-closed, `{i·conj(z_k)}` = `{z_k}` as multisets, so
-`∏(x − i·conj(z_k)) = ∏(x − z_k) = (−1)^n P(−x) / P(0)·...`
-
-The cleanest route is via the change of variable below. ∎
+> **⚠ SUSPECT — proof not complete in this document.**  A pair-by-pair
+> calculation for the SS/TYPE_11 rotation approach below gives a clean
+> numerical verification (Section 4), which is taken as sufficient evidence.
+> A fully rigorous proof of this functional equation has not been written out.
 
 ---
 
-## 4. The Rotation Trick (SS Case)
+## 4. The Rotation Trick (TYPE_11 Self-Pairing Case)
 
-**Goal:** compress n complex z-values to n/2 complex = n reals.
+**Goal:** compress n complex z-values (σ-closed) to n reals.
 
 **Step 1.** Rotate: `w_k = z_k · e^{−iπ/4} = z_k · (1−i)/√2`.
 
-**Step 2.** Claim: `{w_k}` is conjugate-closed (i.e. `w* ∈ {w_k}` whenever `w ∈ {w_k}`).
+**Step 2.** The set `{w_k}` is conjugate-closed.
 
-*Proof.* σ-closure of `{z_k}`: for each `z_k`, `iz_k* ∈ {z_k}`. Under the rotation:  
-`w = z·e^{−iπ/4}` and `iz*·e^{−iπ/4} = i·(w·e^{iπ/4})*·e^{−iπ/4} = i·w*·e^{−iπ/4}·e^{iπ/4}/... `
+*Proof (numerical check).* Take z = 2+i, so z* = 2−i, σ(z) = i(2−i) = 1+2i.
+Rotate: w = (2+i)·(1−i)/√2 = (3−i)/√2.  conj(w) = (3+i)/√2.
+σ(z)·e^{−iπ/4} = (1+2i)·(1−i)/√2 = (3+i)/√2 = conj(w). ✓
 
-Direct check: if `w = z·e^{−iπ/4}`, then `conj(w) = z*·e^{iπ/4}`.
-The σ-partner of z is `iz*`, whose rotation is `iz*·e^{−iπ/4} = i·conj(w)·e^{−iπ/4}·e^{−iπ/4}...`
+So indeed `σ(z)·e^{−iπ/4} = conj(w)`, confirming `{w_k}` is conjugate-closed.
 
-Let me do it explicitly. `w = ze^{−iπ/4}`. `conj(w) = z^*e^{iπ/4}`.
-The σ-partner of z is `σ(z) = iz^*`. Its rotated version: `σ(z)·e^{−iπ/4} = iz^*·e^{−iπ/4}`.
-Now `iz^* = i·(we^{iπ/4}) = we^{i(π/4+π/2)} = we^{i3π/4}`.
-So `σ(z)·e^{−iπ/4} = we^{i3π/4}·e^{−iπ/4} = we^{iπ/2}... `
-
-Hmm. Let me just verify numerically that this works: take z=2+i, so z*=2-i, σ(z)=i(2-i)=1+2i.
-Rotate: w = (2+i)·(1-i)/√2 = (2-2i+i-i²)/√2 = (3-i)/√2.
-conj(w) = (3+i)/√2.
-σ(z)·e^{-iπ/4} = (1+2i)·(1-i)/√2 = (1-i+2i-2i²)/√2 = (3+i)/√2 = conj(w). ✓
-
-So indeed `σ(z)·e^{−iπ/4} = conj(w)`, confirming `{w_k}` is conjugate-closed. ∎
-
-**Step 3.** The polynomial `Q(t) = P(t·e^{iπ/4})` has real coefficients (since its
-roots `{-w_k}` are conjugate-closed). A real monic polynomial of degree n has
-n independent real coefficients.
+**Step 3.** The polynomial `Q(t) = P(t·e^{iπ/4})` has real coefficients (since
+its roots `{-w_k}` are conjugate-closed).  A real monic polynomial of degree n
+has n independent real coefficients.
 
 **Step 4.** Embedding algorithm:
 ```python
 rotation = np.exp(-1j * np.pi / 4)          # (1-i)/√2
-w = z_pos * rotation                          # n conjugate-closed values
-coeffs, _, _ = _zip_embed(w)                  # degree-n poly; roots are conj-paired
-r = coeffs.real                               # n reals (imag parts ≈ 0)
-return r[0::2] + 1j * r[1::2]                # pack as n/2 complex
+w = z_reps * rotation                        # n conjugate-closed values
+coeffs, _, _ = zip_embed(w)                  # degree-n poly; roots are conj-paired
+r = coeffs.real                              # n reals (imag parts ≈ 0)
+return r[0::2] + 1j * r[1::2]               # pack as n/2 complex → n reals total
 ```
 
-Output: n/2 complex = **n reals** (vs. current 2n).
-
-This is identical in structure to the SYM×ANTISYM case in `_embed_compressed`,
-except the conjugate-closure comes from rotating the input rather than from
-the sign structure of the operation.
+Output: **n reals** (vs. current 2n from Type11PairEncoder).  Factor-2
+compression applying to TYPE_11 self-pairing pairs that currently have no
+compression at all.
 
 ---
 
-## 5. The AA Self-Pairing Case
+## 5. The TYPE_NEG Self-Pairing Case
 
-For AA (both ANTISYMMETRIC), `_embed_compressed` already uses `w_k = z_k^2`
-and the conjugate-closed multiset `{z_k^2, conj(z_k^2)}` (2n elements).
+> **⚠ This section assumes form-1 reps throughout (see Section 1 caveat).**
 
-With σ-closure on `{z_k}`: `σ(z_k) = iz_k^* ∈ {z_k}`.
+The NegPairEncoder (for both self-pairing and non-self-pairing TYPE_NEG orbits)
+already forms `w_k = z_k²` and embeds the n values directly as n complex
+coefficients → 2n reals.
+
+With σ-closure on `{z_k}` (form-1 reps): `σ(z_k) = iz_k^* ∈ {z_k}`.
 Squaring: `σ(z_k)^2 = (iz_k^*)^2 = −(z_k^*)^2 = −conj(z_k^2)`.
 
-So `{z_k^2}` is closed under `w ↦ −conj(w)`. Call this τ.
+So `{w_k = z_k^2}` is closed under `τ: w ↦ −conj(w)`.
 
-The 2n-element multiset `{z_k^2, conj(z_k^2)}` is closed under both
-`conj` and `τ`, hence under their composition `w ↦ −w`. Roots come in
-`{w, −w, w^*, −w^*}` quadruples (size 4). There are `2n/4 = n/2` quadruples
-(generically). Each quadruple carries **2 real DoF** (one complex number up to
-the 4-fold symmetry). Total: `n/2 × 2 = n` reals.
+The n values `{w_k}` form τ-pairs `{w, −w^*}` of size 2 (generically).
+There are n/2 such pairs, each carrying **2 real DoF** (one complex number up
+to the 2-fold τ-symmetry).  Total: n/2 × 2 = **n reals**.
 
-**Algorithm for AA self-pairing:**
+**Algorithm:**
 ```python
-w = z_pos ** 2                                # n values, closed under w→-conj(w)
-# Select the τ-positive half: Im(w) > 0 (n/2 values)
-w_reps = w[w.imag > 0]                        # n/2 τ-orbit representatives
-# These n/2 values form anti-conjugate pairs: {w, -w*}
-# Use the ANTISYM×SYM embedding style:
-w_full = np.concatenate([w_reps, -np.conj(w_reps)])  # n anti-conj-closed values
-coeffs, _, _ = _zip_embed(w_full)
-return coeffs.imag[0::2] + 1j * coeffs.real[1::2]   # n/2 complex
+w = z_reps ** 2                                        # n values, τ-closed
+w_reps = w[w.imag > 0]                                 # n/2 τ-representatives
+w_full = np.concatenate([w_reps, -np.conj(w_reps)])    # n anti-conj-closed values
+coeffs, _, _ = zip_embed(w_full)
+return coeffs.imag[0::2] + 1j * coeffs.real[1::2]     # n/2 complex → n reals
 ```
 
-Output: n/2 complex = **n reals** (vs. current 2n). Same factor-of-2 saving as SS.
+Output: **n reals** (vs. current 2n from NegPairEncoder).  This is a
+genuine additional factor-of-2 compression on top of the existing TYPE_NEG
+compression, applying only to self-pairing blocks.
+
+> **⚠ SUSPECT — floating-point robustness of τ-half selection.**  The filter
+> `w.imag > 0` to select τ-representatives must handle τ-fixed points
+> (`w.imag == 0`).  See Section 6 on degenerate events.
 
 ---
 
 ## 6. Degenerate Events
 
 σ-fixed points occur when `eval(u_k) = eval(v_j)`, giving `z_k = a(1+i)` and
-`w_k = a√2` (real). In the SS case, `w_k.imag = 0`, so `w_k` is not in either
-half of the conjugate-closure split. Similarly for AA.
+`w_k = a(1−i)/√2` (real, for the TYPE_11 rotation).  In the TYPE_11 case,
+`w_k.real` survives but the conjugate-pairing degenerates.
 
-Handling: treat real w_k values as their own "half-orbit" (multiplicity 1 in
-the representative set). The embedding must use a multiset-aware approach
-that handles these without double-counting. The existing _zip_embed is
-multiset-aware; the issue is selecting representatives. A robust criterion:
-`Im(w) > 0` for proper pairs, plus `Im(w) == 0, Re(w) >= 0` for fixed points
-(each counted once). For floating-point safety, use a small epsilon threshold.
+τ-fixed points for TYPE_NEG: `w = −w^*` iff `Re(w) = 0`, i.e. `w` is purely
+imaginary.
 
-This is analogous to how the existing SA/ANTISYM×SYM compression handles the
-real axis without special-casing.
+In both cases the degenerate element must be counted once (not twice) among the
+representatives.  A robust criterion: `Im(w) > ε` for proper pairs, plus
+`Im(w) ≈ 0` elements counted once.  The existing `zip_embed` function is
+multiset-aware; the implementation issue is correctly selecting the
+representative half.
 
----
-
-## 7. Impact on `describe_encoding`
-
-For ASSOC segments in self-pairing blocks (SS or AA), the stored length
-would change from `2 * pf.count(group_sizes)` to `pf.count(group_sizes)`.
-The `notional_length` field should retain the pre-σ value (`2 * pf.count()`)
-to show the saving. A new flag `sigma_compressed: bool | None` on SegmentInfo
-would identify these segments for decoders.
-
-The `kind` remains `ASSOC`; no new NULL category needed (the data is still
-stored, just more compactly).
+> **⚠ SUSPECT — the handling of degenerate cases has not been implemented or
+> tested.  Correctness at measure-zero events must be verified.**
 
 ---
 
-## 8. What Remains After σ-Compression
+## 7. Compression Summary
 
-After implementing σ-compression:
+After σ-compression is implemented:
 
-- **Phase 1 ORBIT**: already sign-compressed (5c). No further obvious symmetry
-  unless we can show orbit eval-values have additional structure (they don't in
-  general).
-- **Phase 2 ASSOC non-self-pairing**: no swap symmetry. No σ-compression.
-  These are the "cross" associations (different ops or different flavours).
-  Possible future work: look for other functional equations from the specific
-  group-theoretic structure of how overlap partitions the Cartesian product.
-- **Phase 2 ASSOC self-pairing**: σ-compressed to n reals. The remaining n
-  reals embed n/2 complex orbit representatives. Could there be a further
-  symmetry within these representatives? For generic events: the n/2
-  representatives have no obvious further forced structure. This seems to be a
-  genuine floor for self-pairing ASSOC storage.
-- **NULL_SELF + NULL_COMP**: zero storage, already optimal.
+| Context | Current encoder | Current output | σ-encoder | σ-output |
+|---|---|---|---|---|
+| TYPE_11 self-pair ASSOC | Type11PairEncoder | 2n | SelfPairType11Encoder | n |
+| TYPE_NEG self-pair ASSOC | NegPairEncoder | 2n | SelfPairNegEncoder | n |
+| TYPE_12/21 ASSOC | Type12/21PairEncoder | 2n | (no new symmetry known) | — |
+| TYPE_22 ASSOC | Type22PairEncoder | 2n | (no new symmetry known) | — |
+| Non-self-pair TYPE_NEG ASSOC | NegPairEncoder | 2n | (no swap symmetry) | — |
 
-The encoding after σ-compression appears to approach the information-theoretic
-lower bound for self-pairing associations. The cross-association ASSOCs remain
-potentially compressible but no clean algebraic argument has been identified.
+The min(output_dim) selection in the overlap-block encoder naturally picks
+the σ-encoders when they apply, because they produce smaller output_dim.
 
 ---
 
-## 9. Implementation Plan
+## 8. Implementation Approach
 
-1. **`pairs.py`**: add `_is_self_pairing_block(pf) → bool` (same op, same flavour,
-   any overlap).
+The σ-encoders should be implemented as new row-pair encoder classes and
+factories, following the same pattern as `Type11PairEncoderFactory`,
+`NegPairEncoderFactory`, etc. in `symcoder/encoders/row_pair_encoders.py`.
 
-2. **`encode.py`**: in `_embed_compressed`, add a new case before the existing
-   four:
-   ```python
-   if _is_self_pairing_block(pf):
-       if not antisym_u:  # SS
-           # rotation + conjugate-closure
-       else:              # AA
-           # τ-half + anti-conjugate-closure
-   ```
-   These cases must come **before** the existing antisym checks since they are
-   more specific (they handle SS and AA with the self-pairing shortcut).
+Each factory's `assess()` calls `_pair_orbit_atoms(pf, plan)`, applies the
+existing partition helper to confirm the orbit type (TYPE_11 or TYPE_NEG), then
+additionally checks `_is_self_pairing_block(pf)` (same operation, same
+flavour).  If both conditions hold, it returns the σ-compressed encoder with
+smaller `output_dim`; otherwise returns `[]` so the standard encoder is used
+as fallback.
 
-3. **`describe.py`**: halve `length` for self-pairing ASSOC segments; add
-   `sigma_compressed: bool | None = None` field to SegmentInfo; set it for
-   affected segments.
-
-4. **`SPEC.md` and `docs/encoder.tex`**: add a new subsection for σ-compression
-   (call it "5f" internally or give a descriptive name like "self-pairing
-   swap compression").
-
-5. **Tests**: verify that σ-compressed encoding is permutation-invariant and
-   that `sum(s.length)` matches `len(encode(plan, event))`.
+No changes to the overlap-block or phase-2 machinery are needed; `min(output_dim)`
+selection handles everything automatically.
 
 ---
 
-## 10. Open Questions
+## 9. Open Questions
 
-1. **Can the cross-ASSOC segments be compressed?** These have no swap symmetry
-   but may have other structure depending on the specific operations. No general
-   argument found.
+1. **Form-1 vs form-2 for TYPE_NEG self-pairing.** Does `_try_neg_partition`
+   always return form-1 reps `(+u, +v)` for self-pairing blocks?  If so, the
+   σ-closure is guaranteed and Section 5 is valid.  If form-2 reps can occur,
+   the argument needs revisiting.  This is the most pressing question before
+   implementation.
 
-2. **Interaction of σ-compression with 5b (NULL_COMP) for self-pairing blocks.**
-   After σ-compression, the NULL_COMP segment is recovered by complementation.
-   The complementation operates in z-space (before the polynomial embedding),
-   so it is unaffected by the compression. The decoder reconstructs the
-   NULL_COMP z-values in z-space, not in polynomial space. This is correct.
+2. **Does TYPE_22 appear in self-pairing blocks?**  In tested contexts (small
+   single group) all ANTISYMMETRIC self-pairing orbits are TYPE_NEG.  For
+   larger groups with zero-overlap self-pairs, TYPE_22 may arise.  If so, a
+   third σ-encoder case would be needed (its structure is not yet analysed).
 
-3. **Sign-compression (5c) + σ-compression for AA ORBITs?** Phase 1 orbits for
-   ANTISYMMETRIC ops store sorted `{|eval(u_k)| : sign=+1}`. These are real
-   values; no σ-symmetry applies (σ acts on complex z, not real eval values).
+3. **Are there further symmetries within the n/2 representatives?**  For the
+   TYPE_11 case, the n/2 representative values `{w_k : Im(w_k) > 0}` are
+   embedded as a generic complex multiset.  No forced further structure has been
+   identified.  This is conjectured to be the floor.
 
-4. **Are there further symmetries within the n/2 orbit representatives?** For
-   the SS case, the n/2 representatives `{w_k : Im(w_k) > 0}` are embedded as
-   a generic multiset of complex numbers. No forced structure has been
-   identified. This is conjectured to be the floor.
+4. **Non-self-pairing cross-ASSOC segments.**  No swap symmetry, so no
+   σ-closure.  Whether other functional equations (from the group-theoretic
+   structure of the overlap partition) give further compression is an open
+   question with no current candidate mechanism.
