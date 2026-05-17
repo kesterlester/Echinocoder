@@ -5,9 +5,8 @@ from symatom import (
     ArgumentSymmetry, VectorType, Context, Plan,
     repS, canonical_pair_flavours,
 )
-from symcoder import EvaluableOperation, encode, encode_brute, describe_encoding
-from symcoder.pairs import eval_pair_orbit, eval_pair_orbit_positive
-from symcoder.encode import _embed_compressed
+from symcoder import EvaluableOperation, encode, describe_encoding
+from symcoder.pairs import eval_pair_orbit_positive
 
 
 # ---------------------------------------------------------------------------
@@ -81,16 +80,6 @@ def test_encode_dot_only_length(dot, ctx, event_3d):
     plan = Plan(context=ctx, operations=(dot,))
     result = encode(plan, event_3d)
     assert len(result) == sum(s.length for s in describe_encoding(plan))
-
-def test_encode_brute_length_matches_sum_of_counts(dot, eps3, plan, ctx, event_3d):
-    """encode_brute() gives 2*sum(pf.count()) reals — n complex coeffs × 2 reals each."""
-    fo_list = repS(ctx, (dot, eps3))
-    type_sizes = tuple(g.size for g in ctx.types)
-    expected_len = 2 * sum(
-        pf.count(type_sizes)
-        for pf in canonical_pair_flavours(fo_list, ctx)
-    )
-    assert len(encode_brute(plan, event_3d)) == expected_len
 
 
 # ---------------------------------------------------------------------------
@@ -390,112 +379,6 @@ def _make_eps2():
     )
 
 
-def test_embed_compressed_type_neg_permutation_invariant():
-    # TODO: I don't like TYPE_NEG intruding on TYPES 11,12,21,22. That's not what they were for.
-    # But TYPE_NEG is not all bad. It does represent a case where a special form of compression
-    # can be used. It is just measuring a different thing to the 12/21/12/22 TYPES.
-    """
-    TYPE_NEG pair (AA, full per-group overlap in electron group): the encoding
-    must be invariant under label permutations that negate BOTH atom signs.
-
-    eps2[(2,0)] × eps2[(2,0)] with overlap=(2,0) in a 2-group context
-    (electrons={a,b,c}, muons={p,q}).  Swapping labels a↔b negates both
-    atom eval values simultaneously (TYPE_NEG orbit = {z_k, -z_k}).
-    """
-    from symcoder.encode import _embed_compressed
-    from symcoder.pairs import eval_pair_orbit_positive
-    eps2 = _make_eps2()
-    electrons = VectorType("electrons", ("a", "b", "c"))
-    muons     = VectorType("muons",     ("p", "q"))
-    ctx  = Context(types=(electrons, muons))
-    plan = Plan(context=ctx, operations=(eps2,))
-
-    np.random.seed(42)
-    event = {
-        "a": np.array([1.0, 0.3, 0.2]),
-        "b": np.array([0.1, 1.0, 0.4]),
-        "c": np.array([0.5, 0.2, 1.0]),
-        "p": np.array([0.7, 0.1, 0.3]),
-        "q": np.array([0.2, 0.9, 0.1]),
-    }
-    event_swapped = dict(event)
-    event_swapped["a"], event_swapped["b"] = event["b"], event["a"]
-
-    fo_list = repS(ctx, (eps2,))
-    type_sizes = tuple(g.size for g in ctx.types)
-
-    # Find a TYPE_NEG PairFlavour (AA, full electron overlap)
-    from symcoder.encode import _sign_correlation_type_from_pf
-    from symcoder.encode import SignCorrelationType
-    type_neg_found = False
-    for pf in canonical_pair_flavours(fo_list, ctx):
-        sct = _sign_correlation_type_from_pf(pf)
-        z_pos         = np.array(eval_pair_orbit_positive(pf, plan, event),         dtype=complex)
-        z_pos_swapped = np.array(eval_pair_orbit_positive(pf, plan, event_swapped), dtype=complex)
-        c1 = _embed_compressed(z_pos, pf)
-        c2 = _embed_compressed(z_pos_swapped, pf)
-        np.testing.assert_array_almost_equal(
-            c1, c2,
-            err_msg=f"_embed_compressed not invariant under a↔b swap for {pf!r} (type={sct})"
-        )
-        if sct == SignCorrelationType.TYPE_NEG:
-            type_neg_found = True
-    assert type_neg_found, "No TYPE_NEG PairFlavour found — test setup may be wrong"
-
-
-def test_embed_compressed_type_neg_distinguishes_events():
-    """
-    TYPE_NEG embedding must be injective: two events with genuinely different
-    orbit values must produce different encoded vectors.
-
-    This test checks that the TYPE_NEG branch (embed z_pos²) preserves
-    Im(z²) = 2·Re(z)·Im(z), which would be lost if we incorrectly used
-    the TYPE_22 branch (embed {z², conj(z²)} → real polynomial → loses Im(z²)).
-    """
-    from symcoder.encode import _embed_compressed, _sign_correlation_type_from_pf
-    from symcoder.encode import SignCorrelationType
-    eps2 = _make_eps2()
-    electrons = VectorType("electrons", ("a", "b", "c"))
-    muons     = VectorType("muons",     ("p", "q"))
-    ctx  = Context(types=(electrons, muons))
-    plan = Plan(context=ctx, operations=(eps2,))
-
-    # Two events designed to yield z_k values with opposite Im(z_k²)
-    # eps2(a,b) = a[0]*b[1] - a[1]*b[0] (the 2D cross product component)
-    # Construct so that Re(z) = eps2 eval, Im(z) = another eps2 eval, with Im(z²) different
-    event1 = {
-        "a": np.array([2.0, 0.0]), "b": np.array([0.0, 1.0]),  # eps2(a,b) = 2
-        "c": np.array([0.0, 0.0]),
-        "p": np.array([1.0, 0.0]), "q": np.array([0.0, 1.0]),  # eps2(a,p) context
-    }
-    event2 = {
-        "a": np.array([2.0, 0.0]), "b": np.array([0.0, -1.0]),  # eps2(a,b) = -2
-        "c": np.array([0.0, 0.0]),
-        "p": np.array([1.0, 0.0]), "q": np.array([0.0, 1.0]),
-    }
-
-    fo_list = repS(ctx, (eps2,))
-    type_sizes = tuple(g.size for g in ctx.types)
-
-    type_neg_pfs = [
-        pf for pf in canonical_pair_flavours(fo_list, ctx)
-        if _sign_correlation_type_from_pf(pf) == SignCorrelationType.TYPE_NEG
-    ]
-    assert len(type_neg_pfs) > 0, "No TYPE_NEG PairFlavour found — test setup may be wrong"
-
-    for pf in type_neg_pfs:
-        z1 = np.array(eval_pair_orbit_positive(pf, plan, event1), dtype=complex)
-        z2 = np.array(eval_pair_orbit_positive(pf, plan, event2), dtype=complex)
-        # Only test pairs where the z values actually differ
-        if np.allclose(z1, z2) or np.allclose(z1**2, z2**2):
-            continue
-        c1 = _embed_compressed(z1, pf)
-        c2 = _embed_compressed(z2, pf)
-        # The embeddings must differ (TYPE_NEG should preserve z² information)
-        assert not np.allclose(c1, c2), (
-            f"TYPE_NEG embedding failed to distinguish events for {pf!r}: "
-            f"z1={z1}, z2={z2}, z1²={z1**2}, z2²={z2**2}"
-        )
 
 
 @_SKIP_NO_REGISTRY

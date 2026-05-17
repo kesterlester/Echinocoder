@@ -6,7 +6,7 @@ invariant embeddings of physics events via polynomial zipping.
 
 Public API:
   eval         : EvaluableOperation, evaluate
-  encode       : encode, encode_brute, encode_and_describe, describe_encoding
+  encode       : encode, encode_and_describe, describe_encoding
   describe     : SegmentInfo
   sign_corr    : SignCorrelationType
   encoders     : AtomOrbitEncoderRegistry, OrbitSpec (Phase 1)
@@ -16,7 +16,7 @@ Public API:
                  Phase2EncoderFactory        (Phase 2 top level)
 """
 from .eval     import EvaluableOperation, evaluate
-from .encode   import encode, encode_brute, encode_and_describe, describe_encoding
+from .encode   import encode, encode_and_describe, describe_encoding
 from .describe import SegmentInfo
 from .sign_correlation import SignCorrelationType
 from .encoders import (
@@ -31,7 +31,6 @@ __all__ = [
     "EvaluableOperation",
     "evaluate",
     "encode",
-    "encode_brute",
     "encode_and_describe",
     "describe_encoding",
     "SegmentInfo",
