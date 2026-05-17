@@ -2,12 +2,17 @@
 
 ## Summary
 
-Every ASSOC segment in a **self-pairing block** (same operation, same flavour:
-`op_u == op_v`, `F_u == F_v`) carries a hidden factor-of-2 redundancy.
-The redundancy arises from a swap symmetry on atom-pairs that forces the
-z-value multiset to be closed under `z → i·conj(z)` (denoted σ).
-Exploiting this halves the storage of every such ASSOC, on top of all
-reductions already implemented (NULL_SELF, NULL_COMP, half-sort compression).
+Every surviving (non-null) ASSOC segment in a **self-pairing block** (same
+operation, same flavour: `op_u == op_v`, `F_u == F_v`) carries a hidden
+factor-of-2 redundancy.  The redundancy arises from a swap symmetry on
+atom-pairs that forces the z-value multiset to be closed under
+`z → i·conj(z)` (denoted σ).  Exploiting this halves the storage of every
+such ASSOC.
+
+Note on scope: NULL_SELF and NULL_COMP segments are already zero-length and
+are unaffected (halving zero gives zero, which is already optimal).  Half-sort
+compression acts on Phase 1 ORBIT segments and is entirely independent —
+σ-compression and half-sort operate on disjoint parts of the encoding.
 
 Self-pairing blocks contain only TYPE_11 orbits (SYMMETRIC operation) or
 TYPE_NEG orbits (ANTISYMMETRIC operation); TYPE_12/21 cannot arise because
