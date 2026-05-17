@@ -46,6 +46,8 @@ print('=== Stop ===')
 print()
 np.random.seed(42)
 event = {l: np.random.randn(3) for l in ctx.all_labels}
+print(f'Event to encode is {event}')
+print()
 
 out = encode(plan, event, orbit_factory, phase2_factory)
 #out = encode(plan, event) # Don't use registry
