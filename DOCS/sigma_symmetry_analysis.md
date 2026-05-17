@@ -55,10 +55,12 @@ requires `eval(u_k) = eval(v_j)` — a measure-zero condition for generic events
 
 > **⚠ SUSPECT — needs checking:** The lemma assumes the representatives have
 > both atoms with `sign = +1`.  For TYPE_11 self-pairing this is automatic
-> (SYMMETRIC operations carry no sign degree of freedom, so every orbit element
-> has sign +1 — this is a hard construction-time invariant enforced by
-> `_canonicalise_fields` in `symatom/atoms.py`: constructing an Atom with
-> `sign=-1` for a non-ANTISYMMETRIC operation raises `ValueError`).  For TYPE_NEG self-pairing the physical partition assigns reps
+> (SYMMETRIC operations carry no sign degree of freedom under argument permutation,
+> so every orbit element has sign +1 for all current operations).  Note: the
+> code enforces this via a `ValueError` in `_canonicalise_fields`
+> (`symatom/atoms.py`), but that enforcement is known to be too strong in
+> principle — it would break for rank-1 operations or pseudoscalars under spatial
+> parity.  For the current operation set the conclusion holds regardless.  For TYPE_NEG self-pairing the physical partition assigns reps
 > with `u.sign = +1`; the v-sign may be `+1` (form-1 orbit: `{(+u,+v),(−u,−v)}`)
 > or `−1` (form-2 orbit: `{(+u,−v),(−u,+v)}`).  The σ-closure argument goes
 > through cleanly for form-1, but for form-2 the swapped representative
