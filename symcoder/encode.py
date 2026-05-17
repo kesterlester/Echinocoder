@@ -1,69 +1,17 @@
 from __future__ import annotations
-import importlib.util
 import numpy as np
-from enum import Enum
 from itertools import groupby
-from pathlib import Path
 from symatom.atoms import ArgumentSymmetry
 from symatom.rep import canonical_pair_flavours
 from symatom import repS
 
-
-# ---------------------------------------------------------------------------
-# SignCorrelationType
-# ---------------------------------------------------------------------------
-# Moved here from symatom/group.py: sign-correlation is a concept needed only
-# for encoding, not for pure group-theory orbit machinery.
-
-class SignCorrelationType(Enum):
-    """
-    Describes how the G-orbit of an atom-pair (u, v) relates the sign degrees
-    of freedom of u and v.
-
-    The achievable set is the subgroup of Z_2 × Z_2 consisting of all
-    (sign_u, sign_v) pairs that appear in the orbit.  There are exactly five
-    subgroups of Z_2 × Z_2, corresponding to the five types below.
-
-    The label TYPE_XY encodes:
-      X = 1  — u's sign does not flip independently within the orbit
-      X = 2  — u's sign can flip independently of v's sign within the orbit
-      Y = 1  — v's sign does not flip independently within the orbit
-      Y = 2  — v's sign can flip independently of u's sign within the orbit
-
-    TYPE_11   Achievable = {(+1,+1)}.  Neither sign changes.
-    TYPE_NEG  Achievable = {(+1,+1),(-1,-1)}.  Only correlated negation.
-    TYPE_12   Achievable = {(+1,+1),(+1,-1)}.  Only v's sign flips freely.
-    TYPE_21   Achievable = {(+1,+1),(-1,+1)}.  Only u's sign flips freely.
-    TYPE_22   Achievable = {(+1,+1),(-1,+1),(+1,-1),(-1,-1)}.  Both flip freely.
-
-    CRITICAL: the type is NOT determined by ArgumentSymmetry alone.
-    Always compute via _sign_correlation_type_from_pf(), never by inspecting
-    op.argument_symmetry directly.
-    """
-    TYPE_11  = "11"
-    TYPE_NEG = "NEG"
-    TYPE_12  = "12"
-    TYPE_21  = "21"
-    TYPE_22  = "22"
+from .sign_correlation import SignCorrelationType, _sign_correlation_type_from_pf, _complex_to_reals
+from .encoders._embedder import zip_embed as _zip_embed
 ## from .pairs import eval_pair_orbit, eval_pair_orbit_positive, eval_single_orbit, eval_single_orbit_compressed, _is_self_pair
 from .pairs import eval_pair_orbit, eval_pair_orbit_positive, _is_self_pair
-from .encoders import (
-    AtomOrbitEncoderRegistry, OrbitSpec,
-    PairOrbitEncoderRegistry, PairOrbitSpec,
-)
-from .describe import SegmentInfo, _orbit_example, _assoc_example, _symmetry_class
-
-# Load the Echinocoder zip embedder from the repo root.  It is not a proper
-# package, so we locate it relative to this file (repo_root/symcoder/encode.py
-# → repo_root/Cinf_numpy_polynomial_embedder_for_list_of_reals_as_multiset.py).
-_EMBEDDER_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "Cinf_numpy_polynomial_embedder_for_list_of_reals_as_multiset.py"
-)
-_spec = importlib.util.spec_from_file_location("_echinocoder", _EMBEDDER_PATH)
-_echinocoder = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_echinocoder)
-_zip_embed = _echinocoder.embed
+from .encoders import AtomOrbitEncoderRegistry, OrbitSpec, PairOrbitSpec
+from .encoders.phase2_encoder import Phase2EncoderFactory, Phase2Encoder
+from .describe import SegmentInfo, _orbit_example, _assoc_example, _symmetry_class, _block_key as _overlap_block_key
 
 
 def _force_positive_side_key(op, flavour):
@@ -93,65 +41,6 @@ def _encoding_canonical_key(pf):
     v_key = _force_positive_side_key(pf.op_v, pf.flavour_v)
     return (tuple(sorted([u_key, v_key])), tuple(pf.overlap))
 
-
-def _sign_correlation_type_from_pf(pf) -> SignCorrelationType:
-    """
-    Compute the SignCorrelationType for a PairFlavour from its structural
-    parameters alone (no specific atom instances required).
-
-    This is equivalent to TheGroup.sign_correlation_type(u, v) for any
-    representative (u, v) of this PairFlavour, since the type depends only
-    on the per-group label counts, overlap, and operation antisymmetry —
-    all of which are encoded in the PairFlavour.
-
-    The u_g == v_g condition (per-group label sets identical) is equivalent
-    to full per-group overlap: overlap_g == ku_g == kv_g.
-
-    Algorithm: per-group achievable-set product (same as TheGroup.sign_correlation_type).
-    """
-    antisym_u = pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-    antisym_v = pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-
-    achievable: set[tuple[int, int]] = {(1, 1)}
-
-    for ku_g, kv_g, s_g in zip(
-        pf.flavour_u.counts, pf.flavour_v.counts, pf.overlap
-    ):
-        pu_can_flip = antisym_u and ku_g >= 2
-        pv_can_flip = antisym_v and kv_g >= 2
-        u_g_eq_v_g  = (s_g == ku_g == kv_g)   # full per-group overlap ↔ same label set
-
-        if not pu_can_flip and not pv_can_flip:
-            g_ach: set[tuple[int, int]] = {(1, 1)}
-        elif pu_can_flip and not pv_can_flip:
-            g_ach = {(1, 1), (-1, 1)}
-        elif not pu_can_flip and pv_can_flip:
-            g_ach = {(1, 1), (1, -1)}
-        elif u_g_eq_v_g:
-            g_ach = {(1, 1), (-1, -1)}
-        else:
-            g_ach = {(1, 1), (1, -1), (-1, 1), (-1, -1)}
-
-        achievable = {
-            (pu * qu, pv * qv)
-            for (pu, pv) in achievable
-            for (qu, qv) in g_ach
-        }
-
-    u_flips   = (-1,  1) in achievable
-    v_flips   = ( 1, -1) in achievable
-    both_flip = (-1, -1) in achievable
-
-    if u_flips and v_flips:
-        return SignCorrelationType.TYPE_22
-    elif u_flips:
-        return SignCorrelationType.TYPE_21
-    elif v_flips:
-        return SignCorrelationType.TYPE_12
-    elif both_flip:
-        return SignCorrelationType.TYPE_NEG
-    else:
-        return SignCorrelationType.TYPE_11
 
 
 def _embed_compressed(z_pos: np.ndarray, pf) -> np.ndarray:
@@ -266,22 +155,6 @@ def _embed_compressed(z_pos: np.ndarray, pf) -> np.ndarray:
         return r[0::2] + 1j * r[1::2]
 
 
-def _complex_to_reals(c: np.ndarray) -> np.ndarray:
-    """Unpack n complex values to 2n reals: [re0, im0, re1, im1, ...]."""
-    out = np.empty(2 * len(c), dtype=float)
-    out[0::2] = c.real
-    out[1::2] = c.imag
-    return out
-
-
-def _overlap_block_key(pf):
-    """Key that identifies an OVERLAP BLOCK: fixed (op_u, flavour_u, op_v, flavour_v)."""
-    u = (pf.op_u.name, pf.op_u.rank, pf.op_u.parity,
-         pf.op_u.argument_symmetry.value, pf.flavour_u.counts)
-    v = (pf.op_v.name, pf.op_v.rank, pf.op_v.parity,
-         pf.op_v.argument_symmetry.value, pf.flavour_v.counts)
-    return (u, v)
-
 
 def _sort_encode(values: np.ndarray) -> np.ndarray:
     """
@@ -342,7 +215,7 @@ def encode_and_describe(
     plan,
     event: dict | None,
     registry: AtomOrbitEncoderRegistry | None = None,
-    pair_registry: PairOrbitEncoderRegistry | None = None,
+    phase2_factory: Phase2EncoderFactory | None = None,
 ) -> tuple[np.ndarray, list[SegmentInfo]]:
     """
     Core encoding function.  Runs the full two-phase encoding and simultaneously
@@ -360,17 +233,12 @@ def encode_and_describe(
     describe_encoding() uses this mode so that both functions share exactly one
     code path.
 
-    Phase 1 metadata (method_name, output_dim) is sourced from the registry's
-    assess() responses when registry is supplied, making describe_encoding()
-    automatically consistent with encode() — both use the same selection logic.
+    Phase 1 (registry): metadata sourced from the registry's assess() responses.
+    Phase 2 (phase2_factory): a Phase2EncoderFactory built from the hierarchical
+      OverlapBlockEncoderFactory → row-pair factories chain.  When None, falls
+      back to the legacy direct _embed_compressed path.
 
-    Phase 2 uses pair_registry when supplied: for each non-dropped ASSOC pair,
-    query_all() is called and the encoder with the smallest output_dim is chosen
-    (same manager logic as Phase 1).  When pair_registry is None, Phase 2 falls
-    back to the direct _embed_compressed call.
-
-    Note: the diagnostic print in Phase 1 is temporary scaffolding and will be
-    gated by a bool flag in a future performance pass.
+    Note: the diagnostic print in Phase 1 is temporary scaffolding.
     """
     fo_list    = repS(plan.context, plan.operations)
     pf_list    = canonical_pair_flavours(fo_list, plan.context)
@@ -388,7 +256,7 @@ def encode_and_describe(
         assert fo.count_of_atoms_one_per_sign() > 0, "No FlavouredOperator generated by repS should have an empty orbit."
 
         if registry is not None:
-            spec   = OrbitSpec.from_flavoured_operator(fo)
+            spec    = OrbitSpec.from_flavoured_operator(fo)
             capable = registry.query_all(spec, plan)
             # Diagnostic: show what each capable encoder proposes.
             # TODO: gate this behind a bool flag when performance matters.
@@ -400,7 +268,7 @@ def encode_and_describe(
             length = chosen_enc.output_dim
             if event is not None:
                 result = chosen_enc.encode(event)
-                assert len(result.values) == length  # checks contract was met
+                assert len(result.values) == length
                 parts.append(result.values)
             else:
                 parts.append(np.zeros(length, dtype=np.float64))
@@ -414,92 +282,69 @@ def encode_and_describe(
                 example     = _orbit_example(fo.operation.name, fo.flavour.counts, types),
             ))
         else:
-            raise NotImplementedError("We no longer support evals other than by the encoder registry.") # TODO .. DELETE THIS BRANCH ALTOGETHER when confident we don't need to put it back.
-            ## raw    = np.array(eval_single_orbit_compressed(fo, plan, event), dtype=float)
-            ## sorted_vals = _sort_encode(raw)
-            ## parts.append(sorted_vals)
-            ## length = len(sorted_vals)
-            ## antisym = fo.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-            ## segments.append(SegmentInfo(
-            ##     kind            = "ORBIT",
-            ##     start           = cursor,
-            ##     length          = length,
-            ##     op_u            = fo.operation.name,
-            ##     flavour_u       = tuple(fo.flavour.counts),
-            ##     sign_compressed = antisym,
-            ##     example         = _orbit_example(fo.operation.name, fo.flavour.counts, types),
-            ## ))
+            raise NotImplementedError("We no longer support evals other than by the encoder registry.")
+            ## TODO: delete the else-branch entirely when confident we don't need to restore it.
 
         cursor += length
 
     # ------------------------------------------------------------------
-    # Phase 2: compressed pair encoding with largest association dropped.
-    # Drop order: NULL_SELF first (Phase-1 redundant), then NULL_COMP
-    # (complementation drop of the largest remaining per block).
+    # Phase 2: compressed pair encoding.
     # ------------------------------------------------------------------
-    for _bk, block_iter in groupby(pf_list, key=_overlap_block_key):
-        block        = list(block_iter)
-        non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
-        comp_drop    = (max(non_self_idx, key=lambda i: block[i].count(type_sizes))
-                        if non_self_idx else None)
+    if phase2_factory is not None:
+        # Hierarchical registry path.
+        phase2_enc = phase2_factory.build(plan)
+        if event is not None:
+            result = phase2_enc.encode(event)
+            parts.append(result.values)
+        else:
+            parts.append(np.zeros(phase2_enc.output_dim, dtype=np.float64))
+        segments.extend(phase2_enc.describe(start_offset=cursor))
+        cursor += phase2_enc.output_dim
+    else:
+        # Legacy direct path (no phase2_factory): kept for backwards compat.
+        for _bk, block_iter in groupby(pf_list, key=_overlap_block_key):
+            block        = list(block_iter)
+            non_self_idx = [i for i, pf in enumerate(block) if not _is_self_pair(pf)]
+            comp_drop    = (max(non_self_idx, key=lambda i: block[i].count(type_sizes))
+                            if non_self_idx else None)
 
-        for i, pf in enumerate(block):
-            sc       = _symmetry_class(pf)
-            ex       = _assoc_example(
-                pf.op_u.name, pf.flavour_u.counts,
-                pf.op_v.name, pf.flavour_v.counts,
-                pf.overlap, types,
-            )
-            notional = 2 * pf.count(type_sizes)
-            common   = dict(
-                op_u            = pf.op_u.name,
-                flavour_u       = tuple(pf.flavour_u.counts),
-                op_v            = pf.op_v.name,
-                flavour_v       = tuple(pf.flavour_v.counts),
-                overlap         = tuple(pf.overlap),
-                symmetry_class  = sc,
-                notional_length = notional,
-                example         = ex,
-            )
-            if _is_self_pair(pf):
-                segments.append(SegmentInfo(kind="NULL_SELF", start=cursor, length=0, **common))
-            elif i == comp_drop:
-                segments.append(SegmentInfo(kind="NULL_COMP", start=cursor, length=0, **common))
-            else:
-                if pair_registry is not None:
-                    # Registry path: let the registry select the encoder.
-                    spec    = PairOrbitSpec.from_pair_flavour(pf)
-                    capable = pair_registry.query_all(spec, plan)
-                    chosen_pair_enc = min(capable, key=lambda e: e.output_dim)
-                    actual_length   = chosen_pair_enc.output_dim
-                    method          = chosen_pair_enc.method_name
-                    if event is not None:
-                        result = chosen_pair_enc.encode(event)
-                        assert len(result.values) == actual_length
-                        parts.append(result.values)
-                    else:
-                        parts.append(np.zeros(actual_length, dtype=np.float64))
+            for i, pf in enumerate(block):
+                sc       = _symmetry_class(pf)
+                ex       = _assoc_example(
+                    pf.op_u.name, pf.flavour_u.counts,
+                    pf.op_v.name, pf.flavour_v.counts,
+                    pf.overlap, types,
+                )
+                notional = 2 * pf.count(type_sizes)
+                common   = dict(
+                    op_u            = pf.op_u.name,
+                    flavour_u       = tuple(pf.flavour_u.counts),
+                    op_v            = pf.op_v.name,
+                    flavour_v       = tuple(pf.flavour_v.counts),
+                    overlap         = tuple(pf.overlap),
+                    symmetry_class  = sc,
+                    notional_length = notional,
+                    example         = ex,
+                )
+                if _is_self_pair(pf):
+                    segments.append(SegmentInfo(kind="NULL_SELF", start=cursor, length=0, **common))
+                elif i == comp_drop:
+                    segments.append(SegmentInfo(kind="NULL_COMP", start=cursor, length=0, **common))
                 else:
-                    # Legacy direct path (no pair registry).
-                    actual_length = notional
-                    method        = "embed_compressed"
                     if event is not None:
                         z_pos = np.array(eval_pair_orbit_positive(pf, plan, event), dtype=complex)
-                        assert len(z_pos) == pf.count(type_sizes), (
-                            f"eval_pair_orbit_positive returned {len(z_pos)} values "
-                            f"but expected pf.count={pf.count(type_sizes)} for {pf!r}"
-                        )
+                        assert len(z_pos) == pf.count(type_sizes)
                         parts.append(_complex_to_reals(_embed_compressed(z_pos, pf)))
                     else:
                         parts.append(np.zeros(notional, dtype=np.float64))
-                segments.append(SegmentInfo(
-                    kind        = "ASSOC",
-                    start       = cursor,
-                    length      = actual_length,
-                    method_name = method,
-                    **common,
-                ))
-                cursor += actual_length
+                    segments.append(SegmentInfo(
+                        kind        = "ASSOC",
+                        start       = cursor,
+                        length      = notional,
+                        method_name = "embed_compressed",
+                        **common,
+                    ))
+                    cursor += notional
 
     values = np.concatenate(parts) if parts else np.array([], dtype=float)
     return values, segments
@@ -509,40 +354,30 @@ def encode(
     plan,
     event: dict,
     registry: AtomOrbitEncoderRegistry | None = None,
-    pair_registry: PairOrbitEncoderRegistry | None = None,
+    phase2_factory: Phase2EncoderFactory | None = None,
 ) -> np.ndarray:
     """
     Encode a physics event as a permutation-invariant vector.
     See encode_and_describe() for full documentation of the two-phase algorithm.
     Returns a 1-D float64 numpy array.
     """
-    values, _segments = encode_and_describe(plan, event, registry, pair_registry)
+    values, _segments = encode_and_describe(plan, event, registry, phase2_factory)
     return values
 
 
 def describe_encoding(
     plan,
     registry: AtomOrbitEncoderRegistry | None = None,
-    pair_registry: PairOrbitEncoderRegistry | None = None,
+    phase2_factory: Phase2EncoderFactory | None = None,
 ) -> list[SegmentInfo]:
     """
     Return a list of SegmentInfo objects describing the full structure of the
-    vector produced by encode(plan, event, registry, pair_registry).
+    vector produced by encode(plan, event, registry, phase2_factory).
 
     Delegates to encode_and_describe(plan, event=None, ...) — the single
     authoritative code path — and discards the (zero) values array.
-
-    Usage
-    -----
-    for seg in describe_encoding(plan, registry, pair_registry):
-        print(seg)
-
-    import json
-    json.dumps([s.to_dict() for s in describe_encoding(plan, registry, pair_registry)])
-
-    sum(s.length for s in describe_encoding(plan, registry, pair_registry))  # == len(encode(...))
     """
-    _, segments = encode_and_describe(plan, event=None, registry=registry, pair_registry=pair_registry)
+    _, segments = encode_and_describe(plan, event=None, registry=registry, phase2_factory=phase2_factory)
     return segments
 
 

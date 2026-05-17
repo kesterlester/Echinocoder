@@ -5,20 +5,26 @@ Takes symatom's symbolic atom/orbit machinery and produces concrete
 invariant embeddings of physics events via polynomial zipping.
 
 Public API:
-  eval      : EvaluableOperation, evaluate
-  encode    : encode, encode_brute, encode_and_describe, describe_encoding
-  describe  : SegmentInfo
-  encoders  : AtomOrbitEncoderRegistry, OrbitSpec (Phase 1)
-              PairOrbitEncoderRegistry, PairOrbitSpec,
-              EmbedCompressedEncoderFactory (Phase 2)
+  eval         : EvaluableOperation, evaluate
+  encode       : encode, encode_brute, encode_and_describe, describe_encoding
+  describe     : SegmentInfo
+  sign_corr    : SignCorrelationType
+  encoders     : AtomOrbitEncoderRegistry, OrbitSpec (Phase 1)
+                 SortEncoderFactory, PolyEncoderFactory
+                 standard_row_pair_factories (Phase 2 row-pair convenience)
+                 OverlapBlockEncoderFactory  (Phase 2 block level)
+                 Phase2EncoderFactory        (Phase 2 top level)
 """
 from .eval     import EvaluableOperation, evaluate
 from .encode   import encode, encode_brute, encode_and_describe, describe_encoding
 from .describe import SegmentInfo
+from .sign_correlation import SignCorrelationType
 from .encoders import (
     AtomOrbitEncoderRegistry, OrbitSpec,
-    PairOrbitEncoderRegistry, PairOrbitSpec,
-    EmbedCompressedEncoder, EmbedCompressedEncoderFactory,
+    SortEncoderFactory, PolyEncoderFactory,
+    standard_row_pair_factories,
+    OverlapBlockEncoderFactory,
+    Phase2Encoder, Phase2EncoderFactory,
 )
 
 __all__ = [
@@ -29,10 +35,13 @@ __all__ = [
     "encode_and_describe",
     "describe_encoding",
     "SegmentInfo",
+    "SignCorrelationType",
     "AtomOrbitEncoderRegistry",
     "OrbitSpec",
-    "PairOrbitEncoderRegistry",
-    "PairOrbitSpec",
-    "EmbedCompressedEncoder",
-    "EmbedCompressedEncoderFactory",
+    "SortEncoderFactory",
+    "PolyEncoderFactory",
+    "standard_row_pair_factories",
+    "OverlapBlockEncoderFactory",
+    "Phase2Encoder",
+    "Phase2EncoderFactory",
 ]
