@@ -8,7 +8,6 @@ Public API:
   eval         : EvaluableOperation, evaluate
   encode       : encode, encode_and_describe, describe_encoding
   describe     : SegmentInfo
-  sign_corr    : SignCorrelationType
   encoders     : OrbitEncoderFactory (Phase 1 top level)
                  SortEncoderFactory, PolyEncoderFactory
                  standard_row_pair_factories (Phase 2 row-pair convenience)
@@ -18,7 +17,6 @@ Public API:
 from .eval     import EvaluableOperation, evaluate
 from .encode   import encode, encode_and_describe, describe_encoding
 from .describe import SegmentInfo
-from .sign_correlation import SignCorrelationType
 from .encoders import (
     OrbitEncoderFactory,
     SortEncoderFactory, HalfSortEncoderFactory, PolyEncoderFactory,
@@ -34,7 +32,6 @@ __all__ = [
     "encode_and_describe",
     "describe_encoding",
     "SegmentInfo",
-    "SignCorrelationType",
     "OrbitEncoderFactory",
     "SortEncoderFactory",
     "HalfSortEncoderFactory",

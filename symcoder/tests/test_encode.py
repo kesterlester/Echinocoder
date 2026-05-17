@@ -6,7 +6,6 @@ from symatom import (
     repS, canonical_pair_flavours,
 )
 from symcoder import EvaluableOperation, encode, describe_encoding
-from symcoder.pairs import eval_pair_orbit_positive
 
 
 # ---------------------------------------------------------------------------
@@ -198,44 +197,6 @@ def _make_ops_and_event():
     return dot, eps3, labels, event
 
 
-def test_eval_pair_orbit_positive_count(dot, eps3, ctx):
-    """eval_pair_orbit_positive always returns exactly pf.count() values."""
-    fo_list = repS(ctx, (dot, eps3))
-    type_sizes = tuple(g.size for g in ctx.types)
-    for pf in canonical_pair_flavours(fo_list, ctx):
-        plan = Plan(context=ctx, operations=(dot, eps3))
-        event = {l: np.random.randn(3) for l in ctx.all_labels}
-        pos = eval_pair_orbit_positive(pf, plan, event)
-        assert len(pos) == pf.count(type_sizes), (
-            f"Expected {pf.count(type_sizes)}, got {len(pos)} for {pf!r}"
-        )
-
-
-def test_eval_pair_orbit_positive_count_unusual_label_order():
-    """Count invariant holds even with unusual alphabetical label ordering."""
-    labels = ("apple", "toast", "zebra")
-    dot = EvaluableOperation(
-        name="dot", rank=2, parity=+1,
-        argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-        eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
-    )
-    eps3 = EvaluableOperation(
-        name="eps3", rank=3, parity=-1,
-        argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-        eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
-    )
-    g = VectorType("particles", labels)
-    ctx = Context((g,))
-    plan = Plan(context=ctx, operations=(dot, eps3))
-    event = {l: np.random.randn(3) for l in labels}
-    fo_list = repS(ctx, (dot, eps3))
-    type_sizes = tuple(g.size for g in ctx.types)
-    for pf in canonical_pair_flavours(fo_list, ctx):
-        pos = eval_pair_orbit_positive(pf, plan, event)
-        assert len(pos) == pf.count(type_sizes), (
-            f"Expected {pf.count(type_sizes)}, got {len(pos)} for {pf!r}"
-        )
-
 
 @pytest.mark.parametrize("perm", [
     {"a": "b", "b": "a", "c": "c", "d": "d"},
@@ -297,31 +258,6 @@ def test_compressed_length_sym_sym(dot, ctx, event_3d):
     for pf in canonical_pair_flavours(fo_list, ctx):
         assert pf.count(type_sizes) == pf.orbit_size(type_sizes)
 
-
-def test_compressed_length_antisym_antisym(ctx, event_3d):
-    # TODO FIXME : This is wrong, referring to ANTISYMM etc rather than TYPE_11,12,21,22
-    """ANTISYM×ANTISYM: eval_pair_orbit_positive returns exactly count elements.
-
-    For AA PairFlavours, DirectOrbitEnumerator generates all four sign-combinations
-    per label assignment: (+u,+v), (-u,+v), (+u,-v), (-u,-v).  eval_pair_orbit_positive
-    keeps only the (+,+) variant, so its length equals pf.count.
-
-    Note: orbit_size is now the true G-orbit size (|G|/|Stab|), which equals 2*count
-    for the non-zero-overlap AA case that arises in the 4-electron context.  The old
-    assertion pf.count == orbit_size // 4 was based on an incorrect orbit_size formula
-    and has been replaced with the encoding-relevant invariant here.
-    """
-    eps3 = EvaluableOperation(
-        name="eps3", rank=3, parity=-1,
-        argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-        eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
-    )
-    plan = Plan(context=ctx, operations=(eps3,))
-    fo_list = repS(ctx, (eps3,))
-    type_sizes = tuple(g.size for g in ctx.types)
-    for pf in canonical_pair_flavours(fo_list, ctx):
-        pos_values = eval_pair_orbit_positive(pf, plan, event_3d)
-        assert len(pos_values) == pf.count(type_sizes)
 
 
 def test_compressed_length_sym_antisym(ctx):
