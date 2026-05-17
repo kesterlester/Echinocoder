@@ -26,10 +26,10 @@ plan = Plan(context=ctx, operations=(mag, dot, eps3))
 # not yet implemented (they raise NotImplementedError).
 #
 from symcoder.encoders import (
-    OrbitEncoderFactory, SortEncoderFactory,
+    OrbitEncoderFactory, SortEncoderFactory, HalfSortEncoderFactory,
     standard_row_pair_factories, OverlapBlockEncoderFactory, Phase2EncoderFactory,
 )
-orbit_factory = OrbitEncoderFactory([SortEncoderFactory()])
+orbit_factory = OrbitEncoderFactory([HalfSortEncoderFactory(), SortEncoderFactory()])
 
 phase2_factory = Phase2EncoderFactory([
     OverlapBlockEncoderFactory(standard_row_pair_factories())

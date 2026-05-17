@@ -50,13 +50,14 @@ class OrbitEncoder:
         for fo, enc in self._selections:
             length = enc.output_dim
             segs.append(SegmentInfo(
-                kind        = "ORBIT",
-                start       = cursor,
-                length      = length,
-                op_u        = fo.operation.name,
-                flavour_u   = tuple(fo.flavour.counts),
-                method_name = enc.method_name,
-                example     = _orbit_example(fo.operation.name, fo.flavour.counts, self._types),
+                kind             = "ORBIT",
+                start            = cursor,
+                length           = length,
+                op_u             = fo.operation.name,
+                flavour_u        = tuple(fo.flavour.counts),
+                method_name      = enc.method_name,
+                notional_length  = enc.notional_output_dim,
+                example          = _orbit_example(fo.operation.name, fo.flavour.counts, self._types),
             ))
             cursor += length
         return segs

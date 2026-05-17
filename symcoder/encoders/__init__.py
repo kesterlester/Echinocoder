@@ -48,7 +48,7 @@ from ._base import (
     AtomOrbitEncoderFactory,
 )
 from ._registry import AtomOrbitEncoderRegistry
-from .sort_encoder import SortEncoder, SortEncoderFactory
+from .sort_encoder import SortEncoder, SortEncoderFactory, HalfSortEncoder, HalfSortEncoderFactory
 from .poly_encoder import PolyEncoder, PolyEncoderFactory
 from .pair_base import (
     PairOrbitSpec,
@@ -82,6 +82,8 @@ __all__ = [
     "AtomOrbitEncoderRegistry",
     "SortEncoder",
     "SortEncoderFactory",
+    "HalfSortEncoder",
+    "HalfSortEncoderFactory",
     "PolyEncoder",
     "PolyEncoderFactory",
     # Phase 2 row-pair level

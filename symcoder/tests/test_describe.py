@@ -303,11 +303,14 @@ def test_all_rows_same_number_of_base_tokens(plan, orbit_factory, phase2_factory
     )
 
 def test_full_column_equals_length_for_assoc_and_orbit(plan, orbit_factory, phase2_factory):
-    """For ASSOC and ORBIT segments, notional_length == length (nothing dropped)."""
+    """For ASSOC, notional_length == length.  For ORBIT, notional_length >= length
+    (compression encoders like half_sort may have notional_length > length)."""
     for s in describe_encoding(plan, orbit_factory, phase2_factory):
-        if s.kind in ("ASSOC", "ORBIT"):
-            nl = s.notional_length if s.notional_length is not None else s.length
-            assert nl == s.length, f"notional_length != length for {s.kind}: {s}"
+        nl = s.notional_length if s.notional_length is not None else s.length
+        if s.kind == "ASSOC":
+            assert nl == s.length, f"notional_length != length for ASSOC: {s}"
+        elif s.kind == "ORBIT":
+            assert nl >= s.length, f"notional_length < length for ORBIT: {s}"
 
 def test_full_column_positive_for_null_segments(plan, orbit_factory, phase2_factory):
     """For NULL_* segments, notional_length > 0 (shows what was saved)."""

@@ -1,17 +1,28 @@
 """
 symcoder.encoders.sort_encoder
 ===============================
-SortEncoderFactory / SortEncoder: simplest possible atom-orbit embedding —
-evaluate every atom in the orbit, then sort the results.
+Two sort-based atom-orbit encoders:
 
-SortEncoderFactory handles all three OrbitSpec forms.  It has a low default
-priority (0.5) so that more sophisticated encoders are preferred when available.
-Useful as a fallback and as a concrete reference implementation.
+SortEncoder / SortEncoderFactory
+    Simplest possible embedding: evaluate every atom in the orbit, sort the
+    results.  Output length == orbit size.  Handles all orbit types; used as
+    the universal fallback.  Priority 0.5.
+
+HalfSortEncoder / HalfSortEncoderFactory
+    Compressed embedding for orbits that can be exactly partitioned into
+    (atom, -atom) pairs.  For such an orbit {+a,-a, +b,-b, ...} it suffices
+    to store sort([|eval(a)|, |eval(b)|, ...]), halving the output length.
+    Eligibility is determined solely by physically attempting to partition the
+    orbit into negative pairs — NOT by inspecting ArgumentSymmetry flags.
+    Output length == orbit_size / 2.  Priority 1.0 (preferred over SortEncoder
+    when applicable).
 """
 from __future__ import annotations
 
-import numpy as np
+from collections import defaultdict
 
+import numpy as np
+from symatom.atoms import are_negatives
 from symatom.context import Plan
 
 from ..eval import evaluate
@@ -23,12 +34,85 @@ from ._base import (
     EncodingResult,
 )
 
-_PRIORITY    = 0.5
-_METHOD_NAME = "sort"
+_SORT_PRIORITY      = 0.5
+_HALF_SORT_PRIORITY = 1.0
 
 
 # ---------------------------------------------------------------------------
-# SortEncoder — the ready-to-use encoder produced by SortEncoderFactory
+# Shared helper: resolve any OrbitSpec form to a concrete list of atoms
+# ---------------------------------------------------------------------------
+
+def _orbit_from_spec(spec: OrbitSpec, plan: Plan) -> list | None:
+    """
+    Return the orbit atom list for any supported spec form, or None if the
+    spec form is unrecognised.
+
+    Sort-based encoders (SortEncoder, HalfSortEncoder) are only valid when the
+    atom list is a genuine G-orbit — i.e. closed under the group action in the
+    plan — because sorting only produces a group-invariant embedding if applying
+    any group element merely permutes the list (leaving the sorted result unchanged).
+
+    Examples of why this matters:
+
+      * G permutes {a,b,c}: sort-encoding {a·b, a·c, b·c} is fine — G maps this
+        set to itself.
+      * G permutes {a,b,c}: sort-encoding {a·b, a·c} is NOT fine — G.{a·b,a·c}
+        contains b·c, which is outside the list.
+      * G permutes {a,b}: sort-encoding {eps2(a,b)} is NOT fine — G maps it to
+        {eps2(b,a)} = {-eps2(a,b)}, a different set.
+
+    For FLAVOURED_OPERATOR and REPRESENTATIVE_ATOM specs the orbit is computed
+    by the group directly, so validity is guaranteed.  For EXPLICIT_ORBIT the
+    caller is trusted to have supplied a genuine orbit; no runtime check is made
+    (implementing the check would require verifying G-closure over the full atom
+    list, which is non-trivial and was left as a TODO).
+    """
+    if spec.form == OrbitSpecForm.EXPLICIT_ORBIT:
+        return spec.payload
+    if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
+        u = spec.payload.canonical_representative()
+        return plan.context.the_group.orbit(u)
+    if spec.form == OrbitSpecForm.REPRESENTATIVE_ATOM:
+        return plan.context.the_group.orbit(spec.payload)
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Shared helper: attempt to partition an orbit into (atom, -atom) pairs
+# ---------------------------------------------------------------------------
+
+def _try_neg_pair_partition(orbit: list) -> list | None:
+    """
+    Try to partition orbit into (atom, -atom) pairs.
+
+    Returns a list of one representative per pair (the sign=+1 atom of each
+    pair), or None if the orbit cannot be so partitioned.
+
+    The check is purely structural — atoms are grouped by (operation, labels)
+    and each group must contain exactly two atoms that satisfy are_negatives().
+    No inference from ArgumentSymmetry flags is made.
+    """
+    if len(orbit) % 2 != 0:
+        return None
+
+    groups: dict = defaultdict(list)
+    for atom in orbit:
+        groups[(atom.operation, atom.labels)].append(atom)
+
+    representatives = []
+    for _key, pair in groups.items():
+        if len(pair) != 2:
+            return None
+        a, b = pair
+        if not are_negatives(a, b):
+            return None
+        representatives.append(a if a.sign == +1 else b)
+
+    return representatives
+
+
+# ---------------------------------------------------------------------------
+# SortEncoder
 # ---------------------------------------------------------------------------
 
 class SortEncoder(AtomOrbitEncoder):
@@ -38,10 +122,9 @@ class SortEncoder(AtomOrbitEncoder):
     Constructed by SortEncoderFactory.assess() with the orbit pre-computed.
     encode(event) requires only the event data.
 
-    For ANTISYMMETRIC operations the orbit contains {a_k, -a_k} pairs, so the
-    sorted output is antisymmetric about 0 and only half the entries carry
-    independent information.  This encoder does not exploit that redundancy;
-    PolyEncoderFactory provides a more compressed alternative for those orbits.
+    For orbits whose atoms come in (atom, -atom) pairs, HalfSortEncoderFactory
+    provides a more compressed alternative and will be preferred when both
+    factories are registered.
     """
 
     def __init__(self, orbit: list) -> None:
@@ -53,11 +136,11 @@ class SortEncoder(AtomOrbitEncoder):
 
     @property
     def priority(self) -> float:
-        return _PRIORITY
+        return _SORT_PRIORITY
 
     @property
     def method_name(self) -> str:
-        return _METHOD_NAME
+        return "sort"
 
     def encode(self, event: dict) -> EncodingResult:
         print(f"Sort encoder is evaluating {self._orbit} on Event {event}")
@@ -65,67 +148,93 @@ class SortEncoder(AtomOrbitEncoder):
         values = np.sort(np.array(vals, dtype=np.float64))
         return EncodingResult(
             values=values,
-            metadata={"method": _METHOD_NAME, "orbit_size": len(self._orbit)},
+            metadata={"method": "sort", "orbit_size": len(self._orbit)},
         )
 
 
 # ---------------------------------------------------------------------------
-# SortEncoderFactory — creates SortEncoder instances
+# SortEncoderFactory
 # ---------------------------------------------------------------------------
 
 class SortEncoderFactory(AtomOrbitEncoderFactory):
     """
     Factory that produces SortEncoder instances for any well-formed OrbitSpec.
 
-    assess() resolves the orbit from the spec (using TheGroup.orbit() for
-    REPRESENTATIVE_ATOM and FLAVOURED_OPERATOR forms, or taking the payload
-    directly for EXPLICIT_ORBIT), then returns a single SortEncoder wrapping
-    that orbit.
-
-    Returns [] for unrecognised spec forms.
+    Handles all three OrbitSpec forms.  Returns [] only for unrecognised forms.
+    Use as the universal fallback in an OrbitEncoderFactory.
     """
 
     def assess(self, spec: OrbitSpec, plan: Plan) -> list[AtomOrbitEncoder]:
-        """
-        A sort encoder can simply sort a set PROVIDED that the set itself is
-        invariant under the group action contained within the plan.
-        For example:
-
-           * if the plan's group G permutes {a,b,c} then it's     fine to sort encode S={a.b, a.c, b.c} since G.S = {S}.
-           * if the plan's group G permutes {a,b,c} then it's NOT fine to sort encode S={a.b, a.c} since G.S != {S}.
-           * if the plan's group G permutes {a,b} then it's     fine to sort encode S={a.b} since G.S = {S}.
-           * if the plan's group G permutes {a,b} then it's NOT fine to sort encode S={eps2(a.b)} since G.S != {S}.
-
-        So, the most naive implementation takes every element of the group, uses it to
-        modify a list of atoms, and then sees if that list is invariant.
-        """
-
-        # TODO: For EXPLICIT_ORBIT we should verify the payload really is a G-orbit:
-        #   (1) it is a set, and (2) its set of elements does not change when any
-        #   group element acts on it.  Disabled for now (if False) while the check
-        #   is not yet implemented.
-        if False and spec.form == OrbitSpecForm.EXPLICIT_ORBIT:  # noqa: SIM210
-            raise NotImplementedError(
-                "We should also check that the orbit really is an orbit, by "
-                "checking that (1) it is a set, and (2) its set of elements does "
-                "not change when any group element acts on it."
-            )
-            orbit = spec.payload
-            assert len(orbit) >= 1                                          # TODO: can remove in future
-            assert len(orbit) == plan.context.the_group.orbit_size(orbit[0])  # TODO: can remove in future
-            return [SortEncoder(orbit)]  # TODO: remove large code repetition (here and ~15 lines further on)
-
-        if spec.form == OrbitSpecForm.EXPLICIT_ORBIT:
-            orbit = spec.payload
-            return [SortEncoder(orbit)]
-
-        if spec.form == OrbitSpecForm.FLAVOURED_OPERATOR:
-            u = spec.payload.canonical_representative()
-        elif spec.form == OrbitSpecForm.REPRESENTATIVE_ATOM:
-            u = spec.payload
-        else:
+        orbit = _orbit_from_spec(spec, plan)
+        if orbit is None:
             return []
-
-        orbit = plan.context.the_group.orbit(u)
-        assert len(orbit) == plan.context.the_group.orbit_size(u)  # TODO: remove if never seems to fail
         return [SortEncoder(orbit)]
+
+
+# ---------------------------------------------------------------------------
+# HalfSortEncoder
+# ---------------------------------------------------------------------------
+
+class HalfSortEncoder(AtomOrbitEncoder):
+    """
+    Compressed orbit encoder for orbits that partition into (atom, -atom) pairs.
+
+    Stores one representative atom per pair (the sign=+1 member).  encode()
+    evaluates each representative, takes the absolute value, and sorts the
+    results.  Output length is half the orbit size.
+
+    Constructed by HalfSortEncoderFactory.assess(), which verifies the pairing
+    condition physically before returning this encoder.
+    """
+
+    def __init__(self, representatives: list) -> None:
+        self._representatives = list(representatives)
+
+    @property
+    def output_dim(self) -> int:
+        return len(self._representatives)
+
+    @property
+    def priority(self) -> float:
+        return _HALF_SORT_PRIORITY
+
+    @property
+    def method_name(self) -> str:
+        return "half_sort"
+
+    @property
+    def notional_output_dim(self) -> int:
+        return 2 * len(self._representatives)
+
+    def encode(self, event: dict) -> EncodingResult:
+        print(f"HalfSort encoder is evaluating {self._representatives} on Event {event}")
+        vals = [abs(evaluate(a, event)) for a in self._representatives]
+        values = np.sort(np.array(vals, dtype=np.float64))
+        return EncodingResult(
+            values=values,
+            metadata={"method": "half_sort", "orbit_size": 2 * len(self._representatives)},
+        )
+
+
+# ---------------------------------------------------------------------------
+# HalfSortEncoderFactory
+# ---------------------------------------------------------------------------
+
+class HalfSortEncoderFactory(AtomOrbitEncoderFactory):
+    """
+    Factory that produces HalfSortEncoder instances for orbits that can be
+    partitioned into (atom, -atom) pairs.
+
+    assess() physically attempts the partition using _try_neg_pair_partition().
+    Returns [] — deferring to a fallback factory — if the orbit cannot be so
+    partitioned or if the spec form is unrecognised.
+    """
+
+    def assess(self, spec: OrbitSpec, plan: Plan) -> list[AtomOrbitEncoder]:
+        orbit = _orbit_from_spec(spec, plan)
+        if orbit is None:
+            return []
+        reps = _try_neg_pair_partition(orbit)
+        if reps is None:
+            return []
+        return [HalfSortEncoder(reps)]

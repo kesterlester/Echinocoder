@@ -21,7 +21,7 @@ from .describe import SegmentInfo
 from .sign_correlation import SignCorrelationType
 from .encoders import (
     OrbitEncoderFactory,
-    SortEncoderFactory, PolyEncoderFactory,
+    SortEncoderFactory, HalfSortEncoderFactory, PolyEncoderFactory,
     standard_row_pair_factories,
     OverlapBlockEncoderFactory,
     Phase2Encoder, Phase2EncoderFactory,
@@ -37,6 +37,7 @@ __all__ = [
     "SignCorrelationType",
     "OrbitEncoderFactory",
     "SortEncoderFactory",
+    "HalfSortEncoderFactory",
     "PolyEncoderFactory",
     "standard_row_pair_factories",
     "OverlapBlockEncoderFactory",

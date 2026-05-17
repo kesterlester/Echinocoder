@@ -174,6 +174,12 @@ class AtomOrbitEncoder(ABC):
         """Short label for the encoding strategy.  Override to provide one."""
         return None
 
+    @property
+    def notional_output_dim(self) -> int:
+        """Uncompressed output size (before any compression the encoder applies).
+        Override when output_dim < full orbit size, e.g. HalfSortEncoder."""
+        return self.output_dim
+
     @abstractmethod
     def encode(self, event: dict) -> EncodingResult:
         """
