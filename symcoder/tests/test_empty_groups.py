@@ -1,12 +1,8 @@
 """
 Tests verifying that symcoder.encode() handles contexts with empty VectorTypes.
-NOTE: These tests use the pre-registry (no-registry) path which has been removed.
-Disabled here; will be replaced by registry-based equivalents.
 """
 import numpy as np
 import pytest
-
-pytestmark = pytest.mark.skip(reason="Pre-registry path removed; will be replaced by registry-based tests")
 from symatom import ArgumentSymmetry, VectorType, Context, Plan
 from symcoder import EvaluableOperation, encode
 
@@ -28,17 +24,17 @@ def event():
     }
 
 
-def test_encode_with_empty_group_returns_ndarray(dot, event):
+def test_encode_with_empty_group_returns_ndarray(dot, event, registry, phase2_factory):
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ())
     ctx  = Context((electrons, muons))
     plan = Plan(context=ctx, operations=(dot,))
-    result = encode(plan, event)
+    result = encode(plan, event, registry, phase2_factory)
     assert isinstance(result, np.ndarray)
     assert result.dtype == np.float64
     assert len(result) > 0
 
-def test_encode_with_empty_group_same_as_without(dot, event):
+def test_encode_with_empty_group_same_as_without(dot, event, registry, phase2_factory):
     """
     Encoding with an empty muons group gives the same result as encoding
     with no muons group at all (the empty group contributes nothing).
@@ -48,9 +44,12 @@ def test_encode_with_empty_group_same_as_without(dot, event):
     ctx_without = Context((electrons,))
     plan_with    = Plan(context=ctx_with,    operations=(dot,))
     plan_without = Plan(context=ctx_without, operations=(dot,))
-    np.testing.assert_array_equal(encode(plan_with, event), encode(plan_without, event))
+    np.testing.assert_array_equal(
+        encode(plan_with,    event, registry, phase2_factory),
+        encode(plan_without, event, registry, phase2_factory),
+    )
 
-def test_encode_with_empty_group_permutation_invariant(dot, event):
+def test_encode_with_empty_group_permutation_invariant(dot, event, registry, phase2_factory):
     """Swapping electron labels leaves the encoding unchanged."""
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ())
@@ -58,12 +57,15 @@ def test_encode_with_empty_group_permutation_invariant(dot, event):
     plan = Plan(context=ctx, operations=(dot,))
     event_swapped = dict(event)
     event_swapped["a"], event_swapped["b"] = event["b"], event["a"]
-    np.testing.assert_array_almost_equal(encode(plan, event), encode(plan, event_swapped))
+    np.testing.assert_array_almost_equal(
+        encode(plan, event,         registry, phase2_factory),
+        encode(plan, event_swapped, registry, phase2_factory),
+    )
 
-def test_encode_all_empty_groups_returns_empty(dot):
+def test_encode_all_empty_groups_returns_empty(dot, registry, phase2_factory):
     """With all groups empty there are no atoms, so encode returns an empty array."""
     ctx  = Context((VectorType("electrons", ()), VectorType("muons", ())))
     plan = Plan(context=ctx, operations=(dot,))
-    result = encode(plan, {})
+    result = encode(plan, {}, registry, phase2_factory)
     assert isinstance(result, np.ndarray)
     assert len(result) == 0
