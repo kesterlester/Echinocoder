@@ -65,8 +65,13 @@ class _BasePairEncoder(PairOrbitEncoder):
     generates an ASSOC SegmentInfo with start=0 (a placeholder; the
     overlap-block encoder adjusts it to the correct absolute position).
     NullPairEncoder overrides both describe() and output_dim.
+
+    _NOTIONAL_FACTOR is the ratio of the SS-equivalent size to the actual output
+    size, i.e. |achievable_set|.  SS=1, SA=AS=NEG=2, AA=4.  Used to populate
+    notional_length in describe() so the full column shows the uncompressed size.
     """
-    _METHOD_NAME: str = "?"
+    _METHOD_NAME:     str = "?"
+    _NOTIONAL_FACTOR: int = 1
 
     def __init__(self, pf, plan) -> None:
         self._pf         = pf
@@ -98,7 +103,7 @@ class _BasePairEncoder(PairOrbitEncoder):
             flavour_v      = tuple(self._pf.flavour_v.counts),
             overlap        = tuple(self._pf.overlap),
             symmetry_class = _symmetry_class(self._pf),
-            notional_length= self.output_dim,
+            notional_length= self._NOTIONAL_FACTOR * self.output_dim,
             method_name    = self.method_name,
             example        = _assoc_example(
                 self._pf.op_u.name, self._pf.flavour_u.counts,
@@ -207,7 +212,8 @@ class SAPairEncoder(_BasePairEncoder):
     Orbit: {z_k, conj(z_k)}  (conjugate-closed, 2n elements).
     Polynomial has real coefficients; packs n independent reals as n complex → 2n reals.
     """
-    _METHOD_NAME = "sa"
+    _METHOD_NAME     = "sa"
+    _NOTIONAL_FACTOR = 2
 
     def encode(self, event: dict) -> EncodingResult:
         z_pos = np.array(eval_pair_orbit_positive(self._pf, self._plan, event), dtype=complex)
@@ -244,7 +250,8 @@ class ASPairEncoder(_BasePairEncoder):
     Even-degree polynomial coefficients are real; odd-degree are purely imaginary.
     Packs as: coeffs.imag[0::2] + 1j*coeffs.real[1::2] → n complex → 2n reals.
     """
-    _METHOD_NAME = "as"
+    _METHOD_NAME     = "as"
+    _NOTIONAL_FACTOR = 2
 
     def encode(self, event: dict) -> EncodingResult:
         z_pos = np.array(eval_pair_orbit_positive(self._pf, self._plan, event), dtype=complex)
@@ -279,7 +286,8 @@ class AAPairEncoder(_BasePairEncoder):
     Invariant: {z_k², conj(z_k²)}  (conjugate-closed, 2n elements).
     Polynomial has real coefficients; packs n independent reals as n complex → 2n reals.
     """
-    _METHOD_NAME = "aa"
+    _METHOD_NAME     = "aa"
+    _NOTIONAL_FACTOR = 4
 
     def encode(self, event: dict) -> EncodingResult:
         z_pos = np.array(eval_pair_orbit_positive(self._pf, self._plan, event), dtype=complex)
@@ -320,7 +328,8 @@ class NEGPairEncoder(_BasePairEncoder):
     conj(z_k²) is NOT in the orbit under TYPE_NEG, and adding it loses
     Im(z_k²) = 2·Re(z_k)·Im(z_k).
     """
-    _METHOD_NAME = "neg"
+    _METHOD_NAME     = "neg"
+    _NOTIONAL_FACTOR = 2
 
     def encode(self, event: dict) -> EncodingResult:
         z_pos = np.array(eval_pair_orbit_positive(self._pf, self._plan, event), dtype=complex)
