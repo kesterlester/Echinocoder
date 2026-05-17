@@ -44,6 +44,7 @@ for s in segs:
 print('=== Stop ===')
 
 print()
+np.random.seed(42)
 event = {l: np.random.randn(3) for l in ctx.all_labels}
 
 out = encode(plan, event, orbit_factory, phase2_factory)
