@@ -11,8 +11,7 @@ def eval_pair_orbit(pf: PairFlavour, plan: Plan, event: dict) -> list:
     representative of this PairFlavour.
 
     Returns pf.orbit_size(type_sizes) values.  Used as the brute-force
-    reference and in group-theory tests; encode() uses eval_pair_orbit_positive
-    instead.
+    reference and in group-theory tests.
     """
     return [
         complex(evaluate(u, event), evaluate(v, event))
