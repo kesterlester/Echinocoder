@@ -33,7 +33,7 @@ from typing import Any
 
 import numpy as np
 
-from symcoder.describe import SegmentInfo, _assoc_example, _symmetry_class
+from symcoder.describe import SegmentInfo, _assoc_example
 from .pair_base import PairOrbitEncoder, PairOrbitEncoderFactory, PairOrbitSpec, EncodingResult
 
 
@@ -130,7 +130,7 @@ class OverlapBlockEncoder:
                     op_v            = pf.op_v.name,
                     flavour_v       = tuple(pf.flavour_v.counts),
                     overlap         = tuple(pf.overlap),
-                    symmetry_class  = _symmetry_class(pf),
+                    symmetry_class  = sel.encoder.method_name,
                     notional_length = sel.encoder.output_dim,
                     method_name     = sel.encoder.method_name,
                     example         = _assoc_example(

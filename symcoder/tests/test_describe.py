@@ -222,23 +222,23 @@ def test_null_comp_is_largest_non_self_in_block(dot, eps3, ctx, orbit_factory, p
 # Symmetry class labels
 # ---------------------------------------------------------------------------
 
-def test_symmetry_class_ss_for_dot_dot(dot, ctx, orbit_factory, phase2_factory):
+def test_symmetry_class_11_for_dot_dot(dot, ctx, orbit_factory, phase2_factory):
     plan = Plan(context=ctx, operations=(dot,))
     assoc_segs = [s for s in describe_encoding(plan, orbit_factory, phase2_factory) if s.kind == "ASSOC"]
-    assert all(s.symmetry_class == "SS" for s in assoc_segs)
+    assert all(s.symmetry_class == "11" for s in assoc_segs)
 
-def test_symmetry_class_aa_for_eps3_eps3(eps3, ctx, orbit_factory, phase2_factory):
+def test_symmetry_class_22_for_eps3_eps3(eps3, ctx, orbit_factory, phase2_factory):
     plan = Plan(context=ctx, operations=(eps3,))
     assoc_segs = [s for s in describe_encoding(plan, orbit_factory, phase2_factory) if s.kind == "ASSOC"]
-    assert all(s.symmetry_class == "AA" for s in assoc_segs)
+    assert all(s.symmetry_class == "22" for s in assoc_segs)
 
 def test_symmetry_classes_present_in_mixed_plan(dot, eps3, ctx, orbit_factory, phase2_factory):
     plan = Plan(context=ctx, operations=(dot, eps3))
     pair_segs = [s for s in describe_encoding(plan, orbit_factory, phase2_factory) if s.kind in _PAIR_KINDS]
     classes = {s.symmetry_class for s in pair_segs}
-    assert "SS" in classes
-    assert "AA" in classes
-    assert "SA" in classes or "AS" in classes
+    assert "11" in classes
+    assert "22" in classes
+    assert "12" in classes or "21" in classes
 
 
 # ---------------------------------------------------------------------------
@@ -304,8 +304,8 @@ def test_all_rows_same_number_of_base_tokens(plan, orbit_factory, phase2_factory
 
 def test_full_column_geq_length_for_assoc_and_orbit(plan, orbit_factory, phase2_factory):
     """For active segments (ASSOC, ORBIT), notional_length >= length.
-    Compressed encoders (half_sort, SA, AS, AA, NEG) have notional_length > length;
-    uncompressed encoders (sort, SS) have notional_length == length."""
+    Compressed encoders (half_sort, TYPE_12/21/22/NEG) have notional_length > length;
+    uncompressed encoders (sort, TYPE_11) have notional_length == length."""
     for s in describe_encoding(plan, orbit_factory, phase2_factory):
         if s.kind in ("ASSOC", "ORBIT"):
             nl = s.notional_length if s.notional_length is not None else s.length

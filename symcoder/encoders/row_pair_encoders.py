@@ -10,12 +10,12 @@ selects among the offered encoders.
 
 Factories and what they handle
 --------------------------------
-SelfPairEncoderFactory   self-pairs (any type)    → NullPairEncoder   output_dim=0
-SSPairEncoderFactory     TYPE_11 pairs            → SSPairEncoder      output_dim=2n
-SAPairEncoderFactory     TYPE_12 pairs            → SAPairEncoder      output_dim=2n
-ASPairEncoderFactory     TYPE_21 pairs            → ASPairEncoder      output_dim=2n
-AAPairEncoderFactory     TYPE_22 pairs            → AAPairEncoder      output_dim=2n
-NEGPairEncoderFactory    TYPE_NEG pairs           → NEGPairEncoder     output_dim=2n
+SelfPairEncoderFactory    self-pairs (any type)    → NullPairEncoder    output_dim=0
+Type11PairEncoderFactory  TYPE_11 pairs            → Type11PairEncoder  output_dim=2n
+Type12PairEncoderFactory  TYPE_12 pairs            → Type12PairEncoder  output_dim=2n
+Type21PairEncoderFactory  TYPE_21 pairs            → Type21PairEncoder  output_dim=2n
+Type22PairEncoderFactory  TYPE_22 pairs            → Type22PairEncoder  output_dim=2n
+NegPairEncoderFactory     TYPE_NEG pairs           → NegPairEncoder     output_dim=2n
 
 Here n = pf.count(type_sizes) — the number of base atom-pairs in the orbit.
 
@@ -46,7 +46,7 @@ from symcoder.sign_correlation import (
     _complex_to_reals,
 )
 from symcoder.pairs import eval_pair_orbit_positive, _is_self_pair
-from symcoder.describe import SegmentInfo, _assoc_example, _symmetry_class
+from symcoder.describe import SegmentInfo, _assoc_example
 from ._embedder import zip_embed
 from .pair_base import PairOrbitEncoder, PairOrbitEncoderFactory, PairOrbitSpec, EncodingResult
 
@@ -66,9 +66,10 @@ class _BasePairEncoder(PairOrbitEncoder):
     overlap-block encoder adjusts it to the correct absolute position).
     NullPairEncoder overrides both describe() and output_dim.
 
-    _NOTIONAL_FACTOR is the ratio of the SS-equivalent size to the actual output
-    size, i.e. |achievable_set|.  SS=1, SA=AS=NEG=2, AA=4.  Used to populate
-    notional_length in describe() so the full column shows the uncompressed size.
+    _NOTIONAL_FACTOR is the ratio of the TYPE_11-equivalent size to the actual
+    output size, i.e. |achievable_set|.  TYPE_11=1, TYPE_12=TYPE_21=NEG=2,
+    TYPE_22=4.  Used to populate notional_length in describe() so the full
+    column shows the uncompressed size.
     """
     _METHOD_NAME:     str = "?"
     _NOTIONAL_FACTOR: int = 1
@@ -102,7 +103,7 @@ class _BasePairEncoder(PairOrbitEncoder):
             op_v           = self._pf.op_v.name,
             flavour_v      = tuple(self._pf.flavour_v.counts),
             overlap        = tuple(self._pf.overlap),
-            symmetry_class = _symmetry_class(self._pf),
+            symmetry_class = self._METHOD_NAME,
             notional_length= self._NOTIONAL_FACTOR * self.output_dim,
             method_name    = self.method_name,
             example        = _assoc_example(
@@ -148,7 +149,7 @@ class NullPairEncoder(_BasePairEncoder):
             op_v            = self._pf.op_v.name,
             flavour_v       = tuple(self._pf.flavour_v.counts),
             overlap         = tuple(self._pf.overlap),
-            symmetry_class  = _symmetry_class(self._pf),
+            symmetry_class  = self._METHOD_NAME,
             notional_length = 2 * self._n,
             method_name     = self.method_name,
             example         = _assoc_example(
@@ -169,16 +170,16 @@ class SelfPairEncoderFactory(PairOrbitEncoderFactory):
 
 
 # ---------------------------------------------------------------------------
-# SSPairEncoder / SSPairEncoderFactory  (TYPE_11)
+# Type11PairEncoder / Type11PairEncoderFactory  (TYPE_11)
 # ---------------------------------------------------------------------------
 
-class SSPairEncoder(_BasePairEncoder):
+class Type11PairEncoder(_BasePairEncoder):
     """
-    TYPE_11 encoding: achievable set = {(+1,+1)}, no sign changes.
+    TYPE_11 encoding: orbit has one achievable sign combination.
 
     Embeds z_pos directly: n roots → n complex polynomial coefficients → 2n reals.
     """
-    _METHOD_NAME = "ss"
+    _METHOD_NAME = "11"
 
     def encode(self, event: dict) -> EncodingResult:
         z_pos = np.array(eval_pair_orbit_positive(self._pf, self._plan, event), dtype=complex)
@@ -190,29 +191,29 @@ class SSPairEncoder(_BasePairEncoder):
         )
 
 
-class SSPairEncoderFactory(PairOrbitEncoderFactory):
-    """Returns SSPairEncoder for TYPE_11 pairs; [] otherwise."""
+class Type11PairEncoderFactory(PairOrbitEncoderFactory):
+    """Returns Type11PairEncoder for TYPE_11 pairs; [] otherwise."""
 
     def assess(self, spec: PairOrbitSpec, plan) -> list[PairOrbitEncoder]:
         if _is_self_pair(spec.pf):
             return []
         if _sign_correlation_type_from_pf(spec.pf) == SignCorrelationType.TYPE_11:
-            return [SSPairEncoder(spec.pf, plan)]
+            return [Type11PairEncoder(spec.pf, plan)]
         return []
 
 
 # ---------------------------------------------------------------------------
-# SAPairEncoder / SAPairEncoderFactory  (TYPE_12: v-sign flips freely)
+# Type12PairEncoder / Type12PairEncoderFactory  (TYPE_12)
 # ---------------------------------------------------------------------------
 
-class SAPairEncoder(_BasePairEncoder):
+class Type12PairEncoder(_BasePairEncoder):
     """
-    TYPE_12 encoding: achievable set = {(+1,+1),(+1,-1)}, only v's sign flips.
+    TYPE_12 encoding: orbit has two achievable sign combinations; v-sign flips freely.
 
     Orbit: {z_k, conj(z_k)}  (conjugate-closed, 2n elements).
     Polynomial has real coefficients; packs n independent reals as n complex → 2n reals.
     """
-    _METHOD_NAME     = "sa"
+    _METHOD_NAME     = "12"
     _NOTIONAL_FACTOR = 2
 
     def encode(self, event: dict) -> EncodingResult:
@@ -227,30 +228,30 @@ class SAPairEncoder(_BasePairEncoder):
         )
 
 
-class SAPairEncoderFactory(PairOrbitEncoderFactory):
-    """Returns SAPairEncoder for TYPE_12 pairs; [] otherwise."""
+class Type12PairEncoderFactory(PairOrbitEncoderFactory):
+    """Returns Type12PairEncoder for TYPE_12 pairs; [] otherwise."""
 
     def assess(self, spec: PairOrbitSpec, plan) -> list[PairOrbitEncoder]:
         if _is_self_pair(spec.pf):
             return []
         if _sign_correlation_type_from_pf(spec.pf) == SignCorrelationType.TYPE_12:
-            return [SAPairEncoder(spec.pf, plan)]
+            return [Type12PairEncoder(spec.pf, plan)]
         return []
 
 
 # ---------------------------------------------------------------------------
-# ASPairEncoder / ASPairEncoderFactory  (TYPE_21: u-sign flips freely)
+# Type21PairEncoder / Type21PairEncoderFactory  (TYPE_21)
 # ---------------------------------------------------------------------------
 
-class ASPairEncoder(_BasePairEncoder):
+class Type21PairEncoder(_BasePairEncoder):
     """
-    TYPE_21 encoding: achievable set = {(+1,+1),(-1,+1)}, only u's sign flips.
+    TYPE_21 encoding: orbit has two achievable sign combinations; u-sign flips freely.
 
     Orbit: {z_k, -conj(z_k)}  (anti-conjugate-closed, 2n elements).
     Even-degree polynomial coefficients are real; odd-degree are purely imaginary.
     Packs as: coeffs.imag[0::2] + 1j*coeffs.real[1::2] → n complex → 2n reals.
     """
-    _METHOD_NAME     = "as"
+    _METHOD_NAME     = "21"
     _NOTIONAL_FACTOR = 2
 
     def encode(self, event: dict) -> EncodingResult:
@@ -264,29 +265,29 @@ class ASPairEncoder(_BasePairEncoder):
         )
 
 
-class ASPairEncoderFactory(PairOrbitEncoderFactory):
-    """Returns ASPairEncoder for TYPE_21 pairs; [] otherwise."""
+class Type21PairEncoderFactory(PairOrbitEncoderFactory):
+    """Returns Type21PairEncoder for TYPE_21 pairs; [] otherwise."""
 
     def assess(self, spec: PairOrbitSpec, plan) -> list[PairOrbitEncoder]:
         if _is_self_pair(spec.pf):
             return []
         if _sign_correlation_type_from_pf(spec.pf) == SignCorrelationType.TYPE_21:
-            return [ASPairEncoder(spec.pf, plan)]
+            return [Type21PairEncoder(spec.pf, plan)]
         return []
 
 
 # ---------------------------------------------------------------------------
-# AAPairEncoder / AAPairEncoderFactory  (TYPE_22: both signs flip freely)
+# Type22PairEncoder / Type22PairEncoderFactory  (TYPE_22)
 # ---------------------------------------------------------------------------
 
-class AAPairEncoder(_BasePairEncoder):
+class Type22PairEncoder(_BasePairEncoder):
     """
-    TYPE_22 encoding: achievable set = all four sign combinations.
+    TYPE_22 encoding: orbit has all four achievable sign combinations.
 
     Invariant: {z_k², conj(z_k²)}  (conjugate-closed, 2n elements).
     Polynomial has real coefficients; packs n independent reals as n complex → 2n reals.
     """
-    _METHOD_NAME     = "aa"
+    _METHOD_NAME     = "22"
     _NOTIONAL_FACTOR = 4
 
     def encode(self, event: dict) -> EncodingResult:
@@ -302,24 +303,25 @@ class AAPairEncoder(_BasePairEncoder):
         )
 
 
-class AAPairEncoderFactory(PairOrbitEncoderFactory):
-    """Returns AAPairEncoder for TYPE_22 pairs; [] otherwise."""
+class Type22PairEncoderFactory(PairOrbitEncoderFactory):
+    """Returns Type22PairEncoder for TYPE_22 pairs; [] otherwise."""
 
     def assess(self, spec: PairOrbitSpec, plan) -> list[PairOrbitEncoder]:
         if _is_self_pair(spec.pf):
             return []
         if _sign_correlation_type_from_pf(spec.pf) == SignCorrelationType.TYPE_22:
-            return [AAPairEncoder(spec.pf, plan)]
+            return [Type22PairEncoder(spec.pf, plan)]
         return []
 
 
 # ---------------------------------------------------------------------------
-# NEGPairEncoder / NEGPairEncoderFactory  (TYPE_NEG: correlated negation only)
+# NegPairEncoder / NegPairEncoderFactory  (TYPE_NEG)
 # ---------------------------------------------------------------------------
 
-class NEGPairEncoder(_BasePairEncoder):
+class NegPairEncoder(_BasePairEncoder):
     """
-    TYPE_NEG encoding: achievable set = {(+1,+1),(-1,-1)}, correlated negation.
+    TYPE_NEG encoding: orbit has two achievable sign combinations with correlated
+    negation — both signs always flip together.
 
     Invariant: {z_k²}  (n elements, since (-z_k)² = z_k²).
     Embeds z_pos² directly: n roots → n complex coefficients → 2n reals.
@@ -342,14 +344,14 @@ class NEGPairEncoder(_BasePairEncoder):
         )
 
 
-class NEGPairEncoderFactory(PairOrbitEncoderFactory):
-    """Returns NEGPairEncoder for TYPE_NEG pairs; [] otherwise."""
+class NegPairEncoderFactory(PairOrbitEncoderFactory):
+    """Returns NegPairEncoder for TYPE_NEG pairs; [] otherwise."""
 
     def assess(self, spec: PairOrbitSpec, plan) -> list[PairOrbitEncoder]:
         if _is_self_pair(spec.pf):
             return []
         if _sign_correlation_type_from_pf(spec.pf) == SignCorrelationType.TYPE_NEG:
-            return [NEGPairEncoder(spec.pf, plan)]
+            return [NegPairEncoder(spec.pf, plan)]
         return []
 
 
@@ -368,9 +370,9 @@ def standard_row_pair_factories() -> list[PairOrbitEncoderFactory]:
     """
     return [
         SelfPairEncoderFactory(),
-        SSPairEncoderFactory(),
-        SAPairEncoderFactory(),
-        ASPairEncoderFactory(),
-        AAPairEncoderFactory(),
-        NEGPairEncoderFactory(),
+        Type11PairEncoderFactory(),
+        Type12PairEncoderFactory(),
+        Type21PairEncoderFactory(),
+        Type22PairEncoderFactory(),
+        NegPairEncoderFactory(),
     ]

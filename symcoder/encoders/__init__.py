@@ -18,13 +18,13 @@ PairOrbitSpec               — wraps a PairFlavour (the pair-encoding unit)
 PairOrbitEncoder            — ABC for a ready-to-use encoder bound to one pair spec
 PairOrbitEncoderFactory     — ABC for a factory that creates PairOrbitEncoders
 
-NullPairEncoder / SelfPairEncoderFactory  — null encoding for self-pairs (output_dim=0)
-SSPairEncoder / SSPairEncoderFactory      — TYPE_11 pairs
-SAPairEncoder / SAPairEncoderFactory      — TYPE_12 pairs
-ASPairEncoder / ASPairEncoderFactory      — TYPE_21 pairs
-AAPairEncoder / AAPairEncoderFactory      — TYPE_22 pairs
-NEGPairEncoder / NEGPairEncoderFactory    — TYPE_NEG pairs
-standard_row_pair_factories()             — convenience: all six factories in order
+NullPairEncoder / SelfPairEncoderFactory        — null encoding for self-pairs (output_dim=0)
+Type11PairEncoder / Type11PairEncoderFactory    — TYPE_11 pairs
+Type12PairEncoder / Type12PairEncoderFactory    — TYPE_12 pairs
+Type21PairEncoder / Type21PairEncoderFactory    — TYPE_21 pairs
+Type22PairEncoder / Type22PairEncoderFactory    — TYPE_22 pairs
+NegPairEncoder / NegPairEncoderFactory          — TYPE_NEG pairs
+standard_row_pair_factories()                   — convenience: all six factories in order
 
 Phase 2 — Overlap Block Encoders (middle level)
 -------------------------------------------------
@@ -56,12 +56,12 @@ from .pair_base import (
     PairOrbitEncoderFactory,
 )
 from .row_pair_encoders import (
-    NullPairEncoder,    SelfPairEncoderFactory,
-    SSPairEncoder,      SSPairEncoderFactory,
-    SAPairEncoder,      SAPairEncoderFactory,
-    ASPairEncoder,      ASPairEncoderFactory,
-    AAPairEncoder,      AAPairEncoderFactory,
-    NEGPairEncoder,     NEGPairEncoderFactory,
+    NullPairEncoder,        SelfPairEncoderFactory,
+    Type11PairEncoder,      Type11PairEncoderFactory,
+    Type12PairEncoder,      Type12PairEncoderFactory,
+    Type21PairEncoder,      Type21PairEncoderFactory,
+    Type22PairEncoder,      Type22PairEncoderFactory,
+    NegPairEncoder,         NegPairEncoderFactory,
     standard_row_pair_factories,
 )
 from .overlap_block import (
@@ -90,12 +90,12 @@ __all__ = [
     "PairOrbitSpec",
     "PairOrbitEncoder",
     "PairOrbitEncoderFactory",
-    "NullPairEncoder",    "SelfPairEncoderFactory",
-    "SSPairEncoder",      "SSPairEncoderFactory",
-    "SAPairEncoder",      "SAPairEncoderFactory",
-    "ASPairEncoder",      "ASPairEncoderFactory",
-    "AAPairEncoder",      "AAPairEncoderFactory",
-    "NEGPairEncoder",     "NEGPairEncoderFactory",
+    "NullPairEncoder",        "SelfPairEncoderFactory",
+    "Type11PairEncoder",      "Type11PairEncoderFactory",
+    "Type12PairEncoder",      "Type12PairEncoderFactory",
+    "Type21PairEncoder",      "Type21PairEncoderFactory",
+    "Type22PairEncoder",      "Type22PairEncoderFactory",
+    "NegPairEncoder",         "NegPairEncoderFactory",
     "standard_row_pair_factories",
     # Phase 2 block level
     "OverlapBlockSpec",

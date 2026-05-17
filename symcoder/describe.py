@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from itertools import groupby
-from symatom.atoms import ArgumentSymmetry
 from symatom.rep import canonical_pair_flavours
 from symatom import repS
 from .pairs import _is_self_pair
@@ -31,11 +30,6 @@ def _assoc_example(op_u: str, flavour_u: tuple, op_v: str, flavour_v: tuple,
     v_str = f"{op_v}({','.join(str(l) for l in v_labels)})"
     return f"{u_str}×{v_str}"
 
-
-def _symmetry_class(pf) -> str:
-    u = "A" if pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC else "S"
-    v = "A" if pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC else "S"
-    return f"{u}{v}"
 
 
 def _block_key(pf):
@@ -89,7 +83,8 @@ class SegmentInfo:
     op_v            : name of operation v (None for ORBIT)
     flavour_v       : counts tuple for op_v (None for ORBIT)
     overlap         : shared-label counts per group (None for ORBIT)
-    symmetry_class  : "SS", "SA", "AS", or "AA" (None for ORBIT)
+    symmetry_class  : orbit type label — "11", "12", "21", "22", "neg",
+                      or "null_self" (None for ORBIT)
     sign_compressed : True if ANTISYMMETRIC ORBIT (5c compression applied),
                       False if SYMMETRIC/UNSTRUCTURED ORBIT, None for ASSOC/NULL.
     example         : decorative canonical label string, e.g. 'dot(a,p)' for
