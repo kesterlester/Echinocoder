@@ -2,16 +2,19 @@
 
 ## Key resolved questions
 
-### Form-1 vs form-2 for TYPE_NEG: RESOLVED — always form-1
+### Form-1 vs form-2 for TYPE_NEG: RESOLVED — both forms arise; encoding works for both
 
-TYPE_NEG achievable set = {(+,+),(−,−)}.  A form-2 group {(+u,−v),(−u,+v)} has
-per-group achievable contribution {(+,−),(−,+)}.  Combined with the global
-{(+,+)}, this yields achievable = {(+,−),(−,+)}, which has both u_flips and
-v_flips present → TYPE_22, not TYPE_NEG.
+The earlier proof that TYPE_NEG self-pairing is always form-1 was incorrect.
+Form-2 groups {(+u,−v),(−u,+v)} do arise empirically in self-pairing blocks
+(confirmed by test_neg_self_pairing_reps_u_sign_is_positive).
 
-Therefore: `_try_neg_partition` only accepts groups where signs are (s,s) — i.e.
-form-1 {(+u,+v),(−u,−v)}.  The σ-closure proof for TYPE_NEG holds without caveat.
-The suspect callout in sigma_symmetry_analysis.md can be removed.
+The encoding is correct for both forms because {z_k^2} is τ-closed regardless:
+- Form-1 rep (+u,+v): z = a+ib.  Swap gives z' = b+ia.  z'^2 = −conj(z^2) = τ(z^2) ✓
+- Form-2 rep (+u,−v): z = a−ib.  Swap gives z' = b−ia.  z'^2 = −conj(z^2) = τ(z^2) ✓
+
+`_try_neg_partition` selects the element with u.sign=+1.  For form-1 this gives
+v.sign=+1; for form-2 it gives v.sign=−1.  SelfPairNegEncoder handles both
+identically by embedding z^2 directly (no form check needed).
 
 ### Self-pairing orbit types: RESOLVED — TYPE_11, TYPE_NEG, TYPE_22 only
 
@@ -64,22 +67,18 @@ Note: all orbit elements are the reps for TYPE_11 (orbit_size = n = len(pairs)).
 
 ### SelfPairNegEncoder
 
-Orbit: TYPE_NEG self-pairing.  n reps, all form-1: v.sign==+1 guaranteed.
-σ-closure: {z_k, i·conj(z_k)} both present.
-τ-closure on {z_k²}: τ(w) = −conj(w), and Im(z²) + Im(−conj(z²)) = 0 so
-the two τ-partners have opposite imaginary parts → Im > 0 selects exactly one.
+Orbit: TYPE_NEG self-pairing.  n reps (u.sign==+1; v.sign may be ±1).
+Both form-1 {(+u,+v),(−u,−v)} and form-2 {(+u,−v),(−u,+v)} arise.
+In either case {z_k²} is anti-conj-closed (τ-closed) by the swap argument:
+the swap partner (+v,−u) or (+v,+u) contributes z'^2 = −conj(z²) = τ(z²).
 
 Encode:
 ```python
 z = np.array([complex(evaluate(u,e), evaluate(v,e)) for u,v in self._reps])
-w = z ** 2                            # n values, τ-closed
-w_half = w[w.imag > 0]               # n/2 τ-representatives (generic events)
-# For degenerate events (Im(w)=0): τ-partner has same Im → take Re>0 ones too
-# Full robustness TODO; assert for now:
-assert len(w_half) == self._n // 2
-w_full = np.concatenate([w_half, -np.conj(w_half)])   # n anti-conj-closed values
-coeffs, _, _ = zip_embed(w_full)
-# Anti-conj-closed poly: even-degree imag, odd-degree real
+w = z ** 2                            # n values, anti-conj-closed (τ-closed)
+coeffs, _, _ = zip_embed(w)
+# Anti-conj-closed poly of n elements: even-indexed coeffs purely imaginary,
+# odd-indexed coeffs purely real → exactly n independent reals
 return _complex_to_reals(coeffs.imag[0::2] + 1j * coeffs.real[1::2])   # n reals
 ```
 
@@ -158,10 +157,10 @@ these as normal (output 2n).
 
 ## Implementation status
 
-[ ] _is_self_pairing_block helper
-[ ] SelfPairType11Encoder / SelfPairType11EncoderFactory
-[ ] SelfPairNegEncoder / SelfPairNegEncoderFactory
-[ ] standard_row_pair_factories() update
-[ ] Tests (all 8 above)
-[ ] sigma_symmetry_analysis.md: remove form-1 caveat, add proof
-[ ] Update project memory
+[x] _is_self_pairing_block helper
+[x] SelfPairType11Encoder / SelfPairType11EncoderFactory
+[x] SelfPairNegEncoder / SelfPairNegEncoderFactory
+[x] standard_row_pair_factories() update
+[x] Tests (symcoder/tests/test_sigma_encoders.py — 8 tests, 206 parametrised cases)
+[x] sigma_symmetry_analysis.md: updated Sections 1, 5, 6 with corrected analysis
+[x] Update project memory

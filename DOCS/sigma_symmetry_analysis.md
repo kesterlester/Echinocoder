@@ -53,21 +53,26 @@ is an involution.  Generic elements have σ-orbit of size 2; the fixed point
 condition is `z = i·conj(z)` i.e. `Re(z) = Im(z)`, i.e. `z ∝ (1+i)`, which
 requires `eval(u_k) = eval(v_j)` — a measure-zero condition for generic events.
 
-> **⚠ SUSPECT — needs checking:** The lemma assumes the representatives have
-> both atoms with `sign = +1`.  For TYPE_11 self-pairing this is automatic
-> (SYMMETRIC operations carry no sign degree of freedom under argument permutation,
-> so every orbit element has sign +1 for all current operations).  Note: the
-> code enforces this via a `ValueError` in `_canonicalise_fields`
-> (`symatom/atoms.py`), but that enforcement is known to be too strong in
-> principle — it would break for rank-1 operations or pseudoscalars under spatial
-> parity.  For the current operation set the conclusion holds regardless.  For TYPE_NEG self-pairing the physical partition assigns reps
-> with `u.sign = +1`; the v-sign may be `+1` (form-1 orbit: `{(+u,+v),(−u,−v)}`)
-> or `−1` (form-2 orbit: `{(+u,−v),(−u,+v)}`).  The σ-closure argument goes
-> through cleanly for form-1, but for form-2 the swapped representative
-> `(v_j, u_k)` has `v_j.sign = +1` and `u_k.sign = +1`, giving
-> `z_{jk} = eval(v_j) + i·eval(u_k)`, which is NOT `i·conj(z_{kj})` when
-> `z_{kj} = eval(u_k) + i·eval(−v_j)`.  It must be verified empirically
-> whether TYPE_NEG self-pairing orbits always produce form-1 reps.
+> **Note on TYPE_11:** The lemma assumes both atoms have `sign = +1`.
+> For TYPE_11 self-pairing (SYMMETRIC operations) this is automatic for all
+> current operations — every orbit element has sign +1.  This is enforced via
+> a `ValueError` in `_canonicalise_fields` (`symatom/atoms.py`), though that
+> enforcement is known to be on shaky foundations for rank-1 operations or
+> future pseudoscalar/parity operators (see `parity_sign_debt.md`).
+>
+> **Note on TYPE_NEG (form-1 and form-2 both arise):** `_try_neg_partition`
+> selects reps with `u.sign = +1`; `v.sign` may be `+1` (form-1) or `−1`
+> (form-2).  Both forms arise empirically in self-pairing blocks.
+>
+> For form-2 rep `(+u, −v)`: `z = eval(u) − i·eval(v) = a − ib`.
+> The swap partner is `(+v, −u)`: `z' = eval(v) − i·eval(u) = b − ia`.
+> Then `z'^2 = b^2 − a^2 − 2abi = −conj(a^2 − b^2 − 2abi) = −conj(z^2) = τ(z^2)` ✓.
+>
+> So for form-2, the **swap** partner contributes `τ(z^2)`, not `i·conj(z)`.
+> The σ-closure on `{z_k}` does not hold for form-2, but `{z_k^2}` is still
+> τ-closed (anti-conj-closed) because of the swap symmetry.  The TYPE_NEG
+> σ-encoder works correctly by embedding `{z_k^2}` directly without needing
+> σ-closure on `{z_k}`.
 
 ---
 
@@ -176,37 +181,36 @@ compression at all.
 
 ## 5. The TYPE_NEG Self-Pairing Case
 
-> **⚠ This section assumes form-1 reps throughout (see Section 1 caveat).**
-
 The NegPairEncoder (for both self-pairing and non-self-pairing TYPE_NEG orbits)
 already forms `w_k = z_k²` and embeds the n values directly as n complex
 coefficients → 2n reals.
 
-With σ-closure on `{z_k}` (form-1 reps): `σ(z_k) = iz_k^* ∈ {z_k}`.
-Squaring: `σ(z_k)^2 = (iz_k^*)^2 = −(z_k^*)^2 = −conj(z_k^2)`.
+For a self-pairing TYPE_NEG block, both form-1 and form-2 reps arise (see
+Section 1 note).  In both cases the swap symmetry guarantees `{z_k^2}` is
+anti-conj-closed (τ-closed):
 
-So `{w_k = z_k^2}` is closed under `τ: w ↦ −conj(w)`.
+- Form-1 rep `(+u,+v)`: `z = a+ib`.  Swap gives `z' = b+ia`.
+  `z'^2 = −conj(z^2) = τ(z^2)` ✓
+- Form-2 rep `(+u,−v)`: `z = a−ib`.  Swap gives `z' = b−ia`.
+  `z'^2 = −conj(z^2) = τ(z^2)` ✓
 
-The n values `{w_k}` form τ-pairs `{w, −w^*}` of size 2 (generically).
-There are n/2 such pairs, each carrying **2 real DoF** (one complex number up
-to the 2-fold τ-symmetry).  Total: n/2 × 2 = **n reals**.
+Since `{z_k^2}` is anti-conj-closed (n elements, n even), its characteristic
+polynomial has the coefficient structure:
 
-**Algorithm:**
+> For anti-conj-closed multiset of n elements: the polynomial's **even-indexed**
+> coefficients are purely imaginary, **odd-indexed** coefficients are purely real.
+> These n/2 + n/2 = **n** independent reals suffice to represent the polynomial.
+
+**Algorithm (implemented):**
 ```python
-w = z_reps ** 2                                        # n values, τ-closed
-w_reps = w[w.imag > 0]                                 # n/2 τ-representatives
-w_full = np.concatenate([w_reps, -np.conj(w_reps)])    # n anti-conj-closed values
-coeffs, _, _ = zip_embed(w_full)
+w = z_reps ** 2                                        # n values, anti-conj-closed
+coeffs, _, _ = zip_embed(w)
 return coeffs.imag[0::2] + 1j * coeffs.real[1::2]     # n/2 complex → n reals
 ```
 
-Output: **n reals** (vs. current 2n from NegPairEncoder).  This is a
-genuine additional factor-of-2 compression on top of the existing TYPE_NEG
-compression, applying only to self-pairing blocks.
-
-> **⚠ SUSPECT — floating-point robustness of τ-half selection.**  The filter
-> `w.imag > 0` to select τ-representatives must handle τ-fixed points
-> (`w.imag == 0`).  See Section 6 on degenerate events.
+Output: **n reals** (vs. current 2n from NegPairEncoder).  No τ-half selection
+is needed — `{z_k^2}` is embedded directly.  zip_embed is multiset-aware and
+handles degenerate events (repeated w values) correctly.
 
 ---
 
@@ -216,17 +220,15 @@ compression, applying only to self-pairing blocks.
 `w_k = a(1−i)/√2` (real, for the TYPE_11 rotation).  In the TYPE_11 case,
 `w_k.real` survives but the conjugate-pairing degenerates.
 
-τ-fixed points for TYPE_NEG: `w = −w^*` iff `Re(w) = 0`, i.e. `w` is purely
-imaginary.
+For TYPE_NEG: note that `τ(w) = −conj(w) = −a+bi` for `w = a+bi`.  The τ-pair
+`{w, τ(w)}` has the **same imaginary part** but **opposite real parts**.  The
+degenerate case is `Re(w) = 0` (purely imaginary w), where `τ(w) = w` (τ-fixed
+point).  These are measure-zero.
 
-In both cases the degenerate element must be counted once (not twice) among the
-representatives.  A robust criterion: `Im(w) > ε` for proper pairs, plus
-`Im(w) ≈ 0` elements counted once.  The existing `zip_embed` function is
-multiset-aware; the implementation issue is correctly selecting the
-representative half.
-
-> **⚠ SUSPECT — the handling of degenerate cases has not been implemented or
-> tested.  Correctness at measure-zero events must be verified.**
+Both degenerate cases are handled correctly by the implemented approach:
+**TYPE_11** embeds `{w_k = z_k · e^{−iπ/4}}` directly via `zip_embed` (which is
+multiset-aware); **TYPE_NEG** embeds `{z_k^2}` directly via `zip_embed`.
+No manual half-selection is needed in either case.
 
 ---
 

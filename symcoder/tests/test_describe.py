@@ -222,25 +222,27 @@ def test_null_comp_is_largest_non_self_in_block(dot, eps3, ctx, orbit_factory, p
 # Symmetry class labels
 # ---------------------------------------------------------------------------
 
-def test_symmetry_class_11_for_dot_dot(dot, ctx, orbit_factory, phase2_factory):
+def test_symmetry_class_11_sigma_for_dot_dot(dot, ctx, orbit_factory, phase2_factory):
+    # dot × dot is always a self-pairing block (same op, same flavour).
+    # SYMMETRIC operations have all signs +1 → TYPE_11 → σ-compressed to "11_sigma".
     plan = Plan(context=ctx, operations=(dot,))
     assoc_segs = [s for s in describe_encoding(plan, orbit_factory, phase2_factory) if s.kind == "ASSOC"]
-    assert all(s.symmetry_class == "11" for s in assoc_segs)
+    assert all(s.symmetry_class == "11_sigma" for s in assoc_segs)
 
-def test_symmetry_class_neg_for_eps3_eps3(eps3, ctx, orbit_factory, phase2_factory):
-    # eps3 x eps3 in a single group of 4: the only non-self pair has overlap=(2,).
-    # Both eps3 atoms share the same 2 labels and their signs always flip together
-    # under the group, so the achievable set is {(+,+),(-,-)} — TYPE_NEG, not TYPE_22.
+def test_symmetry_class_neg_sigma_for_eps3_eps3(eps3, ctx, orbit_factory, phase2_factory):
+    # eps3 x eps3 is a self-pairing block (same op, same flavour).
+    # ANTISYMMETRIC self-pairing → TYPE_NEG → σ-compressed to "neg_sigma".
+    # (The achievable set is {(+,+),(-,-)} — TYPE_NEG, not TYPE_22.)
     plan = Plan(context=ctx, operations=(eps3,))
     assoc_segs = [s for s in describe_encoding(plan, orbit_factory, phase2_factory) if s.kind == "ASSOC"]
-    assert all(s.symmetry_class == "neg" for s in assoc_segs)
+    assert all(s.symmetry_class == "neg_sigma" for s in assoc_segs)
 
 def test_symmetry_classes_present_in_mixed_plan(dot, eps3, ctx, orbit_factory, phase2_factory):
     plan = Plan(context=ctx, operations=(dot, eps3))
     pair_segs = [s for s in describe_encoding(plan, orbit_factory, phase2_factory) if s.kind in _PAIR_KINDS]
     classes = {s.symmetry_class for s in pair_segs}
-    assert "11" in classes
-    assert "neg" in classes
+    assert "11_sigma" in classes    # dot×dot self-pairing blocks (σ-compressed TYPE_11)
+    assert "neg_sigma" in classes   # eps3×eps3 self-pairing blocks (σ-compressed TYPE_NEG)
     assert "12" in classes or "21" in classes
 
 

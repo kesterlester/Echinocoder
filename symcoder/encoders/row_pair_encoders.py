@@ -9,17 +9,20 @@ is self-contained.
 
 Factories and what they handle
 --------------------------------
-SelfPairEncoderFactory    self-pairs (any type)    → NullPairEncoder    output_dim=0
-Type11PairEncoderFactory  any non-self pair        → Type11PairEncoder  output_dim=2n  (universal fallback)
-Type12PairEncoderFactory  TYPE_12 pairs            → Type12PairEncoder  output_dim=2n
-Type21PairEncoderFactory  TYPE_21 pairs            → Type21PairEncoder  output_dim=2n
-Type22PairEncoderFactory  TYPE_22 pairs            → Type22PairEncoder  output_dim=2n
-NegPairEncoderFactory     TYPE_NEG pairs           → NegPairEncoder     output_dim=2n
+SelfPairEncoderFactory        self-pairs (NULL_SELF)          → NullPairEncoder          output_dim=0
+SelfPairNegEncoderFactory     TYPE_NEG self-pairing blocks    → SelfPairNegEncoder       output_dim=n  (σ-compressed)
+SelfPairType11EncoderFactory  TYPE_11 self-pairing blocks     → SelfPairType11Encoder    output_dim=n  (σ-compressed)
+Type11PairEncoderFactory      any non-self pair               → Type11PairEncoder        output_dim=2n (universal fallback)
+Type12PairEncoderFactory      TYPE_12 pairs                   → Type12PairEncoder        output_dim=2n
+Type21PairEncoderFactory      TYPE_21 pairs                   → Type21PairEncoder        output_dim=2n
+Type22PairEncoderFactory      TYPE_22 pairs                   → Type22PairEncoder        output_dim=2n
+NegPairEncoderFactory         TYPE_NEG non-self-pairing pairs → NegPairEncoder           output_dim=2n
 
 Here n is the number of base atom-pairs (one per sign-equivalence class in the
-orbit).  All five non-null encoders produce the same output_dim=2n.  The
-overlap-block manager picks among offered encoders by minimum output_dim; for
-ties it takes the first in the list (favouring the specialist registered first).
+orbit).  All five non-null non-σ encoders produce output_dim=2n.  The σ-encoders
+produce output_dim=n for self-pairing blocks; the overlap-block manager picks
+among offered encoders by minimum output_dim, so σ-encoders are preferred
+automatically when they apply.
 
 Type11 as universal fallback
 -----------------------------
@@ -29,6 +32,13 @@ fewer orbit elements — but because output_dim=2n is the SAME for all types, th
 min(output_dim) selection prefers specialists (smaller n means smaller 2n).
 For a pure TYPE_11 orbit only specialists fail their assessments, leaving
 Type11 as the sole offer.
+
+σ-compression for self-pairing blocks
+--------------------------------------
+In a self-pairing block (op_u == op_v, F_u == F_v), the swap symmetry forces the
+multiset of z-values to be σ-closed (σ: z → i·conj(z)).  This halves storage
+from 2n to n reals for TYPE_11 and TYPE_NEG self-pairing orbits.  See
+DOCS/sigma_symmetry_analysis.md and DOCS/sigma_encoder_design.md for the proofs.
 
 Physical partition
 ------------------
@@ -177,6 +187,15 @@ def _try_neg_partition(pairs: list):
         rep = (u1, v1) if u1.sign == +1 else (u2, v2)
         reps.append(rep)
     return reps
+
+
+def _is_self_pairing_block(pf) -> bool:
+    """True if op_u==op_v and F_u==F_v (same operation and flavour, any overlap).
+
+    Note: _is_self_pair() implies this but also requires full overlap (NULL_SELF).
+    """
+    return (pf.op_u == pf.op_v and
+            tuple(pf.flavour_u.counts) == tuple(pf.flavour_v.counts))
 
 
 # ---------------------------------------------------------------------------
@@ -517,26 +536,149 @@ class NegPairEncoderFactory(PairOrbitEncoderFactory):
 
 
 # ---------------------------------------------------------------------------
+# SelfPairType11Encoder / SelfPairType11EncoderFactory  (TYPE_11 σ-compressed)
+# ---------------------------------------------------------------------------
+
+class SelfPairType11Encoder(_BasePairEncoder):
+    """
+    TYPE_11 self-pairing σ-compressed encoder.  output_dim = n (half of 2n).
+
+    In a self-pairing block the z-values are σ-closed (σ: z → i·conj(z)).
+    Rotating by e^{−iπ/4} maps σ-pairs to conjugate pairs, so the rotated set
+    is conjugate-closed → real polynomial coefficients → n reals.
+
+    Only valid for self-pairing blocks (op_u==op_v, F_u==F_v) with TYPE_11
+    orbits (all elements have sign (+1,+1)).
+
+    _NOTIONAL_FACTOR = 2: notional cost is 2n (what Type11PairEncoder would use).
+    """
+    _METHOD_NAME     = "11_sigma"
+    _NOTIONAL_FACTOR = 2
+
+    @property
+    def output_dim(self) -> int:
+        return self._n
+
+    def encode(self, event: dict) -> EncodingResult:
+        z = np.array(
+            [complex(evaluate(u, event), evaluate(v, event)) for u, v in self._reps],
+            dtype=complex,
+        )
+        rotation = np.exp(-1j * np.pi / 4)   # (1−i)/√2
+        w = z * rotation                       # n conjugate-closed values
+        coeffs, _, _ = zip_embed(w)            # real polynomial
+        return EncodingResult(
+            values=coeffs.real,
+            metadata={"method": self._METHOD_NAME},
+        )
+
+
+class SelfPairType11EncoderFactory(PairOrbitEncoderFactory):
+    """
+    Returns SelfPairType11Encoder for TYPE_11 self-pairing blocks; [] otherwise.
+
+    Conditions:
+    - Not a full self-pair (NULL_SELF)
+    - Is a self-pairing block (op_u==op_v, F_u==F_v)
+    - All orbit elements have sign (+1,+1)  → TYPE_11
+    """
+
+    def assess(self, spec: PairOrbitSpec, plan) -> list[PairOrbitEncoder]:
+        if _is_self_pair(spec.pf):
+            return []
+        if not _is_self_pairing_block(spec.pf):
+            return []
+        reps = _pair_orbit_atoms(spec.pf, plan)
+        if not all(u.sign == 1 and v.sign == 1 for u, v in reps):
+            return []
+        return [SelfPairType11Encoder(reps, spec.pf, plan)]
+
+
+# ---------------------------------------------------------------------------
+# SelfPairNegEncoder / SelfPairNegEncoderFactory  (TYPE_NEG σ-compressed)
+# ---------------------------------------------------------------------------
+
+class SelfPairNegEncoder(_BasePairEncoder):
+    """
+    TYPE_NEG self-pairing σ-compressed encoder.  output_dim = n (half of 2n).
+
+    For TYPE_NEG self-pairing, reps are always form-1 {(+u,+v),(-u,-v)}.
+    σ-closure on {z_k} implies τ-closure on {w_k = z_k²}: τ(w) = −conj(w).
+    τ-pairs {w, −w*} have opposite imaginary parts (generically), so Im(w)>0
+    selects n/2 τ-representatives.  Reconstruct, embed, extract n reals.
+
+    _NOTIONAL_FACTOR = 4: notional cost is 4n (TYPE_NEG orbit size = 2n,
+    and TYPE_11-equivalent encoding of 2n elements would need 4n reals).
+    """
+    _METHOD_NAME     = "neg_sigma"
+    _NOTIONAL_FACTOR = 4
+
+    @property
+    def output_dim(self) -> int:
+        return self._n
+
+    def encode(self, event: dict) -> EncodingResult:
+        z = np.array(
+            [complex(evaluate(u, event), evaluate(v, event)) for u, v in self._reps],
+            dtype=complex,
+        )
+        # {z_k} is σ-closed (σ: z → iz*).  Squaring: σ(z)² = (iz*)² = -conj(z²) = τ(z²).
+        # So {z_k²} is τ-closed (τ: w → -conj(w)), i.e. anti-conj-closed with n elements.
+        # Anti-conj-closed polynomial of n elements: even-indexed coefficients purely imaginary,
+        # odd-indexed purely real → exactly n independent reals (half of the naive 2n).
+        w = z ** 2
+        coeffs, _, _ = zip_embed(w)
+        return EncodingResult(
+            values=_complex_to_reals(coeffs.imag[0::2] + 1j * coeffs.real[1::2]),
+            metadata={"method": self._METHOD_NAME},
+        )
+
+
+class SelfPairNegEncoderFactory(PairOrbitEncoderFactory):
+    """
+    Returns SelfPairNegEncoder for TYPE_NEG self-pairing blocks; [] otherwise.
+
+    Conditions:
+    - Not a full self-pair (NULL_SELF)
+    - Is a self-pairing block (op_u==op_v, F_u==F_v)
+    - Orbit partitions as TYPE_NEG (all groups are form-1 pairs)
+    """
+
+    def assess(self, spec: PairOrbitSpec, plan) -> list[PairOrbitEncoder]:
+        if _is_self_pair(spec.pf):
+            return []
+        if not _is_self_pairing_block(spec.pf):
+            return []
+        reps = _try_neg_partition(_pair_orbit_atoms(spec.pf, plan))
+        if reps is None:
+            return []
+        return [SelfPairNegEncoder(reps, spec.pf, plan)]
+
+
+# ---------------------------------------------------------------------------
 # Convenience: the full set of standard row-pair factories
 # ---------------------------------------------------------------------------
 
 def standard_row_pair_factories() -> list[PairOrbitEncoderFactory]:
     """
-    Return one instance of each of the six standard row-pair factories in the
+    Return one instance of each of the eight standard row-pair factories in the
     recommended registration order.
 
-    Specialists are listed before Type11PairEncoderFactory so that when a
-    specialist and the fallback both offer encoders with the same output_dim,
-    the specialist is taken (first in list wins ties in min() scan).
+    σ-factories (SelfPairNegEncoderFactory, SelfPairType11EncoderFactory) are
+    listed before their non-σ counterparts.  They produce output_dim=n vs 2n,
+    so min(output_dim) selection prefers them automatically — but listing them
+    first is clearer and breaks any ties in their favour.
 
     Suitable for passing directly to OverlapBlockEncoderFactory:
         OverlapBlockEncoderFactory(standard_row_pair_factories())
     """
     return [
-        SelfPairEncoderFactory(),
-        NegPairEncoderFactory(),
-        Type22PairEncoderFactory(),
-        Type21PairEncoderFactory(),
-        Type12PairEncoderFactory(),
-        Type11PairEncoderFactory(),
+        SelfPairEncoderFactory(),          # output 0,  NULL_SELF
+        SelfPairNegEncoderFactory(),       # output n,  TYPE_NEG self-pairing (σ-compressed)
+        SelfPairType11EncoderFactory(),    # output n,  TYPE_11 self-pairing (σ-compressed)
+        NegPairEncoderFactory(),           # output 2n, TYPE_NEG (non-self-pairing)
+        Type22PairEncoderFactory(),        # output 2n, TYPE_22
+        Type21PairEncoderFactory(),        # output 2n, TYPE_21
+        Type12PairEncoderFactory(),        # output 2n, TYPE_12
+        Type11PairEncoderFactory(),        # output 2n, TYPE_11 (universal fallback)
     ]
