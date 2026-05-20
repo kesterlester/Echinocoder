@@ -194,17 +194,36 @@ the shared orbit from the overlap block.
 
 ### NULL_COMP pairs (complementarity reconstruction)
 
-Within each overlap block, one row-pair was dropped by the complementarity rule because
-its contribution is algebraically determined by:
-- The Phase 1 decoded multiset for orbit u (or v, depending on block structure), and
-- The decoded multisets of all other (ASSOC and NULL_SELF) pairs in the same block.
+**Ownership.** The complementarity drop is a decision made by the OverlapBlockEncoder,
+not by any individual row-pair encoder.  By choosing to drop one of its constituent
+pairs, the OverlapBlock takes on a corresponding obligation: it must be able to prove
+that the drop was harmless by demonstrating, at decode time, that the full input it
+received can be recovered from only the data it *did* choose to encode.
 
-The overlap block, having decoded all other pairs and holding the Phase 1 decoded output,
-reconstructs the NULL_COMP pair's `AnnotatedMultisetOfRealPairs` by reversing the
-complementarity relation used during encoding.
+The dropped row-pair encoder bears no special decode responsibility.  The NULL_COMP
+segment has no data in the encoded array; its reconstruction is the OverlapBlock's own
+business.
 
-The exact complementarity formula is deferred pending confirmation from the encoding
-source.
+**What the NULL_COMP decoder test checks.**  The test is *not* "does the reconstructed
+multiset match what the dropped encoder's `decode()` would have returned?"  That would
+require running the dropped encoder's decode path, which defeats the point.
+
+The test is: "given only the encoded output of the non-dropped pairs (plus Phase 1
+decoded results), does the OverlapBlock decoder reconstruct the complete set of atom-pair
+evaluations that were originally presented to the overlap block?"  The reconstructed
+output is compared directly against ground-truth atom-pair evaluations (evaluate the
+atoms on the original event), not against any intermediate decoder output.
+
+This also means NULL_COMP decoder tests must use `use_complementarity_drop=True` (the
+default): with the drop switched off, there is no NULL_COMP segment and nothing to test.
+The leaf-level decoder tests (`Type22`, `NegPairEncoder`) that switch the drop off do so
+purely to exercise those row-pair decoders in isolation; they cannot double as NULL_COMP
+tests.
+
+**Mechanism.**  The OverlapBlock, having decoded all ASSOC and NULL_SELF pairs and
+holding the Phase 1 decoded output, recovers the dropped pair's multiset of
+(u_value, v_value) pairs by reversing the complementarity relation used during encoding.
+The exact formula is deferred pending confirmation from the encoding source code.
 
 ### Interface between Phase 1 and Phase 2
 
