@@ -26,6 +26,7 @@ from symatom.atoms import are_negatives
 from symatom.context import Plan
 
 from ..eval import evaluate
+from ..decoded_types import AnnotatedMultisetOfReals
 from ._base import (
     AtomOrbitEncoder,
     AtomOrbitEncoderFactory,
@@ -151,6 +152,17 @@ class SortEncoder(AtomOrbitEncoder):
             metadata={"method": "sort", "orbit_size": len(self._orbit)},
         )
 
+    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfReals:
+        """Decode a sorted orbit slice back to an annotated multiset of reals.
+
+        The stored values ARE the orbit evaluations (just sorted); no numerical
+        inversion is needed.  The full orbit is returned as-is.
+        """
+        return AnnotatedMultisetOfReals(
+            values=list(values),
+            atoms=list(self._orbit),
+        )
+
 
 # ---------------------------------------------------------------------------
 # SortEncoderFactory
@@ -213,6 +225,22 @@ class HalfSortEncoder(AtomOrbitEncoder):
         return EncodingResult(
             values=values,
             metadata={"method": "half_sort", "orbit_size": 2 * len(self._representatives)},
+        )
+
+    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfReals:
+        """Decode a half-sorted orbit slice back to the full annotated multiset.
+
+        The stored values are |eval(+atom)| for each representative.  The full
+        orbit also contains the negatives, so we expand: [v1,…,vn] → [v1,…,vn,
+        -v1,…,-vn].  Atom list similarly includes both signs.
+        """
+        from symatom.atoms import Atom
+        pos_vals = list(values)
+        neg_vals = [-v for v in pos_vals]
+        neg_atoms = [Atom(r.operation, r.labels, sign=-1) for r in self._representatives]
+        return AnnotatedMultisetOfReals(
+            values=pos_vals + neg_vals,
+            atoms=list(self._representatives) + neg_atoms,
         )
 
 

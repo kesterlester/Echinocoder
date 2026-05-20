@@ -64,6 +64,8 @@ import numpy as np
 
 from symatom.atoms import are_negatives
 from symcoder.sign_correlation import _complex_to_reals
+from symcoder.decoded_types import AnnotatedMultisetOfRealPairs
+from symcoder.encoders._decoder_helpers import _reals_to_complex, _zip_decode
 from symcoder.pairs import _is_self_pair
 from symcoder.describe import SegmentInfo, _assoc_example
 from symcoder.eval import evaluate
@@ -187,6 +189,12 @@ def _try_neg_partition(pairs: list):
         rep = (u1, v1) if u1.sign == +1 else (u2, v2)
         reps.append(rep)
     return reps
+
+
+def _neg_atom(atom):
+    """Return the sign-flipped version of atom."""
+    from symatom.atoms import Atom
+    return Atom(atom.operation, atom.labels, sign=-atom.sign)
 
 
 def _is_self_pairing_block(pf) -> bool:
@@ -344,6 +352,16 @@ class Type11PairEncoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
+    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+        """Recover n (u,v) pairs from 2n stored reals.
+
+        _reps IS the full orbit for TYPE_11 (no sign compression).
+        """
+        coeffs = _reals_to_complex(values)          # n complex coefficients
+        z = _zip_decode(coeffs)                     # n complex z_k = u_k + i*v_k
+        pairs = [(float(z.real), float(z.imag)) for z in z]
+        return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=list(self._reps))
+
 
 class Type11PairEncoderFactory(PairOrbitEncoderFactory):
     """
@@ -389,6 +407,24 @@ class Type21PairEncoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
+    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+        """Recover 2n (u,v) pairs from 2n stored reals.
+
+        TYPE_21 polynomial of {z, -conj(z)}: even-indexed coefficients purely
+        imaginary, odd-indexed purely real.  Reconstruct all 2n coefficients,
+        find 2n roots — these ARE the full orbit {z_k, -conj(z_k)}.
+        """
+        n = self._n
+        packed = _reals_to_complex(values)           # n values: imag[2k] + i*real[2k+1]
+        coeffs = np.empty(2 * n, dtype=complex)
+        coeffs[0::2] = 1j * packed.real              # even-indexed: purely imaginary
+        coeffs[1::2] = packed.imag                   # odd-indexed: purely real
+        z_full = _zip_decode(coeffs)                 # 2n roots = full orbit
+        pairs = [(float(z.real), float(z.imag)) for z in z_full]
+        # Full atom-pair list: reps + neg-u partners
+        neg_u_pairs = [(_neg_atom(u), v) for u, v in self._reps]
+        return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=list(self._reps) + neg_u_pairs)
+
 
 class Type21PairEncoderFactory(PairOrbitEncoderFactory):
     """Returns Type21PairEncoder if the orbit partitions as TYPE_21; [] otherwise."""
@@ -429,6 +465,18 @@ class Type12PairEncoder(_BasePairEncoder):
             values=_complex_to_reals(r[0::2] + 1j * r[1::2]),
             metadata={"method": self._METHOD_NAME},
         )
+
+    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+        """Recover 2n (u,v) pairs from 2n stored reals.
+
+        TYPE_12 polynomial of {z, conj(z)}: all coefficients real.
+        stored = coeffs.real (all 2n values), so coeffs_full = stored + 0j.
+        """
+        coeffs = values.astype(complex)              # 2n real coefficients
+        z_full = _zip_decode(coeffs)                 # 2n roots = full orbit
+        pairs = [(float(z.real), float(z.imag)) for z in z_full]
+        neg_v_pairs = [(u, _neg_atom(v)) for u, v in self._reps]
+        return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=list(self._reps) + neg_v_pairs)
 
 
 class Type12PairEncoderFactory(PairOrbitEncoderFactory):
@@ -476,6 +524,36 @@ class Type22PairEncoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
+    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+        """Recover 4n (u,v) pairs from 2n stored reals.
+
+        Stored: coeffs.real of the degree-2n polynomial in w = z².
+        Step 1: recover n w_k = z²_k values (take roots with Im ≥ 0).
+        Step 2: sqrt(w_k) gives z_k with Im(z_k) ≥ 0, i.e. (+u,+v) rep.
+        Step 3: expand to all 4 sign combinations for the full orbit.
+        """
+        coeffs = values.astype(complex)                  # 2n real coefficients of w-poly
+        w_all = _zip_decode(coeffs)                      # 2n roots = {w_k, conj(w_k)}
+        # Take the n roots with Im(w) ≥ 0 as canonical w_k values
+        w_reps = w_all[w_all.imag >= -1e-12]
+        if len(w_reps) != self._n:                       # fallback if numerics are marginal
+            w_reps = sorted(w_all, key=lambda w: -w.imag)[:self._n]
+            w_reps = np.array(w_reps)
+        z_reps = np.sqrt(w_reps)                         # (+u+iv) with Im(z) ≥ 0
+        pairs = []
+        for z in z_reps:
+            u, v = float(z.real), float(z.imag)
+            pairs += [(u, v), (-u, v), (u, -v), (-u, -v)]
+        all_atom_pairs = []
+        for u_at, v_at in self._reps:
+            all_atom_pairs += [
+                (u_at,            v_at),
+                (_neg_atom(u_at), v_at),
+                (u_at,            _neg_atom(v_at)),
+                (_neg_atom(u_at), _neg_atom(v_at)),
+            ]
+        return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=all_atom_pairs)
+
 
 class Type22PairEncoderFactory(PairOrbitEncoderFactory):
     """Returns Type22PairEncoder if the orbit partitions as TYPE_22; [] otherwise."""
@@ -521,6 +599,23 @@ class NegPairEncoder(_BasePairEncoder):
             values=_complex_to_reals(coeffs),
             metadata={"method": self._METHOD_NAME},
         )
+
+    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+        """Recover 2n (u,v) pairs from 2n stored reals.
+
+        Encodes n values w_k = z²_k.  Roots give {w_k}; ±sqrt(w_k) gives both
+        orbit elements {z_k, -z_k}, covering the full TYPE_NEG orbit.
+        """
+        coeffs = _reals_to_complex(values)           # n complex coefficients
+        w = _zip_decode(coeffs)                      # n values w_k = z²_k
+        pairs = []
+        all_atom_pairs = []
+        for w_k, (u_at, v_at) in zip(w, self._reps):
+            z = complex(np.sqrt(w_k))                # one square root
+            pairs += [(float(z.real), float(z.imag)),
+                      (float(-z.real), float(-z.imag))]
+            all_atom_pairs += [(u_at, v_at), (_neg_atom(u_at), _neg_atom(v_at))]
+        return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=all_atom_pairs)
 
 
 class NegPairEncoderFactory(PairOrbitEncoderFactory):
@@ -571,6 +666,20 @@ class SelfPairType11Encoder(_BasePairEncoder):
             values=coeffs.real,
             metadata={"method": self._METHOD_NAME},
         )
+
+    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+        """Recover n (u,v) pairs from n stored reals.
+
+        Undo the e^{-iπ/4} rotation: w_k = z_k * e^{-iπ/4}, so z_k = w_k * e^{iπ/4}.
+        The polynomial of {w_k} has real coefficients (stored directly).
+        _reps IS the full TYPE_11 orbit (no sign compression beyond σ).
+        """
+        coeffs = values.astype(complex)              # n real coefficients
+        rotation = np.exp(-1j * np.pi / 4)
+        w = _zip_decode(coeffs)                      # n w_k values
+        z = w / rotation                             # undo rotation: z_k = w_k * e^{iπ/4}
+        pairs = [(float(zk.real), float(zk.imag)) for zk in z]
+        return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=list(self._reps))
 
 
 class SelfPairType11EncoderFactory(PairOrbitEncoderFactory):
@@ -632,6 +741,28 @@ class SelfPairNegEncoder(_BasePairEncoder):
             values=_complex_to_reals(coeffs.imag[0::2] + 1j * coeffs.real[1::2]),
             metadata={"method": self._METHOD_NAME},
         )
+
+    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+        """Recover 2n (u,v) pairs from n stored reals.
+
+        τ-closed polynomial of n w_k = z²_k values: even-indexed coefficients
+        purely imaginary, odd-indexed purely real.  Reconstruct n complex
+        coefficients, find n roots to get {w_k}, then ±sqrt gives full 2n orbit.
+        """
+        n = self._n
+        packed = _reals_to_complex(values)           # n/2 values: imag[2k]+i*real[2k+1]
+        coeffs = np.empty(n, dtype=complex)
+        coeffs[0::2] = 1j * packed.real              # even-indexed: purely imaginary
+        coeffs[1::2] = packed.imag                   # odd-indexed: purely real
+        w = _zip_decode(coeffs)                      # n w_k = z²_k values
+        pairs = []
+        all_atom_pairs = []
+        for w_k, (u_at, v_at) in zip(w, self._reps):
+            z = complex(np.sqrt(w_k))
+            pairs += [(float(z.real), float(z.imag)),
+                      (float(-z.real), float(-z.imag))]
+            all_atom_pairs += [(u_at, v_at), (_neg_atom(u_at), _neg_atom(v_at))]
+        return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=all_atom_pairs)
 
 
 class SelfPairNegEncoderFactory(PairOrbitEncoderFactory):
