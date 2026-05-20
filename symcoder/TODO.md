@@ -1,3 +1,8 @@
+## sigma-symmetry
+
+I (CGL) have accepted into git code on sigma symmetry that I have not had time to check. Don't trust sigma encoders until I delete this message. They can be trivially disabled by not using them to initialise the pluggable encoders.
+
+
 ## Make a fully fledged encoder object to pass through in metadata, rather than creating capability and then passing that back, as a user could tweak the capability (maybe) breaking the encoding. or he wrong capability could be sent back ....
 
 ## Move 11/12/21/22 stuff out of group.py
