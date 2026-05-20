@@ -27,7 +27,7 @@ import numpy as np
 
 from symatom import repS
 from symatom.rep import canonical_pair_flavours
-from symcoder.describe import SegmentInfo, _block_key
+from symcoder.describe import SegmentInfo, Phase2Tree, _block_key
 from .pair_base import EncodingResult
 from .overlap_block import OverlapBlockSpec, OverlapBlockEncoder, OverlapBlockEncoderFactory
 
@@ -57,15 +57,15 @@ class Phase2Encoder:
         values = np.concatenate(parts) if parts else np.array([], dtype=np.float64)
         return EncodingResult(values=values)
 
-    def describe(self, start_offset: int = 0) -> list[SegmentInfo]:
-        segs   = []
+    def describe(self, start_offset: int = 0) -> Phase2Tree:
+        blocks = []
         cursor = start_offset
         for _, enc in self._block_encoders:
-            block_segs = enc.describe()  # relative positions (start=0 for first)
-            for seg in block_segs:
-                segs.append(dataclasses.replace(seg, start=seg.start + cursor))
+            node = enc.describe()  # OverlapBlockNode with block-relative starts
+            adjusted = [dataclasses.replace(s, start=s.start + cursor) for s in node.segments]
+            blocks.append(dataclasses.replace(node, segments=adjusted))
             cursor += enc.output_dim
-        return segs
+        return Phase2Tree(blocks=blocks)
 
 
 class Phase2EncoderFactory:

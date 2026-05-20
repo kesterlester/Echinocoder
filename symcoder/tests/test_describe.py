@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from itertools import groupby
 from symatom import ArgumentSymmetry, VectorType, Context, Plan, repS, canonical_pair_flavours
-from symcoder import EvaluableOperation, encode, describe_encoding, SegmentInfo
+from symcoder import EvaluableOperation, encode, describe_encoding, SegmentInfo, EncodingTree
 
 _NULL_KINDS = ("NULL_SELF", "NULL_COMP")
 _PAIR_KINDS  = ("ASSOC", "NULL_SELF", "NULL_COMP")
@@ -42,7 +42,7 @@ def plan(dot, eps3, ctx):
 
 def test_returns_list_of_segment_info(plan, orbit_factory, phase2_factory):
     segs = describe_encoding(plan, orbit_factory, phase2_factory)
-    assert isinstance(segs, list)
+    assert isinstance(segs, EncodingTree)
     assert all(isinstance(s, SegmentInfo) for s in segs)
 
 def test_non_empty_for_non_trivial_plan(plan, orbit_factory, phase2_factory):
@@ -50,12 +50,12 @@ def test_non_empty_for_non_trivial_plan(plan, orbit_factory, phase2_factory):
 
 def test_empty_ops_gives_empty_list(ctx, orbit_factory, phase2_factory):
     plan = Plan(context=ctx, operations=())
-    assert describe_encoding(plan, orbit_factory, phase2_factory) == []
+    assert list(describe_encoding(plan, orbit_factory, phase2_factory)) == []
 
 def test_all_empty_groups_gives_empty_list(dot, orbit_factory, phase2_factory):
     ctx  = Context((VectorType("e", ()), VectorType("mu", ())))
     plan = Plan(context=ctx, operations=(dot,))
-    assert describe_encoding(plan, orbit_factory, phase2_factory) == []
+    assert list(describe_encoding(plan, orbit_factory, phase2_factory)) == []
 
 
 # ---------------------------------------------------------------------------

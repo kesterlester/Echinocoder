@@ -16,7 +16,7 @@ Public API:
 """
 from .eval     import EvaluableOperation, evaluate
 from .encode   import encode, encode_and_describe, describe_encoding
-from .describe import SegmentInfo
+from .describe import SegmentInfo, Phase1Tree, OverlapBlockNode, Phase2Tree, EncodingTree
 from .encoders import (
     OrbitEncoderFactory,
     SortEncoderFactory, HalfSortEncoderFactory, PolyEncoderFactory,
@@ -32,6 +32,10 @@ __all__ = [
     "encode_and_describe",
     "describe_encoding",
     "SegmentInfo",
+    "Phase1Tree",
+    "OverlapBlockNode",
+    "Phase2Tree",
+    "EncodingTree",
     "OrbitEncoderFactory",
     "SortEncoderFactory",
     "HalfSortEncoderFactory",

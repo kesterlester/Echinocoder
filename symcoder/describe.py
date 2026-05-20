@@ -180,6 +180,90 @@ class SegmentInfo:
         return d
 
 
+# ---------------------------------------------------------------------------
+# Tree node types for hierarchical describe output
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Phase1Tree:
+    """Flat container for all Phase 1 (orbit) segments."""
+    orbits: list  # list[SegmentInfo]
+
+    def flat(self) -> list:
+        return list(self.orbits)
+
+    def __iter__(self):
+        return iter(self.orbits)
+
+    def __len__(self):
+        return len(self.orbits)
+
+    def __getitem__(self, idx):
+        return self.orbits[idx]
+
+
+@dataclass
+class OverlapBlockNode:
+    """One overlap block in the Phase 2 tree: fixed (op_u, flavour_u, op_v, flavour_v)."""
+    op_u:      str
+    flavour_u: tuple
+    op_v:      str
+    flavour_v: tuple
+    segments:  list  # list[SegmentInfo]
+
+    def flat(self) -> list:
+        return list(self.segments)
+
+    def __str__(self) -> str:
+        fl_u = ",".join(str(c) for c in self.flavour_u)
+        fl_v = ",".join(str(c) for c in self.flavour_v)
+        return f"OverlapBlock  {self.op_u} × {self.op_v}  u=({fl_u})  v=({fl_v})"
+
+
+@dataclass
+class Phase2Tree:
+    """Container for all Phase 2 overlap block nodes."""
+    blocks: list  # list[OverlapBlockNode]
+
+    def flat(self) -> list:
+        return [seg for block in self.blocks for seg in block.flat()]
+
+
+@dataclass
+class EncodingTree:
+    """
+    Top-level tree mirroring the full encoder hierarchy.
+
+    phase1  — flat collection of orbit segments (Phase 1)
+    phase2  — nested collection of overlap-block nodes (Phase 2)
+
+    List-like protocol (flat iteration) is supported so that existing code
+    using `for s in tree`, `tree[i]`, `len(tree)` continues to work unchanged.
+    Use tree.phase1 / tree.phase2 for structured access.
+    """
+    phase1: Phase1Tree
+    phase2: Phase2Tree
+
+    def flat(self) -> list:
+        return self.phase1.flat() + self.phase2.flat()
+
+    def __iter__(self):
+        return iter(self.flat())
+
+    def __len__(self):
+        return len(self.flat())
+
+    def __getitem__(self, idx):
+        return self.flat()[idx]
+
+    def __eq__(self, other):
+        if isinstance(other, EncodingTree):
+            return self.phase1 == other.phase1 and self.phase2 == other.phase2
+        if isinstance(other, list):
+            return self.flat() == other
+        return NotImplemented
+
+
 # describe_encoding() has moved to encode.py so that it shares the same
 # encoding loop as encode(), deriving all metadata from the registry's
 # assess() responses rather than from a separate algebraic computation.

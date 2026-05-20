@@ -33,7 +33,7 @@ from typing import Any
 
 import numpy as np
 
-from symcoder.describe import SegmentInfo, _assoc_example
+from symcoder.describe import SegmentInfo, OverlapBlockNode, _assoc_example
 from .pair_base import PairOrbitEncoder, PairOrbitEncoderFactory, PairOrbitSpec, EncodingResult
 
 
@@ -113,7 +113,7 @@ class OverlapBlockEncoder:
         values = np.concatenate(parts) if parts else np.array([], dtype=np.float64)
         return EncodingResult(values=values)
 
-    def describe(self) -> list[SegmentInfo]:
+    def describe(self) -> OverlapBlockNode:
         types  = self._plan.context.types
         segs   = []
         cursor = 0  # relative cursor within this block
@@ -146,7 +146,14 @@ class OverlapBlockEncoder:
                     segs.append(dataclasses.replace(seg, start=seg.start + cursor))
                 cursor += sel.encoder.output_dim
 
-        return segs
+        pf0 = self._selections[0].pf
+        return OverlapBlockNode(
+            op_u      = pf0.op_u.name,
+            flavour_u = tuple(pf0.flavour_u.counts),
+            op_v      = pf0.op_v.name,
+            flavour_v = tuple(pf0.flavour_v.counts),
+            segments  = segs,
+        )
 
 
 # ---------------------------------------------------------------------------

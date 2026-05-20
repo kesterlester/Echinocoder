@@ -19,7 +19,7 @@ import numpy as np
 from symatom import repS
 
 from ._base import AtomOrbitEncoderFactory, AtomOrbitEncoder, OrbitSpec, EncodingResult
-from ..describe import SegmentInfo, _orbit_example
+from ..describe import SegmentInfo, Phase1Tree, _orbit_example
 
 
 class OrbitEncoder:
@@ -44,12 +44,12 @@ class OrbitEncoder:
         values = np.concatenate(parts) if parts else np.array([], dtype=np.float64)
         return EncodingResult(values=values)
 
-    def describe(self, start_offset: int = 0) -> list[SegmentInfo]:
-        segs = []
+    def describe(self, start_offset: int = 0) -> Phase1Tree:
+        orbits = []
         cursor = start_offset
         for fo, enc in self._selections:
             length = enc.output_dim
-            segs.append(SegmentInfo(
+            orbits.append(SegmentInfo(
                 kind             = "ORBIT",
                 start            = cursor,
                 length           = length,
@@ -60,7 +60,7 @@ class OrbitEncoder:
                 example          = _orbit_example(fo.operation.name, fo.flavour.counts, self._types),
             ))
             cursor += length
-        return segs
+        return Phase1Tree(orbits=orbits)
 
 
 class OrbitEncoderFactory:

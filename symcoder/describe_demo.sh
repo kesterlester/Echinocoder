@@ -39,8 +39,14 @@ phase2_factory = Phase2EncoderFactory([
 
 segs = describe_encoding(plan, orbit_factory, phase2_factory)
 print('=== Start ===')
-for s in segs:
-    print(s)
+print('Phase 1 Encoding:')
+for s in segs.phase1:
+    print(' ', s)
+print('Phase 2 Encoding:')
+for block in segs.phase2.blocks:
+    print(' ', block)
+    for s in block.segments:
+        print('   ', s)
 print('=== Stop ===')
 
 print()
