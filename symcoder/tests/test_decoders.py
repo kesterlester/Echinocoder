@@ -369,3 +369,74 @@ def test_overlap_block_decoder_no_drop(ops, ctx, event, orbit_factory, phase2_fa
             )
 
         cursor += block_enc.output_dim
+
+
+@pytest.mark.xfail(
+    reason=(
+        "NULL_SIGN_OR_SWAP not yet implemented.  For blocks involving "
+        "ANTISYMMETRIC operations (eps3), the partition identity "
+        "Z_full = NULL_SELF ⊔ ASSOC ⊔ NULL_COMP does NOT hold: there are "
+        "additional 'leftover' pairs in Z_full (NULL_SIGN_OR_SWAP partners) "
+        "that are algebraically recoverable from stored orbits but not stored "
+        "explicitly.  The current NULL_COMP complement incorrectly includes "
+        "these leftover pairs, giving too many pairs for the NULL_COMP result.  "
+        "See DOCS/null_sign_or_swap_decoder_notes.md for the full design."
+    ),
+    strict=True,
+)
+def test_overlap_block_decoder_with_drop(ops, ctx, event, orbit_factory, phase2_factory):
+    """OverlapBlockEncoder.decode() roundtrip with complementarity drop enabled (default).
+
+    With use_complementarity_drop=True each block has exactly one NULL_COMP selection
+    (the largest non-self association is dropped at encode time).  The block decoder must:
+      - decode all non-dropped selections (ASSOC + NULL_SELF) as before
+      - reconstruct the NULL_COMP pairs via multiset complement:
+          Z_full(U × V) ∖ NULL_SELF ∖ all-ASSOC ∖ NULL_SIGN_OR_SWAP = NULL_COMP
+      - return one result per selection (len == len(_selections), not len(active_sels))
+
+    Currently xfail: NULL_SIGN_OR_SWAP leftover pairs not yet subtracted.
+    See DOCS/null_sign_or_swap_decoder_notes.md.
+    """
+    mag, dot, eps3 = ops
+    plan = Plan(context=ctx, operations=(mag, dot, eps3))
+    orbit_enc  = orbit_factory.build(plan)
+    phase2_enc = phase2_factory.build(plan)
+
+    phase1_vals = orbit_enc.encode(event).values
+    phase2_vals = phase2_enc.encode(event).values
+
+    phase1_results = _build_phase1_results(orbit_enc, phase1_vals)
+
+    found_comp_drop = False
+    cursor = 0
+    for _, block_enc in phase2_enc._block_encoders:
+        block_slice = phase2_vals[cursor:cursor + block_enc.output_dim]
+        decoded_list = block_enc.decode(block_slice, phase1_results)
+
+        # Result list must be one entry per selection (including the comp-dropped one).
+        assert len(decoded_list) == len(block_enc._selections)
+
+        for sel, decoded in zip(block_enc._selections, decoded_list):
+            assert isinstance(decoded, AnnotatedMultisetOfRealPairs)
+            enc = sel.encoder
+
+            if enc.output_dim == 0:
+                # NULL_SELF: truth = (eval(atom), eval(atom)) for each Phase 1 atom
+                key = (sel.pf.op_u.name, tuple(sel.pf.flavour_u.counts))
+                truth = [(evaluate(a, event), evaluate(a, event))
+                         for a in phase1_results[key].atoms]
+            else:
+                # Both ASSOC and NULL_COMP: ground truth from atom-pair evaluation.
+                truth = _ground_truth_pairs(enc, event)
+                if sel.is_comp_drop:
+                    found_comp_drop = True
+
+            assert _multisets_close(decoded.pairs, truth, atol=ATOL_BLOCK), (
+                f"Block decode mismatch for {type(enc).__name__} "
+                f"({'NULL_COMP' if sel.is_comp_drop else 'ASSOC/NULL_SELF'}): "
+                f"decoded {sorted(decoded.pairs)} != truth {sorted(truth)}"
+            )
+
+        cursor += block_enc.output_dim
+
+    assert found_comp_drop, "No comp-dropped selection found — check fixtures or factory"

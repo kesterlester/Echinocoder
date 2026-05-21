@@ -127,17 +127,25 @@ class OverlapBlockEncoder:
         Returns
         -------
         list[AnnotatedMultisetOfRealPairs]
-            One entry per non-comp-dropped selection, in selection order.
-            NULL_SELF entries are reconstructed from Phase 1; ASSOC entries are
-            decoded by the corresponding row-pair encoder.
+            One entry per selection (including the comp-dropped one), in selection
+            order.  NULL_SELF entries are reconstructed from Phase 1; ASSOC entries
+            are decoded by the corresponding row-pair encoder; the NULL_COMP entry
+            is reconstructed by multiset complement (Z_full ∖ NULL_SELF ∖ ASSoC).
         """
+        from collections import Counter
         from symcoder.decoded_types import AnnotatedMultisetOfRealPairs
 
         results = []
+        comp_drop_idx = None   # position of the NULL_COMP slot in results
         cursor = 0
+
         for sel in self._selections:
             if sel.is_comp_drop:
+                # Record the position; fill with None as placeholder.
+                comp_drop_idx = len(results)
+                results.append(None)
                 continue
+
             enc = sel.encoder
             if enc.output_dim == 0:
                 # NULL_SELF: (u=v) pairs are fully determined by Phase 1.
@@ -156,6 +164,53 @@ class OverlapBlockEncoder:
                 chunk = values[cursor:cursor + enc.output_dim]
                 results.append(enc.decode(chunk, u_phase1=u_ph1, v_phase1=v_ph1))
                 cursor += enc.output_dim
+
+        if comp_drop_idx is not None:
+            # Reconstruct the NULL_COMP association by multiset complement.
+            #
+            # All selections in a block share (op_u, flavour_u, op_v, flavour_v),
+            # so we can use any selection's pf to look up U and V.
+            pf0  = self._selections[0].pf
+            u_key = (pf0.op_u.name, tuple(pf0.flavour_u.counts))
+            v_key = (pf0.op_v.name, tuple(pf0.flavour_v.counts))
+            U = phase1_results[u_key].values
+            V = phase1_results[v_key].values
+
+            # Build full Cartesian product as a Counter.
+            # After polishing, all decoded values are bit-for-bit copies of Phase 1
+            # values, so exact Counter subtraction is always correct.
+            assert not any(u != u for u in U), "NaN in Phase 1 U values"
+            assert not any(v != v for v in V), "NaN in Phase 1 V values"
+            Z_full: Counter = Counter()
+            for u in U:
+                for v in V:
+                    Z_full[(u, v)] += 1
+
+            # Subtract every decoded pair (NULL_SELF + ASSOC).
+            for decoded in results:
+                if decoded is None:
+                    continue   # placeholder for the comp_drop itself
+                for pair in decoded.pairs:
+                    Z_full[pair] -= 1
+
+            assert all(cnt >= 0 for cnt in Z_full.values()), (
+                "NULL_COMP reconstruction: Counter went negative — "
+                "partition identity violated (bug in encoder or polishing)"
+            )
+
+            null_comp_pairs = [
+                pair for pair, cnt in Z_full.items() for _ in range(cnt)
+            ]
+
+            comp_pf    = self._selections[comp_drop_idx].pf
+            atom_pairs = list(
+                self._plan.orbit_enumerator.orbit_elements(comp_pf, self._plan.context)
+            )
+            results[comp_drop_idx] = AnnotatedMultisetOfRealPairs(
+                pairs=null_comp_pairs,
+                atom_pairs=atom_pairs,
+            )
+
         return results
 
     def describe(self) -> OverlapBlockNode:

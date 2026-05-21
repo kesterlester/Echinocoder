@@ -473,63 +473,54 @@ class PairFlavour:
             stab *= stab_g
         return group_order // stab
 
-    def orbit_elements(self, context) -> list:
+    def canonical_pair(self, context) -> tuple:
         """
-        Return all (Atom, Atom) pairs in the G-orbit of the canonical
-        representative (+u_c, +v_c) of this PairFlavour.
+        Return the canonical representative atom-pair (u_canon, v_canon) for
+        this PairFlavour in the given context.
 
-        Applies every element of G = S_{n_1} × ... × S_{n_m} simultaneously
-        to the canonical pair, collecting unique results via a seen-set.
-        The length of the returned list equals orbit_size(type_sizes).
+        Both atoms are constructed with sign=+1; the Atom constructor handles
+        label sorting and absorbs permutation parity into the sign for
+        ANTISYMMETRIC operations.
 
-        Complexity: O(∏_g n_g!) — suitable for small test contexts only.
-        For encoding, use DirectOrbitEnumerator which generates the (+,+)
-        positive-sign subset directly without materialising the full orbit.
+        This is the single definition of the canonical representative used by
+        orbit_elements() and by plan.orbit_enumerator implementations.  It
+        lives here — on PairFlavour — because the label-selection rule is a
+        property of the PairFlavour structure, not of the group.
 
-        Note on sign correlations
-        -------------------------
-        For ANTISYMMETRIC operations with non-zero overlap, signs of u and v
-        are correlated by the simultaneous group action and NOT independent.
-        In particular, for full-overlap pairs (NULL_SELF) any permutation
-        acts identically on both atoms, so only (++, −−) sign combinations
-        appear — not (+−) or (−+), which belong to a separate G-orbit.
+        Returns a 2-tuple (u_canon, v_canon).  Callers should pass these atoms
+        directly to TheGroup methods for orbit computation.
         """
-        from itertools import permutations as _perms
-
-        type_sizes = tuple(g.size for g in context.types)
-        if self.count(type_sizes) == 0:
-            return []
-
-        # Canonical representative: first valid label assignment.
         u_labels, v_labels = [], []
         for g, ku, kv, s in zip(context.types, self.flavour_u.counts,
                                   self.flavour_v.counts, self.overlap):
             u_labels.extend(g.labels[:ku])               # first ku labels for u
             v_labels.extend(g.labels[:s])                # shared labels for v
             v_labels.extend(g.labels[ku:ku + kv - s])   # v-only labels
+        return (
+            Atom(self.op_u, tuple(u_labels), sign=+1),
+            Atom(self.op_v, tuple(v_labels), sign=+1),
+        )
 
-        u_canon = Atom(self.op_u, tuple(u_labels), sign=+1)
-        v_canon = Atom(self.op_v, tuple(v_labels), sign=+1)
+    def orbit_elements(self, context) -> list:
+        """
+        Return all (Atom, Atom) pairs in the G-orbit of the canonical
+        representative of this PairFlavour.
 
-        # Apply every σ ∈ G simultaneously to (u_canon, v_canon).
-        seen = set()
-        result = []
-        for combo in _iproduct(*[list(_perms(g.labels)) for g in context.types]):
-            perm_map = {}
-            for g, perm in zip(context.types, combo):
-                for orig, new in zip(g.labels, perm):
-                    perm_map[orig] = new
-            new_u = Atom(self.op_u,
-                         tuple(perm_map[l] for l in u_canon.labels),
-                         sign=u_canon.sign)
-            new_v = Atom(self.op_v,
-                         tuple(perm_map[l] for l in v_canon.labels),
-                         sign=v_canon.sign)
-            pair = (new_u, new_v)
-            if pair not in seen:
-                seen.add(pair)
-                result.append(pair)
-        return result
+        Delegates to context.the_group.orbit_brute_pair(), which is the
+        single authoritative brute-force pair-orbit implementation inside
+        TheGroup.  All orbit logic — permutation enumeration, sign absorption,
+        sign-correlation notes — lives in TheGroup.orbit_brute_pair(); see
+        that method for full documentation.
+
+        Complexity: O(∏_g n_g!) — suitable for small contexts only.
+        For production encoding use plan.orbit_enumerator.orbit_elements(),
+        which may be backed by a faster implementation.
+        """
+        type_sizes = tuple(g.size for g in context.types)
+        if self.count(type_sizes) == 0:
+            return []
+        u_canon, v_canon = self.canonical_pair(context)
+        return context.the_group.orbit_brute_pair(u_canon, v_canon)
 
 
 # ---------------------------------------------------------------------------

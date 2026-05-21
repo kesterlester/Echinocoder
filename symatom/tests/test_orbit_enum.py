@@ -1,13 +1,24 @@
 """
 Tests for OrbitEnumerator implementations.
 
-BruteForceOrbitEnumerator delegates to pf.orbit_elements() and is the
-permanent reference implementation — correct by construction for all
-PairFlavours.
+Single source of orbit truth
+-----------------------------
+All orbit enumeration ultimately delegates to TheGroup:
 
-DirectOrbitEnumerator (Step 2) uses TheGroup(context).orbit() to return the
-true G-orbit.  Both enumerators must return the same set for every PairFlavour;
-the parametrised cross-comparison tests at the bottom verify this.
+  BruteForceOrbitEnumerator
+    → pf.orbit_elements(context)
+    → context.the_group.orbit_brute_pair(u_canon, v_canon)   ← TheGroup
+
+  DirectOrbitEnumerator
+    → pf.canonical_pair(context)   [builds atoms only; no group logic]
+    → context.the_group.orbit_pair(u_canon, v_canon)         ← TheGroup
+
+TheGroup.orbit_pair currently delegates to orbit_brute_pair; Step 4 will
+replace it with an algebraic O(orbit_size) implementation without changing
+BruteForce.
+
+Both enumerators must return the same set for every PairFlavour; the
+parametrised cross-comparison tests at the bottom verify this.
 """
 import pytest
 from symatom import (
@@ -76,11 +87,12 @@ def test_brute_force_all_correct_pair_flavour(dot, ctx):
             assert pair_flavour_of(u, v, ctx) == pf
 
 def test_brute_force_equals_pf_orbit_elements(dot, eps3, ctx):
-    """BruteForce is exactly pf.orbit_elements() for all PairFlavours.
+    """BruteForce agrees with pf.orbit_elements() for all PairFlavours.
 
-    BruteForceOrbitEnumerator delegates to pf.orbit_elements, so this is true
-    by construction.  The test is kept as a contract: if the delegation ever
-    changes, this must still hold.
+    Both BruteForceOrbitEnumerator and pf.orbit_elements() delegate to
+    TheGroup.orbit_brute_pair(), so equality is trivially true by construction.
+    The test is kept as a contract: if either delegation path ever changes,
+    the result must still agree.
     """
     bf = BruteForceOrbitEnumerator()
     for pf in canonical_pair_flavours(repS(ctx, [dot, eps3]), ctx):
