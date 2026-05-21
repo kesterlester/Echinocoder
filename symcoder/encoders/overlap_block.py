@@ -113,6 +113,47 @@ class OverlapBlockEncoder:
         values = np.concatenate(parts) if parts else np.array([], dtype=np.float64)
         return EncodingResult(values=values)
 
+    def decode(self, values: np.ndarray, phase1_results: dict) -> list:
+        """Decode this block's slice of the Phase 2 encoded array.
+
+        Parameters
+        ----------
+        values : np.ndarray
+            Sub-array produced by encode() for this block (non-comp-dropped data only).
+        phase1_results : dict[(str, tuple), AnnotatedMultisetOfReals]
+            Phase 1 decoded multisets keyed by (op_name, flavour_counts_tuple).
+            Required only for NULL_SELF entries; ignored for ASSOC entries.
+
+        Returns
+        -------
+        list[AnnotatedMultisetOfRealPairs]
+            One entry per non-comp-dropped selection, in selection order.
+            NULL_SELF entries are reconstructed from Phase 1; ASSOC entries are
+            decoded by the corresponding row-pair encoder.
+        """
+        from symcoder.decoded_types import AnnotatedMultisetOfRealPairs
+
+        results = []
+        cursor = 0
+        for sel in self._selections:
+            if sel.is_comp_drop:
+                continue
+            enc = sel.encoder
+            if enc.output_dim == 0:
+                # NULL_SELF: (u=v) pairs are fully determined by Phase 1.
+                # The pairs are (a, a) for each atom a in the shared orbit.
+                key = (sel.pf.op_u.name, tuple(sel.pf.flavour_u.counts))
+                phase1 = phase1_results[key]
+                results.append(AnnotatedMultisetOfRealPairs(
+                    pairs=[(v, v) for v in phase1.values],
+                    atom_pairs=[(a, a) for a in phase1.atoms],
+                ))
+            else:
+                chunk = values[cursor:cursor + enc.output_dim]
+                results.append(enc.decode(chunk))
+                cursor += enc.output_dim
+        return results
+
     def describe(self) -> OverlapBlockNode:
         types  = self._plan.context.types
         segs   = []

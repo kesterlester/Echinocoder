@@ -225,14 +225,93 @@ holding the Phase 1 decoded output, recovers the dropped pair's multiset of
 (u_value, v_value) pairs by reversing the complementarity relation used during encoding.
 The exact formula is deferred pending confirmation from the encoding source code.
 
+### Output polishing: replacing noisy Phase 2 values with Phase 1 values
+
+**Why polishing is needed.**  Phase 1 decoders (SortEncoder, HalfSortEncoder) recover
+their values by reading them directly from the sorted array — no root-finding, near-zero
+numerical error.  Phase 2 decoders recover their values by polynomial root-finding, which
+accumulates error that grows with polynomial degree.  For high-degree orbits (n > 6) the
+root-finding error can reach ~1e-9.
+
+Both the Phase 1 and Phase 2 decoded multisets contain evaluations of the *same*
+underlying algebraic atoms (one for u, one for v).  The Phase 1 decoded u-values are
+simply a more accurate copy of the u-component of the Phase 2 decoded pairs.  Polishing
+replaces the noisier Phase 2 u-values with the cleaner Phase 1 u-values (and similarly for
+v), using an optimal matching to handle the fact that the two multisets may be in different
+orders.
+
+**The polishing algorithm.**  Given decoded Phase 2 pairs `{(u_k', v_k')}` and Phase 1
+decoded values `{u_j''}` and `{v_j''}`:
+
+1. Solve for the permutation π* that minimises Σ(u_k' − u_{π(k)}'')² using
+   `scipy.optimize.linear_sum_assignment` (the Hungarian algorithm).
+2. Replace each u_k' with u_{π*(k)}''.
+3. Solve independently for the permutation ρ* that minimises Σ(v_k' − v_{ρ(k)}'')².
+4. Replace each v_k' with v_{ρ*(k)}''.
+5. The polished output is `{(u_{π*(k)}'', v_{ρ*(k)}'')}`.
+
+The u and v assignments are solved *independently*.  The resulting pairs may therefore
+have π* ≠ ρ*, meaning that u- and v-components from different decoded roots end up in the
+same output pair.  This is not a concern (see "No algebraic wrongness" below).
+
+**Correctness property.**  Polishing is always better than not polishing.
+
+In the zero-error limit the Phase 1 and Phase 2 values agree exactly, and the Hungarian
+matching finds the identity permutation; polishing is a no-op.  When numerical errors are
+nonzero, polishing replaces imprecise Phase 2 values with more precise Phase 1 values.
+Even in the extreme case where errors are large enough that the optimal assignment is the
+"wrong" one (does not correspond to the true mathematical bijection between roots and
+atoms), the assigned Phase 1 values are still closer to the ground truth than the original
+noisy Phase 2 values, because the Phase 1 values *are* the ground truth up to their own
+(much smaller) error.  The cause of any residual inaccuracy is always numerical rounding,
+not the polishing step.
+
+**No algebraic wrongness.**  At no point in the decoder is any individual floating-point
+value linked to a specific algebraic atom — the output is always a multiset.  The π* and
+ρ* permutations are numerical bookkeeping, not algebraic statements.  There is no
+algebraic notion of a "wrong" pairing.
+
+The ASSOC encoding does preserve a numerical correlation between u_k and v_k (they come
+from the same complex root z_k = u + iv).  Independent polishing of u and v may break
+this specific numerical correlation, but the output is still a valid annotated multiset of
+real pairs that faithfully represents the original orbit up to the G-ambiguity.  The
+correlation loss is acceptable because the output type makes no claim about per-element
+correspondences.
+
+**The `polish_outputs` flag.**  Each leaf row-pair decoder's `decode()` method accepts a
+`polish_outputs=True` keyword argument.  Set to False to receive raw polynomial-decoded
+values (useful for debugging the root-finding step in isolation, and for tests that
+specifically check unpolished output).  Default is True.
+
+**Where polishing lives.**  Polishing is performed inside the *leaf row-pair decoders*
+(not at the OverlapBlock or Phase2 level), because:
+- The leaf decoder has direct semantic access to which Phase 1 orbit its u- and v-atoms
+  belong to.
+- Polishing is logically an enhancement of the leaf decoder's output.
+- Placing it at the leaf level keeps OverlapBlock and Phase2 decoders simple.
+
+The leaf decoder receives the relevant Phase 1 decoded multisets as optional parameters
+(`u_phase1: AnnotatedMultisetOfReals | None`, `v_phase1: AnnotatedMultisetOfReals | None`)
+when polishing is enabled.
+
+**NULL_SELF exception.**  NULL_SELF pairs are reconstructed directly from Phase 1 decoded
+values (no polynomial inversion at all), so they are already at Phase 1 accuracy.  No
+further polishing is needed or meaningful for NULL_SELF entries.
+
+---
+
 ### Interface between Phase 1 and Phase 2
 
 The top-level decoder runs Phase 1 first, producing an `AnnotatedMultisetOfReals` for
 each orbit.  These are then passed (dependency injection) to each OverlapBlockDecoder
-that needs them.  The OverlapBlockDecoder does not hold a reference to the Phase 1
-decoder directly; it receives already-decoded Phase 1 results.
+that needs them.  The OverlapBlockDecoder passes the relevant Phase 1 results into each
+leaf row-pair decoder (for NULL_SELF reconstruction and, when `polish_outputs=True`, for
+output polishing).
 
-This is the *only* point in the decoder hierarchy where two levels must communicate.
+This coupling is therefore deeper than a single top-level handshake: Phase 1 decoded
+values flow all the way down to the leaf row-pair decoders.  The direction is strictly
+top-down (Phase 1 → Phase 2 → OverlapBlock → leaf), and the Phase 1 data is always
+already-decoded when passed down, so no circularity arises.
 
 ---
 

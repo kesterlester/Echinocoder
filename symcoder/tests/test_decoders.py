@@ -26,6 +26,9 @@ from symcoder.decoded_types import AnnotatedMultisetOfReals, AnnotatedMultisetOf
 from symcoder.eval import evaluate
 
 ATOL = 1e-10
+# Root-finding for high-degree polynomials (n>6) accumulates ~1e-9 error.
+# Block-level tests exercise those larger instances, so a looser tolerance is used.
+ATOL_BLOCK = 1e-7
 
 
 # ---------------------------------------------------------------------------
@@ -304,3 +307,64 @@ def test_selfpair_neg_sigma_decoder_roundtrip(ops, ctx, event, orbit_factory, ph
     found = _roundtrip_all_pair_encoders(
         SelfPairNegEncoder, ops, ctx, event, orbit_factory, phase2_factory)
     assert found, "No SelfPairNegEncoder ASSOC found — check fixtures"
+
+
+# ---------------------------------------------------------------------------
+# OverlapBlock-level decoder test (complementarity drop disabled)
+# ---------------------------------------------------------------------------
+
+def _build_phase1_results(orbit_enc, phase1_vals):
+    """Decode all Phase 1 orbits and return a dict keyed by (op_name, flavour_counts)."""
+    results = {}
+    cursor = 0
+    for fo, enc in orbit_enc._selections:
+        chunk = phase1_vals[cursor:cursor + enc.output_dim]
+        results[(fo.operation.name, tuple(fo.flavour.counts))] = enc.decode(chunk)
+        cursor += enc.output_dim
+    return results
+
+
+def test_overlap_block_decoder_no_drop(ops, ctx, event, orbit_factory, phase2_factory_no_drop):
+    """OverlapBlockEncoder.decode() roundtrip with complementarity drop disabled.
+
+    With use_complementarity_drop=False every block contains only ASSOC and
+    NULL_SELF selections (no NULL_COMP).  The block decoder must:
+      - slice the encoded array correctly for each ASSOC encoder and call its decode()
+      - reconstruct NULL_SELF pairs from Phase 1 decoded values
+    """
+    mag, dot, eps3 = ops
+    plan = Plan(context=ctx, operations=(mag, dot, eps3))
+    orbit_enc = orbit_factory.build(plan)
+    phase2_enc = phase2_factory_no_drop.build(plan)
+
+    phase1_vals = orbit_enc.encode(event).values
+    phase2_vals = phase2_enc.encode(event).values
+
+    phase1_results = _build_phase1_results(orbit_enc, phase1_vals)
+
+    cursor = 0
+    for _, block_enc in phase2_enc._block_encoders:
+        block_slice = phase2_vals[cursor:cursor + block_enc.output_dim]
+        decoded_list = block_enc.decode(block_slice, phase1_results)
+
+        active_sels = [s for s in block_enc._selections if not s.is_comp_drop]
+        assert len(decoded_list) == len(active_sels)
+
+        for sel, decoded in zip(active_sels, decoded_list):
+            assert isinstance(decoded, AnnotatedMultisetOfRealPairs)
+            enc = sel.encoder
+
+            if enc.output_dim == 0:
+                # NULL_SELF: truth is (eval(atom), eval(atom)) for each Phase 1 atom
+                key = (sel.pf.op_u.name, tuple(sel.pf.flavour_u.counts))
+                truth = [(evaluate(a, event), evaluate(a, event))
+                         for a in phase1_results[key].atoms]
+            else:
+                truth = _ground_truth_pairs(enc, event)
+
+            assert _multisets_close(decoded.pairs, truth, atol=ATOL_BLOCK), (
+                f"Block decode mismatch for {type(enc).__name__}: "
+                f"decoded {sorted(decoded.pairs)} != truth {sorted(truth)}"
+            )
+
+        cursor += block_enc.output_dim
