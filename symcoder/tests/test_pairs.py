@@ -58,10 +58,9 @@ def ortho_event():
 
 def test_eval_pair_orbit_length_dot(dot, plan, ctx, ortho_event):
     fo_list = repS(ctx, (dot,))
-    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
         result = eval_pair_orbit(pf, plan, ortho_event)
-        expected = pf.orbit_size(type_sizes)
+        expected = pf.orbit_size(ctx)
         assert len(result) == expected, (
             f"Orbit size mismatch for {pf!r}: "
             f"got {len(result)}, expected {expected}"
@@ -76,10 +75,9 @@ def test_eval_pair_orbit_length_dot_eps(dot, eps3, plan, ctx):
         "d": np.array([1.0, 1.0, 1.0]) / 3.0**0.5,
     }
     fo_list = repS(ctx, (dot, eps3))
-    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
         result = eval_pair_orbit(pf, plan, event_3d)
-        assert len(result) == pf.orbit_size(type_sizes)
+        assert len(result) == pf.orbit_size(ctx)
 
 
 # ---------------------------------------------------------------------------
@@ -153,7 +151,6 @@ def test_eval_pair_orbit_two_groups(dot, eps3):
         "q": np.array([0.0, 1.0, 1.0]) / 2.0**0.5,
     }
     fo_list = repS(ctx, (dot, eps3))
-    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
         result = eval_pair_orbit(pf, plan, event)
-        assert len(result) == pf.orbit_size(type_sizes)
+        assert len(result) == pf.orbit_size(ctx)

@@ -118,16 +118,14 @@ def test_cpf_all_empty_gives_no_pfs(dot, ctx_all_empty):
 def test_orbit_enumerator_size_matches_with_empty_group_brute_force(dot, eps3, ctx_one_empty):
     """BruteForce returns exactly orbit_size pairs for every PairFlavour when a group is empty."""
     fo_list = repS(ctx_one_empty, [dot, eps3])
-    type_sizes = tuple(g.size for g in ctx_one_empty.types)
     for pf in canonical_pair_flavours(fo_list, ctx_one_empty):
-        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx_one_empty)) == pf.orbit_size(type_sizes)
+        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx_one_empty)) == pf.orbit_size(ctx_one_empty)
 
 def test_orbit_enumerator_size_matches_with_empty_group_direct(dot, eps3, ctx_one_empty):
     """Direct returns exactly orbit_size pairs for every PairFlavour when a group is empty."""
     fo_list = repS(ctx_one_empty, [dot, eps3])
-    type_sizes = tuple(g.size for g in ctx_one_empty.types)
     for pf in canonical_pair_flavours(fo_list, ctx_one_empty):
-        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx_one_empty)) == pf.orbit_size(type_sizes)
+        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx_one_empty)) == pf.orbit_size(ctx_one_empty)
 
 def test_orbit_enumerators_agree_with_empty_group_ss(dot, ctx_one_empty):
     """BruteForce and Direct agree for SS PairFlavours when a group is empty."""

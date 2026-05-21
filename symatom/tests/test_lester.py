@@ -64,13 +64,11 @@ def test_lester_1(ctx1, eps3, electrons):
     pf = PairFlavour(op_u=eps3, flavour_u=Flavour((3,)), 
                      op_v=eps3, flavour_v=Flavour((3,)), overlap=(3,))
 
-    type_sizes = tuple(g.size for g in ctx1.types)
-
     print(f"\npf {pf} has atoms:")
     atoms = pf.orbit_elements(ctx1)
     for atom in atoms:
         print("     ",atom)
-    os = pf.orbit_size(type_sizes)
+    os = pf.orbit_size(ctx1)
     print(f"Orbit size is {os}.")
     print(f"It should have 2 atoms, namely\n    +{atoms[0]} and\n    -{atoms[0]}")
     print("""It should have 2 atoms, namely

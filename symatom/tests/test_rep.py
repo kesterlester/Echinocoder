@@ -564,7 +564,7 @@ def test_orbit_size_dot_dot_matches_count(dot, ctx4):
     type_sizes = (4,)
     for s in (0, 1, 2):
         pf = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(s,))
-        assert pf.orbit_size(type_sizes) == pf.count(type_sizes)
+        assert pf.orbit_size(ctx4) == pf.count(type_sizes)
 
 def test_orbit_size_eps_dot_doubles_for_eps(eps3, dot, ctx4):
     """For one ANTISYMMETRIC op, orbit_size == 2 * count."""
@@ -572,7 +572,7 @@ def test_orbit_size_eps_dot_doubles_for_eps(eps3, dot, ctx4):
     fl2 = Flavour((2,))
     type_sizes = (4,)
     pf = PairFlavour(op_u=eps3, flavour_u=fl3, op_v=dot, flavour_v=fl2, overlap=(1,))
-    assert pf.orbit_size(type_sizes) == 2 * pf.count(type_sizes)
+    assert pf.orbit_size(ctx4) == 2 * pf.count(type_sizes)
 
 def test_orbit_size_eps_eps_nonzero_overlap(eps3, ctx4):
     """For two ANTISYMMETRIC ops with non-zero overlap, orbit_size == 2 * count.
@@ -589,16 +589,15 @@ def test_orbit_size_eps_eps_nonzero_overlap(eps3, ctx4):
     fl3 = Flavour((3,))
     type_sizes = (4,)
     pf = PairFlavour(op_u=eps3, flavour_u=fl3, op_v=eps3, flavour_v=fl3, overlap=(2,))
-    assert pf.orbit_size(type_sizes) == 2 * pf.count(type_sizes)
+    assert pf.orbit_size(ctx4) == 2 * pf.count(type_sizes)
 
 def test_orbit_elements_length_matches_orbit_size(dot, ctx4):
     """orbit_elements returns exactly orbit_size pairs."""
     fl2 = Flavour((2,))
-    type_sizes = (4,)
     for s in (0, 1, 2):
         pf = PairFlavour(op_u=dot, flavour_u=fl2, op_v=dot, flavour_v=fl2, overlap=(s,))
         elems = pf.orbit_elements(ctx4)
-        assert len(elems) == pf.orbit_size(type_sizes)
+        assert len(elems) == pf.orbit_size(ctx4)
 
 def test_orbit_elements_length_with_eps(eps3, dot):
     """orbit_elements length matches orbit_size for mixed ANTISYMMETRIC pair."""
@@ -606,10 +605,9 @@ def test_orbit_elements_length_with_eps(eps3, dot):
     ctx = Context((electrons,))
     fl3 = Flavour((3,))
     fl2 = Flavour((2,))
-    type_sizes = (4,)
     pf = PairFlavour(op_u=eps3, flavour_u=fl3, op_v=dot, flavour_v=fl2, overlap=(1,))
     elems = pf.orbit_elements(ctx)
-    assert len(elems) == pf.orbit_size(type_sizes)
+    assert len(elems) == pf.orbit_size(ctx)
 
 def test_orbit_elements_all_have_correct_pair_flavour(dot, ctx4):
     """Every element returned by orbit_elements has the correct PairFlavour."""
@@ -625,8 +623,7 @@ def test_orbit_elements_sum_over_all_pf_equals_total_pairs(dot, ctx4):
     count() when all ops are SYMMETRIC, as is the case here).
     """
     fo_list = repS(ctx4, [dot])
-    type_sizes = tuple(g.size for g in ctx4.types)
-    total_orbit = sum(pf.orbit_size(type_sizes) for pf in canonical_pair_flavours(fo_list, ctx4))
+    total_orbit = sum(pf.orbit_size(ctx4) for pf in canonical_pair_flavours(fo_list, ctx4))
     total_atoms = sum(fo.count_of_atoms_one_per_sign() for fo in fo_list)
     assert total_orbit == total_atoms ** 2
 

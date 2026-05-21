@@ -256,7 +256,7 @@ def test_compressed_length_sym_sym(dot, ctx, event_3d):
     fo_list = repS(ctx, (dot,))
     type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert pf.count(type_sizes) == pf.orbit_size(type_sizes)
+        assert pf.count(type_sizes) == pf.orbit_size(ctx)
 
 
 
@@ -283,7 +283,7 @@ def test_compressed_length_sym_antisym(ctx):
     ]
     assert len(mixed_pfs) > 0, "Need at least one SYM×ANTISYM pair for this test"
     for pf in mixed_pfs:
-        assert pf.count(type_sizes) == pf.orbit_size(type_sizes) // 2
+        assert pf.count(type_sizes) == pf.orbit_size(ctx) // 2
 
 
 # ---------------------------------------------------------------------------

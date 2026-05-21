@@ -58,16 +58,14 @@ def ctx(electrons):
 def test_brute_force_length_matches_orbit_size_dot(dot, ctx):
     """BruteForce returns exactly orbit_size pairs for all dot PairFlavours."""
     fo_list = repS(ctx, [dot])
-    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(type_sizes)
+        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(ctx)
 
 def test_brute_force_length_matches_orbit_size_dot_eps(dot, eps3, ctx):
     """BruteForce returns exactly orbit_size pairs for all dot+eps3 PairFlavours."""
     fo_list = repS(ctx, [dot, eps3])
-    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(type_sizes)
+        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(ctx)
 
 def test_brute_force_length_matches_orbit_size_two_groups(dot, eps3):
     """BruteForce returns exactly orbit_size pairs in a two-group context."""
@@ -75,9 +73,8 @@ def test_brute_force_length_matches_orbit_size_two_groups(dot, eps3):
     muons     = VectorType("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     fo_list   = repS(ctx, [dot, eps3])
-    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(type_sizes)
+        assert len(BruteForceOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(ctx)
 
 def test_brute_force_all_correct_pair_flavour(dot, ctx):
     """Every pair returned by BruteForce has the expected PairFlavour."""
@@ -113,16 +110,14 @@ def test_brute_force_returns_list(dot, ctx):
 def test_direct_length_matches_orbit_size_dot(dot, ctx):
     """Direct returns exactly orbit_size pairs for SS (dot-only) PairFlavours."""
     fo_list = repS(ctx, [dot])
-    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(type_sizes)
+        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(ctx)
 
 def test_direct_length_matches_orbit_size_dot_eps(dot, eps3, ctx):
     """Direct returns exactly orbit_size pairs for all dot+eps3 PairFlavours."""
     fo_list = repS(ctx, [dot, eps3])
-    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(type_sizes)
+        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(ctx)
 
 def test_direct_length_matches_orbit_size_two_groups(dot, eps3):
     """Direct returns exactly orbit_size pairs in a two-group context."""
@@ -130,9 +125,8 @@ def test_direct_length_matches_orbit_size_two_groups(dot, eps3):
     muons     = VectorType("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     fo_list   = repS(ctx, [dot, eps3])
-    type_sizes = tuple(g.size for g in ctx.types)
     for pf in canonical_pair_flavours(fo_list, ctx):
-        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(type_sizes)
+        assert len(DirectOrbitEnumerator().orbit_elements(pf, ctx)) == pf.orbit_size(ctx)
 
 
 # ---------------------------------------------------------------------------

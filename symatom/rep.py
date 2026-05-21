@@ -411,67 +411,21 @@ class PairFlavour:
             )
         return total
 
-    def orbit_size(self, type_sizes: tuple) -> int:
+    def orbit_size(self, context) -> int:
         """
         Number of (Atom, Atom) pairs in the G-orbit of the canonical
-        representative (+u_c, +v_c) of this PairFlavour.
+        representative of this PairFlavour.
 
-        Computed as |G| / |Stab(+u_c, +v_c)| where G = S_{n_1} × ... × S_{n_m}
-        and the stabiliser counts group elements that preserve both atoms
-        *including their signs*.
-
-        For SYMMETRIC operations the sign is always +1, so the stabiliser
-        is unconstrained on sign.  For ANTISYMMETRIC operations the sign is
-        the parity of the permutation on the atom's labels; the stabiliser
-        must therefore have even total parity on those labels to leave the
-        atom's sign unchanged.
-
-        Assumption: labels from different groups do not interleave in the
-        global sort order (i.e. all labels of one group sort before all
-        labels of the next).  This is satisfied for the typical naming
-        conventions used in this codebase.  If labels interleave, the
-        formula may be incorrect; use len(orbit_elements(context)) instead.
+        Delegates entirely to TheGroup, which is the sole authority on orbit
+        sizes.  TheGroup.orbit_size_pair() uses the orbit-stabiliser theorem
+        |orbit| = |G| / |Stab(u, v)| and computes the stabiliser algebraically
+        without inspecting argument_symmetry directly.
         """
+        type_sizes = tuple(g.size for g in context.types)
         if self.count(type_sizes) == 0:
             return 0
-
-        def E(k):
-            """Number of even permutations of k elements (= k!/2 for k>=2, else 1)."""
-            return math.factorial(k) // 2 if k >= 2 else 1
-
-        def O(k):
-            """Number of odd permutations of k elements (= k!/2 for k>=2, else 0)."""
-            return math.factorial(k) // 2 if k >= 2 else 0
-
-        antisym_u = self.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-        antisym_v = self.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
-
-        group_order = 1
-        stab = 1
-        for n, ku, kv, s in zip(type_sizes,
-                                  self.flavour_u.counts,
-                                  self.flavour_v.counts,
-                                  self.overlap):
-            a = ku - s          # u-only labels in this group
-            b = kv - s          # v-only labels in this group
-            r = n - ku - kv + s  # labels used by neither u nor v in this group
-            group_order *= math.factorial(n)
-            if antisym_u and antisym_v:
-                # Both signs must remain +1: need parity(τ_s)·parity(τ_u) = +1
-                # AND parity(τ_s)·parity(τ_v) = +1 simultaneously.
-                stab_g = (E(s) * E(a) * E(b) + O(s) * O(a) * O(b)) * math.factorial(r)
-            elif not antisym_u and antisym_v:
-                # u sign always +1 (symmetric); need parity(τ_s)·parity(τ_v) = +1.
-                stab_g = (E(s) * E(b) + O(s) * O(b)) * math.factorial(a) * math.factorial(r)
-            elif antisym_u and not antisym_v:
-                # v sign always +1 (symmetric); need parity(τ_s)·parity(τ_u) = +1.
-                stab_g = (E(s) * E(a) + O(s) * O(a)) * math.factorial(b) * math.factorial(r)
-            else:
-                # Both symmetric: no parity constraints on the stabiliser.
-                stab_g = (math.factorial(s) * math.factorial(a)
-                          * math.factorial(b) * math.factorial(r))
-            stab *= stab_g
-        return group_order // stab
+        u_can, v_can = self.canonical_pair(context)
+        return context.the_group.orbit_size_pair(u_can, v_can)
 
     def canonical_pair(self, context) -> tuple:
         """
