@@ -71,12 +71,16 @@ Main encoder.  Returns a 1-D float64 array whose length equals
 **Two-phase structure:**
 
 **Phase 1 — ORBIT segments** (one per distinct `FlavouredOperator` in
-`repL(plan.context, plan.operations)`):
-- `SYMMETRIC`: store `sorted({eval(u, event) for u in fo.atoms_one_per_sign()})`.
+`repS(plan.context, plan.operations)`):
+- **No sign-paired atoms** (all currently implemented SYMMETRIC and
+  UNSTRUCTURED operations): store
+  `sorted({eval(u, event) for u in fo.atoms_one_per_sign()})`.
   Length: `fo.count_of_atoms_one_per_sign()` reals.
-- `ANTISYMMETRIC` (sign compression): store
-  `sorted({|eval(u, event)| for u in fo.atoms_one_per_sign() if u.sign == +1})`.
+- **Sign-paired atoms** (all currently implemented ANTISYMMETRIC operations,
+  sign compression): store
+  `sorted({abs(eval(u, event)) for u in fo.atoms_one_per_sign() if u.sign == +1})`.
   Length: `fo.count_of_atoms_one_per_sign() // 2` reals.
+  The negative-sign twins carry no independent information.
 - FlavouredOperators are deduplicated by `(name, rank, parity,
   argument_symmetry, flavour.counts)`; the first occurrence wins.
 

@@ -14,9 +14,10 @@ are unaffected (halving zero gives zero, which is already optimal).  Half-sort
 compression acts on Phase 1 ORBIT segments and is entirely independent —
 σ-compression and half-sort operate on disjoint parts of the encoding.
 
-Self-pairing blocks contain only TYPE_11 orbits (SYMMETRIC operation) or
-TYPE_NEG orbits (ANTISYMMETRIC operation); TYPE_12/21 cannot arise because
-both operations are identical.
+Self-pairing blocks cannot contain TYPE_12 or TYPE_21 orbits; only TYPE_11,
+TYPE_NEG, or TYPE_22 can arise (see Section 2a).  This follows from the
+swap-closure of the achievable sign set and is independent of argument
+symmetry.
 
 ---
 
@@ -54,11 +55,12 @@ condition is `z = i·conj(z)` i.e. `Re(z) = Im(z)`, i.e. `z ∝ (1+i)`, which
 requires `eval(u_k) = eval(v_j)` — a measure-zero condition for generic events.
 
 > **Note on TYPE_11:** The lemma assumes both atoms have `sign = +1`.
-> For TYPE_11 self-pairing (SYMMETRIC operations) this is automatic for all
-> current operations — every orbit element has sign +1.  This is enforced via
-> a `ValueError` in `_canonicalise_fields` (`symatom/atoms.py`), though that
-> enforcement is known to be on shaky foundations for rank-1 operations or
-> future pseudoscalar/parity operators (see `parity_sign_debt.md`).
+> For TYPE_11 self-pairing this holds by definition: the achievable sign set
+> is `{(+,+)}`, so every orbit element has `sign = +1`.  For all currently
+> implemented SYMMETRIC operations this is also the empirical case, but
+> TYPE_11 is defined by the orbit's achievable sign set, not by argument
+> symmetry; future operation types may produce TYPE_11 orbits with other
+> argument symmetries.
 >
 > **Note on TYPE_NEG (form-1 and form-2 both arise):** `_try_neg_partition`
 > selects reps with `u.sign = +1`; `v.sign` may be `+1` (form-1) or `−1`
@@ -105,8 +107,10 @@ overlap.
 
 ### 2b. Which types actually arise?
 
-- **TYPE_11**: SYMMETRIC operation (e.g. dot × dot). Neither sign can ever
-  flip, so TYPE_11 is the only possibility.
+- **TYPE_11**: achievable sign set `{(+,+)}` — neither sign can ever flip.
+  For all currently implemented operations this arises when both operations
+  are SYMMETRIC (e.g. dot × dot), but TYPE_11 is defined by the orbit
+  structure, not by argument symmetry.
 - **TYPE_NEG**: ANTISYMMETRIC operation, confirmed in tested contexts (single
   group, overlap below maximum). Physically: the shared labels force correlated
   sign flips.

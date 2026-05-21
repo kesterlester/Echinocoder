@@ -97,18 +97,10 @@ atoms, not the same atom with an external multiplier.
 
 An atom is **well-formed** if:
 1. `len(labels) == operation.rank`,
-2. every label belongs to a known vector type in the current context,
-3. `sign == +1` whenever `operation.argument_symmetry != ANTISYMMETRIC`, and
-4. all labels in the tuple are **distinct**.
+2. every label belongs to a known vector type in the current context, and
+3. all labels in the tuple are **distinct**.
 
-Rule 3 is enforced at construction time (raises an error on violation). It
-expresses the fact that only antisymmetric operations can ever produce
-sign-flipped atoms under argument reordering or orbit action; for symmetric
-and unstructured operations `sign = −1` has no legitimate meaning within this
-framework and its presence indicates a bug. In particular, atoms representing
-dot products must always carry `sign = +1`.
-
-Rule 4 is enforced at construction time (raises an error on violation). Each
+Rule 3 is enforced at construction time (raises an error on violation). Each
 operation is understood to take *r* **distinct** vector arguments. A squared
 length `a·a` is not a rank-2 dot applied to `(a, a)`; it is a separate rank-1
 operation (e.g. `lenSq`) that happens to evaluate the same expression. The
@@ -314,13 +306,13 @@ equal).
 The following utilities on individual atoms are required:
 
 - `are_negatives(a, b) -> bool` — returns `True` if and only if `a` and `b`
-  have the same operation and the same labels but opposite signs. Only
-  meaningful (and only ever `True`) when `operation.argument_symmetry ==
-  ANTISYMMETRIC`; always `False` for symmetric or unstructured operations,
-  consistent with the well-formedness rule that such atoms always carry
-  `sign = +1`. Callers can use this to ask "would a parity flip (or an odd
-  argument permutation) map atom `a` to atom `b`?" without needing to perform
-  the transformation themselves.
+  have the same operation and the same labels but opposite signs. Callers can
+  use this to ask "does a sign flip map atom `a` to atom `b`?" without
+  needing to perform the transformation themselves. For all currently
+  implemented operations, only `ANTISYMMETRIC` atoms carry `sign = −1` in
+  practice; but this is not a structural constraint, and future operation
+  types (e.g. pseudoscalar operators) may produce `sign = −1` atoms for any
+  argument symmetry.
 
 ---
 
@@ -393,7 +385,6 @@ Properties:
 - `operation` — the `Operation` instance.
 - `flavour` — the `Flavour` instance.
 - `context` — the `Context` (so it knows the label pools).
-- `signed: bool` — `True` for repL semantics, `False` for repS (Section 8.5).
 
 Required methods:
 
@@ -418,45 +409,30 @@ Required methods:
 Mixed-symmetry operations are **not supported** in this version and are not
 yet handled by `FlavouredOperator`. Support is deferred to a future version.
 
-**Membership without full enumeration.** For `SYMMETRIC` operations,
-membership reduces to: is the operation correct, do the labels match the
-flavour, and is the sign `+1`? For `ANTISYMMETRIC` operations, membership
-also allows `sign = −1` in repL mode. Full enumeration is not required for
-either case.
+**Membership without full enumeration.** Membership in a `FlavouredOperator`
+reduces to: does the atom have the correct operation, and do its labels match
+the flavour (drawing the right count from each type)? Sign is not a membership
+criterion. Full enumeration is not required.
 
-### 8.5 Sign semantics: repS vs repL
+### 8.5 Sign semantics within repS
 
-Within a `FlavouredOperator`:
+A `FlavouredOperator` stores exactly one atom per label combination (one per
+Ingredients orbit under the operation's own argument symmetry). Starting with
+`sign = +1` on entry, the `Atom` constructor immediately applies internal
+argument canonicalization (Section 2.4): for `SYMMETRIC` and `ANTISYMMETRIC`
+operations the stored labels are globally sorted (with any sign flip absorbed
+into the sign field); for `UNSTRUCTURED` operations the labels are kept in
+group-concatenation order, sorted within each group but not across groups.
 
-- **repS** (`signed=False`): one atom per label combination (one per
-  Ingredients orbit under the operation's own argument symmetry). Exactly
-  one sign is included per combination — always `sign = +1` on entry, but
-  the `Atom` constructor immediately applies internal argument
-  canonicalization (Section 2.4): for `SYMMETRIC` and `ANTISYMMETRIC`
-  operations the stored labels are globally sorted (with any sign flip
-  absorbed into the sign field); for `UNSTRUCTURED` operations the labels
-  are kept in group-concatenation order, sorted within each group but not
-  across groups.
-- **repL** (`signed=True`): same as repS, plus the additive inverse for each
-  `ANTISYMMETRIC` atom. So both `sign = +1` and `sign = −1` appear for each
-  combination. For `SYMMETRIC` and `UNSTRUCTURED` operations, repL and repS
-  are identical.
+The `count()` of a `FlavouredOperator` is `∏ C(nᵢ, kᵢ)` regardless of
+argument symmetry — always equal to the number of distinct label combinations,
+because exactly one sign is stored per combination.
 
-A convenient mnemonic: in repL, every antisymmetric atom travels with its
-negative twin; in repS, the twin is suppressed.
+### 8.6 repS function
 
-The `count()` values follow directly:
-
-| operation symmetry | repS count | repL count |
-|---|---|---|
-| SYMMETRIC or UNSTRUCTURED | `∏ C(nᵢ, kᵢ)` | same |
-| ANTISYMMETRIC | `∏ C(nᵢ, kᵢ)` | `2 × ∏ C(nᵢ, kᵢ)` |
-
-### 8.6 repL and repS functions
-
-`repL(context, operations)` and `repS(context, operations)` are functions
-(not types) that enumerate all valid `(operation, Flavour)` combinations for
-the given context and return a list of `FlavouredOperator` instances.
+`repS(context, operations)` is a function (not a type) that enumerates all
+valid `(operation, Flavour)` combinations for the given context and returns a
+list of `FlavouredOperator` instances.
 
 "Valid" means: each species contributes no more labels than its pool size
 allows, i.e. `k_i ≤ |G_i|` for all *i*, and `Σ k_i = rank(operation)`.

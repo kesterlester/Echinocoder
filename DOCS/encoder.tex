@@ -155,11 +155,14 @@ $(\ell_1,\ldots,\ell_r)$ be a tuple of distinct labels in canonical
 where $\varepsilon \in \{+1,-1\}$ is the \emph{sign}.
 
 \begin{itemize}
-  \item For \textsc{Symmetric} $\mathit{op}$: only $\varepsilon = +1$ arises.
   \item For \textsc{Antisymmetric} $\mathit{op}$: both $\varepsilon = +1$ and
     $\varepsilon = -1$ arise, one for each canonical label tuple.  The sign
     $\varepsilon$ records the parity of the permutation that maps the canonical
     ordering to a particular chosen reference ordering.
+  \item For all other currently implemented operations: only $\varepsilon = +1$
+    arises in practice.  The sign field is not structurally restricted to
+    $+1$; future operation types (e.g.\ pseudoscalar operators) may produce
+    $\varepsilon = -1$ for any argument symmetry.
 \end{itemize}
 \end{definition}
 
@@ -198,13 +201,17 @@ The number of atoms in a FlavouredOperator is
   |\fo(\mathit{op}, F)| =
   \begin{cases}
     \displaystyle\prod_{i=1}^m \comb{n_i}{k_i}
-      & \text{if $\mathit{op}$ is \textsc{Symmetric}},\\[8pt]
+      & \text{if $\mathit{op}$ has no sign-paired atoms},\\[8pt]
     \displaystyle 2\prod_{i=1}^m \comb{n_i}{k_i}
-      & \text{if $\mathit{op}$ is \textsc{Antisymmetric}.}
+      & \text{if $\mathit{op}$ has sign-paired atoms.}
   \end{cases}
 \end{equation}
-The factor of~2 for \textsc{Antisymmetric} operations reflects the two sign
-choices per label combination.
+The factor of~2 for operations with sign-paired atoms reflects the two sign
+choices $\varepsilon = \pm 1$ per label combination.  For all currently
+implemented operations, \textsc{Antisymmetric} operations are exactly those
+with sign-paired atoms; \textsc{Symmetric} and \textsc{Unstructured}
+operations are not.  This correspondence is not guaranteed to hold for future
+operation types such as pseudoscalar operators.
 
 \begin{definition}[repL]
 For a context $\mathcal{C}$ and a set of operations $\mathcal{K}$, the
@@ -268,10 +275,13 @@ label ordering, thereby flipping the sign of some atoms (i.e.\ swapping $u^+_j
 $\{|a_j|\}$ is unchanged.
 \end{proof}
 
-The decision to apply sign compression is made from the operation's argument
-symmetry alone — never from the numerical values of $a_j$.
+The decision to apply sign compression is made from whether the
+FlavouredOperator has sign-paired atoms — never from the numerical values of
+$a_j$.  For all currently implemented operations this is equivalent to
+checking \textsc{Antisymmetric} argument symmetry, but future operation types
+may require inspecting the actual orbit structure.
 
-\textbf{Phase~1 encoding (antisymmetric case):} store the sorted sequence
+\textbf{Phase~1 encoding (sign-paired case):} store the sorted sequence
 \[
   \bigl(|a|_{(1)}, |a|_{(2)}, \ldots, |a|_{(n)}\bigr),
   \qquad |a|_{(1)} \le \cdots \le |a|_{(n)},
@@ -284,8 +294,8 @@ Each distinct FlavouredOperator $\mathit{fo}$ contributes
 \begin{equation}\label{eq:phase1-length}
   \ell_1(\mathit{fo}) =
   \begin{cases}
-    |\mathit{fo}| & \text{if \textsc{Symmetric}},\\
-    \tfrac{1}{2}|\mathit{fo}| & \text{if \textsc{Antisymmetric}},
+    |\mathit{fo}| & \text{if $\mathit{fo}$ has no sign-paired atoms},\\
+    \tfrac{1}{2}|\mathit{fo}| & \text{if $\mathit{fo}$ has sign-paired atoms},
   \end{cases}
 \end{equation}
 reals to Phase~1.  In both cases $\ell_1(\mathit{fo}) = \prod_i \comb{n_i}{k_i}$,
