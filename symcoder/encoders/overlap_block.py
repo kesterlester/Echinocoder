@@ -115,31 +115,23 @@ def _plan_owned_atom_pairs(spec, selections, plan) -> tuple:
                 L.discard(pair)
                 owned_lists[i].append(pair)
 
-        # --- Try all non-identity sign/swap transforms ---
-        # Sign-negation is only valid for ANTISYMMETRIC operations (sign=+1 is
-        # the only valid sign for SYMMETRIC operations).
-        from symatom import ArgumentSymmetry
-        u_anti = (u_can.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
-        v_anti = (v_can.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
-
-        # Each entry: (tag, (u_transform_atom, v_transform_atom))
-        # The tag encodes the value-space transform to apply to base decoded pairs.
-        named_transforms = []
-        # Pure sign flips
-        if u_anti:
-            named_transforms.append(("neg_u",        (_neg(u_can), v_can        )))
-        if v_anti:
-            named_transforms.append(("neg_v",        (u_can,       _neg(v_can)  )))
-        if u_anti and v_anti:
-            named_transforms.append(("neg_both",     (_neg(u_can), _neg(v_can)  )))
-        # Swap (u,v) → (v,u): only reaches L when op_u == op_v (same-type blocks)
-        named_transforms.append(    ("swap",         (v_can,       u_can        )))
-        if v_anti:
-            named_transforms.append(("swap_neg_v",   (_neg(v_can), u_can        )))
-        if u_anti:
-            named_transforms.append(("swap_neg_u",   (v_can,       _neg(u_can)  )))
-        if u_anti and v_anti:
-            named_transforms.append(("swap_neg_both",(_neg(v_can), _neg(u_can)  )))
+        # --- Try all 7 non-identity sign/swap transforms unconditionally ---
+        # We do NOT guard on argument_symmetry.  Whether a negated atom's orbit
+        # has unclaimed pairs in L is purely a matter of geometry: for operations
+        # whose G-orbit contains only sign=+1 atoms, _neg(u_can) produces an atom
+        # whose orbit lies entirely outside L, so new_pairs will be empty and no
+        # tag is recorded.  The filtering is done by L, not by us.
+        # This also future-proofs against pseudoscalar/mixed-symmetry operations.
+        named_transforms = [
+            ("neg_u",         (_neg(u_can), v_can        )),
+            ("neg_v",         (u_can,       _neg(v_can)  )),
+            ("neg_both",      (_neg(u_can), _neg(v_can)  )),
+            # Swap (u,v) → (v,u): only reaches L when op_u == op_v (same-type blocks).
+            ("swap",          (v_can,       u_can        )),
+            ("swap_neg_v",    (_neg(v_can), u_can        )),
+            ("swap_neg_u",    (v_can,       _neg(u_can)  )),
+            ("swap_neg_both", (_neg(v_can), _neg(u_can)  )),
+        ]
 
         for tag, (u_t, v_t) in named_transforms:
             partner_orbit = context.the_group.orbit_pair(u_t, v_t)
