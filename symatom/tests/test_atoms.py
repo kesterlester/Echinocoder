@@ -93,13 +93,22 @@ def test_atom_wrong_rank(dot):
     with pytest.raises(ValueError, match="rank"):
         Atom(dot, ("a",), sign=+1)
 
-def test_atom_sign_minus_one_on_symmetric_op_raises(dot):
-    with pytest.raises(ValueError, match="sign=-1"):
-        Atom(dot, ("a", "b"), sign=-1)
+def test_atom_sign_minus_one_on_symmetric_op_allowed(dot):
+    # sign=-1 is valid for all ArgumentSymmetry values; represents -dot(a,b).
+    a = Atom(dot, ("a", "b"), sign=-1)
+    assert a.sign == -1
+    assert a.labels == ("a", "b")
 
-def test_atom_sign_minus_one_on_unstructured_op_raises(unstructured_op):
-    with pytest.raises(ValueError, match="sign=-1"):
-        Atom(unstructured_op, ("a", "b"), sign=-1)
+def test_atom_sign_minus_one_on_symmetric_op_sorts_labels(dot):
+    # Label sort still happens; sign is preserved (not perm-parity absorbed).
+    a = Atom(dot, ("b", "a"), sign=-1)
+    assert a.labels == ("a", "b")
+    assert a.sign == -1
+
+def test_atom_sign_minus_one_on_unstructured_op_allowed(unstructured_op):
+    # sign=-1 is valid for UNSTRUCTURED too.
+    a = Atom(unstructured_op, ("a", "b"), sign=-1)
+    assert a.sign == -1
 
 def test_atom_invalid_sign(dot):
     with pytest.raises(ValueError, match="sign"):
@@ -183,8 +192,14 @@ def test_are_negatives_different_labels(eps3):
     b = Atom(eps3, ("a", "b", "d"), sign=-1)
     assert not are_negatives(a, b)
 
-def test_are_negatives_symmetric_op_always_false(dot):
-    # Can't even construct a sign=-1 dot, so compare two +1 dots.
+def test_are_negatives_symmetric_op_works(dot):
+    # SYMMETRIC atoms may carry sign=-1, so are_negatives works for them too.
+    a = Atom(dot, ("a", "b"), sign=+1)
+    b = Atom(dot, ("a", "b"), sign=-1)
+    assert are_negatives(a, b)
+    assert are_negatives(b, a)
+
+def test_are_negatives_symmetric_op_same_sign(dot):
     a = Atom(dot, ("a", "b"), sign=+1)
     b = Atom(dot, ("a", "b"), sign=+1)
     assert not are_negatives(a, b)

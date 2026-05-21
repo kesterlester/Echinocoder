@@ -87,9 +87,15 @@ def _canonicalise_fields(
     requires editing this one function.
 
     pin_sign=False  (normal path): for ANTISYMMETRIC operations the sign is
-                    multiplied by the parity of the label-sorting permutation.
+                    multiplied by the parity of the label-sorting permutation;
+                    for SYMMETRIC and UNSTRUCTURED operations the sign is
+                    stored exactly as given.
     pin_sign=True   (pinned path): the sign is stored exactly as given;
                     labels are still sorted but parity is never computed.
+
+    All three ArgumentSymmetry values accept sign ∈ {+1, -1}.  The sign
+    represents the algebraic sign of the atom's value (e.g. -dot(a,b) is a
+    valid atom with SYMMETRIC operation and sign=-1).
 
     Returns (canonical_labels, final_sign).
     Raises TypeError / ValueError on malformed input.
@@ -103,12 +109,6 @@ def _canonicalise_fields(
         )
     if sign not in (+1, -1):
         raise ValueError(f"sign must be +1 or -1, got {sign!r}")
-    if sign == -1 and operation.argument_symmetry != ArgumentSymmetry.ANTISYMMETRIC:
-        raise ValueError(
-            f"sign=-1 is not valid for operation '{operation.name}' whose "
-            f"argument_symmetry is {operation.argument_symmetry}; "
-            f"only ANTISYMMETRIC operations may carry sign=-1"
-        )
     if len(set(labels)) != len(labels):
         raise ValueError(f"Atom labels must be distinct, got {labels!r}")
 
@@ -135,12 +135,13 @@ class Atom:
 
     Well-formedness rules (enforced at construction):
       1. len(labels) == operation.rank
-      2. sign in {+1, -1}
-      3. all labels supplied at initialisation must be distinct. So if forming dot(a,b) is valid then (dot(a,a) is ill-formed;
-        use a rank-1 lenSq taking just a if you want to implement something equivalent to evaluatin dot(a,a).
+      2. sign in {+1, -1}  — all ArgumentSymmetry values permit both signs.
+      3. all labels supplied at initialisation must be distinct. So if forming dot(a,b) is valid then dot(a,a) is ill-formed;
+         use a rank-1 lenSq taking just a if you want something equivalent to evaluating dot(a,a).
 
     Internal argument canonicalization (also enforced at construction):
       - SYMMETRIC:     labels are sorted into ascending order; sign is unchanged.
+                       e.g. Atom(dot, ("b","a"), sign=-1) stores labels=("a","b"), sign=-1.
       - ANTISYMMETRIC: labels are sorted into ascending order; sign is multiplied
                        by the parity of the sorting permutation.
       - UNSTRUCTURED:  labels are stored in the order given; no reordering.
@@ -196,12 +197,10 @@ class Atom:
 def are_negatives(a: Atom, b: Atom) -> bool:
     """
     Return True iff a and b are negatives of each other: same operation, same
-    labels, opposite signs.  Always False for non-ANTISYMMETRIC operations
-    (consistent with the well-formedness rule that such atoms carry sign=+1).
+    canonical labels, opposite signs.  Works for all ArgumentSymmetry values.
     """
     return (
         a.operation == b.operation
         and a.labels == b.labels
         and a.sign == -b.sign
-        and a.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC
     )

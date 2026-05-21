@@ -371,19 +371,6 @@ def test_overlap_block_decoder_no_drop(ops, ctx, event, orbit_factory, phase2_fa
         cursor += block_enc.output_dim
 
 
-@pytest.mark.xfail(
-    reason=(
-        "NULL_SIGN_OR_SWAP not yet implemented.  For blocks involving "
-        "ANTISYMMETRIC operations (eps3), the partition identity "
-        "Z_full = NULL_SELF ⊔ ASSOC ⊔ NULL_COMP does NOT hold: there are "
-        "additional 'leftover' pairs in Z_full (NULL_SIGN_OR_SWAP partners) "
-        "that are algebraically recoverable from stored orbits but not stored "
-        "explicitly.  The current NULL_COMP complement incorrectly includes "
-        "these leftover pairs, giving too many pairs for the NULL_COMP result.  "
-        "See DOCS/null_sign_or_swap_decoder_notes.md for the full design."
-    ),
-    strict=True,
-)
 def test_overlap_block_decoder_with_drop(ops, ctx, event, orbit_factory, phase2_factory):
     """OverlapBlockEncoder.decode() roundtrip with complementarity drop enabled (default).
 
@@ -425,11 +412,16 @@ def test_overlap_block_decoder_with_drop(ops, ctx, event, orbit_factory, phase2_
                 key = (sel.pf.op_u.name, tuple(sel.pf.flavour_u.counts))
                 truth = [(evaluate(a, event), evaluate(a, event))
                          for a in phase1_results[key].atoms]
+            elif sel.is_comp_drop:
+                # NULL_COMP: ground truth = all owned atom-pairs evaluated.
+                # owned_atom_pairs covers the base G-orbit PLUS any
+                # NULL_SIGN_OR_SWAP partner orbits belonging to this selection.
+                truth = [(evaluate(u, event), evaluate(v, event))
+                         for u, v in sel.owned_atom_pairs]
+                found_comp_drop = True
             else:
-                # Both ASSOC and NULL_COMP: ground truth from atom-pair evaluation.
+                # ASSOC: ground truth from encoder reps only (base orbit).
                 truth = _ground_truth_pairs(enc, event)
-                if sel.is_comp_drop:
-                    found_comp_drop = True
 
             assert _multisets_close(decoded.pairs, truth, atol=ATOL_BLOCK), (
                 f"Block decode mismatch for {type(enc).__name__} "

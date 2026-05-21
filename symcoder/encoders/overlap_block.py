@@ -35,6 +35,127 @@ import numpy as np
 
 from symcoder.describe import SegmentInfo, OverlapBlockNode, _assoc_example
 from .pair_base import PairOrbitEncoder, PairOrbitEncoderFactory, PairOrbitSpec, EncodingResult
+from symatom.atoms import Atom
+
+
+# ---------------------------------------------------------------------------
+# Module-level helpers for the decode-planning pass
+# ---------------------------------------------------------------------------
+
+def _neg(atom: Atom) -> Atom:
+    """Return a copy of *atom* with its sign negated."""
+    return Atom(atom.operation, atom.labels, sign=-atom.sign)
+
+
+def _plan_owned_atom_pairs(spec, selections, plan) -> tuple:
+    """
+    Decode-planning pass: assign every atom-pair in the block's full Cartesian
+    product to exactly one selection.
+
+    Algorithm
+    ---------
+    1. Build u_orbit = G-orbit of the u-side canonical seed atom.
+       Build v_orbit = G-orbit of the v-side canonical seed atom.
+       L = u_orbit × v_orbit  (full Cartesian product as a set).
+    2. For each selection (in order):
+       a. Obtain the base G-orbit via TheGroup.orbit_pair(u_canon, v_canon).
+       b. Claim those pairs from L (discard + record in owned list).
+       c. Try all 7 non-identity sign/swap transforms of (u_canon, v_canon):
+            (neg_u, v), (u, neg_v), (neg_u, neg_v),
+            (v, u), (neg_v, u), (v, neg_u), (neg_v, neg_u)
+          For each transform that still has unclaimed pairs in L, claim them
+          and record the transform tag.
+    3. Assert L is empty (partition identity).
+
+    The swap transforms are a no-op for cross-type blocks (op_u ≠ op_v) because
+    the swapped pairs live in op_v × op_u space, which is disjoint from L.
+
+    Returns
+    -------
+    tuple[list[list[tuple[Atom, Atom]]], list[list[str]]]
+        (owned_lists, tag_lists) where:
+          owned_lists[i] = all (Atom, Atom) pairs owned by selections[i].
+          tag_lists[i]   = list of value-transform tags for partner orbits
+                           claimed by selections[i] (does not include the base
+                           orbit, which corresponds to the encoder's own pairs).
+        Union of owned_lists = full Cartesian product; sets are disjoint.
+    """
+    context = plan.context
+    pf0 = spec.block[0]
+
+    # Build canonical seed atoms for the u-side and v-side of this block.
+    # All PairFlavours in the block share the same (op_u, flavour_u, op_v,
+    # flavour_v), so pf0 is representative.
+    u_labels: list = []
+    for g, ku in zip(context.types, pf0.flavour_u.counts):
+        u_labels.extend(g.labels[:ku])
+    u_seed = Atom(pf0.op_u, tuple(u_labels), sign=+1)
+
+    v_labels: list = []
+    for g, kv in zip(context.types, pf0.flavour_v.counts):
+        v_labels.extend(g.labels[:kv])
+    v_seed = Atom(pf0.op_v, tuple(v_labels), sign=+1)
+
+    u_orbit = context.the_group.orbit(u_seed)
+    v_orbit = context.the_group.orbit(v_seed)
+
+    # L = full Cartesian product as a set of (Atom, Atom) pairs.
+    L: set = {(u, v) for u in u_orbit for v in v_orbit}
+
+    owned_lists: list = [[] for _ in selections]
+    tag_lists:   list = [[] for _ in selections]
+
+    for i, sel in enumerate(selections):
+        u_can, v_can = sel.pf.canonical_pair(context)
+
+        # --- Claim the base G-orbit ---
+        base_orbit = context.the_group.orbit_pair(u_can, v_can)
+        for pair in base_orbit:
+            if pair in L:
+                L.discard(pair)
+                owned_lists[i].append(pair)
+
+        # --- Try all non-identity sign/swap transforms ---
+        # Sign-negation is only valid for ANTISYMMETRIC operations (sign=+1 is
+        # the only valid sign for SYMMETRIC operations).
+        from symatom import ArgumentSymmetry
+        u_anti = (u_can.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
+        v_anti = (v_can.operation.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
+
+        # Each entry: (tag, (u_transform_atom, v_transform_atom))
+        # The tag encodes the value-space transform to apply to base decoded pairs.
+        named_transforms = []
+        # Pure sign flips
+        if u_anti:
+            named_transforms.append(("neg_u",        (_neg(u_can), v_can        )))
+        if v_anti:
+            named_transforms.append(("neg_v",        (u_can,       _neg(v_can)  )))
+        if u_anti and v_anti:
+            named_transforms.append(("neg_both",     (_neg(u_can), _neg(v_can)  )))
+        # Swap (u,v) → (v,u): only reaches L when op_u == op_v (same-type blocks)
+        named_transforms.append(    ("swap",         (v_can,       u_can        )))
+        if v_anti:
+            named_transforms.append(("swap_neg_v",   (_neg(v_can), u_can        )))
+        if u_anti:
+            named_transforms.append(("swap_neg_u",   (v_can,       _neg(u_can)  )))
+        if u_anti and v_anti:
+            named_transforms.append(("swap_neg_both",(_neg(v_can), _neg(u_can)  )))
+
+        for tag, (u_t, v_t) in named_transforms:
+            partner_orbit = context.the_group.orbit_pair(u_t, v_t)
+            new_pairs = [p for p in partner_orbit if p in L]
+            if new_pairs:
+                for pair in new_pairs:
+                    L.discard(pair)
+                    owned_lists[i].append(pair)
+                tag_lists[i].append(tag)
+
+    assert len(L) == 0, (
+        f"_plan_owned_atom_pairs: {len(L)} atom-pair(s) in block "
+        f"({pf0.op_u.name}×{pf0.op_v.name}) not claimed by any selection — "
+        "partition identity violated"
+    )
+    return owned_lists, tag_lists
 
 
 # ---------------------------------------------------------------------------
@@ -62,10 +183,36 @@ class PairSelection:
     is_comp_drop=True means this pair was excluded by the complementarity drop
     rule; its encoder is stored for metadata (output_dim, method_name) but
     encode() will never be called on it.
+
+    owned_atom_pairs is populated by the decode-planning pass
+    (_plan_owned_atom_pairs) inside OverlapBlockEncoderFactory.assess().  It
+    lists every (Atom, Atom) pair in the block's full Cartesian product that
+    belongs to this selection: the base G-orbit of pf.canonical_pair PLUS any
+    NULL_SIGN_OR_SWAP partner orbits claimed by this selection.  The union
+    over all selections equals the full Cartesian product (partition identity).
+    Used only in decode(); encode() is unchanged.
     """
-    pf:           Any             # PairFlavour
-    encoder:      PairOrbitEncoder
-    is_comp_drop: bool = False
+    pf:               Any             # PairFlavour
+    encoder:          PairOrbitEncoder
+    is_comp_drop:     bool = False
+    owned_atom_pairs:          list = dataclasses.field(default_factory=list)
+    owned_value_transform_tags: list = dataclasses.field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Value-space transforms for partner-orbit subtraction in decode()
+# ---------------------------------------------------------------------------
+
+_VALUE_TRANSFORMS: dict = {
+    # tag          → function (u_val, v_val) → (new_u, new_v)
+    "neg_u":        lambda u, v: (-u,  v),
+    "neg_v":        lambda u, v: ( u, -v),
+    "neg_both":     lambda u, v: (-u, -v),
+    "swap":         lambda u, v: ( v,  u),
+    "swap_neg_v":   lambda u, v: (-v,  u),
+    "swap_neg_u":   lambda u, v: ( v, -u),
+    "swap_neg_both":lambda u, v: (-v, -u),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -186,12 +333,29 @@ class OverlapBlockEncoder:
                 for v in V:
                     Z_full[(u, v)] += 1
 
-            # Subtract every decoded pair (NULL_SELF + ASSOC).
-            for decoded in results:
-                if decoded is None:
-                    continue   # placeholder for the comp_drop itself
-                for pair in decoded.pairs:
+            # Subtract every active selection's owned value pairs from Z_full.
+            #
+            # Each selection's encoder returns the BASE G-orbit value pairs in
+            # results[i].pairs.  Partner orbits (NULL_SIGN_OR_SWAP variants)
+            # are owned by the same selection and their value pairs are obtained
+            # by applying the recorded value-space transforms to the base pairs.
+            #
+            # _VALUE_TRANSFORMS maps tag → (u,v) → (u',v').  The tags were
+            # computed at assess() time by _plan_owned_atom_pairs and stored in
+            # sel.owned_value_transform_tags.  Only transforms that actually
+            # claimed new atom pairs get a tag, so no double-subtraction occurs.
+            for i, sel in enumerate(self._selections):
+                if sel.is_comp_drop:
+                    continue
+                base_pairs = results[i].pairs
+                # Subtract base orbit pairs.
+                for pair in base_pairs:
                     Z_full[pair] -= 1
+                # Subtract partner orbit pairs via value-space transforms.
+                for tag in sel.owned_value_transform_tags:
+                    fn = _VALUE_TRANSFORMS[tag]
+                    for u_val, v_val in base_pairs:
+                        Z_full[fn(u_val, v_val)] -= 1
 
             assert all(cnt >= 0 for cnt in Z_full.values()), (
                 "NULL_COMP reconstruction: Counter went negative — "
@@ -202,13 +366,9 @@ class OverlapBlockEncoder:
                 pair for pair, cnt in Z_full.items() for _ in range(cnt)
             ]
 
-            comp_pf    = self._selections[comp_drop_idx].pf
-            atom_pairs = list(
-                self._plan.orbit_enumerator.orbit_elements(comp_pf, self._plan.context)
-            )
             results[comp_drop_idx] = AnnotatedMultisetOfRealPairs(
                 pairs=null_comp_pairs,
-                atom_pairs=atom_pairs,
+                atom_pairs=list(self._selections[comp_drop_idx].owned_atom_pairs),
             )
 
         return results
@@ -340,5 +500,16 @@ class OverlapBlockEncoderFactory:
                 selections[comp_idx] = PairSelection(
                     pf=old.pf, encoder=old.encoder, is_comp_drop=True
                 )
+
+        # Decode-planning pass: assign owned atom-pairs to each selection.
+        # This runs AFTER the complementarity drop so that is_comp_drop flags
+        # are already set (the planning pass itself does not use is_comp_drop;
+        # all selections receive their owned_atom_pairs regardless of drop status).
+        owned_lists, tag_lists = _plan_owned_atom_pairs(spec, selections, plan)
+        selections = [
+            dataclasses.replace(sel, owned_atom_pairs=owned,
+                                owned_value_transform_tags=tags)
+            for sel, owned, tags in zip(selections, owned_lists, tag_lists)
+        ]
 
         return [OverlapBlockEncoder(selections, plan)]
