@@ -149,8 +149,12 @@ class OverlapBlockEncoder:
                     atom_pairs=[(a, a) for a in phase1.atoms],
                 ))
             else:
+                u_key = (sel.pf.op_u.name, tuple(sel.pf.flavour_u.counts))
+                v_key = (sel.pf.op_v.name, tuple(sel.pf.flavour_v.counts))
+                u_ph1 = phase1_results.get(u_key)
+                v_ph1 = phase1_results.get(v_key)
                 chunk = values[cursor:cursor + enc.output_dim]
-                results.append(enc.decode(chunk))
+                results.append(enc.decode(chunk, u_phase1=u_ph1, v_phase1=v_ph1))
                 cursor += enc.output_dim
         return results
 

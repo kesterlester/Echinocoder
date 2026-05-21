@@ -26,9 +26,10 @@ from symcoder.decoded_types import AnnotatedMultisetOfReals, AnnotatedMultisetOf
 from symcoder.eval import evaluate
 
 ATOL = 1e-10
-# Root-finding for high-degree polynomials (n>6) accumulates ~1e-9 error.
-# Block-level tests exercise those larger instances, so a looser tolerance is used.
-ATOL_BLOCK = 1e-7
+# Block-level tests pass Phase 1 values to leaf decoders for polishing, which
+# replaces noisy polynomial-decoded values with exact Phase 1 values.
+# After polishing, block-level error matches Phase 1 accuracy.
+ATOL_BLOCK = ATOL
 
 
 # ---------------------------------------------------------------------------

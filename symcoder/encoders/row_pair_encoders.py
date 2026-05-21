@@ -65,7 +65,7 @@ import numpy as np
 from symatom.atoms import are_negatives
 from symcoder.sign_correlation import _complex_to_reals
 from symcoder.decoded_types import AnnotatedMultisetOfRealPairs
-from symcoder.encoders._decoder_helpers import _reals_to_complex, _zip_decode
+from symcoder.encoders._decoder_helpers import _reals_to_complex, _zip_decode, _apply_polish
 from symcoder.pairs import _is_self_pair
 from symcoder.describe import SegmentInfo, _assoc_example
 from symcoder.eval import evaluate
@@ -352,7 +352,8 @@ class Type11PairEncoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
-    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+    def decode(self, values: np.ndarray, u_phase1=None, v_phase1=None,
+               polish_outputs: bool = True) -> AnnotatedMultisetOfRealPairs:
         """Recover n (u,v) pairs from 2n stored reals.
 
         _reps IS the full orbit for TYPE_11 (no sign compression).
@@ -360,6 +361,8 @@ class Type11PairEncoder(_BasePairEncoder):
         coeffs = _reals_to_complex(values)          # n complex coefficients
         z = _zip_decode(coeffs)                     # n complex z_k = u_k + i*v_k
         pairs = [(float(z.real), float(z.imag)) for z in z]
+        if polish_outputs and u_phase1 is not None and v_phase1 is not None:
+            pairs = _apply_polish(pairs, u_phase1.values, v_phase1.values)
         return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=list(self._reps))
 
 
@@ -407,7 +410,8 @@ class Type21PairEncoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
-    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+    def decode(self, values: np.ndarray, u_phase1=None, v_phase1=None,
+               polish_outputs: bool = True) -> AnnotatedMultisetOfRealPairs:
         """Recover 2n (u,v) pairs from 2n stored reals.
 
         TYPE_21 polynomial of {z, -conj(z)}: even-indexed coefficients purely
@@ -423,6 +427,8 @@ class Type21PairEncoder(_BasePairEncoder):
         pairs = [(float(z.real), float(z.imag)) for z in z_full]
         # Full atom-pair list: reps + neg-u partners
         neg_u_pairs = [(_neg_atom(u), v) for u, v in self._reps]
+        if polish_outputs and u_phase1 is not None and v_phase1 is not None:
+            pairs = _apply_polish(pairs, u_phase1.values, v_phase1.values)
         return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=list(self._reps) + neg_u_pairs)
 
 
@@ -466,7 +472,8 @@ class Type12PairEncoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
-    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+    def decode(self, values: np.ndarray, u_phase1=None, v_phase1=None,
+               polish_outputs: bool = True) -> AnnotatedMultisetOfRealPairs:
         """Recover 2n (u,v) pairs from 2n stored reals.
 
         TYPE_12 polynomial of {z, conj(z)}: all coefficients real.
@@ -476,6 +483,8 @@ class Type12PairEncoder(_BasePairEncoder):
         z_full = _zip_decode(coeffs)                 # 2n roots = full orbit
         pairs = [(float(z.real), float(z.imag)) for z in z_full]
         neg_v_pairs = [(u, _neg_atom(v)) for u, v in self._reps]
+        if polish_outputs and u_phase1 is not None and v_phase1 is not None:
+            pairs = _apply_polish(pairs, u_phase1.values, v_phase1.values)
         return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=list(self._reps) + neg_v_pairs)
 
 
@@ -524,7 +533,8 @@ class Type22PairEncoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
-    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+    def decode(self, values: np.ndarray, u_phase1=None, v_phase1=None,
+               polish_outputs: bool = True) -> AnnotatedMultisetOfRealPairs:
         """Recover 4n (u,v) pairs from 2n stored reals.
 
         Stored: coeffs.real of the degree-2n polynomial in w = z².
@@ -552,6 +562,8 @@ class Type22PairEncoder(_BasePairEncoder):
                 (u_at,            _neg_atom(v_at)),
                 (_neg_atom(u_at), _neg_atom(v_at)),
             ]
+        if polish_outputs and u_phase1 is not None and v_phase1 is not None:
+            pairs = _apply_polish(pairs, u_phase1.values, v_phase1.values)
         return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=all_atom_pairs)
 
 
@@ -600,7 +612,8 @@ class NegPairEncoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
-    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+    def decode(self, values: np.ndarray, u_phase1=None, v_phase1=None,
+               polish_outputs: bool = True) -> AnnotatedMultisetOfRealPairs:
         """Recover 2n (u,v) pairs from 2n stored reals.
 
         Encodes n values w_k = z²_k.  Roots give {w_k}; ±sqrt(w_k) gives both
@@ -615,6 +628,8 @@ class NegPairEncoder(_BasePairEncoder):
             pairs += [(float(z.real), float(z.imag)),
                       (float(-z.real), float(-z.imag))]
             all_atom_pairs += [(u_at, v_at), (_neg_atom(u_at), _neg_atom(v_at))]
+        if polish_outputs and u_phase1 is not None and v_phase1 is not None:
+            pairs = _apply_polish(pairs, u_phase1.values, v_phase1.values)
         return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=all_atom_pairs)
 
 
@@ -667,7 +682,8 @@ class SelfPairType11Encoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
-    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+    def decode(self, values: np.ndarray, u_phase1=None, v_phase1=None,
+               polish_outputs: bool = True) -> AnnotatedMultisetOfRealPairs:
         """Recover n (u,v) pairs from n stored reals.
 
         Undo the e^{-iπ/4} rotation: w_k = z_k * e^{-iπ/4}, so z_k = w_k * e^{iπ/4}.
@@ -679,6 +695,8 @@ class SelfPairType11Encoder(_BasePairEncoder):
         w = _zip_decode(coeffs)                      # n w_k values
         z = w / rotation                             # undo rotation: z_k = w_k * e^{iπ/4}
         pairs = [(float(zk.real), float(zk.imag)) for zk in z]
+        if polish_outputs and u_phase1 is not None and v_phase1 is not None:
+            pairs = _apply_polish(pairs, u_phase1.values, v_phase1.values)
         return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=list(self._reps))
 
 
@@ -742,7 +760,8 @@ class SelfPairNegEncoder(_BasePairEncoder):
             metadata={"method": self._METHOD_NAME},
         )
 
-    def decode(self, values: np.ndarray) -> AnnotatedMultisetOfRealPairs:
+    def decode(self, values: np.ndarray, u_phase1=None, v_phase1=None,
+               polish_outputs: bool = True) -> AnnotatedMultisetOfRealPairs:
         """Recover 2n (u,v) pairs from n stored reals.
 
         τ-closed polynomial of n w_k = z²_k values: even-indexed coefficients
@@ -762,6 +781,8 @@ class SelfPairNegEncoder(_BasePairEncoder):
             pairs += [(float(z.real), float(z.imag)),
                       (float(-z.real), float(-z.imag))]
             all_atom_pairs += [(u_at, v_at), (_neg_atom(u_at), _neg_atom(v_at))]
+        if polish_outputs and u_phase1 is not None and v_phase1 is not None:
+            pairs = _apply_polish(pairs, u_phase1.values, v_phase1.values)
         return AnnotatedMultisetOfRealPairs(pairs=pairs, atom_pairs=all_atom_pairs)
 
 
