@@ -389,21 +389,47 @@ is simply `|stab(u, v)|`, a fixed algebraic quantity that can be precomputed fro
 atom-pair structure alone.  After dividing out this multiplicity, the OverlapBlock output
 is a faithful 2-row projection of the table.
 
-### Constant rows
+### Row information content and join order
 
-A row whose Phase 1 orbit has size 1 is constant across all columns of the table — every
-group element maps the corresponding `repS` atom to the same value.  Such rows must be
-recognised first and inserted as constants into every partial column without any search.
+The alignment difficulty for each row is entirely determined by the number of
+**distinct** values it contributes to the table: a row with many repeated values tells
+the algorithm little about how to distinguish columns from one another.  The general
+principle is:
 
-Failure to recognise constant rows would cause the algorithm to attempt permutation
-searches over a row that is entirely collision-saturated (all `|G|` entries equal), which
-is both pointless and catastrophically slow.
+> **Add rows in decreasing order of distinct-value count.**  A row with `d` distinct
+> values out of `|G|` table columns carries `log₂(d!)` bits of column-discriminating
+> information.  Rows with the most distinct values are the best seeds and the best
+> early extensions; rows with the fewest distinct values are the worst and should be
+> deferred until the columns have already been largely distinguished by earlier rows.
 
-*Example.*  In the standard `{electrons=(a,b,c), muons=(p,q)}` setup,
-`G = S_3 × S_2`, `|G| = 12`.  The atom `dot(p, q)` uses both muon labels; its orbit
-under G has size 1 because `S_3` does not touch muon labels and `S_2` acts on `{p,q}`,
-which appear symmetrically in `dot`.  The corresponding row of the table is the single
-value `dot(p, q, E)` repeated in all 12 columns.
+This single principle handles the entire spectrum uniformly:
+
+- **High-duplication rows** (few distinct values, many repeats) contribute little per
+  step and are naturally added late, at which point most ambiguity has already been
+  resolved and their contribution is correspondingly cheap.
+- **Extreme case — constant rows** (Phase 1 orbit size 1, all `|G|` column entries
+  identical): these contribute zero discriminating information and are trivially handled
+  at any point in the join — their value is just copied into every partial column at
+  whatever step they are reached.  They may optionally be handled outside the main join
+  loop as a micro-optimisation, but this is not required: the general mechanism
+  handles them correctly regardless.
+- **Fully distinct rows** (all `|G|` entries different): these carry the maximum
+  possible information and are the ideal seeds; they fully determine column identities
+  in a single step with no branching.
+
+The catastrophic failure mode — spending `|G|!` effort on a row that contributes nothing
+— is avoided automatically by this ordering, without needing a special-case detector for
+any particular level of duplication.
+
+*Illustrative example.*  In the standard `{electrons=(a,b,c), muons=(p,q)}` setup,
+`G = S_3 × S_2`, `|G| = 12`.  The atom `dot(p, q)` has Phase 1 orbit size 1: `S_3`
+does not touch muon labels and `S_2` acts on `{p,q}` symmetrically, leaving
+`dot(p, q)` invariant.  Its row contains the single value `dot(p, q, E)` repeated 12
+times — zero distinct values, zero discriminating information.  Under the ordering rule
+it is deferred to last (or placed outside the join entirely); either way the cost for
+this row is O(|G|) copy operations.  The concern is not this row in isolation but
+ensuring the same reasoning applies uniformly to rows with orbit size 2, 3, etc., which
+the distinct-value ordering rule achieves without additional case logic.
 
 ### The alignment algorithm: multi-way relational join
 
