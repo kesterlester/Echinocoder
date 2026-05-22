@@ -32,6 +32,7 @@
 \newcommand{\Sym}{\mathfrak{S}}
 \newcommand{\eval}{\mathrm{eval}}
 \newcommand{\fo}{\mathrm{FO}}
+\newcommand{\repS}{\mathrm{repS}}
 \newcommand{\repL}{\mathrm{repL}}
 \newcommand{\sign}{\mathrm{sign}}
 \newcommand{\pf}{\mathrm{pf}}
@@ -232,11 +233,11 @@ Every atom in the encoding vocabulary appears in exactly one FlavouredOperator.
 The first phase encodes each FlavouredOperator's evaluation values as a
 permutation-invariant sequence of reals.
 
-\subsection{The Symmetric Case}
+\subsection{The Case Without Sign-Paired Atoms}
 
-For a \textsc{Symmetric} FlavouredOperator $\mathit{fo} = \fo(\mathit{op}, F)$,
-let $n = \prod_i \comb{n_i}{k_i}$ be the number of atoms (all with sign
-$+1$).  Evaluating on event $E$ gives $n$ real numbers
+For a FlavouredOperator $\mathit{fo} = \fo(\mathit{op}, F)$ without
+sign-paired atoms, let $n = \prod_i \comb{n_i}{k_i}$ be the number of
+atoms.  Evaluating on event $E$ gives $n$ real numbers
 \[
   a_1 = \eval(u_1, E),\quad a_2 = \eval(u_2, E),\quad \ldots,\quad
   a_n = \eval(u_n, E).
@@ -250,10 +251,10 @@ Sorting is the canonical permutation-invariant operation.  The sorted sequence
 is a complete encoding of the multiset $\{a_1,\ldots,a_n\}$, and hence of all
 symmetric functions of that multiset.
 
-\subsection{The Antisymmetric Case: Sign Compression}
+\subsection{The Sign-Paired Case: Sign Compression}
 \label{sec:5c}
 
-For an \textsc{Antisymmetric} $\mathit{fo}$, the atom set contains pairs
+For a $\mathit{fo}$ with sign-paired atoms, the atom set contains pairs
 $(u^+, u^-)$ for each label combination, with $\eval(u^+, E) =
 -\eval(u^-, E)$.  The full set of $2n$ evaluation values is therefore
 \[
@@ -522,19 +523,18 @@ contributing $2n = 2\acount(\pf)$ reals in total.
 \subsection{Sign-Symmetry Compression of the Embedding}
 \label{sec:5a}
 
-When one or both operations in an association are \textsc{Antisymmetric}, the
-full orbit of $z$-values (over all sign combinations of $u$ and $v$) has
-a forced structure that can be exploited to halve (or quarter) the apparent cost
-of embedding the full orbit.
+When the orbit of atom-pairs $(u, v)$ has a non-trivial achievable sign set,
+the full orbit of $z$-values has a forced structure that can be exploited to
+halve (or quarter) the apparent cost of embedding the full orbit.
 
-The key observation is that the full orbit's $z$-values come in symmetry-related
-groups:
+The key observation is that the full orbit's $z$-values come in
+symmetry-related groups determined by the orbit type:
 \begin{itemize}
-  \item $\textsc{Sym}\times\textsc{Antisym}$ (\emph{SA}):
+  \item \textbf{TYPE\_12} (sign flip in $v$ only):
     the full orbit is $\{z_k, \overline{z}_k\}$ — conjugate-closed.
-  \item $\textsc{Antisym}\times\textsc{Sym}$ (\emph{AS}):
+  \item \textbf{TYPE\_21} (sign flip in $u$ only):
     the full orbit is $\{z_k, -\overline{z}_k\}$ — anti-conjugate-closed.
-  \item $\textsc{Antisym}\times\textsc{Antisym}$ (\emph{AA}):
+  \item \textbf{TYPE\_22} (independent sign flips in both $u$ and $v$):
     the full orbit contains $\{z_k, \overline{z}_k, -z_k, -\overline{z}_k\}$,
     so the squares $\{z_k^2\}$ form a conjugate-closed set of size~$n$.
 \end{itemize}
@@ -544,37 +544,37 @@ has forced coefficient structure (real coefficients, or alternating
 real/imaginary, etc.) that allows $2n$ reals to encode the same information as
 the brute-force $4n$ or $8n$ reals.  The details are as follows.
 
-\subsubsection{SS: Symmetric $\times$ Symmetric}
+\subsubsection{TYPE\_11: No sign flips in either atom}
 Embed $\{z_k\}$ ($n$ complex roots) directly.  Output: $n$ complex
 $= 2n$ reals.  No forced structure.
 
-\subsubsection{SA: Symmetric $\times$ Antisymmetric}
+\subsubsection{TYPE\_12: Sign flip in $v$ only}
 The full orbit is $\{z_k, \overline{z}_k\}$ ($2n$ roots).  The corresponding
 polynomial has \emph{real} coefficients (a conjugate-closed root set implies
 real coefficients).  Output: $2n$ real coefficients, packed as $n$ complex
 numbers ($2n$ reals total).
 
-\subsubsection{AS: Antisymmetric $\times$ Symmetric}
+\subsubsection{TYPE\_21: Sign flip in $u$ only}
 The full orbit is $\{z_k, -\overline{z}_k\}$ ($2n$ roots).  The polynomial has
 even-degree coefficients real and odd-degree coefficients purely imaginary.
 Output: $n$ independent reals of each parity, again packed as $n$ complex
 numbers ($2n$ reals).
 
-\subsubsection{AA: Antisymmetric $\times$ Antisymmetric}
+\subsubsection{TYPE\_22: Independent sign flips in both atoms}
 The full orbit is $\{z_k, \overline{z}_k, -z_k, -\overline{z}_k\}$ ($4n$
-roots in $n$ quadruples).  Setting $w_k = z_k^2$ reduces to an SA-type
+roots in $n$ quadruples).  Setting $w_k = z_k^2$ reduces to a TYPE\_12-type
 structure in the variable~$w$: the multiset $\{w_k, \overline{w}_k\}$ is
 conjugate-closed and its polynomial has real coefficients.  Output: $n$ complex
-$= 2n$ reals, after embedding $\{w_k^2\}$ as in SA.
+$= 2n$ reals, after embedding $\{w_k^2\}$ as in TYPE\_12.
 
 \begin{proposition}[Output size]\label{prop:assoc-size}
-Every association, regardless of symmetry class, contributes exactly
+Every association, regardless of orbit type, contributes exactly
 $2\acount(\pf)$ reals to the Phase~2 encoding.
 \end{proposition}
 
 The compression is in avoiding the naive approach of embedding the full orbit
 (which would require $2 \times \mathrm{orbit\_size}(\pf)$ reals and grows by a
-factor of~2 or~4 for antisymmetric operations).
+factor of~2 or~4 when the orbit has sign-paired atom-pairs).
 
 % ---------------------------------------------------------------------------
 \section{Correctness}
@@ -589,16 +589,16 @@ symmetry group $G = \Sym_{n_1} \times \cdots \times \Sym_{n_m}$.
 
 \begin{proof}[Proof sketch]
 \textbf{Phase~1.}  A group element $g \in G$ permutes atoms within each
-FlavouredOperator, and for \textsc{Antisymmetric} operations may flip the sign
-of some atoms.  The \textsc{Symmetric} Phase~1 encoding sorts evaluation values,
-and sorting commutes with any permutation of the values.  The
-\textsc{Antisymmetric} encoding sorts absolute values, which are additionally
+FlavouredOperator, and for FlavouredOperators with sign-paired atoms may flip
+the sign of some atoms.  The Phase~1 encoding without sign pairs sorts
+evaluation values directly, and sorting commutes with any permutation of the
+values.  The sign-paired encoding sorts absolute values, which are additionally
 invariant under sign flips (\cref{sec:5c}).
 
 \textbf{Phase~2.}  The complex numbers $z_k = \eval(u_j,E) +
 i\,\eval(v_k,E)$ are defined for pairs $(u_j,v_k)$ in the positive-sign subset
 of association $\pf$.  Under $g$, the set of such pairs is permuted (with
-possible sign changes, handled by the 5a symmetry classes in
+possible sign changes, handled by the orbit-type embedding in
 \cref{sec:5a}).  The polynomial embedding of a multiset is invariant under any
 permutation of its elements, so the embedding is $G$-invariant.  The
 complementation step (\cref{sec:5b}) produces the same dropped-association
@@ -619,7 +619,7 @@ multiset $\{\eval(u, E) : u \in \fo\}$.
 \end{theorem}
 \begin{proof}
 The sorted sequence is the canonical representative of the multiset; it uniquely
-determines the multiset.  For the \textsc{Antisymmetric} case, the sorted
+determines the multiset.  For the sign-paired case, the sorted
 absolute values $\{|a_j|\}$ determine the multiset $\{a_j, -a_j\}$ because each
 absolute value contributes exactly one positive/negative pair.
 \end{proof}
@@ -643,7 +643,7 @@ For each overlap block $B$:
     \sqcup \bigsqcup_{\pf \in \mathrm{ASSOC}} Z_\pf\bigr)$, uniquely determined.
   \item The sign-symmetry compression is reversible: the full orbit
     $z$-multiset is reconstructed from the positive-sign subset and the
-    symmetry class of the association.
+    orbit type of the association.
 \end{enumerate}
 \end{proof}
 
@@ -669,7 +669,7 @@ only on the plan; it is the same for every event.
 \begin{description}
   \item[\texttt{ORBIT}] One per distinct FlavouredOperator $\mathit{fo}$ in
     $\repL(\mathcal{C},\mathcal{K})$.  Length: $\prod_i \comb{n_i}{k_i}$ reals
-    (\emph{sign-compressed} for \textsc{Antisymmetric} operations; label
+    (\emph{sign-compressed} for FlavouredOperators with sign-paired atoms; label
     \texttt{sign\_compressed=True} in the metadata).
 
   \item[\texttt{ASSOC}] One per stored association (every non-dropped member of
@@ -697,7 +697,7 @@ ascending lexicographically within each block.
 \subsection{Total output length}
 
 \begin{equation}
-  L = \underbrace{\sum_{\mathit{fo} \in \repL} \prod_i \comb{n_i}{k_i}}_{\text{Phase~1}}
+  L = \underbrace{\sum_{\mathit{fo} \in \repS} \prod_i \comb{n_i}{k_i}}_{\text{Phase~1}}
     + \underbrace{\sum_{\substack{\pf \in \text{all blocks} \\ \pf \notin B_\mathrm{self} \\ \pf \ne \pf^*_B}}\!
       2\,\acount(\pf)}_{\text{Phase~2}},
 \end{equation}
@@ -710,9 +710,9 @@ and $\pf^*_B$ denotes the largest non-self-pairing association (the
 The function \texttt{describe\_encoding(plan)} returns a list of
 \texttt{SegmentInfo} records, one per segment, containing: segment kind
 (\texttt{ORBIT}/\texttt{ASSOC}/\texttt{NULL\_SELF}/\texttt{NULL\_COMP}),
-start index, length, operation names, flavours, overlap, symmetry class
-(\texttt{SS}/\texttt{SA}/\texttt{AS}/\texttt{AA}), and the
-\texttt{sign\_compressed} flag for \texttt{ORBIT} segments.  This list
+start index, length, operation names, flavours, overlap, orbit type
+(\texttt{TYPE\_11}/\texttt{TYPE\_12}/\texttt{TYPE\_21}/\texttt{TYPE\_22}/\texttt{TYPE\_NEG}),
+and the \texttt{sign\_compressed} flag for \texttt{ORBIT} segments.  This list
 is a complete description of the encoder's output structure given only the
 plan — no event data is needed.
 
@@ -741,7 +741,7 @@ plan — no event data is needed.
     & atom pairs, event $E$
     & $\acount(\pf)$ complex numbers \\
   Phase~2: embed $z$-values (5a)
-    & $\{z_k\}$, symmetry class
+    & $\{z_k\}$, orbit type
     & $\acount(\pf)$ complex coefficients \\
   Phase~2: unpack to reals
     & complex coefficients
