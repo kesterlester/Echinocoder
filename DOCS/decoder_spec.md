@@ -335,20 +335,181 @@ The EncodingTree decoder:
 
 ---
 
+## Alignment decoding: recovering the orbit of repS evaluations
+
+### What the alignment decoder produces
+
+The full encoding tree decoder (above) produces a collection of annotated multisets —
+one per Phase 1 orbit and one per Phase 2 association — each giving G-ambiguous
+evaluations of a specific set of atoms or atom-pairs.  The alignment decoder is the next
+layer up.  It assembles those pairwise-correlated multisets into a single richer object:
+the **G-orbit of the repS evaluation vector**.
+
+Concretely: `repS` is the canonical ordered list of all atoms across all
+FlavouredOperators.  For a given event E, each element g ∈ G produces a permuted (and
+possibly sign-modified) version of that list, yielding a vector of evaluation values
+`eval(g · repS, E)`.  The collection of all such vectors, for all g ∈ G, is the G-orbit
+of `eval(repS, E)`.  This is the alignment decoder's output, represented as a
+**multiset** of these vectors (column order has no meaning; the orbit is a set, not a
+sequence).
+
+This object contains all G-invariant information present in the encoding and no more.
+In particular, it does **not** contain a bijection between atoms and values — no such
+bijection can be recovered, because the encoder deliberately discards it.  The orbit is
+the quotient of the full assignment by G, and that is the correct and complete answer.
+
+### The table picture
+
+Represent the G-orbit of `eval(repS, E)` as a table:
+
+- **Rows** are indexed by positions in `repS`.  Each row is identified with one Phase 1
+  orbit (or, for larger rank, a specific position within one FlavouredOperator's atoms).
+  Every element in a given row is a value that the Phase 1 decoder for that orbit could
+  have returned.
+- **Columns** are the elements of the G-orbit — one per group element g (up to the
+  stabiliser of `repS`).  Columns form a **multiset**; their order carries no meaning.
+- The entry at (row r, column g) is `eval(g · repS_r, E)`, where `repS_r` is the r-th
+  atom of `repS`.
+
+The number of columns is `|G| / |stab(repS, E)|`.  For a generic event,
+`stab(repS, E) = {e}` and there are exactly `|G|` columns.
+
+### What the OverlapBlock outputs provide: letterbox views
+
+Each OverlapBlock for association `(fo_u, fo_v, s)` provides a **2-row letterbox view**
+of the table: a multiset of `(u_val, v_val)` pairs, corresponding to two specific rows
+of the table seen simultaneously.
+
+Because a single Phase 1 orbit may have fewer atoms than the number of table columns
+(its stabiliser within G is non-trivial), the same `(u_val, v_val)` pair may appear in
+the OverlapBlock output with multiplicity greater than 1.  The multiplicity factor for
+a given atom-pair `(u, v)` is `|stab(u, v)| / |stab(repS, E)|`; for generic events this
+is simply `|stab(u, v)|`, a fixed algebraic quantity that can be precomputed from the
+atom-pair structure alone.  After dividing out this multiplicity, the OverlapBlock output
+is a faithful 2-row projection of the table.
+
+### Constant rows
+
+A row whose Phase 1 orbit has size 1 is constant across all columns of the table — every
+group element maps the corresponding `repS` atom to the same value.  Such rows must be
+recognised first and inserted as constants into every partial column without any search.
+
+Failure to recognise constant rows would cause the algorithm to attempt permutation
+searches over a row that is entirely collision-saturated (all `|G|` entries equal), which
+is both pointless and catastrophically slow.
+
+*Example.*  In the standard `{electrons=(a,b,c), muons=(p,q)}` setup,
+`G = S_3 × S_2`, `|G| = 12`.  The atom `dot(p, q)` uses both muon labels; its orbit
+under G has size 1 because `S_3` does not touch muon labels and `S_2` acts on `{p,q}`,
+which appear symmetrically in `dot`.  The corresponding row of the table is the single
+value `dot(p, q, E)` repeated in all 12 columns.
+
+### The alignment algorithm: multi-way relational join
+
+Formally, the alignment problem is a **multi-way relational join**.  Each OverlapBlock
+output (after multiplicity correction) is a binary relation `R_{ij}` on
+`(row_i values × row_j values)`.  The target table T is the unique k-ary relation whose
+binary projections are exactly `{R_{ij}}`.
+
+**Uniqueness (lossless-join property).**  Any candidate table T′ consistent with all
+`R_{ij}` must equal T as a multiset.  This is because every column of T′ must lie in the
+G-orbit of `eval(repS, E)`, and all `|G| / |stab(repS, E)|` elements of that orbit are
+already accounted for in T — there is no room for a spurious column.  The only genuine
+non-uniqueness is when two columns of T are identical (non-trivial `stab(repS, E)`), in
+which case those columns are indistinguishable and no alignment is needed or possible.
+
+**Algorithm.**
+
+1. **Pre-place constant rows.**  Identify all rows r where the Phase 1 orbit of `fo_r`
+   has size 1.  Insert the single value into every partial column.  Remove these rows
+   from further consideration.
+
+2. **Seed from the most-informative row.**  Among the remaining rows, choose row r*
+   with the most distinct Phase 1 values (equivalently, the smallest maximum repetition
+   multiplicity).  Its values seed the partial columns: each distinct value in row r*
+   starts one equivalence class of partial columns; the multiplicity of that value
+   determines how many columns are in that class.  If all Phase 1 values of row r* are
+   distinct, each seeds exactly one column, and the rest of the algorithm proceeds
+   without any branching.
+
+3. **Extend one row at a time.**  At each step, choose the next row r to add — prefer
+   the row whose pairwise OverlapBlock with the already-placed rows has the most distinct
+   values in r, minimising residual ambiguity.  For each partial column (or equivalence
+   class of partial columns), look up the known row r* value in `R_{r*, r}` to read off
+   the corresponding row r value.
+
+4. **Resolve ambiguities.**  Where a repeated value in an already-placed row creates
+   multiple candidate extensions, keep all candidates as branches.  Prune branches using
+   additional blocks `R_{i,j}` connecting two already-placed rows i and j: any branch
+   that implies a `(row_i value, row_j value)` pair absent from `R_{i,j}` is eliminated.
+   Continue until all branches either collapse to a single candidate or are confirmed as
+   genuinely identical columns.
+
+5. **Multiplicity bookkeeping.**  The number of table columns represented by each
+   unresolved branch is the number of group elements that map to indistinguishable
+   columns under all available pairwise constraints — i.e. the size of the residual
+   stabiliser.  Record this as the column multiplicity.
+
+**Complexity.**  In the generic (no-collision) case, branching never occurs: all
+ambiguities are resolved in step 4 with at most one candidate per partial column.  Total
+cost is O(`|repS|` × `|G|`) extensions plus O(`|repS|`²) pairwise lookups — trivially
+fast for realistic physics group sizes (`|G|` ~ 10–1000).
+
+When collisions do occur, the branching factor is bounded by the size of the collision
+equivalence classes, not by `|G|!`.  The algorithm never enumerates all orderings of the
+full column set.
+
+### Output type
+
+```
+AnnotatedMultisetOfRepSEvalVectors
+```
+
+A multiset of tuples, each of length `|repS|`, where position r holds the evaluation of
+`repS[r]` (the r-th atom of `repS`) for that group element.  The tuple positions
+correspond to known algebraic atoms; the tuple values are floats.  The multiset of
+tuples is the G-orbit, and column order within the multiset carries no meaning.
+
+### Correctness check
+
+In round-trip tests, the event E is known.  Ground-truth columns are enumerated directly
+as `{ eval(g · repS, E) : g ∈ G }` (as a multiset) and compared against the alignment
+decoder's output.  The test passes if and only if the two multisets are equal (using
+fuzzy float comparison; exact equality if integer events are used).
+
+### Libraries
+
+For realistic group sizes (`|G|` ~ 10–1000), the join is straightforward to implement in
+pure Python using dict-based hash joins — no external library is required.  If group
+sizes grow to the point where a more efficient join implementation is warranted, standard
+libraries already in the environment (`numpy`, `pandas`) may be used.  Any additional
+external library dependency must be low-fragility: a single well-maintained package with
+minimal transitive dependencies is acceptable; a dependency tree of dozens of packages is
+not.
+
+---
+
 ## What the decoded output represents (summary)
 
-After Step A, the caller holds a collection of annotated multisets, one per encoder in
-the tree.  Each says:
+After Step A, the caller holds:
 
-> "These values (stored as a list, treated as a multiset) were produced by evaluating
-> this known set of atoms [or atom-pairs], in some unknown order."
+1. **The collection of annotated multisets** (one per encoder in the tree), each saying:
+   > "These values were produced by evaluating this known set of atoms [or atom-pairs],
+   > in some unknown order."
 
-The unknown order is the G-ambiguity.  The fact that values are H-invariant scalars
-means H has already been quotiented out.  Together: the decoded output represents the
-original event up to the action of G × H, which is exactly the ambiguity the encoding
-was designed to preserve.
+2. **The G-orbit of repS evaluations** (alignment decoder output): the maximal
+   G-invariant information that the encoding preserves — the full correlational structure
+   of evaluations across all atoms, up to the action of G.
 
-Step B (vector-space reconstruction) begins from these annotated multisets and
+Neither output contains a bijection between atoms and values.  The G-ambiguity (the
+unknown permutation) has been deliberately erased by the encoder.  What remains is the
+quotient by G — not a specific representative, but the entire orbit.
+
+The fact that values are H-invariant scalars means H has already been quotiented out.
+Together: the decoded output represents the original event up to the action of G × H,
+which is exactly the ambiguity the encoding was designed to preserve.
+
+Step B (vector-space reconstruction) begins from the alignment decoder's output and
 constructs actual vectors, choosing a canonical representative under H.  It is deferred.
 
 ---
@@ -371,11 +532,17 @@ in from the start of the decode test suite.
 
 ## Deferred items
 
-- **NULL_COMP complementarity formula**: the exact algebraic relation to reverse during
-  decoding.  To be added once confirmed from the encoding source code.
-
 - **Step B (vector-space reconstruction)**: recovering actual vectors from invariant
   values, up to H.  Specified separately after Step A is complete.
 
 - **SegmentInfo extension**: the precise fields to add to SegmentInfo to carry atom /
   atom-pair information for decoder use.
+
+- **Alignment decoder: join-order heuristic**: the greedy "most distinct values first"
+  row-ordering is described in principle; the exact heuristic (tie-breaking, handling of
+  multi-group FOs with partial repetition) is to be settled during implementation.
+
+- **Alignment decoder: stabiliser multiplicity precomputation**: the algebraic formula
+  for `|stab(u, v)|` as a function of atom-pair flavour is known in principle (it follows
+  from the orbit-stabiliser theorem applied within each group factor); the concrete
+  implementation is deferred to the alignment decoder coding phase.
