@@ -346,12 +346,12 @@ OverlapBlock decoders — one annotated multiset per Phase 1 orbit and one per P
 association, each giving G-ambiguous evaluations of a specific set of atoms or
 atom-pairs — into a single richer object: the **G-orbit of the repS evaluation vector**.
 
-Concretely: `repS` is the canonical ordered list of all atoms across all
+Concretely: `repS` is the canonical and **information complete** ordered list of all atoms across all
 FlavouredOperators.  For a given event E, each element g ∈ G produces a permuted (and
 possibly sign-modified) version of that list, yielding a vector of evaluation values
 `eval(g · repS, E)`.  The collection of all such vectors, for all g ∈ G, is the G-orbit
 of `eval(repS, E)`.  This is the alignment decoder's output, represented as a
-**multiset** of these vectors (column order has no meaning; the orbit is a set, not a
+**multiset** of these vectors (column order has no meaning; the orbit is a multiset, not a
 sequence).
 
 This object contains all G-invariant information present in the encoding and no more.
