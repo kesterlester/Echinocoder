@@ -516,24 +516,27 @@ join on row2 will produce a conflict with `row1row3`.
 OverlapBlock's pairings as strong but fallible evidence, and resolve conflicts by
 consulting the full set of letterbox views rather than trusting any single one.
 
-**Conflict resolution principle.**  When a candidate table T produced by the join
-contains pairings that are contradicted by one or more R_{ij} views, the algorithm
-should:
+**Conflict resolution principle.**  When a candidate table T produced by the join is
+contradicted by one or more R_{ij} views — i.e. a column of T implies a
+`(row_i value, row_j value)` pair that does not appear in `R_{ij}` — the algorithm
+should not attempt to diagnose *why* the conflict arose.  Instead:
 
-1. Detect the conflict: a column of T implies a `(row_i value, row_j value)` pair that
-   does not appear in `R_{ij}`.
-2. Identify the ambiguous columns: those whose conflict can be explained by a swap of
-   two near-equal Phase 1 values in some row.
-3. Enumerate the alternative pairings: since the values involved are Phase 1 values and
-   are therefore known exactly, the number of alternatives within the near-collision
-   equivalence class is small (bounded by the repetition multiplicity of those values in
-   the Phase 1 orbit).
-4. Score each alternative by the number of R_{ij} views it satisfies, and choose the
-   assignment with the maximum agreement across all views.
+1. Define a **disagreement loss**: for each `(row_i value, row_j value)` pair implied by
+   a candidate table T, find the closest pair present in R_{ij} and accumulate the
+   squared Euclidean distance between them, summed across all i, j.  A loss of this form
+   (analogous to χ²) is recommended as a natural starting point: it weights each
+   discrepancy by its magnitude, so many tiny disagreements (distance 0.00001 each) are
+   correctly rated as far less serious than a single large one (distance 10000).  Other
+   differentiable or rank-based loss functions are possible and may be substituted if
+   motivated; the key requirement is that the loss is zero when T is consistent with all
+   R_{ij} and increases smoothly with the degree of inconsistency.
+2. Enumerate alternative column assignments within the ambiguous equivalence classes
+   (those sharing identical row values in at least one row, which bound the search space).
+3. Choose the assignment that minimises the disagreement loss.
 
-This is a **maximum-consensus matching** over the near-collision equivalence class, not
-over all `|G|!` column orderings.  For typical near-collisions (two values swapped), it
-reduces to a binary choice decided by majority vote across the remaining letterbox views.
+No causal diagnosis of which OverlapBlock was wrong is needed or attempted.  The
+algorithm's job is only to find the alignment that best satisfies all the evidence
+simultaneously.
 
 In all cases the correct table is one of the `|G| / |stab(repS, E)|` elements of the
 G-orbit of `eval(repS, E)`.  A polishing swap shifts to a neighbouring candidate within
