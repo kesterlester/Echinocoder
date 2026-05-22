@@ -378,11 +378,12 @@ def test_overlap_block_decoder_with_drop(ops, ctx, event, orbit_factory, phase2_
     (the largest non-self association is dropped at encode time).  The block decoder must:
       - decode all non-dropped selections (ASSOC + NULL_SELF) as before
       - reconstruct the NULL_COMP pairs via multiset complement:
-          Z_full(U × V) ∖ NULL_SELF ∖ all-ASSOC ∖ NULL_SIGN_OR_SWAP = NULL_COMP
+          Z_full(U × V) ∖ NULL_SELF ∖ all-ASSOC = NULL_COMP
       - return one result per selection (len == len(_selections), not len(active_sels))
 
-    Currently xfail: NULL_SIGN_OR_SWAP leftover pairs not yet subtracted.
-    See DOCS/null_sign_or_swap_decoder_notes.md.
+    The complement works cleanly because _plan_owned_atom_pairs claims all seven
+    sign/swap partner orbits for each selection (not just the base orbit), and
+    decode() subtracts their value-space transforms from Z_full accordingly.
     """
     mag, dot, eps3 = ops
     plan = Plan(context=ctx, operations=(mag, dot, eps3))
@@ -414,8 +415,8 @@ def test_overlap_block_decoder_with_drop(ops, ctx, event, orbit_factory, phase2_
                          for a in phase1_results[key].atoms]
             elif sel.is_comp_drop:
                 # NULL_COMP: ground truth = all owned atom-pairs evaluated.
-                # owned_atom_pairs covers the base G-orbit PLUS any
-                # NULL_SIGN_OR_SWAP partner orbits belonging to this selection.
+                # owned_atom_pairs covers the base G-orbit plus all sign/swap
+                # partner orbits claimed by this selection during planning.
                 truth = [(evaluate(u, event), evaluate(v, event))
                          for u, v in sel.owned_atom_pairs]
                 found_comp_drop = True
