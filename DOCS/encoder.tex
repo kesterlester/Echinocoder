@@ -354,28 +354,44 @@ $u_j$ and $v_k$ from type~$i$.
 
 \begin{example}
 \label{ex:assoc-table}
-Let $n=3$ (labels $a,b,c$), one group, and $\mathit{op} = \mathit{dot}$ with
-rank~2 and flavour $F=(2)$.  The atoms are $\mathit{dot}(a,b)$,
-$\mathit{dot}(a,c)$, $\mathit{dot}(b,c)$.  The self-pairing overlap block
-$(\mathit{dot},(2),\mathit{dot},(2))$ has associations $s \in \{1,2\}$ (overlap
-$s=0$ is impossible here since $k_u+k_v-n = 2+2-3 = 1$).
+Let $n=4$ (labels $a,b,c,d$), one group, and $\mathit{op}=\mathit{dot}$ with
+rank~2 and flavour $F=(2)$.  Abbreviate the six atoms as $d_{ab}=\mathit{dot}(a,b)$,
+$d_{ac}$, $d_{ad}$, $d_{bc}$, $d_{bd}$, $d_{cd}$.  The valid overlaps for the
+self-pairing block $(\mathit{dot},(2),\mathit{dot},(2))$ are $s\in\{0,1,2\}$
+since $k_u+k_v-n=2+2-4=0$.
 
 \medskip
 \begin{center}
+\small
 \renewcommand{\arraystretch}{1.4}
-\begin{tabular}{c|ccc}
+\begin{tabular}{c|cccccc}
   \toprule
-  & $\mathit{dot}(a,b)$ & $\mathit{dot}(a,c)$ & $\mathit{dot}(b,c)$ \\
+  & $d_{ab}$ & $d_{ac}$ & $d_{ad}$ & $d_{bc}$ & $d_{bd}$ & $d_{cd}$ \\
   \midrule
-  $\mathit{dot}(a,b)$ & $s=2$ & $s=1$ & $s=1$ \\
-  $\mathit{dot}(a,c)$ & $s=1$ & $s=2$ & $s=1$ \\
-  $\mathit{dot}(b,c)$ & $s=1$ & $s=1$ & $s=2$ \\
+  $d_{ab}$ & $\mathbf{2}$ & $1$ & $1$ & $1$ & $1$ & $\underline{0}$ \\
+  $d_{ac}$ & $1$ & $\mathbf{2}$ & $1$ & $1$ & $\underline{0}$ & $1$ \\
+  $d_{ad}$ & $1$ & $1$ & $\mathbf{2}$ & $\underline{0}$ & $1$ & $1$ \\
+  $d_{bc}$ & $1$ & $1$ & $\underline{0}$ & $\mathbf{2}$ & $1$ & $1$ \\
+  $d_{bd}$ & $1$ & $\underline{0}$ & $1$ & $1$ & $\mathbf{2}$ & $1$ \\
+  $d_{cd}$ & $\underline{0}$ & $1$ & $1$ & $1$ & $1$ & $\mathbf{2}$ \\
   \bottomrule
 \end{tabular}
 \end{center}
 \medskip
 
-Association $s=2$ (diagonal): 3 cells; association $s=1$ (off-diagonal): 6 cells.
+Cell entries show the overlap value~$s$.
+\textbf{Bold~2} (diagonal): $s=2$, the \texttt{NULL\_SELF} association
+(6~cells, always dropped — recoverable from Phase~1 alone).
+\underline{Underlined~0} (anti-diagonal): $s=0$, the sole \texttt{ASSOC}
+association (6~cells, \emph{encoded}).
+Plain~$1$ (all remaining cells): $s=1$, the \texttt{NULL\_COMP} association
+(24~cells, dropped — recovered by multiset complement at decode time).
+The $6\times6=36$ cells partition as $6+6+24$.
+
+The six encoded pairs are the three ways to partition the four labels
+$\{a,b,c,d\}$ into two disjoint pairs of size~2, each appearing twice (once in
+each row/column order): $(d_{ab},d_{cd})$, $(d_{cd},d_{ab})$,
+$(d_{ac},d_{bd})$, $(d_{bd},d_{ac})$, $(d_{ad},d_{bc})$, $(d_{bc},d_{ad})$.
 \end{example}
 
 The number of atom-pairs in association $\pf$ is
@@ -387,14 +403,33 @@ The three binomial factors count: (i)~the shared labels, (ii)~the extra
 $u$-labels from the remaining pool, (iii)~the extra $v$-labels from what is
 left.
 
-\begin{remark}
+\begin{remark}[Partition identity and sign-partner pairs]
+\label{rem:sign-partners}
 The cells of the association table partition exactly into the associations of
 the block:
 \[
   |\fo(\mathit{op}_u,F_u)| \cdot |\fo(\mathit{op}_v,F_v)|
-  = \sum_{\pf \in B} \acount(\pf)
+  = \sum_{\pf \in B} \acount(\pf),
 \]
-(counting sign variants on both sides for antisymmetric operations).
+where $\acount(\pf)$ counts \emph{all} sign variants of each label combination
+on both sides.
+
+For FlavouredOperators with sign-paired atoms, each label combination yields
+both a sign~$+1$ atom ($u^+$) and a sign~$-1$ atom ($u^-$).  The table
+therefore contains rows and columns for all sign variants, and the $z$-values
+of the sign-partner pairs are algebraically determined by the positive-sign
+pairs.  For example, if both operations have sign-paired atoms:
+\[
+  z(u^+,v^-) = \overline{z(u^+,v^+)}, \quad
+  z(u^-,v^+) = -\,\overline{z(u^+,v^+)}, \quad
+  z(u^-,v^-) = -z(u^+,v^+).
+\]
+In all cases the exact relationship is fixed by the orbit type of the pair
+(see \cref{sec:5a}).  Sign-partner cells therefore carry no independent
+information: encoding the positive-sign pairs suffices, and the sign partners
+are recovered automatically using the orbit-type symmetry.  This is why the
+encoder restricts its per-association loop to the positive-sign subset
+$(u^+, v^+)$ (see \cref{sec:z-embed}).
 \end{remark}
 
 \subsection{Dropping Self-Pairing Associations (\texttt{NULL\_SELF})}
@@ -416,11 +451,12 @@ metadata and contribute zero reals.
 
 \begin{example}
 In Example~\ref{ex:assoc-table}, the association $s=2$ is the self-pairing one
-(diagonal cells of the association table).  Its three $z$-values equal
-$(1+i)\,\mathit{dot}(a,b,E)$, $(1+i)\,\mathit{dot}(a,c,E)$,
-$(1+i)\,\mathit{dot}(b,c,E)$ — identical to $(1+i)$ times the Phase~1 orbit
-for $\mathit{fo}(\mathit{dot},(2))$.  It is therefore always dropped as
-\texttt{NULL\_SELF}, leaving only the $s=1$ association in the block.
+(bold diagonal cells).  Its six $z$-values are $(1+i)\,d_{xy}(E)$ for each
+atom $d_{xy}$ — identical to $(1+i)$ times the Phase~1 orbit for
+$\mathit{fo}(\mathit{dot},(2))$.  They are therefore always dropped as
+\texttt{NULL\_SELF}, leaving the $s=1$ (24 cells) and $s=0$ (6 cells)
+associations.  Of these, $s=1$ is the larger and is dropped as
+\texttt{NULL\_COMP}; $s=0$ is the sole encoded association.
 \end{example}
 
 \subsection{Dropping the Largest Remaining Association (\texttt{NULL\_COMP})}
@@ -601,7 +637,7 @@ of association $\pf$.  Under $g$, the set of such pairs is permuted (with
 possible sign changes, handled by the orbit-type embedding in
 \cref{sec:5a}).  The polynomial embedding of a multiset is invariant under any
 permutation of its elements, so the embedding is $G$-invariant.  The
-complementation step (\cref{sec:5b}) produces the same dropped-association
+complementation step (\cref{sec:null-comp}) produces the same dropped-association
 values because it operates on the multiset $Z_{\pf^*}$, which is the
 set-theoretic complement of the stored associations within $Z = U \oplus_\C V$,
 and $Z$, $U$, $V$ are all $G$-invariant.
