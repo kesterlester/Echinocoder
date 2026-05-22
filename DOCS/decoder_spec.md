@@ -339,11 +339,12 @@ The EncodingTree decoder:
 
 ### What the alignment decoder produces
 
-The full encoding tree decoder (above) produces a collection of annotated multisets —
-one per Phase 1 orbit and one per Phase 2 association — each giving G-ambiguous
-evaluations of a specific set of atoms or atom-pairs.  The alignment decoder is the next
-layer up.  It assembles those pairwise-correlated multisets into a single richer object:
-the **G-orbit of the repS evaluation vector**.
+The alignment decoder is the **root of the decoding tree**.  Just as an OverlapBlockDecoder
+assembles the outputs of its constituent PairOrbitDecoders into a coherent block result,
+the alignment decoder assembles the outputs of all Phase 1 orbit decoders and all
+OverlapBlock decoders — one annotated multiset per Phase 1 orbit and one per Phase 2
+association, each giving G-ambiguous evaluations of a specific set of atoms or
+atom-pairs — into a single richer object: the **G-orbit of the repS evaluation vector**.
 
 Concretely: `repS` is the canonical ordered list of all atoms across all
 FlavouredOperators.  For a given event E, each element g ∈ G produces a permuted (and
@@ -458,6 +459,59 @@ fast for realistic physics group sizes (`|G|` ~ 10–1000).
 When collisions do occur, the branching factor is bounded by the size of the collision
 equivalence classes, not by `|G|!`.  The algorithm never enumerates all orderings of the
 full column set.
+
+### Numerical robustness: pairings may be wrong even when values are exact
+
+After polishing, **every value in every row is an exact Phase 1 value** — the same
+floating-point number will appear in all OverlapBlocks that include that row.  This much
+is guaranteed: row-value identity holds exactly.
+
+What polishing does *not* guarantee is that the **pairings within an OverlapBlock are
+correct**.  Polishing uses independent Hungarian assignments for the u- and v-rows.  If
+two Phase 1 values in a row are very close (near-collision), the Hungarian step may swap
+the assignment — mapping the noisy root that should have matched value A onto value B and
+vice versa.  The result is a polished OverlapBlock output whose individual values are all
+exact Phase 1 values, but whose internal pairings may be locally wrong.
+
+Concretely: suppose the true column alignment has
+
+```
+row1row2: { (0, 2.0000001), (5, 1.9999999), (1, 9) }
+```
+
+and the Phase 1 values for row 2 are `{2.0, 2.0, 9}` (a genuine Phase 1 near-collision
+at 2.0).  Polishing maps both noisy row-2 values to `2.0`, giving
+`{ (0, 2.0), (5, 2.0), (1, 9) }` — correct values, but now the two `2.0` entries are
+ambiguous.  Meanwhile `row1row3` independently gives `{ (0, 4), (5, -3), (1, 7) }`.  If
+the `row2row3` decoder happened to pair row2=2.0 with row3=−3 rather than row3=4, the
+join on row2 will produce a conflict with `row1row3`.
+
+**Exact match is a guide, not gospel.**  The alignment algorithm must treat each
+OverlapBlock's pairings as strong but fallible evidence, and resolve conflicts by
+consulting the full set of letterbox views rather than trusting any single one.
+
+**Conflict resolution principle.**  When a candidate table T produced by the join
+contains pairings that are contradicted by one or more R_{ij} views, the algorithm
+should:
+
+1. Detect the conflict: a column of T implies a `(row_i value, row_j value)` pair that
+   does not appear in `R_{ij}`.
+2. Identify the ambiguous columns: those whose conflict can be explained by a swap of
+   two near-equal Phase 1 values in some row.
+3. Enumerate the alternative pairings: since the values involved are Phase 1 values and
+   are therefore known exactly, the number of alternatives within the near-collision
+   equivalence class is small (bounded by the repetition multiplicity of those values in
+   the Phase 1 orbit).
+4. Score each alternative by the number of R_{ij} views it satisfies, and choose the
+   assignment with the maximum agreement across all views.
+
+This is a **maximum-consensus matching** over the near-collision equivalence class, not
+over all `|G|!` column orderings.  For typical near-collisions (two values swapped), it
+reduces to a binary choice decided by majority vote across the remaining letterbox views.
+
+In all cases the correct table is one of the `|G| / |stab(repS, E)|` elements of the
+G-orbit of `eval(repS, E)`.  A polishing swap shifts to a neighbouring candidate within
+that orbit; the majority-vote correction restores the right one.
 
 ### Output type
 
