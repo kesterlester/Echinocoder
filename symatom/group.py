@@ -278,16 +278,19 @@ class TheGroup:
         guaranteed API promise, not an implementation detail.  Callers may
         rely on ``all_group_elements()[0].is_identity()`` always being True.
 
+        The identity-first ordering is a structural consequence of how
+        _all_perm_maps() iterates (see its docstring).  The assert below
+        guards against any future change to _all_perm_maps() that would
+        silently break the contract; it is compiled away under ``python -O``.
+
         TheGroup is the sole authority on group membership and ordering.
         """
-        result: list[GroupElement] = []
-        for perm_map in self._all_perm_maps():
-            g = GroupElement(perm_map)
-            if g.is_identity():
-                result.insert(0, g)   # identity guaranteed first
-            else:
-                result.append(g)
-        return tuple(result)
+        result = tuple(GroupElement(pm) for pm in self._all_perm_maps())
+        assert result[0].is_identity(), (
+            "_all_perm_maps() must yield the identity first — "
+            "all_group_elements() identity-first contract violated"
+        )
+        return result
 
     # ------------------------------------------------------------------
     # Internal machinery
@@ -299,6 +302,12 @@ class TheGroup:
         Private.  Used only inside all_group_elements() to construct
         GroupElement objects.  All other code should iterate via
         all_group_elements() and call g.apply() / g.apply_to_event().
+
+        Implementation note: the identity permutation is always yielded
+        first.  This is a structural guarantee: itertools.permutations()
+        starts with the natural (identity) ordering, and itertools.product()
+        of sequences that each begin with their identity element produces the
+        all-identity combination first.  all_group_elements() relies on this.
         """
         group_perm_lists = [list(_perms(g.labels)) for g in self.types]
         for combo in _iproduct(*group_perm_lists):
