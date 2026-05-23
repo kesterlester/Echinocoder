@@ -229,8 +229,12 @@ def test_compressed_encoding_permutation_invariant_dot(perm, ctx, orbit_factory,
     {"a": "b", "b": "c", "c": "d", "d": "a"},
 ])
 def test_compressed_encoding_permutation_invariant_eps3(perm, ctx, orbit_factory, phase2_factory):
-    # TODO Make this a much better test that looks at cases that can't be compressed too, e.g. eps3(a,p,v)
-    """Compressed encoding with ANTISYMMETRIC eps3 is permutation-invariant."""
+    """Compressed encoding with ANTISYMMETRIC eps3 is permutation-invariant.
+
+    Tests the 1-group (electrons-only) case.  Cross-group eps3 atoms that cannot
+    be sign-compressed (e.g. eps3(a,p,v) mixing electron and muon labels) are
+    covered by the two-group permutation invariance tests in test_integration.py.
+    """
     eps3 = EvaluableOperation(
         name="eps3", rank=3, parity=-1,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
@@ -260,9 +264,20 @@ def test_compressed_length_sym_sym(dot, ctx, event_3d):
 
 
 
-def test_compressed_length_sym_antisym(ctx):
-    # TODO FIXME : This is wrong, referring to ANTISYMM etc rather than TYPE_11,12,21,22
-    """SYM×ANTISYM or ANTISYM×SYM: compressed length == orbit_size / 2."""
+def test_compressed_length_type12_type21(ctx):
+    """TYPE_12 / TYPE_21 pairs: orbit_size == 2 × count (sign-flip doubles the orbit).
+
+    When exactly one atom in a cross-FO pair is ANTISYMMETRIC (TYPE_12: v-sign
+    flips freely; TYPE_21: u-sign flips freely), the G-orbit size is exactly twice
+    the combinatorial pair count.  The count() method is a combinatorial formula
+    that ignores sign variants; orbit_size() uses TheGroup.orbit_size_pair() via
+    the orbit-stabiliser theorem and thus counts sign variants independently.
+
+    In a 1-group context with one SYMMETRIC and one ANTISYMMETRIC operation, every
+    mixed pair is TYPE_12 or TYPE_21.  The ArgumentSymmetry filter below identifies
+    these pairs correctly for 1-group problems; it is NOT a general criterion for
+    TYPE_12/TYPE_21 detection in multi-group contexts.
+    """
     dot = EvaluableOperation(
         name="dot", rank=2, parity=+1,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
@@ -276,14 +291,21 @@ def test_compressed_length_sym_antisym(ctx):
     plan = Plan(context=ctx, operations=(dot, eps3))
     fo_list = repS(ctx, (dot, eps3))
     type_sizes = tuple(g.size for g in ctx.types)
+    # Mixed pairs: exactly one of (op_u, op_v) is ANTISYMMETRIC.  For 1-group
+    # contexts these are precisely the TYPE_12 / TYPE_21 orbit pairs.
     mixed_pfs = [
         pf for pf in canonical_pair_flavours(fo_list, ctx)
         if (pf.op_u.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
         != (pf.op_v.argument_symmetry == ArgumentSymmetry.ANTISYMMETRIC)
     ]
-    assert len(mixed_pfs) > 0, "Need at least one SYM×ANTISYM pair for this test"
+    assert len(mixed_pfs) > 0, "Need at least one TYPE_12/TYPE_21 pair for this test"
     for pf in mixed_pfs:
-        assert pf.count(type_sizes) == pf.orbit_size(ctx) // 2
+        orbit_sz = pf.orbit_size(ctx)
+        cnt      = pf.count(type_sizes)
+        assert orbit_sz == 2 * cnt, (
+            f"{pf}: expected orbit_size == 2 * count "
+            f"(TYPE_12/TYPE_21 doubling), got orbit_size={orbit_sz}, count={cnt}"
+        )
 
 
 # ---------------------------------------------------------------------------

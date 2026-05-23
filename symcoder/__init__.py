@@ -14,8 +14,9 @@ Public API:
                  OverlapBlockEncoderFactory  (Phase 2 block level)
                  Phase2EncoderFactory        (Phase 2 top level)
 """
-from .eval          import EvaluableOperation, evaluate
-from .encode        import encode, encode_and_describe, describe_encoding
+from .eval               import EvaluableOperation, evaluate
+from .encode             import encode, encode_and_describe, describe_encoding
+from .alignment_decoder  import decode_alignment
 from .describe      import SegmentInfo, Phase1Tree, OverlapBlockNode, Phase2Tree, EncodingTree
 from .decoded_types import (
     AnnotatedMultisetOfReals,
@@ -33,6 +34,7 @@ from .encoders import (
 __all__ = [
     "EvaluableOperation",
     "evaluate",
+    "decode_alignment",
     "encode",
     "encode_and_describe",
     "describe_encoding",

@@ -144,7 +144,6 @@ class SortEncoder(AtomOrbitEncoder):
         return "sort"
 
     def encode(self, event: dict) -> EncodingResult:
-        print(f"Sort encoder is evaluating {self._orbit} on Event {event}")
         vals = [evaluate(a, event) for a in self._orbit]
         values = np.sort(np.array(vals, dtype=np.float64))
         return EncodingResult(
@@ -219,7 +218,6 @@ class HalfSortEncoder(AtomOrbitEncoder):
         return 2 * len(self._representatives)
 
     def encode(self, event: dict) -> EncodingResult:
-        print(f"HalfSort encoder is evaluating {self._representatives} on Event {event}")
         vals = [abs(evaluate(a, event)) for a in self._representatives]
         values = np.sort(np.array(vals, dtype=np.float64))
         return EncodingResult(
