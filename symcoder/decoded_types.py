@@ -54,3 +54,34 @@ class AnnotatedMultisetOfRealPairs:
         return (f"AnnotatedMultisetOfRealPairs("
                 f"{len(self.pairs)} pairs, "
                 f"{len(self.atom_pairs)} atom-pairs)")
+
+
+@dataclass
+class AnnotatedMultisetOfRepSEvalVectors:
+    """
+    The G-orbit of eval(repS, E): the output of the alignment decoder.
+
+    This is the richest Step-A decoded object.  It contains all G-invariant
+    information present in the encoding — the full correlational structure of
+    atom evaluations across the discrete group orbit — and no more.
+
+    vectors : list of tuples of floats — the multiset of column vectors, one
+              per element of the G-orbit of repS at event E.  Each tuple has
+              length |repS|; position r holds eval(g · repS[r], E) for the
+              group element g corresponding to that column.  Treat as a
+              multiset; do not rely on order.  The multiset has
+              |G| / |stab(repS, E)| elements; for generic events (trivial
+              stabiliser) this equals |G|.
+    atoms   : list of Atom objects — repS, the canonical ordered list of all
+              atoms across all FlavouredOperators.  The same sequence underlies
+              every column vector; it provides the algebraic row labels of the
+              alignment table.  The bijection between vector positions and group
+              elements is unknown (G-ambiguity, as always).
+    """
+    vectors: list   # list[tuple[float, ...]]
+    atoms:   list   # list[Atom]  (repS)
+
+    def __repr__(self) -> str:
+        return (f"AnnotatedMultisetOfRepSEvalVectors("
+                f"{len(self.vectors)} vectors, "
+                f"{len(self.atoms)} atoms)")
