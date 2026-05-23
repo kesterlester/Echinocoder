@@ -27,7 +27,8 @@ TheGroup
 
     Group structure:
       order()                       — |G|
-      all_group_elements()          — all GroupElements; identity FIRST (contract)
+      iter_group_elements()         — lazy iterator over GroupElements; identity FIRST (contract)
+      all_group_elements()          — same as tuple(iter_group_elements()); for indexing / small groups
 
     Single-atom methods (short names):
       orbit(u)                      — the G-orbit of a single atom
@@ -271,26 +272,48 @@ class TheGroup:
             result *= math.factorial(g.size)
         return result
 
+    def iter_group_elements(self):
+        """Yield all elements of the group as GroupElement objects, lazily.
+
+        **Contract**: the identity element is always yielded first.  This is a
+        guaranteed API promise, not an implementation detail.
+
+        Use this method when iterating once over all group elements, especially
+        for large groups where materialising the full list would be expensive
+        (e.g. 10 jets + 3 electrons gives 10! × 3! = 21,772,800 elements).
+
+        all_group_elements() delegates to this method; iter_group_elements() is
+        the primary implementation.
+
+        Yields
+        ------
+        GroupElement
+            Each element of G exactly once, identity first.
+        """
+        gen = (GroupElement(pm) for pm in self._all_perm_maps())
+        first = next(gen)
+        assert first.is_identity(), (
+            "_all_perm_maps() must yield the identity first — "
+            "iter_group_elements() identity-first contract violated"
+        )
+        yield first
+        yield from gen
+
     def all_group_elements(self) -> tuple:
-        """Return all elements of the group as GroupElement objects.
+        """Return all elements of the group as a tuple of GroupElement objects.
 
         **Contract**: the identity element is always first.  This is a
         guaranteed API promise, not an implementation detail.  Callers may
         rely on ``all_group_elements()[0].is_identity()`` always being True.
 
-        The identity-first ordering is a structural consequence of how
-        _all_perm_maps() iterates (see its docstring).  The assert below
-        guards against any future change to _all_perm_maps() that would
-        silently break the contract; it is compiled away under ``python -O``.
+        Delegates to iter_group_elements(); prefer that method when iterating
+        once over a large group to avoid materialising the full collection.
+        Use this method when random access (indexing) or repeated iteration is
+        needed, or when the group is small.
 
         TheGroup is the sole authority on group membership and ordering.
         """
-        result = tuple(GroupElement(pm) for pm in self._all_perm_maps())
-        assert result[0].is_identity(), (
-            "_all_perm_maps() must yield the identity first — "
-            "all_group_elements() identity-first contract violated"
-        )
-        return result
+        return tuple(self.iter_group_elements())
 
     # ------------------------------------------------------------------
     # Internal machinery
