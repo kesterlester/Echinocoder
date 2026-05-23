@@ -8,9 +8,9 @@ evaluations from Phase 1 and Phase 2 decoded outputs.
 
 Ground truth
 ------------
-For each group element g ∈ G (enumerated via TheGroup._all_perm_maps()), we
-evaluate eval(g·repS[r], E) for all r = 0...|repS|-1.  This gives n_cols =
-|G| column vectors.  The decoded multiset must match this ground truth.
+For each group element g ∈ G (enumerated via TheGroup.all_group_elements()),
+we evaluate eval(g·repS[r], E) for all r = 0...|repS|-1.  This gives
+n_cols = |G| column vectors.  The decoded multiset must match this ground truth.
 
 Phase 2 factory: complementarity drop DISABLED (phase2_factory_no_drop)
 ------------------------------------------------------------------------
@@ -91,15 +91,15 @@ def _ground_truth_alignment(plan, repS_atoms, event):
     """
     Compute the n_cols = |G| ground-truth column vectors.
 
-    For each g ∈ G (via TheGroup._all_perm_maps), column c = tuple of
+    For each g ∈ G (via TheGroup.all_group_elements()), column c = tuple of
     eval(g·repS[r], E) for r = 0...|repS|-1.  Duplicates are kept: for a
     non-trivial stabiliser some group elements produce identical columns.
     """
     the_group = plan.context.the_group
     vectors   = []
-    for perm_map in the_group._all_perm_maps():
+    for g in the_group.all_group_elements():
         col = tuple(
-            evaluate(the_group._apply(perm_map, atom), event)
+            evaluate(g.apply(atom), event)
             for atom in repS_atoms
         )
         vectors.append(col)

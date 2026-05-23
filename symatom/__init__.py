@@ -16,7 +16,7 @@ from .rep        import (Flavour, FlavouredOperator, repS,
                          PairFlavour, pair_flavour_of,
                          canonical_pair_flavours,
                          brute_force_canonical_pair_flavours)
-from .group      import TheGroup
+from .group      import TheGroup, GroupElement
 
 __all__ = [
     "ArgumentSymmetry",
@@ -37,4 +37,5 @@ __all__ = [
     "canonical_pair_flavours",
     "brute_force_canonical_pair_flavours",
     "TheGroup",
+    "GroupElement",
 ]

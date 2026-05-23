@@ -402,15 +402,12 @@ def run():
         out.kv("  Decoded vectors", str(len(decoded_align.vectors)),
                tex=rf"decoded column vectors: ${len(decoded_align.vectors)}$\\")
 
-        # Ground truth
+        # Ground truth — TheGroup is sole authority on group action
         the_group = ctx.the_group
-        gt_vectors = []
-        for perm_map in the_group._all_perm_maps():
-            col = tuple(
-                evaluate(the_group._apply(perm_map, atom), event)
-                for atom in repS_atoms
-            )
-            gt_vectors.append(col)
+        gt_vectors = [
+            tuple(evaluate(g.apply(atom), event) for atom in repS_atoms)
+            for g in the_group.all_group_elements()
+        ]
 
         # Show the alignment table
         out.blank()
