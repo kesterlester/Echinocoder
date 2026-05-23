@@ -8,15 +8,15 @@ from symatom import ArgumentSymmetry, Operation, VectorType, Atom, are_negatives
 
 @pytest.fixture
 def dot():
-    return Operation("dot", rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+    return Operation("dot", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
 
 @pytest.fixture
 def eps3():
-    return Operation("eps3", rank=3, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    return Operation("eps3", rank=3, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
 
 @pytest.fixture
 def unstructured_op():
-    return Operation("foo", rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.UNSTRUCTURED)
+    return Operation("foo", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.UNSTRUCTURED)
 
 
 # ---------------------------------------------------------------------------
@@ -26,16 +26,13 @@ def unstructured_op():
 def test_operation_valid(dot):
     assert dot.name == "dot"
     assert dot.rank == 2
-    assert dot.parity == +1
+    assert dot.odd_parity == False          # dot is a scalar (even parity)
+    assert dot.parity == +1                 # property: -1 if odd_parity else +1
     assert dot.argument_symmetry == ArgumentSymmetry.SYMMETRIC
 
 def test_operation_invalid_rank():
     with pytest.raises(ValueError, match="rank"):
-        Operation("bad", rank=0, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-
-def test_operation_invalid_parity():
-    with pytest.raises(ValueError, match="parity"):
-        Operation("bad", rank=1, parity=0, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+        Operation("bad", rank=0, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
 
 def test_operation_frozen(dot):
     with pytest.raises(Exception):

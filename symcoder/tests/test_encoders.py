@@ -103,7 +103,7 @@ def _dummy_spec(form: OrbitSpecForm = OrbitSpecForm.EXPLICIT_ORBIT) -> OrbitSpec
 class TestOrbitSpec:
 
     def test_from_atom_sets_form(self):
-        op   = Operation("dot", rank=2, parity=1,
+        op   = Operation("dot", rank=2, odd_parity=False,
                          argument_symmetry=ArgumentSymmetry.SYMMETRIC)
         atom = Atom(op, ("a", "b"), sign=1)
         spec = OrbitSpec.from_atom(atom)
@@ -111,7 +111,7 @@ class TestOrbitSpec:
         assert spec.payload is atom
 
     def test_from_explicit_orbit_materialises_iterable(self):
-        op   = Operation("dot", rank=2, parity=1,
+        op   = Operation("dot", rank=2, odd_parity=False,
                          argument_symmetry=ArgumentSymmetry.SYMMETRIC)
         atom = Atom(op, ("a", "b"), sign=1)
         spec = OrbitSpec.from_explicit_orbit(iter([atom]))  # iterator, not list

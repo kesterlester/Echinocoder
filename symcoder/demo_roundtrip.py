@@ -216,13 +216,13 @@ def run():
                rf" order $= {ctx.the_group.order()}$")
 
         # Operations
-        mag  = EvaluableOperation("mag",  rank=1, parity=+1,
+        mag  = EvaluableOperation("mag",  rank=1, odd_parity=False,
                                   argument_symmetry=ArgumentSymmetry.SYMMETRIC,
                                   eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))))
-        dot  = EvaluableOperation("dot",  rank=2, parity=+1,
+        dot  = EvaluableOperation("dot",  rank=2, odd_parity=False,
                                   argument_symmetry=ArgumentSymmetry.SYMMETRIC,
                                   eval_fn=lambda v: float(np.dot(v[0], v[1])))
-        eps3 = EvaluableOperation("eps3", rank=3, parity=-1,
+        eps3 = EvaluableOperation("eps3", rank=3, odd_parity=True,
                                   argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
                                   eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))))
 

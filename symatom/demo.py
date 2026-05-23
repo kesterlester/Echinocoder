@@ -11,9 +11,9 @@ from .rep     import repS, canonical_pair_flavours, FlavouredOperator, Flavour
 # A typical two-family context
 # ---------------------------------------------------------------------------
 
-mass = Operation("m",  rank=1, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-dot  = Operation("dot",  rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-eps3 = Operation("eps", rank=3, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+mass = Operation("m",  rank=1, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+dot  = Operation("dot",  rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+eps3 = Operation("eps", rank=3, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
 
 electrons = VectorType("electrons", labels=("A", "B", "C", ))
 muons     = VectorType("muons",     labels=("P", "Q", ))
@@ -86,7 +86,7 @@ def demo_scrambled_labels():
         ("apple","toast")  →  already sorted                         → sign=+1
     Output: a mix of + and - atoms despite all being passed sign=+1.
     """
-    eps2 = Operation("eps2", rank=2, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    eps2 = Operation("eps2", rank=2, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
     scrambled = VectorType("scrambled", labels=("zebra", "apple", "toast"))
     ctx_s = Context(types=(scrambled,))
     fo = FlavouredOperator(operation=eps2, flavour=Flavour((2,)), context=ctx_s)

@@ -16,7 +16,7 @@ from symcoder.pairs import eval_pair_orbit
 @pytest.fixture
 def dot():
     return EvaluableOperation(
-        name="dot", rank=2, parity=+1,
+        name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
     )
@@ -24,7 +24,7 @@ def dot():
 @pytest.fixture
 def eps3():
     return EvaluableOperation(
-        name="eps3", rank=3, parity=-1,
+        name="eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
     )

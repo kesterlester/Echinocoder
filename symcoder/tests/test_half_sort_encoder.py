@@ -31,7 +31,7 @@ from symcoder.encoders import (
 @pytest.fixture
 def eps3():
     return EvaluableOperation(
-        "eps3", rank=3, parity=-1,
+        "eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))),
     )
@@ -40,7 +40,7 @@ def eps3():
 @pytest.fixture
 def dot():
     return EvaluableOperation(
-        "dot", rank=2, parity=+1,
+        "dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda v: float(np.dot(v[0], v[1])),
     )
@@ -49,7 +49,7 @@ def dot():
 @pytest.fixture
 def mag():
     return EvaluableOperation(
-        "mag", rank=1, parity=+1,
+        "mag", rank=1, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))),
     )

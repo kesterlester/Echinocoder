@@ -54,12 +54,12 @@ def _make_plan() -> Plan:
     ctx = Context((electrons, muons))
 
     dot = EvaluableOperation(
-        "dot", rank=2, parity=+1,
+        "dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
     )
     eps = EvaluableOperation(
-        "eps", rank=2, parity=-1,
+        "eps", rank=2, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         # 2D antisymmetric invariant embedded in higher-dim vectors
         eval_fn=lambda vecs: float(vecs[0][0] * vecs[1][1] - vecs[0][1] * vecs[1][0]),

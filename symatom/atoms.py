@@ -39,17 +39,20 @@ class Operation:
     """
     name:               str
     rank:               int             # number of vector arguments (>= 1)
-    parity:             int             # +1 or -1 under spatial inversion
+    odd_parity:         bool            # True → parity = -1 (pseudoscalar); False → parity = +1 (scalar)
     argument_symmetry:  ArgumentSymmetry
 
     def __post_init__(self):
         if self.rank < 1:
             raise ValueError(f"rank must be >= 1, got {self.rank!r}")
-        if self.parity not in (+1, -1):
-            raise ValueError(f"parity must be +1 or -1, got {self.parity!r}")
+
+    @property
+    def parity(self) -> int:
+        """Return the spatial-parity sign as +1 or -1 (derived from odd_parity)."""
+        return -1 if self.odd_parity else +1
 
     def __repr__(self):
-        par = f"+{self.parity}" if self.parity == 1 else str(self.parity)
+        par = "+1" if not self.odd_parity else "-1"
         sym = self.argument_symmetry.name
         return f"Operation('{self.name}', rank={self.rank}, parity={par}, {sym})"
 

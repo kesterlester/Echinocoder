@@ -25,16 +25,16 @@ from symatom import (
 
 @pytest.fixture
 def dot():
-    return Operation("dot", rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+    return Operation("dot", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
 
 @pytest.fixture
 def eps3():
-    return Operation("eps3", rank=3, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    return Operation("eps3", rank=3, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
 
 @pytest.fixture
 def eps2():
     """Rank-2 antisymmetric operation — useful for small-n overlap tests."""
-    return Operation("eps2", rank=2, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    return Operation("eps2", rank=2, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
 
 @pytest.fixture
 def electrons4():

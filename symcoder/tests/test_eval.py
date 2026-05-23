@@ -13,7 +13,7 @@ from symcoder import EvaluableOperation, evaluate
 @pytest.fixture
 def dot():
     return EvaluableOperation(
-        name="dot", rank=2, parity=+1,
+        name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
     )
@@ -21,7 +21,7 @@ def dot():
 @pytest.fixture
 def eps3():
     return EvaluableOperation(
-        name="eps3", rank=3, parity=-1,
+        name="eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
     )
@@ -52,7 +52,7 @@ def test_evaluable_operation_repr(dot):
 
 def test_evaluable_operations_equal_by_symbolic_fields(dot):
     dot2 = EvaluableOperation(
-        name="dot", rank=2, parity=+1,
+        name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: 999.0,   # different callable
     )
@@ -61,7 +61,7 @@ def test_evaluable_operations_equal_by_symbolic_fields(dot):
 def test_evaluable_operation_rank_validation():
     with pytest.raises(ValueError):
         EvaluableOperation(
-            name="bad", rank=0, parity=+1,
+            name="bad", rank=0, odd_parity=False,
             argument_symmetry=ArgumentSymmetry.SYMMETRIC,
             eval_fn=lambda vecs: 0.0,
         )
@@ -83,7 +83,7 @@ def test_evaluate_dot_parallel(dot, event_3d):
 def test_evaluate_dot_self_via_rank1():
     # dot(a,a) is ill-formed; use a rank-1 squared-length op instead
     lenSq = EvaluableOperation(
-        name="lenSq", rank=1, parity=+1,
+        name="lenSq", rank=1, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[0])),
     )
@@ -127,7 +127,7 @@ def test_evaluate_eps3_argument_sort_sign(eps3, event_3d):
 def test_evaluate_raises_on_plain_operation(event_3d):
     from symatom.atoms import Operation
     plain_dot = Operation(
-        name="dot", rank=2, parity=+1,
+        name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
     )
     atom = Atom(plain_dot, ("a", "b"), sign=+1)

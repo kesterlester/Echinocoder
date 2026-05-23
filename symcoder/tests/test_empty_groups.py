@@ -10,7 +10,7 @@ from symcoder import EvaluableOperation, encode
 @pytest.fixture
 def dot():
     return EvaluableOperation(
-        name="dot", rank=2, parity=+1,
+        name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
     )
