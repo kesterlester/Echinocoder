@@ -5,92 +5,31 @@ Strategy: encode a known event, then call decode() on each encoder's slice of
 the output and verify that the decoded value multiset matches the ground-truth
 values obtained by evaluating the atoms directly.
 
-Integer/small-rational events are used where convenient to avoid floating-point
-noise, though all comparisons use np.allclose (atol=1e-10) for generality.
+Each test runs in two modes — float and integer — via the parametrised
+``event_mode`` fixture in conftest.py.  Tolerances are supplied by the
+``atol`` and ``atol_exact`` fixtures, which adjust automatically:
+
+float mode  (event_mode="float"):
+    N(0,1) random vectors; atol = 1e-10.
+
+integer mode  (event_mode="integer"):
+    Exact-integer vectors from [-4, 4], including zeros (frequent in
+    real-world inputs).  atol = 1e-6 for unpolished outputs (double-root
+    splitting from Phase 1 collisions reaches ~2e-7).  atol_exact = 0.0
+    for polished outputs (bitwise exact after polishing replaces noisy
+    roots with the exact Phase 1 float).
 """
 from __future__ import annotations
 
 import numpy as np
 import pytest
-from symatom import ArgumentSymmetry, VectorType, Context, Plan
-from symcoder import EvaluableOperation
-from symcoder.encoders import (
-    OrbitEncoderFactory, SortEncoderFactory, HalfSortEncoderFactory,
-    standard_row_pair_factories, OverlapBlockEncoderFactory, Phase2EncoderFactory,
-)
+from symatom import Plan
 from symcoder.encoders.row_pair_encoders import (
     Type11PairEncoder, Type12PairEncoder, Type21PairEncoder, Type22PairEncoder,
     NegPairEncoder, SelfPairType11Encoder, SelfPairNegEncoder,
 )
 from symcoder.decoded_types import AnnotatedMultisetOfReals, AnnotatedMultisetOfRealPairs
 from symcoder.eval import evaluate
-
-ATOL = 1e-10
-# Block-level tests pass Phase 1 values to leaf decoders for polishing, which
-# replaces noisy polynomial-decoded values with exact Phase 1 values.
-# After polishing, block-level error matches Phase 1 accuracy.
-ATOL_BLOCK = ATOL
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
-def ops():
-    mag  = EvaluableOperation('mag',  rank=1, parity=+1,
-                              argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-                              eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))))
-    dot  = EvaluableOperation('dot',  rank=2, parity=+1,
-                              argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-                              eval_fn=lambda v: float(np.dot(v[0], v[1])))
-    eps3 = EvaluableOperation('eps3', rank=3, parity=-1,
-                              argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                              eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))))
-    return mag, dot, eps3
-
-
-@pytest.fixture
-def ctx():
-    return Context((
-        VectorType('electrons', ('a', 'b', 'c')),
-        VectorType('muons',     ('p', 'q')),
-    ))
-
-
-@pytest.fixture
-def event(ctx):
-    """Fixed integer-ish event for exact-ish roundtrips."""
-    np.random.seed(42)
-    return {l: np.random.randn(3) for l in ctx.all_labels}
-
-
-@pytest.fixture
-def orbit_factory():
-    return OrbitEncoderFactory([HalfSortEncoderFactory(), SortEncoderFactory()])
-
-
-@pytest.fixture
-def phase2_factory():
-    return Phase2EncoderFactory([
-        OverlapBlockEncoderFactory(standard_row_pair_factories())
-    ])
-
-
-@pytest.fixture
-def phase2_factory_no_drop():
-    """Like phase2_factory but with complementarity drop disabled.
-
-    Needed for encoder types (Type22, NegPairEncoder) that are always
-    comp-dropped in the standard plan — they contribute no output under the
-    complementarity drop rule, so they can only be roundtrip-tested when the
-    drop is switched off.
-    """
-    return Phase2EncoderFactory([
-        OverlapBlockEncoderFactory(
-            standard_row_pair_factories(), use_complementarity_drop=False
-        )
-    ])
 
 
 # ---------------------------------------------------------------------------
@@ -149,7 +88,6 @@ def _ground_truth_pairs(enc, event):
     reps = enc._reps
 
     if isinstance(enc, (Type11PairEncoder, SelfPairType11Encoder)):
-        # Full orbit = reps (all signs +1 for TYPE_11)
         atom_pairs = list(reps)
     elif isinstance(enc, Type21PairEncoder):
         atom_pairs = list(reps) + [(neg(u), v) for u, v in reps]
@@ -172,7 +110,7 @@ def _ground_truth_pairs(enc, event):
 # Phase 1 roundtrip tests
 # ---------------------------------------------------------------------------
 
-def test_sort_decoder_roundtrip(ops, ctx, event, orbit_factory):
+def test_sort_decoder_roundtrip(ops, ctx, event, orbit_factory, atol):
     mag, dot, eps3 = ops
     plan = Plan(context=ctx, operations=(mag, dot, eps3))
     orbit_enc = orbit_factory.build(plan)
@@ -188,11 +126,11 @@ def test_sort_decoder_roundtrip(ops, ctx, event, orbit_factory):
         decoded = enc.decode(chunk)
         assert isinstance(decoded, AnnotatedMultisetOfReals)
         assert np.allclose(_sorted_vals(decoded.values),
-                           _ground_truth_orbit(enc, event), atol=ATOL)
+                           _ground_truth_orbit(enc, event), atol=atol)
         cursor += enc.output_dim
 
 
-def test_halfsort_decoder_roundtrip(ops, ctx, event, orbit_factory):
+def test_halfsort_decoder_roundtrip(ops, ctx, event, orbit_factory, atol):
     mag, dot, eps3 = ops
     plan = Plan(context=ctx, operations=(mag, dot, eps3))
     orbit_enc = orbit_factory.build(plan)
@@ -209,7 +147,7 @@ def test_halfsort_decoder_roundtrip(ops, ctx, event, orbit_factory):
             assert isinstance(decoded, AnnotatedMultisetOfReals)
             assert len(decoded.values) == 2 * enc.output_dim
             assert np.allclose(_sorted_vals(decoded.values),
-                               _ground_truth_orbit(enc, event), atol=ATOL)
+                               _ground_truth_orbit(enc, event), atol=atol)
         cursor += enc.output_dim
     assert found, "No HalfSortEncoder found in plan — check fixtures"
 
@@ -218,28 +156,13 @@ def test_halfsort_decoder_roundtrip(ops, ctx, event, orbit_factory):
 # Phase 2 row-pair roundtrip tests
 # ---------------------------------------------------------------------------
 
-def _collect_phase2_encoders(plan, orbit_factory, phase2_factory):
-    """Walk the Phase 2 tree and yield (encoder, start, length) for ASSOC segments."""
-    from symcoder.encoders.overlap_block import OverlapBlockEncoder
-    from symcoder.encoders.row_pair_encoders import NullPairEncoder
-
-    orbit_enc = orbit_factory.build(plan)
-    phase2_enc = phase2_factory.build(plan)
-    phase1_dim = orbit_enc.output_dim
-
-    # Re-encode to get the full array (event not needed for structure, but we
-    # need encoded values for decode().  Caller passes event separately.)
-    return orbit_enc, phase2_enc, phase1_dim
-
-
-def _roundtrip_all_pair_encoders(enc_type, ops, ctx, event, orbit_factory, phase2_factory):
+def _roundtrip_all_pair_encoders(enc_type, ops, ctx, event, orbit_factory, phase2_factory, atol):
     """Generic roundtrip for a given PairOrbitEncoder subclass."""
     mag, dot, eps3 = ops
     plan = Plan(context=ctx, operations=(mag, dot, eps3))
     orbit_enc = orbit_factory.build(plan)
     phase2_enc = phase2_factory.build(plan)
 
-    # Encode full event
     phase1_vals = orbit_enc.encode(event).values
     phase2_vals = phase2_enc.encode(event).values
     full_encoded = np.concatenate([phase1_vals, phase2_vals])
@@ -259,7 +182,7 @@ def _roundtrip_all_pair_encoders(enc_type, ops, ctx, event, orbit_factory, phase
                 decoded = enc.decode(chunk)
                 assert isinstance(decoded, AnnotatedMultisetOfRealPairs)
                 truth = _ground_truth_pairs(enc, event)
-                assert _multisets_close(decoded.pairs, truth, atol=ATOL), (
+                assert _multisets_close(decoded.pairs, truth, atol=atol), (
                     f"{enc_type.__name__}: decoded {sorted(decoded.pairs)} "
                     f"!= truth {sorted(truth)}"
                 )
@@ -268,45 +191,45 @@ def _roundtrip_all_pair_encoders(enc_type, ops, ctx, event, orbit_factory, phase
     return found
 
 
-def test_type11_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory):
+def test_type11_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory, atol):
     found = _roundtrip_all_pair_encoders(
-        Type11PairEncoder, ops, ctx, event, orbit_factory, phase2_factory)
+        Type11PairEncoder, ops, ctx, event, orbit_factory, phase2_factory, atol)
     assert found, "No Type11PairEncoder ASSOC found — check fixtures"
 
 
-def test_type12_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory):
+def test_type12_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory, atol):
     found = _roundtrip_all_pair_encoders(
-        Type12PairEncoder, ops, ctx, event, orbit_factory, phase2_factory)
+        Type12PairEncoder, ops, ctx, event, orbit_factory, phase2_factory, atol)
     assert found, "No Type12PairEncoder ASSOC found — check fixtures"
 
 
-def test_type21_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory):
+def test_type21_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory, atol):
     found = _roundtrip_all_pair_encoders(
-        Type21PairEncoder, ops, ctx, event, orbit_factory, phase2_factory)
+        Type21PairEncoder, ops, ctx, event, orbit_factory, phase2_factory, atol)
     assert found, "No Type21PairEncoder ASSOC found — check fixtures"
 
 
-def test_type22_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory_no_drop):
+def test_type22_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory_no_drop, atol):
     found = _roundtrip_all_pair_encoders(
-        Type22PairEncoder, ops, ctx, event, orbit_factory, phase2_factory_no_drop)
+        Type22PairEncoder, ops, ctx, event, orbit_factory, phase2_factory_no_drop, atol)
     assert found, "No Type22PairEncoder found — check fixtures"
 
 
-def test_neg_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory_no_drop):
+def test_neg_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory_no_drop, atol):
     found = _roundtrip_all_pair_encoders(
-        NegPairEncoder, ops, ctx, event, orbit_factory, phase2_factory_no_drop)
+        NegPairEncoder, ops, ctx, event, orbit_factory, phase2_factory_no_drop, atol)
     assert found, "No NegPairEncoder found — check fixtures"
 
 
-def test_selfpair_type11_sigma_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory):
+def test_selfpair_type11_sigma_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory, atol):
     found = _roundtrip_all_pair_encoders(
-        SelfPairType11Encoder, ops, ctx, event, orbit_factory, phase2_factory)
+        SelfPairType11Encoder, ops, ctx, event, orbit_factory, phase2_factory, atol)
     assert found, "No SelfPairType11Encoder ASSOC found — check fixtures"
 
 
-def test_selfpair_neg_sigma_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory):
+def test_selfpair_neg_sigma_decoder_roundtrip(ops, ctx, event, orbit_factory, phase2_factory, atol):
     found = _roundtrip_all_pair_encoders(
-        SelfPairNegEncoder, ops, ctx, event, orbit_factory, phase2_factory)
+        SelfPairNegEncoder, ops, ctx, event, orbit_factory, phase2_factory, atol)
     assert found, "No SelfPairNegEncoder ASSOC found — check fixtures"
 
 
@@ -325,7 +248,7 @@ def _build_phase1_results(orbit_enc, phase1_vals):
     return results
 
 
-def test_overlap_block_decoder_no_drop(ops, ctx, event, orbit_factory, phase2_factory_no_drop):
+def test_overlap_block_decoder_no_drop(ops, ctx, event, orbit_factory, phase2_factory_no_drop, atol):
     """OverlapBlockEncoder.decode() roundtrip with complementarity drop disabled.
 
     With use_complementarity_drop=False every block contains only ASSOC and
@@ -363,7 +286,7 @@ def test_overlap_block_decoder_no_drop(ops, ctx, event, orbit_factory, phase2_fa
             else:
                 truth = _ground_truth_pairs(enc, event)
 
-            assert _multisets_close(decoded.pairs, truth, atol=ATOL_BLOCK), (
+            assert _multisets_close(decoded.pairs, truth, atol=atol), (
                 f"Block decode mismatch for {type(enc).__name__}: "
                 f"decoded {sorted(decoded.pairs)} != truth {sorted(truth)}"
             )
@@ -371,7 +294,7 @@ def test_overlap_block_decoder_no_drop(ops, ctx, event, orbit_factory, phase2_fa
         cursor += block_enc.output_dim
 
 
-def test_overlap_block_decoder_with_drop(ops, ctx, event, orbit_factory, phase2_factory):
+def test_overlap_block_decoder_with_drop(ops, ctx, event, orbit_factory, phase2_factory, atol):
     """OverlapBlockEncoder.decode() roundtrip with complementarity drop enabled (default).
 
     With use_complementarity_drop=True each block has exactly one NULL_COMP selection
@@ -424,7 +347,7 @@ def test_overlap_block_decoder_with_drop(ops, ctx, event, orbit_factory, phase2_
                 # ASSOC: ground truth from encoder reps only (base orbit).
                 truth = _ground_truth_pairs(enc, event)
 
-            assert _multisets_close(decoded.pairs, truth, atol=ATOL_BLOCK), (
+            assert _multisets_close(decoded.pairs, truth, atol=atol), (
                 f"Block decode mismatch for {type(enc).__name__} "
                 f"({'NULL_COMP' if sel.is_comp_drop else 'ASSOC/NULL_SELF'}): "
                 f"decoded {sorted(decoded.pairs)} != truth {sorted(truth)}"
