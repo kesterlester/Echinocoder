@@ -29,6 +29,10 @@ TheGroup
       orbit_brute_pair(u, v)        — same as orbit_pair(), O(∏ n_g!)
       in_orbit_brute_pair(c, rep)   — same as in_orbit_pair(), O(∏ n_g!)
 
+    Atom-sequence methods (_sequence suffix):
+      orbit_sequence(atoms)         — the G-orbit of an ordered sequence of atoms
+      orbit_brute_sequence(atoms)   — same as orbit_sequence(), O(∏ n_g!)
+
     Group structure:
       order()                       — |G|
 
@@ -94,6 +98,10 @@ class TheGroup:
     replaced by algebraic shortcut methods (Step 3 of the architecture
     redesign).  The brute-force implementations serve as the permanent
     reference against which fast replacements will be validated.
+
+    Atom-sequence methods act on an ordered list of atoms simultaneously,
+    generalising orbit_brute_pair to arbitrary length.  Used for ground-truth
+    computation of the G-orbit of repS evaluations in alignment-decoder tests.
 
     Parameters
     ----------
@@ -346,3 +354,41 @@ class TheGroup:
         """
         orb_set = self.orbit_brute_pair(representative[0], representative[1])
         return candidate in orb_set
+
+    # ------------------------------------------------------------------
+    # Atom-sequence orbit
+    # ------------------------------------------------------------------
+
+    def orbit_sequence(self, atoms: list) -> list:
+        """
+        Return all distinct tuples in the G-orbit of an ordered sequence of atoms.
+
+        Currently delegates to orbit_brute_sequence().
+        """
+        return self.orbit_brute_sequence(atoms)
+
+    def orbit_brute_sequence(self, atoms: list) -> list:
+        """
+        Brute-force O(∏ n_g!) orbit enumeration for an ordered sequence of atoms.
+        Permanent reference.
+
+        Every σ ∈ G is applied simultaneously to all atoms in the sequence.
+        The Atom constructor handles label sorting and sign absorption for
+        ANTISYMMETRIC operations, so all results are in canonical form.
+
+        Returns a list of tuples with no duplicates, in the same order as first
+        encountered while iterating over G.  The first element is always
+        tuple(atoms) itself (from the identity permutation).
+
+        This is the natural generalisation of orbit_brute_pair to sequences of
+        arbitrary length.  TheGroup is the sole authority on orbit construction;
+        callers must not attempt to build orbits of sequences by other means.
+        """
+        seen: set = set()
+        result: list = []
+        for perm_map in self._all_perm_maps():
+            seq = tuple(self._apply(perm_map, a) for a in atoms)
+            if seq not in seen:
+                seen.add(seq)
+                result.append(seq)
+        return result
