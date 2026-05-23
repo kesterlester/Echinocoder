@@ -1,7 +1,7 @@
 # symatom — Specification
 
 **Status**: draft, pre-implementation  
-**Last revised**: May 2026 (rev 6 — added OrbitEnumerator strategy to Section 6; orbit_size/orbit_elements/OrbitEnumerator to Section 8.7)  
+**Last revised**: May 2026 (rev 7 — added GroupElement §2.6.1; iter_group_elements/all_group_elements to §2.6; TheGroup sole-authority note)  
 
 ---
 
@@ -136,7 +136,23 @@ group-theory counterpart to the collection of VectorTypes: the VectorTypes
 name and enumerate the labels; TheGroup encodes the symmetry that acts on them.
 TheGroup acts on both individual atoms and on atom-pairs.
 
+**TheGroup is the sole authority on what group elements the group contains and
+how they act.**  Callers must not construct group actions by hand (e.g. by
+permuting label dicts directly); all group actions are obtained from TheGroup
+via `GroupElement` objects (Section 2.6.1).
+
 TheGroup stores `types: tuple[VectorType]` and exposes:
+
+*Group structure and element enumeration:*
+
+- `order() -> int` — `|G| = n₁! × … × nₘ!`.
+- `iter_group_elements() -> Iterator[GroupElement]` — lazy iterator over all
+  elements of G; **identity element is always first** (API contract, not an
+  implementation detail).  Prefer this form for large groups (e.g. 10 jets:
+  10! elements) where materialising the full collection would be expensive.
+- `all_group_elements() -> tuple[GroupElement, ...]` — all elements as a
+  tuple; delegates to `iter_group_elements()`.  Use when random access
+  (indexing) or repeated iteration is needed.  Identity first (same contract).
 
 *Single-atom methods* (short names — the simpler, more fundamental case):
 
@@ -156,10 +172,6 @@ TheGroup stores `types: tuple[VectorType]` and exposes:
 - `in_orbit_pair(candidate, rep) -> bool` — True iff `candidate ∈ G·rep` (both args are `(Atom, Atom)` tuples).
 - `in_orbit_brute_pair(candidate, rep) -> bool` — same, brute-force reference.
 
-*Group structure:*
-
-- `order() -> int` — `|G| = n₁! × … × nₘ!`.
-
 All `*_brute` methods are permanent O(∏ n_g!) reference implementations kept
 for cross-validation; they must not be removed.
 
@@ -168,6 +180,34 @@ brute-force enumeration methods need actual label sequences to generate
 concrete permutations.  The algebraic methods only use per-type label *counts*;
 a future step could reduce TheGroup to `TheGroup(sizes: tuple[int])`, but for
 now the VectorType tuple is carried directly.
+
+### 2.6.1 GroupElement
+
+A **GroupElement** is an opaque handle for one element of the group G.
+GroupElements are obtained exclusively from `TheGroup.iter_group_elements()` or
+`TheGroup.all_group_elements()`; they are never constructed directly by callers.
+
+The internal representation of a GroupElement is private and may change in
+future (e.g. when spatial parity flips or other discrete generators are added).
+Callers interact with a GroupElement only through its public methods:
+
+- `apply(atom: Atom) -> Atom` — return g·atom: the atom with its labels
+  permuted (and sign adjusted for `ANTISYMMETRIC` operations) by this element.
+- `apply_to_event(event: dict) -> dict` — return a new event dict with
+  particle labels permuted by this element.  **Callers must use this method
+  rather than permuting event dicts by hand**, so that future extensions
+  (parity flips, beam exchange, …) are handled automatically without requiring
+  callers to change.
+- `is_identity() -> bool` — True iff this is the identity element e ∈ G.
+
+GroupElements support value equality and hashing: two GroupElements are equal
+iff they represent the same group action, and they may be used as dict keys or
+stored in sets.
+
+GroupElements print in cycle notation (e.g. `(a b)` for the transposition of
+labels a and b); the identity prints as `1`.  When parity generators are
+introduced, the notation will be extended (e.g. `(a b)·P⁻`) without breaking
+the existing cycle-notation format.
 
 ---
 

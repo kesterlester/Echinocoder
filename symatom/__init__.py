@@ -7,7 +7,7 @@ Public API:
   context    : Context, Plan
   orbit_enum : OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
   rep        : Flavour, FlavouredOperator, repS
-  group      : TheGroup
+  group      : TheGroup, GroupElement
 """
 from .atoms      import ArgumentSymmetry, Operation, VectorType, Atom, are_negatives
 from .context    import Context, Plan
