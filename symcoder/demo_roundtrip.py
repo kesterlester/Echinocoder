@@ -19,6 +19,12 @@ Note: Uses Phase 2 with use_complementarity_drop=False so that the alignment
 decoder can recover the full repS evaluation table.  The script is intentionally
 hacky — it accesses internal attributes of encoder objects to narrate what is
 happening, but adds NO new production code.
+
+Use one of 
+    use_comp_drop=True
+    use_comp_drop=False
+at (***) in the code.
+
 """
 from __future__ import annotations
 
@@ -251,7 +257,7 @@ def run():
         # Toggle this flag to see the effect of complementarity drop:
         #   False → every PairFlavour is explicitly encoded (larger output, easier to read)
         #   True  → the largest non-self PairFlavour is dropped and reconstructed at decode
-        use_comp_drop = False
+        use_comp_drop = False # (***) - see reference in docstring at top of file.
 
         orbit_factory   = OrbitEncoderFactory([HalfSortEncoderFactory(), SortEncoderFactory()])
         phase2_factory  = Phase2EncoderFactory([
