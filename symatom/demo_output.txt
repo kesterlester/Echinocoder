@@ -17,14 +17,14 @@
 ============================================================
   repS — FlavouredOperators
 ============================================================
-  FO(m, 1 electrons)  →  3 atoms, in the orbit of +m(A)
-  FO(m, 1 muons)  →  2 atoms, in the orbit of +m(P)
-  FO(dot, 2 electrons)  →  3 atoms, in the orbit of +dot(A, B)
-  FO(dot, 1 electrons + 1 muons)  →  6 atoms, in the orbit of +dot(A, P)
-  FO(dot, 2 muons)  →  1 atoms, in the orbit of +dot(P, Q)
-  FO(eps, 3 electrons)  →  1 atoms, in the orbit of +eps(A, B, C)
-  FO(eps, 2 electrons + 1 muons)  →  6 atoms, in the orbit of +eps(A, B, P)
-  FO(eps, 1 electrons + 2 muons)  →  3 atoms, in the orbit of +eps(A, P, Q)
+  FO(m, 1 electrons)  →  3 atoms-one-per-sign, in the orbit of +m(A)
+  FO(m, 1 muons)  →  2 atoms-one-per-sign, in the orbit of +m(P)
+  FO(dot, 2 electrons)  →  3 atoms-one-per-sign, in the orbit of +dot(A, B)
+  FO(dot, 1 electrons + 1 muons)  →  6 atoms-one-per-sign, in the orbit of +dot(A, P)
+  FO(dot, 2 muons)  →  1 atoms-one-per-sign, in the orbit of +dot(P, Q)
+  FO(eps, 3 electrons)  →  1 atoms-one-per-sign, in the orbit of +eps(A, B, C)
+  FO(eps, 2 electrons + 1 muons)  →  6 atoms-one-per-sign, in the orbit of +eps(A, B, P)
+  FO(eps, 1 electrons + 2 muons)  →  3 atoms-one-per-sign, in the orbit of +eps(A, P, Q)
 
 ============================================================
   repS — all atoms
@@ -189,3 +189,15 @@
        u=m(1 electrons), v=m(1 electrons)  →  3 ordered pairs
 
   distinct pair-flavours: 60
+
+============================================================
+  atoms_one_per_sign with scrambled labels — mixed sign output
+============================================================
+  VectorType labels (declaration order): ('zebra', 'apple', 'toast')
+  combinations yield pairs in that order, not in sorted order.
+
+  -eps2(apple, zebra)
+  -eps2(toast, zebra)
+  +eps2(apple, toast)
+
+  signs: [-1, -1, 1]  ← mix of +1 and -1 despite all constructed with sign=+1
