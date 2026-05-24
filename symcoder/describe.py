@@ -1,8 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from itertools import groupby
+from symatom import Operation, repS
 from symatom.rep import canonical_pair_flavours
-from symatom import repS
 from .pairs import _is_self_pair
 
 
@@ -79,9 +79,9 @@ class SegmentInfo:
                       ORBIT: fo.count_of_atoms_one_per_sign() // 2 if sign_compressed else fo.count_of_atoms_one_per_sign().
                       ASSOC: two reals per association pair (2 * pf.count()),
                              since each complex polynomial coefficient = (re, im).
-    op_u            : name of operation u (or the single operation for ORBIT)
+    op_u            : operation u (or the single operation for ORBIT) — full Operation object
     flavour_u       : counts tuple — labels from each group going into op_u
-    op_v            : name of operation v (None for ORBIT)
+    op_v            : operation v (None for ORBIT) — full Operation object
     flavour_v       : counts tuple for op_v (None for ORBIT)
     overlap         : shared-label counts per group (None for ORBIT)
     symmetry_class  : orbit type label — "11", "12", "21", "22", "neg",
@@ -117,9 +117,9 @@ class SegmentInfo:
     kind:             str
     start:            int
     length:           int
-    op_u:             str
+    op_u:             Operation
     flavour_u:        tuple
-    op_v:             str   | None = None
+    op_v:             Operation | None = None
     flavour_v:        tuple | None = None
     overlap:          tuple | None = None
     symmetry_class:   str   | None = None
@@ -135,7 +135,7 @@ class SegmentInfo:
     def __str__(self) -> str:
         idx     = f"[{self.start}:{self.stop}]"
         fl_u    = ",".join(str(c) for c in self.flavour_u)
-        op_v    = self.op_v    if self.op_v    is not None else "."
+        op_v    = self.op_v.name if self.op_v is not None else "."
         fl_v    = (",".join(str(c) for c in self.flavour_v)
                    if self.flavour_v is not None else ".")
         ov      = (",".join(str(c) for c in self.overlap)
@@ -152,7 +152,7 @@ class SegmentInfo:
         full    = self.notional_length if self.notional_length is not None else self.length
         ex      = f"  |  {self.example}" if self.example is not None else ""
         return (
-            f"{idx}  {self.kind}  {self.op_u}  {op_v}  {variant}"
+            f"{idx}  {self.kind}  {self.op_u.name}  {op_v}  {variant}"
             f"  u=({fl_u})  v=({fl_v})  shared=({ov})"
             f"  len={self.length}  full={full}{ex}"
         )
@@ -165,7 +165,7 @@ class SegmentInfo:
             "stop":             self.stop,
             "length":           self.length,
             "notional_length":  full,
-            "op_u":             self.op_u,
+            "op_u":             self.op_u.name,
             "flavour_u":        list(self.flavour_u),
         }
         if self.kind == "ORBIT":
@@ -173,7 +173,7 @@ class SegmentInfo:
             d["method_name"]     = self.method_name
         else:
             d.update({
-                "op_v":           self.op_v,
+                "op_v":           self.op_v.name,
                 "flavour_v":      list(self.flavour_v),
                 "overlap":        list(self.overlap),
                 "symmetry_class": self.symmetry_class,
@@ -206,9 +206,9 @@ class Phase1Tree:
 @dataclass
 class OverlapBlockNode:
     """One overlap block in the Phase 2 tree: fixed (op_u, flavour_u, op_v, flavour_v)."""
-    op_u:      str
+    op_u:      Operation
     flavour_u: tuple
-    op_v:      str
+    op_v:      Operation
     flavour_v: tuple
     segments:  list  # list[SegmentInfo]
 
@@ -218,7 +218,7 @@ class OverlapBlockNode:
     def __str__(self) -> str:
         fl_u = ",".join(str(c) for c in self.flavour_u)
         fl_v = ",".join(str(c) for c in self.flavour_v)
-        return f"OverlapBlock  {self.op_u} × {self.op_v}  u=({fl_u})  v=({fl_v})"
+        return f"OverlapBlock  {self.op_u.name} × {self.op_v.name}  u=({fl_u})  v=({fl_v})"
 
 
 @dataclass

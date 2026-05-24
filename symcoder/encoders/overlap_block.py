@@ -377,9 +377,9 @@ class OverlapBlockEncoder:
                     kind            = "NULL_COMP",
                     start           = cursor,
                     length          = 0,
-                    op_u            = pf.op_u.name,
+                    op_u            = pf.op_u,
                     flavour_u       = tuple(pf.flavour_u.counts),
-                    op_v            = pf.op_v.name,
+                    op_v            = pf.op_v,
                     flavour_v       = tuple(pf.flavour_v.counts),
                     overlap         = tuple(pf.overlap),
                     symmetry_class  = sel.encoder.method_name,
@@ -400,9 +400,9 @@ class OverlapBlockEncoder:
 
         pf0 = self._selections[0].pf
         return OverlapBlockNode(
-            op_u      = pf0.op_u.name,
+            op_u      = pf0.op_u,
             flavour_u = tuple(pf0.flavour_u.counts),
-            op_v      = pf0.op_v.name,
+            op_v      = pf0.op_v,
             flavour_v = tuple(pf0.flavour_v.counts),
             segments  = segs,
         )

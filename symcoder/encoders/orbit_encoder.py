@@ -53,7 +53,7 @@ class OrbitEncoder:
                 kind             = "ORBIT",
                 start            = cursor,
                 length           = length,
-                op_u             = fo.operation.name,
+                op_u             = fo.operation,
                 flavour_u        = tuple(fo.flavour.counts),
                 method_name      = enc.method_name,
                 notional_length  = enc.notional_output_dim,

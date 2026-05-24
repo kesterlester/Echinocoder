@@ -133,7 +133,7 @@ def test_orbit_length_symmetric_equals_fo_count(dot, ctx, orbit_factory, phase2_
     """SYMMETRIC: ORBIT length == fo.count_of_atoms_one_per_sign() (no compression)."""
     plan = Plan(context=ctx, operations=(dot,))
     fo_list = repS(plan.context, plan.operations)
-    fo_counts = {(fo.operation.name, fo.flavour.counts): fo.count_of_atoms_one_per_sign() for fo in fo_list}
+    fo_counts = {(fo.operation, fo.flavour.counts): fo.count_of_atoms_one_per_sign() for fo in fo_list}
     for s in describe_encoding(plan, orbit_factory, phase2_factory):
         if s.kind == "ORBIT":
             expected = fo_counts[(s.op_u, s.flavour_u)]

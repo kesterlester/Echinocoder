@@ -304,6 +304,6 @@ class TestOrbitFactorySelection:
         factory = OrbitEncoderFactory([HalfSortEncoderFactory(), SortEncoderFactory()])
         orbit_enc = factory.build(plan)
         segs = orbit_enc.describe()
-        by_op = {s.op_u: s.method_name for s in segs}
+        by_op = {s.op_u.name: s.method_name for s in segs}
         assert by_op["eps3"] == "half_sort"
         assert by_op["dot"] == "sort"
