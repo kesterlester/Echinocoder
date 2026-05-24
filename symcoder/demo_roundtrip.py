@@ -28,7 +28,7 @@ at (***) in the code.
 """
 from __future__ import annotations
 
-import os, sys, textwrap, random, string
+import os, sys, textwrap, hashlib
 import numpy as np
 
 # ── locate repo root and activate imports ──────────────────────────────────
@@ -54,19 +54,26 @@ _TEX_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo_round
 # The registry maps operation.name → the assigned \macroname.
 # ─────────────────────────────────────────────────────────────────────────────
 
-_TEX_CMD_REGISTRY: dict[str, str] = {}   # op.name → r"\randomname"
+_TEX_CMD_REGISTRY: dict[str, str] = {}   # op.name → r"\macroname"
 
 
-def _random_tex_cmd() -> str:
-    """Return a random lowercase \macroname unlikely to clash with anything."""
-    return "\\" + "".join(random.choices(string.ascii_lowercase, k=14))
+def _tex_cmd_for(op_name: str) -> str:
+    """Derive a deterministic lowercase \\macroname from the operation name.
+
+    Uses the SHA-256 digest of the name so the same operation always produces
+    the same command, making repeated runs generate identical .tex output.
+    Each hex nibble (0–15) is mapped to a letter a–p to stay all-alphabetic.
+    """
+    digest = hashlib.sha256(op_name.encode()).hexdigest()
+    letters = "".join(chr(ord("a") + int(c, 16)) for c in digest[:14])
+    return "\\" + letters
 
 
 def _register_operations(operations) -> None:
-    """Assign a random TeX command name to every operation that has tex set."""
+    """Assign a deterministic TeX command name to every operation that has tex set."""
     for op in operations:
         if op.tex is not None and op.name not in _TEX_CMD_REGISTRY:
-            _TEX_CMD_REGISTRY[op.name] = _random_tex_cmd()
+            _TEX_CMD_REGISTRY[op.name] = _tex_cmd_for(op.name)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
