@@ -4,9 +4,9 @@ symcoder/demo_roundtrip.py
 ===========================
 Round-trip encode → decode demonstration for a small plan.
 
-Context  : electrons = (a, b),  muons = (p)
+Context  : electrons = (a, b,c),  muons = (p,q)
 Operations: mag, dot (user-defined); euclidean3.dot, euclidean3.eps (library)
-Group    : G = S_2 × S_1  (order 2)
+Group    : G = S_3 × S_2  (order 12)
 
 Outputs simultaneously to:
   stdout               — plain text
@@ -306,9 +306,11 @@ def run():
 
         # Fixed event (3-D vectors; eps3 needs ≥3 dimensions)
         event = {
-            "a": np.array([ 1.2,  0.3,  0.5]),
-            "b": np.array([ 0.4,  1.1,  0.2]),
-            "p": np.array([ 0.8,  0.3,  0.9]),
+            "a": np.array([ 1.2,  0.3,   0.5]),
+            "b": np.array([ 0.4,  1.1,   0.2]),
+            "c": np.array([ -0.5, 1.2,  -0.7]),
+            "p": np.array([ 0.0,  0.0,  +1.0]),
+            "q": np.array([ 0.0,  0.0,  -1.0]),
         }
 
         out.blank()
