@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -36,15 +36,34 @@ class Operation:
     A named, reusable description of a type of multilinear contraction.
     The framework is agnostic about what the operation *is*; it only uses
     these declared properties.
+
+    Optional tex parameter
+    ----------------------
+    tex : str | None
+        A LaTeX macro *body* using #1, #2, … as positional placeholders for
+        the atom's labels, e.g. r"\\varepsilon(\\vc{#1},\\vc{#2},\\vc{#3})".
+        When supplied, TeX emitters can define a \\newcommand with this body
+        (rank arguments) and call it with the atom's labels.  LaTeX supports
+        at most 9 macro parameters, so passing tex with rank > 9 raises
+        ValueError at construction time.
+        tex is excluded from equality and hashing — it is display metadata,
+        not part of the symbolic identity of the operation.
     """
     name:               str
     rank:               int             # number of vector arguments (>= 1)
     odd_parity:         bool            # True → parity = -1 (pseudoscalar); False → parity = +1 (scalar)
     argument_symmetry:  ArgumentSymmetry
+    tex:                str | None = field(default=None, kw_only=True,
+                                           compare=False, hash=False)
 
     def __post_init__(self):
         if self.rank < 1:
             raise ValueError(f"rank must be >= 1, got {self.rank!r}")
+        if self.tex is not None and self.rank > 9:
+            raise ValueError(
+                f"tex macro requires at most 9 LaTeX parameters; "
+                f"operation '{self.name}' has rank {self.rank}"
+            )
 
     @property
     def parity(self) -> int:
@@ -54,7 +73,8 @@ class Operation:
     def __repr__(self):
         par = "+1" if not self.odd_parity else "-1"
         sym = self.argument_symmetry.name
-        return f"Operation('{self.name}', rank={self.rank}, parity={par}, {sym})"
+        tex_part = f", tex={self.tex!r}" if self.tex is not None else ""
+        return f"Operation('{self.name}', rank={self.rank}, parity={par}, {sym}{tex_part})"
 
 
 @dataclass(frozen=True)

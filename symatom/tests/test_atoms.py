@@ -38,6 +38,56 @@ def test_operation_frozen(dot):
     with pytest.raises(Exception):
         dot.rank = 99
 
+def test_operation_tex_none_by_default(dot):
+    assert dot.tex is None
+
+def test_operation_tex_stored():
+    op = Operation("eps", rank=2, odd_parity=True,
+                   argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                   tex=r"\epsilon_{#1#2}")
+    assert op.tex == r"\epsilon_{#1#2}"
+
+def test_operation_tex_excluded_from_equality():
+    op_a = Operation("eps", rank=2, odd_parity=True,
+                     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                     tex=r"\epsilon_{#1#2}")
+    op_b = Operation("eps", rank=2, odd_parity=True,
+                     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                     tex=r"\varepsilon_{#1#2}")
+    op_c = Operation("eps", rank=2, odd_parity=True,
+                     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    assert op_a == op_b
+    assert op_a == op_c
+
+def test_operation_tex_excluded_from_hash():
+    op_a = Operation("eps", rank=2, odd_parity=True,
+                     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                     tex=r"\epsilon_{#1#2}")
+    op_b = Operation("eps", rank=2, odd_parity=True,
+                     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    assert hash(op_a) == hash(op_b)
+
+def test_operation_tex_rank_9_ok():
+    op = Operation("big", rank=9, odd_parity=False,
+                   argument_symmetry=ArgumentSymmetry.UNSTRUCTURED,
+                   tex="#1#2#3#4#5#6#7#8#9")
+    assert op.tex is not None
+
+def test_operation_tex_rank_10_raises():
+    with pytest.raises(ValueError, match="9 LaTeX parameters"):
+        Operation("huge", rank=10, odd_parity=False,
+                  argument_symmetry=ArgumentSymmetry.UNSTRUCTURED,
+                  tex="#1#2#3#4#5#6#7#8#9#10")
+
+def test_operation_tex_repr():
+    op = Operation("eps", rank=2, odd_parity=True,
+                   argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                   tex=r"\epsilon_{#1#2}")
+    assert r"\epsilon_{#1#2}" in repr(op)
+
+def test_operation_no_tex_repr(dot):
+    assert "tex=" not in repr(dot)
+
 
 # ---------------------------------------------------------------------------
 # VectorType

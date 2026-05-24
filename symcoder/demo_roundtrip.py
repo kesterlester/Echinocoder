@@ -28,7 +28,7 @@ at (***) in the code.
 """
 from __future__ import annotations
 
-import os, sys, textwrap
+import os, sys, textwrap, random, string
 import numpy as np
 
 # ── locate repo root and activate imports ──────────────────────────────────
@@ -44,6 +44,29 @@ from symcoder.encoders import (
 from symcoder.encoders.sort_encoder import SortEncoder, HalfSortEncoder
 
 _TEX_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo_roundtrip.tex")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TeX macro registry
+#
+# Operations that carry a tex= payload get a randomly-named \newcommand so
+# that the TeX output uses proper macro calls rather than inlined strings.
+# The registry maps operation.name → the assigned \macroname.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_TEX_CMD_REGISTRY: dict[str, str] = {}   # op.name → r"\randomname"
+
+
+def _random_tex_cmd() -> str:
+    """Return a random lowercase \macroname unlikely to clash with anything."""
+    return "\\" + "".join(random.choices(string.ascii_lowercase, k=14))
+
+
+def _register_operations(operations) -> None:
+    """Assign a random TeX command name to every operation that has tex set."""
+    for op in operations:
+        if op.tex is not None and op.name not in _TEX_CMD_REGISTRY:
+            _TEX_CMD_REGISTRY[op.name] = _random_tex_cmd()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -128,7 +151,15 @@ class DualOut:
     def end_table(self):
         self._t(r"\bottomrule\end{tabular}\end{table}")
 
-    def write_tex_header(self, title: str):
+    def write_tex_header(self, title: str, operations=()):
+        """
+        Emit the LaTeX preamble and \\begin{document}.
+
+        If any operation carries a tex= payload, _register_operations is called
+        first to assign random command names, then a \\newcommand is emitted for
+        each such operation before \\begin{document}.
+        """
+        _register_operations(operations)
         self._t(textwrap.dedent(r"""
             \documentclass[a4paper,11pt]{article}
             \usepackage{booktabs}
@@ -138,6 +169,10 @@ class DualOut:
             \usepackage{array}
             \newcommand{\vc}[1]{\ensuremath{\mathbf{#1}}}
         """))
+        for op in operations:
+            if op.tex is not None:
+                cmd = _TEX_CMD_REGISTRY[op.name]
+                self._t(f"\\newcommand{{{cmd}}}[{op.rank}]{{{op.tex}}}")
         self._t(f"\\title{{symcoder round-trip demo\\\\\\large {_tex_escape(title)}}}")
         self._t(r"\date{}\begin{document}\maketitle")
 
@@ -175,10 +210,28 @@ def _atom_text(atom) -> str:
 def _atom_tex(atom) -> str:
     """TeX math representation of an atom (no surrounding $)."""
     sign = "" if atom.sign > 0 else "-"
-    fn = _TEX_OP.get(atom.operation.name)
+    op = atom.operation
+    # Prefer the registered \newcommand when the operation carries a tex= payload.
+    if op.tex is not None and op.name in _TEX_CMD_REGISTRY:
+        cmd  = _TEX_CMD_REGISTRY[op.name]
+        args = "".join(f"{{{lbl}}}" for lbl in atom.labels)
+        return sign + cmd + args
+    fn = _TEX_OP.get(op.name)
     if fn is None:
         return _tex_escape(_atom_text(atom))
     return sign + fn(list(atom.labels))
+
+
+def _op_tex_sample(op, sample_labels) -> str:
+    """TeX snippet for an operation applied to placeholder labels (e.g. for titles)."""
+    if op.tex is not None and op.name in _TEX_CMD_REGISTRY:
+        cmd  = _TEX_CMD_REGISTRY[op.name]
+        args = "".join(f"{{{lbl}}}" for lbl in sample_labels[:op.rank])
+        return cmd + args
+    fn = _TEX_OP.get(op.name)
+    if fn:
+        return fn(list(sample_labels))
+    return _tex_escape(op.name)
 
 
 def _fmtf(v: float, width: int = 8) -> str:
@@ -195,9 +248,24 @@ def _tex_num(v: float) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run():
+    # Create operations before opening DualOut so write_tex_header can emit
+    # their \newcommands in the LaTeX preamble.
+    mag  = EvaluableOperation("mag",  rank=1, odd_parity=False,
+                              argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+                              eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))),
+                              tex=r"|\vc{#1}|")
+    dot  = EvaluableOperation("dot",  rank=2, odd_parity=False,
+                              argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+                              eval_fn=lambda v: float(np.dot(v[0], v[1])),
+                              tex=r"\vc{#1} \cdot \vc{#2}")
+    eps3 = EvaluableOperation("eps3", rank=3, odd_parity=True,
+                              argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                              eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))),
+                              tex=r"\varepsilon(\vc{#1},\vc{#2},\vc{#3})")
+
     with DualOut(_TEX_FILE) as out:
         ctx_title = "electrons=(a,b), muons=(p)"
-        out.write_tex_header(ctx_title)
+        out.write_tex_header(ctx_title, operations=[mag, dot, eps3])
 
         # ── Setup ─────────────────────────────────────────────────────────
         out.section("Setup")
@@ -214,17 +282,6 @@ def run():
                f"S_electrons × S_muons = S_2 × S_1  (order {ctx.the_group.order()})",
                rf"$G = S_{{electrons}} \times S_{{muons}} = S_2 \times S_1$,"
                rf" order $= {ctx.the_group.order()}$")
-
-        # Operations
-        mag  = EvaluableOperation("mag",  rank=1, odd_parity=False,
-                                  argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-                                  eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))))
-        dot  = EvaluableOperation("dot",  rank=2, odd_parity=False,
-                                  argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-                                  eval_fn=lambda v: float(np.dot(v[0], v[1])))
-        eps3 = EvaluableOperation("eps3", rank=3, odd_parity=True,
-                                  argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                                  eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))))
 
         out.blank()
         out.line("Operations:")
@@ -327,9 +384,9 @@ def run():
             block_title = (f"{pf0.op_u.name}[{tuple(pf0.flavour_u.counts)}] "
                            f"× {pf0.op_v.name}[{tuple(pf0.flavour_v.counts)}]")
             _qs = ['?', '?', '?']  # enough placeholders for any rank
-            block_title_tex = (f"${_TEX_OP.get(pf0.op_u.name, lambda l: pf0.op_u.name)(_qs)}"
+            block_title_tex = (f"${_op_tex_sample(pf0.op_u, _qs)}"
                                f" \\times "
-                               f"{_TEX_OP.get(pf0.op_v.name, lambda l: pf0.op_v.name)(_qs)}$"
+                               f"{_op_tex_sample(pf0.op_v, _qs)}$"
                                f"  (block)")
 
             out.subsection(f"Block: {block_title}")
