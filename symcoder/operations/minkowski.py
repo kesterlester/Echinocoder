@@ -27,7 +27,7 @@ dot = Operation(
     eval_fn=lambda v: float(
         v[0][0]*v[1][0] - v[0][1]*v[1][1] - v[0][2]*v[1][2] - v[0][3]*v[1][3]
     ),
-    tex=r"\mathbf{#1} \cdot \mathbf{#2}",
+    tex=r"\mathbf{#1}^\mu  \mathbf{#2}_\mu",
 )
 
 mag_sq = Operation(

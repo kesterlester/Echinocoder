@@ -5,7 +5,7 @@ symcoder/demo_roundtrip.py
 Round-trip encode → decode demonstration for a small plan.
 
 Context  : electrons = (a, b),  muons = (p)
-Operations: mag (rank 1, symmetric), dot (rank 2, symmetric), eps3 (rank 3, antisymmetric)
+Operations: mag, dot (user-defined); euclidean3.dot, euclidean3.eps (library)
 Group    : G = S_2 × S_1  (order 2)
 
 Outputs simultaneously to:
@@ -36,7 +36,10 @@ _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _REPO)
 
 from symatom import ArgumentSymmetry, Operation, VectorType, Context, Plan, repS as _repS_fn
-from symcoder.operations.euclidean3 import eps as eps3
+import symcoder.operations.euclidean2
+import symcoder.operations.euclidean3
+#import symcoder.operations as ops
+#from symcoder.operations.euclidean3 import eps as eps3
 from symcoder import evaluate, decode_alignment
 from symcoder.encoders import (
     OrbitEncoderFactory, SortEncoderFactory, HalfSortEncoderFactory,
@@ -50,22 +53,30 @@ _TEX_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo_round
 # ─────────────────────────────────────────────────────────────────────────────
 # TeX macro registry
 #
-# Operations that carry a tex= payload get a randomly-named \newcommand so
-# that the TeX output uses proper macro calls rather than inlined strings.
-# The registry maps operation.name → the assigned \macroname.
+# Operations that carry a tex= payload get a \newcommand whose name is derived
+# deterministically from the *content* of the operation (name + tex string),
+# not just its name.  This means two operations that share a name but differ in
+# their tex= payload (e.g. a user-defined dot and euclidean3.dot) receive
+# distinct command names and can coexist in the same .tex file.
+#
+# Within a session the registry is keyed by id(op) so that different Python
+# objects never collide, even if they happen to produce the same command name
+# (i.e. same name and same tex= string → same rendered output → same command,
+# which is harmless).
 # ─────────────────────────────────────────────────────────────────────────────
 
-_TEX_CMD_REGISTRY: dict[str, str] = {}   # op.name → r"\macroname"
+_TEX_CMD_REGISTRY: dict[int, str] = {}   # id(op) → r"\macroname"
 
 
-def _tex_cmd_for(op_name: str) -> str:
-    """Derive a deterministic lowercase \\macroname from the operation name.
+def _tex_cmd_for(op) -> str:
+    """Derive a deterministic lowercase \\macroname from the operation's identity.
 
-    Uses the SHA-256 digest of the name so the same operation always produces
-    the same command, making repeated runs generate identical .tex output.
-    Each hex nibble (0–15) is mapped to a letter a–p to stay all-alphabetic.
+    The seed is (op.name, op.tex) so that two operations with the same name but
+    different tex= payloads produce different command names.  The SHA-256 digest
+    is mapped nibble-by-nibble to letters a–p to stay all-alphabetic.
     """
-    digest = hashlib.sha256(op_name.encode()).hexdigest()
+    seed = f"{op.name}\x00{op.tex or ''}"
+    digest = hashlib.sha256(seed.encode()).hexdigest()
     letters = "".join(chr(ord("a") + int(c, 16)) for c in digest[:14])
     return "\\" + letters
 
@@ -73,8 +84,8 @@ def _tex_cmd_for(op_name: str) -> str:
 def _register_operations(operations) -> None:
     """Assign a deterministic TeX command name to every operation that has tex set."""
     for op in operations:
-        if op.tex is not None and op.name not in _TEX_CMD_REGISTRY:
-            _TEX_CMD_REGISTRY[op.name] = _tex_cmd_for(op.name)
+        if op.tex is not None and id(op) not in _TEX_CMD_REGISTRY:
+            _TEX_CMD_REGISTRY[id(op)] = _tex_cmd_for(op)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -179,7 +190,7 @@ class DualOut:
         """))
         for op in operations:
             if op.tex is not None:
-                cmd = _TEX_CMD_REGISTRY[op.name]
+                cmd = _TEX_CMD_REGISTRY[id(op)]
                 self._t(f"\\newcommand{{{cmd}}}[{op.rank}]{{{op.tex}}}")
         self._t(f"\\title{{symcoder round-trip demo\\\\\\large {_tex_escape(title)}}}")
         self._t(r"\date{}\begin{document}\maketitle")
@@ -213,8 +224,8 @@ def _atom_tex(atom) -> str:
     sign = "" if atom.sign > 0 else "-"
     op = atom.operation
     # Prefer the registered \newcommand when the operation carries a tex= payload.
-    if op.tex is not None and op.name in _TEX_CMD_REGISTRY:
-        cmd  = _TEX_CMD_REGISTRY[op.name]
+    if op.tex is not None and id(op) in _TEX_CMD_REGISTRY:
+        cmd  = _TEX_CMD_REGISTRY[id(op)]
         args = "".join(f"{{{lbl}}}" for lbl in atom.labels)
         return sign + cmd + args
     return _tex_escape(_atom_text(atom))
@@ -222,8 +233,8 @@ def _atom_tex(atom) -> str:
 
 def _op_tex_sample(op, sample_labels) -> str:
     """TeX snippet for an operation applied to placeholder labels (e.g. for titles)."""
-    if op.tex is not None and op.name in _TEX_CMD_REGISTRY:
-        cmd  = _TEX_CMD_REGISTRY[op.name]
+    if op.tex is not None and id(op) in _TEX_CMD_REGISTRY:
+        cmd  = _TEX_CMD_REGISTRY[id(op)]
         args = "".join(f"{{{lbl}}}" for lbl in sample_labels[:op.rank])
         return cmd + args
     return _tex_escape(op.name)
@@ -243,31 +254,33 @@ def _tex_num(v: float) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run():
-    # mag and dot are defined here to show that user-defined operations work
-    # just as well as library ones.  eps3 comes from the standard library.
-    mag  = Operation("mag",  rank=1, odd_parity=False,
+    # Mymag is defined here to show that user-defined operations work
+    # just as well as library ones.  Others comes from the standard library.
+    mymag  = Operation("Mymag",  rank=1, odd_parity=False,
                               argument_symmetry=ArgumentSymmetry.SYMMETRIC,
                               eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))),
                               tex=r"|\vc{#1}|")
-    dot  = Operation("dot",  rank=2, odd_parity=False,
-                              argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-                              eval_fn=lambda v: float(np.dot(v[0], v[1])),
-                              tex=r"\vc{#1} \cdot \vc{#2}")
-    # eps3 is the library singleton from symcoder.operations.euclidean3.
+    # eps is the library singleton from symcoder.operations.euclidean3.
     # Its tex= payload uses \mathbf{} rather than \vc{}, which is fine —
     # each operation's \newcommand is emitted independently.
 
+    # ctx and plan are built before the output context manager so that
+    # write_tex_header can register all operation macros from plan.operations.
+    electrons = VectorType("electrons", ("a", "b"))
+    muons     = VectorType("muons",     ("p",))
+    ctx       = Context((electrons, muons))
+    plan      = Plan(context=ctx, operations=(mymag,
+              symcoder.operations.euclidean3.dot, 
+              symcoder.operations.euclidean2.dot, 
+              symcoder.operations.euclidean3.eps,
+              ))
+
     with DualOut(_TEX_FILE) as out:
         ctx_title = "electrons=(a,b), muons=(p)"
-        out.write_tex_header(ctx_title, operations=[mag, dot, eps3])
+        out.write_tex_header(ctx_title, operations=plan.operations)
 
         # ── Setup ─────────────────────────────────────────────────────────
         out.section("Setup")
-
-        # Context
-        electrons = VectorType("electrons", ("a", "b"))
-        muons     = VectorType("muons",     ("p",))
-        ctx       = Context((electrons, muons))
 
         out.kv("Particle types",
                "electrons=(a,b),  muons=(p)",
@@ -277,10 +290,8 @@ def run():
                rf"$G = S_{{electrons}} \times S_{{muons}} = S_2 \times S_1$,"
                rf" order $= {ctx.the_group.order()}$")
 
-        plan = Plan(context=ctx, operations=(mag, dot, eps3))
-
         out.blank()
-        out.line("Operations:")
+        out.line("Operations:\n")
         _pl = list("xyzw")
         for op in plan.operations:
             pl   = _pl[:op.rank]
@@ -327,7 +338,7 @@ def run():
         phase1_vals = orbit_enc.encode(event).values
         phase2_vals = phase2_enc.encode(event).values
 
-        fo_list    = _repS_fn(ctx, (mag, dot, eps3))
+        fo_list    = _repS_fn(ctx, plan.operations)
         repS_atoms = [fo.canonical_representative() for fo in fo_list]
 
         # ── Phase 1 encoding ──────────────────────────────────────────────
