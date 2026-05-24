@@ -52,25 +52,28 @@ def test_operation_tex_stored():
     assert op.tex == r"\epsilon_{#1#2}"
 
 def test_operation_tex_excluded_from_equality():
+    # Share a single function object so that only tex varies between the operations.
+    _fn = lambda v: 0.0
     op_a = Operation("eps", rank=2, odd_parity=True,
                      argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                     eval_fn=lambda v: 0.0, tex=r"\epsilon_{#1#2}")
+                     eval_fn=_fn, tex=r"\epsilon_{#1#2}")
     op_b = Operation("eps", rank=2, odd_parity=True,
                      argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                     eval_fn=lambda v: 0.0, tex=r"\varepsilon_{#1#2}")
+                     eval_fn=_fn, tex=r"\varepsilon_{#1#2}")
     op_c = Operation("eps", rank=2, odd_parity=True,
                      argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                     eval_fn=lambda v: 0.0)
+                     eval_fn=_fn)
     assert op_a == op_b
     assert op_a == op_c
 
 def test_operation_tex_excluded_from_hash():
+    _fn = lambda v: 0.0
     op_a = Operation("eps", rank=2, odd_parity=True,
                      argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                     eval_fn=lambda v: 0.0, tex=r"\epsilon_{#1#2}")
+                     eval_fn=_fn, tex=r"\epsilon_{#1#2}")
     op_b = Operation("eps", rank=2, odd_parity=True,
                      argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                     eval_fn=lambda v: 0.0)
+                     eval_fn=_fn)
     assert hash(op_a) == hash(op_b)
 
 def test_operation_tex_rank_9_ok():

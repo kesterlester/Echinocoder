@@ -259,8 +259,8 @@ class OverlapBlockEncoder:
         ----------
         values : np.ndarray
             Sub-array produced by encode() for this block (non-comp-dropped data only).
-        phase1_results : dict[(str, tuple), AnnotatedMultisetOfReals]
-            Phase 1 decoded multisets keyed by (op_name, flavour_counts_tuple).
+        phase1_results : dict[(Operation, tuple), AnnotatedMultisetOfReals]
+            Phase 1 decoded multisets keyed by (operation, flavour_counts_tuple).
             Required only for NULL_SELF entries; ignored for ASSOC entries.
 
         Returns
@@ -289,15 +289,15 @@ class OverlapBlockEncoder:
             if enc.output_dim == 0:
                 # NULL_SELF: (u=v) pairs are fully determined by Phase 1.
                 # The pairs are (a, a) for each atom a in the shared orbit.
-                key = (sel.pf.op_u.name, tuple(sel.pf.flavour_u.counts))
+                key = (sel.pf.op_u, tuple(sel.pf.flavour_u.counts))
                 phase1 = phase1_results[key]
                 results.append(AnnotatedMultisetOfRealPairs(
                     pairs=[(v, v) for v in phase1.values],
                     atom_pairs=[(a, a) for a in phase1.atoms],
                 ))
             else:
-                u_key = (sel.pf.op_u.name, tuple(sel.pf.flavour_u.counts))
-                v_key = (sel.pf.op_v.name, tuple(sel.pf.flavour_v.counts))
+                u_key = (sel.pf.op_u, tuple(sel.pf.flavour_u.counts))
+                v_key = (sel.pf.op_v, tuple(sel.pf.flavour_v.counts))
                 u_ph1 = phase1_results.get(u_key)
                 v_ph1 = phase1_results.get(v_key)
                 chunk = values[cursor:cursor + enc.output_dim]
@@ -310,8 +310,8 @@ class OverlapBlockEncoder:
             # All selections in a block share (op_u, flavour_u, op_v, flavour_v),
             # so we can use any selection's pf to look up U and V.
             pf0  = self._selections[0].pf
-            u_key = (pf0.op_u.name, tuple(pf0.flavour_u.counts))
-            v_key = (pf0.op_v.name, tuple(pf0.flavour_v.counts))
+            u_key = (pf0.op_u, tuple(pf0.flavour_u.counts))
+            v_key = (pf0.op_v, tuple(pf0.flavour_v.counts))
             U = phase1_results[u_key].values
             V = phase1_results[v_key].values
 

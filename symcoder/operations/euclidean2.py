@@ -27,14 +27,14 @@ from symatom import Operation, ArgumentSymmetry
 mag = Operation(
     "mag", rank=1, odd_parity=False,
     argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-    eval_fn=lambda v: float(np.linalg.norm(v[0])),
+    eval_fn=lambda v: float(np.linalg.norm(v[0][:2])),
     tex=r"|\mathbf{#1}_T|",
 )
 
 dot = Operation(
     "dot", rank=2, odd_parity=False,
     argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-    eval_fn=lambda v: float(np.dot(v[0], v[1])),
+    eval_fn=lambda v: float(np.dot(v[0][:2], v[1][:2])),
     tex=r"\mathbf{#1}_T \cdot \mathbf{#2}_T",
 )
 

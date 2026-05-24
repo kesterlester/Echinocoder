@@ -671,7 +671,9 @@ def test_cpf_overlap_blocks_are_contiguous(dot, eps3, ctx2):
     pf_list = canonical_pair_flavours(fo_list, ctx2)
 
     def block_key(pf):
-        return (pf.op_u.name, pf.flavour_u.counts, pf.op_v.name, pf.flavour_v.counts)
+        # Use operation objects (not names) so that two operations sharing a name
+        # but differing in eval_fn are treated as distinct blocks.
+        return (pf.op_u, pf.flavour_u.counts, pf.op_v, pf.flavour_v.counts)
 
     seen_blocks = {}
     for idx, pf in enumerate(pf_list):
@@ -694,7 +696,7 @@ def test_cpf_overlap_blocks_contiguous_three_groups(dot, eps3, ctx3):
     pf_list = canonical_pair_flavours(fo_list, ctx3)
 
     def block_key(pf):
-        return (pf.op_u.name, pf.flavour_u.counts, pf.op_v.name, pf.flavour_v.counts)
+        return (pf.op_u, pf.flavour_u.counts, pf.op_v, pf.flavour_v.counts)
 
     seen_blocks = {}
     for idx, pf in enumerate(pf_list):

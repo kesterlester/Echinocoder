@@ -78,8 +78,8 @@ def decode_alignment(
     ----------
     plan : Plan
         Encoding plan (holds context and operations).
-    phase1_results : dict[(str, tuple), AnnotatedMultisetOfReals]
-        Phase 1 decoded multisets keyed by (op_name, flavour_counts_tuple).
+    phase1_results : dict[(Operation, tuple), AnnotatedMultisetOfReals]
+        Phase 1 decoded multisets keyed by (operation, flavour_counts_tuple).
         Each entry's ``values`` list has orbit_size elements (one per distinct
         G-orbit element for that FlavouredOperator).
     all_pair_decoded : list[AnnotatedMultisetOfRealPairs]
@@ -118,7 +118,7 @@ def decode_alignment(
     # ------------------------------------------------------------------ #
     row_val_list: dict = {}
     for fo, atom in zip(fo_list, repS_atoms):
-        key    = (fo.operation.name, tuple(fo.flavour.counts))
+        key    = (fo.operation, tuple(fo.flavour.counts))
         phase1 = phase1_results[key]
         orbit_size = len(phase1.values)
         if orbit_size == 0:

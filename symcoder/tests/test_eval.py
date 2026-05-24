@@ -45,13 +45,23 @@ def test_operation_repr(dot):
     assert "rank=2" in r
     assert "SYMMETRIC" in r
 
-def test_operations_equal_by_symbolic_fields(dot):
+def test_operations_with_same_eval_fn_are_equal(dot):
+    """Same eval_fn object (same callable identity) → operations are equal."""
     dot2 = Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-        eval_fn=lambda vecs: 999.0,   # different callable — equality ignores it
+        eval_fn=dot.eval_fn,   # same callable object
     )
     assert dot == dot2
+
+def test_operations_with_different_eval_fn_are_not_equal(dot):
+    """Different eval_fn objects → different operations, even if fields otherwise match."""
+    dot2 = Operation(
+        name="dot", rank=2, odd_parity=False,
+        argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+        eval_fn=lambda vecs: 999.0,   # different callable object
+    )
+    assert dot != dot2
 
 def test_operation_rank_validation():
     with pytest.raises(ValueError):

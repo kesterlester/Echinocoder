@@ -120,9 +120,10 @@ class DualOut:
         self._p(f"\n{bar}\n  {title}\n{bar}")
         self._t(f"\n\\section{{{_tex_escape(title)}}}")
 
-    def subsection(self, title: str):
+    def subsection(self, title: str, tex: str | None = None):
         self._p(f"\n  ── {title} ──")
-        self._t(f"\n\\subsection{{{_tex_escape(title)}}}")
+        tex_title = tex if tex is not None else _tex_escape(title)
+        self._t(f"\n\\subsection{{{tex_title}}}")
 
     def line(self, text: str = "", tex: str | None = None):
         """Print text to stdout, tex (or text) to .tex file."""
@@ -300,9 +301,7 @@ def run():
             args_vc = ",".join(rf"\vc{{{p}}}" for p in pl)
             out.line(
                 f"  {op.name}({args})  (rank {op.rank}, {sym})",
-                tex=(rf"\textbf{{{_tex_escape(op.name)}}}({args_vc})"
-                     rf" $= {_op_tex_sample(op, pl)}$"
-                     rf" \quad (rank {op.rank}, {sym})\\")
+                tex=rf"${_op_tex_sample(op, pl)}$ \quad (rank {op.rank}, {sym})\\"
             )
 
         # Fixed event (3-D vectors; eps3 needs ≥3 dimensions)
@@ -349,7 +348,7 @@ def run():
         phase1_results = {}
         cursor = 0
         for fo, enc in orbit_enc._selections:
-            key    = (fo.operation.name, tuple(fo.flavour.counts))
+            key    = (fo.operation, tuple(fo.flavour.counts))
             chunk  = phase1_vals[cursor : cursor + enc.output_dim]
             decoded = enc.decode(chunk)
             phase1_results[key] = decoded
@@ -364,7 +363,11 @@ def run():
                 method = "SortEncoder  (stores eval of full orbit)"
                 method_tex = r"\texttt{SortEncoder} — stores eval of full orbit"
 
-            out.subsection(f"FO: {fo.operation.name}  flavour={tuple(fo.flavour.counts)}")
+            _sl = list("xyzw")[:fo.operation.rank]
+            out.subsection(
+                f"FO: {fo.operation.name}  flavour={tuple(fo.flavour.counts)}",
+                tex=f"FO: ${_op_tex_sample(fo.operation, _sl)}$  flavour $= {tuple(fo.flavour.counts)}$"
+            )
             out.kv("  Canonical rep", _atom_text(fo.canonical_representative()),
                    tex=f"$\\displaystyle{_atom_tex(fo.canonical_representative())}$")
             out.kv("  Encoder", method, tex=method_tex + r"\\")
@@ -392,13 +395,13 @@ def run():
             pf0 = block_enc._selections[0].pf
             block_title = (f"{pf0.op_u.name}[{tuple(pf0.flavour_u.counts)}] "
                            f"× {pf0.op_v.name}[{tuple(pf0.flavour_v.counts)}]")
-            _qs = ['?', '?', '?']  # enough placeholders for any rank
+            _qs = list("xyzw")  # placeholder labels for block title
             block_title_tex = (f"${_op_tex_sample(pf0.op_u, _qs)}"
                                f" \\times "
                                f"{_op_tex_sample(pf0.op_v, _qs)}$"
                                f"  (block)")
 
-            out.subsection(f"Block: {block_title}")
+            out.subsection(f"Block: {block_title}", tex=f"Block: {block_title_tex}")
 
             block_slice = phase2_vals[p2cursor : p2cursor + block_enc.output_dim]
             decoded_list = block_enc.decode(block_slice, phase1_results)

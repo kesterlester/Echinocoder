@@ -11,8 +11,15 @@ from .context import Context
 # ---------------------------------------------------------------------------
 
 def _op_fl_key(op: Operation, fl: Flavour) -> tuple:
-    """Comparable sort key for an (Operation, Flavour) pair."""
-    return (op.name, op.rank, op.parity, op.argument_symmetry.value, fl.counts)
+    """Comparable sort key for an (Operation, Flavour) pair.
+
+    Within a session, id(op) is stable for live objects (module-level singletons
+    never move), so it serves as a deterministic tiebreaker between two operations
+    that are symbolically distinct (different eval_fn) but share name/rank/parity/
+    argument_symmetry.  The sort order is session-local; encoder and decoder are
+    always built in the same session, so consistency is guaranteed.
+    """
+    return (op.name, op.rank, op.parity, op.argument_symmetry.value, fl.counts, id(op))
 
 
 # ---------------------------------------------------------------------------

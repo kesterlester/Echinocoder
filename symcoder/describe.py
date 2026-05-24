@@ -33,12 +33,13 @@ def _assoc_example(op_u: str, flavour_u: tuple, op_v: str, flavour_v: tuple,
 
 
 def _block_key(pf):
-    """Key that identifies an OVERLAP BLOCK: fixed (op_u, flavour_u, op_v, flavour_v)."""
-    u = (pf.op_u.name, pf.op_u.rank, pf.op_u.parity,
-         pf.op_u.argument_symmetry.value, pf.flavour_u.counts)
-    v = (pf.op_v.name, pf.op_v.rank, pf.op_v.parity,
-         pf.op_v.argument_symmetry.value, pf.flavour_v.counts)
-    return (u, v)
+    """Key that identifies an OVERLAP BLOCK: fixed (op_u, flavour_u, op_v, flavour_v).
+
+    Uses the Operation objects directly — they are frozen dataclasses whose
+    equality and hash include eval_fn identity, so two operations with the same
+    name but different eval_fn produce distinct keys.
+    """
+    return (pf.op_u, pf.flavour_u.counts, pf.op_v, pf.flavour_v.counts)
 
 
 @dataclass(frozen=True)

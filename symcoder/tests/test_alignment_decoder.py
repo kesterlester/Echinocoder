@@ -65,12 +65,12 @@ from symcoder.eval import evaluate
 # ---------------------------------------------------------------------------
 
 def _build_phase1_results(orbit_enc, phase1_vals):
-    """Decode all Phase 1 orbits; return dict keyed by (op_name, flavour_counts)."""
+    """Decode all Phase 1 orbits; return dict keyed by (operation, flavour_counts)."""
     results = {}
     cursor  = 0
     for fo, enc in orbit_enc._selections:
         chunk = phase1_vals[cursor:cursor + enc.output_dim]
-        results[(fo.operation.name, tuple(fo.flavour.counts))] = enc.decode(chunk)
+        results[(fo.operation, tuple(fo.flavour.counts))] = enc.decode(chunk)
         cursor += enc.output_dim
     return results
 
@@ -248,7 +248,7 @@ def test_alignment_decoder_row_multisets_correct(
     fo_list = _repS_fn(plan.context, plan.operations)
 
     for r, (fo, atom) in enumerate(zip(fo_list, decoded.atoms)):
-        key        = (fo.operation.name, tuple(fo.flavour.counts))
+        key        = (fo.operation, tuple(fo.flavour.counts))
         phase1     = phase1_results[key]
         orbit_size = len(phase1.values)
         stab_u     = n_cols // orbit_size

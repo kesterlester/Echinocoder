@@ -238,12 +238,12 @@ def test_selfpair_neg_sigma_decoder_roundtrip(ops, ctx, event, orbit_factory, ph
 # ---------------------------------------------------------------------------
 
 def _build_phase1_results(orbit_enc, phase1_vals):
-    """Decode all Phase 1 orbits and return a dict keyed by (op_name, flavour_counts)."""
+    """Decode all Phase 1 orbits and return a dict keyed by (operation, flavour_counts)."""
     results = {}
     cursor = 0
     for fo, enc in orbit_enc._selections:
         chunk = phase1_vals[cursor:cursor + enc.output_dim]
-        results[(fo.operation.name, tuple(fo.flavour.counts))] = enc.decode(chunk)
+        results[(fo.operation, tuple(fo.flavour.counts))] = enc.decode(chunk)
         cursor += enc.output_dim
     return results
 
@@ -280,7 +280,7 @@ def test_overlap_block_decoder_no_drop(ops, ctx, event, orbit_factory, phase2_fa
 
             if enc.output_dim == 0:
                 # NULL_SELF: truth is (eval(atom), eval(atom)) for each Phase 1 atom
-                key = (sel.pf.op_u.name, tuple(sel.pf.flavour_u.counts))
+                key = (sel.pf.op_u, tuple(sel.pf.flavour_u.counts))
                 truth = [(evaluate(a, event), evaluate(a, event))
                          for a in phase1_results[key].atoms]
             else:
@@ -333,7 +333,7 @@ def test_overlap_block_decoder_with_drop(ops, ctx, event, orbit_factory, phase2_
 
             if enc.output_dim == 0:
                 # NULL_SELF: truth = (eval(atom), eval(atom)) for each Phase 1 atom
-                key = (sel.pf.op_u.name, tuple(sel.pf.flavour_u.counts))
+                key = (sel.pf.op_u, tuple(sel.pf.flavour_u.counts))
                 truth = [(evaluate(a, event), evaluate(a, event))
                          for a in phase1_results[key].atoms]
             elif sel.is_comp_drop:

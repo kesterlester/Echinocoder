@@ -44,9 +44,11 @@ class Operation:
         vectors : list of arrays, one per label, in atom.labels order.
         Return value : the numerical value of the operation on those vectors,
         BEFORE the atom's sign is applied.  The sign is applied by evaluate().
-        eval_fn is excluded from equality and hashing so that two Operations
-        with identical symbolic properties compare equal regardless of which
-        callable was attached.
+        eval_fn is included in equality and hashing using Python's default
+        function identity (f == g iff f is g).  This means two Operation
+        objects with different callable objects are considered distinct even
+        if they happen to compute the same value — which is the desired
+        behaviour for library singletons (e.g. euclidean2.dot ≠ euclidean3.dot).
 
     Optional tex parameter
     ----------------------
@@ -64,7 +66,7 @@ class Operation:
     rank:               int             # number of vector arguments (>= 1)
     odd_parity:         bool            # True → parity = -1 (pseudoscalar); False → parity = +1 (scalar)
     argument_symmetry:  ArgumentSymmetry
-    eval_fn:            Callable = field(kw_only=True, compare=False, hash=False)
+    eval_fn:            Callable = field(kw_only=True)
     tex:                str | None = field(default=None, kw_only=True,
                                            compare=False, hash=False)
 
