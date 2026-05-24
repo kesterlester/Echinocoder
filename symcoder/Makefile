@@ -5,7 +5,7 @@ PDFLATEX := pdflatex
 
 regenerate_pdfs: demo_roundtrip.pdf
 
-demo_roundtrip.tex: demo_roundtrip.py
+demo_roundtrip.tex: demo_roundtrip.py $(wildcard *.py) $(wildcard ../symatom/*.py) $(wildcard operations/*.py) $(wildcard encoders/*.py)
 	$(PYTHON) $<
 
 # SOURCE_DATE_EPOCH=0 pins all embedded timestamps to the Unix epoch so the
