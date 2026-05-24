@@ -267,8 +267,8 @@ def run():
 
     # ctx and plan are built before the output context manager so that
     # write_tex_header can register all operation macros from plan.operations.
-    electrons = VectorType("electrons", ("a", "b"))
-    muons     = VectorType("muons",     ("p",))
+    electrons = VectorType("electrons", ("a", "b", "c"))
+    muons     = VectorType("muons",     ("p", "q"))
     ctx       = Context((electrons, muons))
     plan      = Plan(context=ctx, operations=(mymag,
               symcoder.operations.euclidean3.dot, 
@@ -277,19 +277,34 @@ def run():
               ))
 
     with DualOut(_TEX_FILE) as out:
-        ctx_title = "electrons=(a,b), muons=(p)"
+        # ── Derive all setup strings from ctx — one source of truth ───────
+        ctx_title = ",  ".join(
+            f"{t.name}=({','.join(t.labels)})" for t in ctx.types
+        )
+        ptypes_text = ctx_title
+        ptypes_tex  = r",\quad ".join(
+            f"{_tex_escape(t.name)} $= \\{{{', '.join(t.labels)}\\}}$"
+            for t in ctx.types
+        )
+        g_parts_name = " × ".join(f"S_{t.name}" for t in ctx.types)
+        g_parts_n    = " × ".join(f"S_{len(t.labels)}" for t in ctx.types)
+        g_text = f"G = {g_parts_name} = {g_parts_n}  (order {ctx.the_group.order()})"
+        g_parts_name_tex = r" \times ".join(
+            rf"S_{{\text{{{_tex_escape(t.name)}}}}}" for t in ctx.types
+        )
+        g_parts_n_tex = r" \times ".join(
+            rf"S_{{{len(t.labels)}}}" for t in ctx.types
+        )
+        g_tex = (rf"$G = {g_parts_name_tex} = {g_parts_n_tex}$,"
+                 rf" order $= {ctx.the_group.order()}$")
+
         out.write_tex_header(ctx_title, operations=plan.operations)
 
         # ── Setup ─────────────────────────────────────────────────────────
         out.section("Setup")
 
-        out.kv("Particle types",
-               "electrons=(a,b),  muons=(p)",
-               r"electrons $= \{a, b\}$, \quad muons $= \{p\}$")
-        out.kv("Group G",
-               f"S_electrons × S_muons = S_2 × S_1  (order {ctx.the_group.order()})",
-               rf"$G = S_{{electrons}} \times S_{{muons}} = S_2 \times S_1$,"
-               rf" order $= {ctx.the_group.order()}$")
+        out.kv("Particle types", ptypes_text, ptypes_tex)
+        out.kv("Group G",        g_text,      g_tex)
 
         out.blank()
         out.line("Operations:\n")

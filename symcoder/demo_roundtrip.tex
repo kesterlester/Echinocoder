@@ -11,12 +11,12 @@
 \newcommand{\pdcegfomjfhook}[2]{\mathbf{#1} \cdot \mathbf{#2}}
 \newcommand{\fpbeomcfokjooi}[2]{\mathbf{#1}_T \cdot \mathbf{#2}_T}
 \newcommand{\kblbmcpggoncpf}[3]{\varepsilon(\mathbf{#1},\mathbf{#2},\mathbf{#3})}
-\title{symcoder round-trip demo\\\large electrons=(a,b), muons=(p)}
+\title{symcoder round-trip demo\\\large electrons=(a,b,c),  muons=(p,q)}
 \date{}\begin{document}\maketitle
 
 \section{Setup}
-\textbf{Particle types}: electrons $= \{a, b\}$, \quad muons $= \{p\}$\\
-\textbf{Group G}: $G = S_{electrons} \times S_{muons} = S_2 \times S_1$, order $= 2$\\
+\textbf{Particle types}: electrons $= \{a, b, c\}$,\quad muons $= \{p, q\}$\\
+\textbf{Group G}: $G = S_{\text{electrons}} \times S_{\text{muons}} = S_{3} \times S_{2}$, order $= 12$\\
 
 Operations:
 
@@ -33,349 +33,1416 @@ $\kblbmcpggoncpf{x}{y}{z}$ \quad (rank 3, antisymmetric)\\
 \textbf{  q}: $\vc{q} = (0.00,\ 0.00,\ -1.00)$\\\\
 
 \section{Phase 1 Encoding  (one orbit per FlavouredOperator in repS)}
-  7 FlavouredOperators in repS
+  11 FlavouredOperators in repS
 
 
 \subsection{FlavouredOperator: $\dnfagmiihhiejm{x}$  flavour $= (1, 0)$}
 \textbf{  Canonical representative}: $\displaystyle\dnfagmiihhiejm{a}$\\
 \textbf{  Encoder}: \texttt{SortEncoder} — stores eval of full orbit\\\\
-\textbf{  Orbit atoms}: $\dnfagmiihhiejm{a}$,\ $\dnfagmiihhiejm{b}$\\
-\textbf{  Eval values}: +1.3342,\ +1.1874\\
-\textbf{  Encoded [2 reals]}: +1.1874,\ +1.3342\\
+\textbf{  Orbit atoms}: $\dnfagmiihhiejm{a}$,\ $\dnfagmiihhiejm{b}$,\ $\dnfagmiihhiejm{c}$\\
+\textbf{  Eval values}: +1.3342,\ +1.1874,\ +1.4765\\
+\textbf{  Encoded [3 reals]}: +1.1874,\ +1.3342,\ +1.4765\\
 
 \subsection{FlavouredOperator: $\dnfagmiihhiejm{x}$  flavour $= (0, 1)$}
 \textbf{  Canonical representative}: $\displaystyle\dnfagmiihhiejm{p}$\\
 \textbf{  Encoder}: \texttt{SortEncoder} — stores eval of full orbit\\\\
-\textbf{  Orbit atoms}: $\dnfagmiihhiejm{p}$\\
-\textbf{  Eval values}: +1.0000\\
-\textbf{  Encoded [1 reals]}: +1.0000\\
+\textbf{  Orbit atoms}: $\dnfagmiihhiejm{p}$,\ $\dnfagmiihhiejm{q}$\\
+\textbf{  Eval values}: +1.0000,\ +1.0000\\
+\textbf{  Encoded [2 reals]}: +1.0000,\ +1.0000\\
 
 \subsection{FlavouredOperator: $\pdcegfomjfhook{x}{y}$  flavour $= (2, 0)$}
 \textbf{  Canonical representative}: $\displaystyle\pdcegfomjfhook{a}{b}$\\
 \textbf{  Encoder}: \texttt{SortEncoder} — stores eval of full orbit\\\\
-\textbf{  Orbit atoms}: $\pdcegfomjfhook{a}{b}$\\
-\textbf{  Eval values}: +0.9100\\
-\textbf{  Encoded [1 reals]}: +0.9100\\
+\textbf{  Orbit atoms}: $\pdcegfomjfhook{a}{b}$,\ $\pdcegfomjfhook{a}{c}$,\ $\pdcegfomjfhook{b}{c}$\\
+\textbf{  Eval values}: +0.9100,\ -0.5900,\ +0.9800\\
+\textbf{  Encoded [3 reals]}: -0.5900,\ +0.9100,\ +0.9800\\
 
 \subsection{FlavouredOperator: $\pdcegfomjfhook{x}{y}$  flavour $= (1, 1)$}
 \textbf{  Canonical representative}: $\displaystyle\pdcegfomjfhook{a}{p}$\\
 \textbf{  Encoder}: \texttt{SortEncoder} — stores eval of full orbit\\\\
-\textbf{  Orbit atoms}: $\pdcegfomjfhook{a}{p}$,\ $\pdcegfomjfhook{b}{p}$\\
-\textbf{  Eval values}: +0.5000,\ +0.2000\\
-\textbf{  Encoded [2 reals]}: +0.2000,\ +0.5000\\
+\textbf{  Orbit atoms}: $\pdcegfomjfhook{a}{p}$,\ $\pdcegfomjfhook{a}{q}$,\ $\pdcegfomjfhook{b}{p}$,\ $\pdcegfomjfhook{b}{q}$,\ $\pdcegfomjfhook{c}{p}$,\ $\pdcegfomjfhook{c}{q}$\\
+\textbf{  Eval values}: +0.5000,\ -0.5000,\ +0.2000,\ -0.2000,\ -0.7000,\ +0.7000\\
+\textbf{  Encoded [6 reals]}: -0.7000,\ -0.5000,\ -0.2000,\ +0.2000,\ +0.5000,\ +0.7000\\
+
+\subsection{FlavouredOperator: $\pdcegfomjfhook{x}{y}$  flavour $= (0, 2)$}
+\textbf{  Canonical representative}: $\displaystyle\pdcegfomjfhook{p}{q}$\\
+\textbf{  Encoder}: \texttt{SortEncoder} — stores eval of full orbit\\\\
+\textbf{  Orbit atoms}: $\pdcegfomjfhook{p}{q}$\\
+\textbf{  Eval values}: -1.0000\\
+\textbf{  Encoded [1 reals]}: -1.0000\\
 
 \subsection{FlavouredOperator: $\fpbeomcfokjooi{x}{y}$  flavour $= (2, 0)$}
 \textbf{  Canonical representative}: $\displaystyle\fpbeomcfokjooi{a}{b}$\\
 \textbf{  Encoder}: \texttt{SortEncoder} — stores eval of full orbit\\\\
-\textbf{  Orbit atoms}: $\fpbeomcfokjooi{a}{b}$\\
-\textbf{  Eval values}: +0.8100\\
-\textbf{  Encoded [1 reals]}: +0.8100\\
+\textbf{  Orbit atoms}: $\fpbeomcfokjooi{a}{b}$,\ $\fpbeomcfokjooi{a}{c}$,\ $\fpbeomcfokjooi{b}{c}$\\
+\textbf{  Eval values}: +0.8100,\ -0.2400,\ +1.1200\\
+\textbf{  Encoded [3 reals]}: -0.2400,\ +0.8100,\ +1.1200\\
 
 \subsection{FlavouredOperator: $\fpbeomcfokjooi{x}{y}$  flavour $= (1, 1)$}
 \textbf{  Canonical representative}: $\displaystyle\fpbeomcfokjooi{a}{p}$\\
 \textbf{  Encoder}: \texttt{SortEncoder} — stores eval of full orbit\\\\
-\textbf{  Orbit atoms}: $\fpbeomcfokjooi{a}{p}$,\ $\fpbeomcfokjooi{b}{p}$\\
-\textbf{  Eval values}: +0.0000,\ +0.0000\\
-\textbf{  Encoded [2 reals]}: +0.0000,\ +0.0000\\
+\textbf{  Orbit atoms}: $\fpbeomcfokjooi{a}{p}$,\ $\fpbeomcfokjooi{a}{q}$,\ $\fpbeomcfokjooi{b}{p}$,\ $\fpbeomcfokjooi{b}{q}$,\ $\fpbeomcfokjooi{c}{p}$,\ $\fpbeomcfokjooi{c}{q}$\\
+\textbf{  Eval values}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
+\textbf{  Encoded [6 reals]}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
+
+\subsection{FlavouredOperator: $\fpbeomcfokjooi{x}{y}$  flavour $= (0, 2)$}
+\textbf{  Canonical representative}: $\displaystyle\fpbeomcfokjooi{p}{q}$\\
+\textbf{  Encoder}: \texttt{SortEncoder} — stores eval of full orbit\\\\
+\textbf{  Orbit atoms}: $\fpbeomcfokjooi{p}{q}$\\
+\textbf{  Eval values}: +0.0000\\
+\textbf{  Encoded [1 reals]}: +0.0000\\
+
+\subsection{FlavouredOperator: $\kblbmcpggoncpf{x}{y}{z}$  flavour $= (3, 0)$}
+\textbf{  Canonical representative}: $\displaystyle\kblbmcpggoncpf{a}{b}{c}$\\
+\textbf{  Encoder}: \texttt{HalfSortEncoder} — stores $|\text{eval}|$ of sign$=+1$ representatives\\\\
+\textbf{  Orbit atoms}: $\kblbmcpggoncpf{a}{b}{c}$\\
+\textbf{  Eval values}: -0.6430\\
+\textbf{  Encoded [1 reals]}: +0.6430\\
 
 \subsection{FlavouredOperator: $\kblbmcpggoncpf{x}{y}{z}$  flavour $= (2, 1)$}
 \textbf{  Canonical representative}: $\displaystyle\kblbmcpggoncpf{a}{b}{p}$\\
 \textbf{  Encoder}: \texttt{HalfSortEncoder} — stores $|\text{eval}|$ of sign$=+1$ representatives\\\\
-\textbf{  Orbit atoms}: $\kblbmcpggoncpf{a}{b}{p}$\\
-\textbf{  Eval values}: +1.2000\\
-\textbf{  Encoded [1 reals]}: +1.2000\\
+\textbf{  Orbit atoms}: $\kblbmcpggoncpf{a}{b}{p}$,\ $\kblbmcpggoncpf{a}{b}{q}$,\ $\kblbmcpggoncpf{a}{c}{p}$,\ $\kblbmcpggoncpf{a}{c}{q}$,\ $\kblbmcpggoncpf{b}{c}{p}$,\ $\kblbmcpggoncpf{b}{c}{q}$\\
+\textbf{  Eval values}: +1.2000,\ -1.2000,\ +1.5900,\ -1.5900,\ +1.0300,\ -1.0300\\
+\textbf{  Encoded [6 reals]}: +1.0300,\ +1.0300,\ +1.2000,\ +1.2000,\ +1.5900,\ +1.5900\\
+
+\subsection{FlavouredOperator: $\kblbmcpggoncpf{x}{y}{z}$  flavour $= (1, 2)$}
+\textbf{  Canonical representative}: $\displaystyle\kblbmcpggoncpf{a}{p}{q}$\\
+\textbf{  Encoder}: \texttt{HalfSortEncoder} — stores $|\text{eval}|$ of sign$=+1$ representatives\\\\
+\textbf{  Orbit atoms}: $\kblbmcpggoncpf{a}{p}{q}$,\ $\kblbmcpggoncpf{b}{p}{q}$,\ $\kblbmcpggoncpf{c}{p}{q}$\\
+\textbf{  Eval values}: +0.0000,\ +0.0000,\ +0.0000\\
+\textbf{  Encoded [3 reals]}: +0.0000,\ +0.0000,\ +0.0000\\
 
 \section{Phase 2 Encoding  (OverlapBlocks, complementarity-drop disabled)}
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \dnfagmiihhiejm{x}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11\_sigma  kind=ASSOC  dim=2
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=2$\\
+\textbf{      Encoded values}: +2.8284,\ +2.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{p},\ \dnfagmiihhiejm{q})$$\to (+1.0000,\ +1.0000)$\\
+$(\dnfagmiihhiejm{q},\ \dnfagmiihhiejm{p})$$\to (+1.0000,\ +1.0000)$\\
     PairFlavour  overlap=(0, 1)  type=null\_self  kind=NULL\_SELF  dim=0
 \textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
 \quad Decoded pairs $(u, v)$:\\
 $(\dnfagmiihhiejm{p},\ \dnfagmiihhiejm{p})$$\to (+1.0000,\ +1.0000)$\\
+$(\dnfagmiihhiejm{q},\ \dnfagmiihhiejm{q})$$\to (+1.0000,\ +1.0000)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \dnfagmiihhiejm{x}$  (block)}
-    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +2.0000,\ +2.5216,\ -0.5842,\ +2.5216\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.0000,\ +7.9962,\ -11.5993,\ +39.9808,\ -86.3973,\ +32.8452,\ -97.7244,\ -61.3879,\ -6.6542,\ -76.5400,\ +15.8009,\ -14.2916\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{p},\ \dnfagmiihhiejm{a})$$\to (+1.0000,\ +1.3342)$\\
-$(\dnfagmiihhiejm{p},\ \dnfagmiihhiejm{b})$$\to (+1.0000,\ +1.1874)$\\
+$(\dnfagmiihhiejm{p},\ \dnfagmiihhiejm{a})$$\to (+1.0000,\ +1.4765)$\\
+$(\dnfagmiihhiejm{q},\ \dnfagmiihhiejm{a})$$\to (+1.0000,\ +1.4765)$\\
+$(\dnfagmiihhiejm{p},\ \dnfagmiihhiejm{b})$$\to (+1.0000,\ +1.3342)$\\
+$(\dnfagmiihhiejm{q},\ \dnfagmiihhiejm{b})$$\to (+1.0000,\ +1.3342)$\\
+$(\dnfagmiihhiejm{p},\ \dnfagmiihhiejm{c})$$\to (+1.0000,\ +1.1874)$\\
+$(\dnfagmiihhiejm{q},\ \dnfagmiihhiejm{c})$$\to (+1.0000,\ +1.1874)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \fpbeomcfokjooi{x}{y}$  (block)}
     PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=4
 \textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
 \textbf{      Encoded values}: +2.0000,\ +0.0000,\ +1.0000,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{a}{p})$$\to (+1.0000,\ +0.0000)$\\
-$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{b}{p})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{p}{q})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{p}{q})$$\to (+1.0000,\ +0.0000)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \pdcegfomjfhook{x}{y}$  (block)}
     PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=4
 \textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +2.0000,\ +0.7000,\ +0.9000,\ +0.7000\\
+\textbf{      Encoded values}: +2.0000,\ -2.0000,\ +0.0000,\ -2.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{a}{p})$$\to (+1.0000,\ +0.5000)$\\
-$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{b}{p})$$\to (+1.0000,\ +0.2000)$\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{p}{q})$$\to (+1.0000,\ -1.0000)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{p}{q})$$\to (+1.0000,\ -1.0000)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \fpbeomcfokjooi{x}{y}$  (block)}
-    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=2
-\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=2$\\
-\textbf{      Encoded values}: +1.0000,\ +0.8100\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.0000,\ +0.0000,\ +15.0000,\ +0.0000,\ +20.0000,\ +0.0000,\ +15.0000,\ +0.0000,\ +6.0000,\ +0.0000,\ +1.0000,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{a}{b})$$\to (+1.0000,\ +0.8100)$\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{a}{q})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{a}{p})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{b}{q})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{b}{p})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{c}{q})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{c}{p})$$\to (+1.0000,\ +0.0000)$\\
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.0000,\ +0.0000,\ +15.0000,\ +0.0000,\ +20.0000,\ +0.0000,\ +15.0000,\ +0.0000,\ +6.0000,\ +0.0000,\ +1.0000,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{a}{p})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{a}{q})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{b}{p})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{b}{q})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{c}{p})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{c}{q})$$\to (+1.0000,\ +0.0000)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \pdcegfomjfhook{x}{y}$  (block)}
-    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=2
-\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=2$\\
-\textbf{      Encoded values}: +1.0000,\ +0.9100\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.0000,\ +0.0000,\ +15.7800,\ +0.0000,\ +23.1200,\ +0.0000,\ +19.8321,\ +0.0000,\ +9.4242,\ +0.0000,\ +1.9370,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{a}{b})$$\to (+1.0000,\ +0.9100)$\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{a}{q})$$\to (+1.0000,\ -0.7000)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{a}{p})$$\to (+1.0000,\ -0.5000)$\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{b}{q})$$\to (+1.0000,\ -0.2000)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{b}{p})$$\to (+1.0000,\ +0.7000)$\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{c}{q})$$\to (+1.0000,\ +0.2000)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{c}{p})$$\to (+1.0000,\ +0.5000)$\\
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.0000,\ +0.0000,\ +15.7800,\ +0.0000,\ +23.1200,\ +0.0000,\ +19.8321,\ +0.0000,\ +9.4242,\ +0.0000,\ +1.9370,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{a}{p})$$\to (+1.0000,\ -0.7000)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{a}{q})$$\to (+1.0000,\ -0.5000)$\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{b}{p})$$\to (+1.0000,\ -0.2000)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{b}{q})$$\to (+1.0000,\ +0.7000)$\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{c}{p})$$\to (+1.0000,\ +0.2000)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{c}{q})$$\to (+1.0000,\ +0.5000)$\\
+
+\subsection{Block: $\dnfagmiihhiejm{x} \times \fpbeomcfokjooi{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.0000,\ +3.3800,\ +11.2559,\ +16.9000,\ +5.0236,\ +32.7347,\ -8.0034,\ +30.6042,\ -10.0540,\ +13.5109,\ -3.3303,\ +2.1214\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{a}{b})$$\to (+1.0000,\ +1.1200)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{a}{b})$$\to (+1.0000,\ +1.1200)$\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{a}{c})$$\to (+1.0000,\ +0.8100)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{a}{c})$$\to (+1.0000,\ +0.8100)$\\
+$(\dnfagmiihhiejm{p},\ \fpbeomcfokjooi{b}{c})$$\to (+1.0000,\ -0.2400)$\\
+$(\dnfagmiihhiejm{q},\ \fpbeomcfokjooi{b}{c})$$\to (+1.0000,\ -0.2400)$\\
+
+\subsection{Block: $\dnfagmiihhiejm{x} \times \pdcegfomjfhook{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.0000,\ +2.6000,\ +13.7566,\ +13.0000,\ +15.0264,\ +27.6329,\ +6.2214,\ +30.8987,\ -1.6099,\ +18.1337,\ -1.8384,\ +4.4679\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{a}{b})$$\to (+1.0000,\ -0.5900)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{a}{b})$$\to (+1.0000,\ -0.5900)$\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{a}{c})$$\to (+1.0000,\ +0.9800)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{a}{c})$$\to (+1.0000,\ +0.9800)$\\
+$(\dnfagmiihhiejm{p},\ \pdcegfomjfhook{b}{c})$$\to (+1.0000,\ +0.9100)$\\
+$(\dnfagmiihhiejm{q},\ \pdcegfomjfhook{b}{c})$$\to (+1.0000,\ +0.9100)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
-    PairFlavour  overlap=(0, 1)  type=12  kind=ASSOC  dim=2
-\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=2$\\
-\textbf{      Encoded values}: +2.0000,\ +2.4400\\
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.0000,\ +0.0000,\ +15.0000,\ +0.0000,\ +20.0000,\ +0.0000,\ +15.0000,\ +0.0000,\ +6.0000,\ +0.0000,\ +1.0000,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.0000,\ +1.2000)$\\
-$(\dnfagmiihhiejm{p},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+1.0000,\ -1.2000)$\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{q},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+1.0000,\ +0.0000)$\\
+$(\dnfagmiihhiejm{q},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+1.0000,\ -0.0000)$\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+1.0000,\ -0.0000)$\\
+$(\dnfagmiihhiejm{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+1.0000,\ -0.0000)$\\
+
+\subsection{Block: $\dnfagmiihhiejm{x} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +12.0000,\ +76.0580,\ +320.5800,\ +988.6013,\ +2326.8903,\ +4270.6178,\ +6142.2191,\ +6877.2694,\ +5857.9958,\ +3630.0616,\ +1483.7636,\ +314.7569\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+1.0000,\ +1.5900)$\\
+$(\dnfagmiihhiejm{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.0000,\ +1.5900)$\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+1.0000,\ +1.2000)$\\
+$(\dnfagmiihhiejm{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+1.0000,\ +1.2000)$\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+1.0000,\ +1.0300)$\\
+$(\dnfagmiihhiejm{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+1.0000,\ +1.0300)$\\
+$(\dnfagmiihhiejm{p},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+1.0000,\ -1.5900)$\\
+$(\dnfagmiihhiejm{q},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+1.0000,\ -1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(0, 1)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +12.0000,\ +76.0580,\ +320.5800,\ +988.6013,\ +2326.8903,\ +4270.6178,\ +6142.2191,\ +6877.2694,\ +5857.9958,\ +3630.0616,\ +1483.7636,\ +314.7569\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.0000,\ +1.5900)$\\
+$(\dnfagmiihhiejm{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+1.0000,\ +1.5900)$\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+1.0000,\ +1.2000)$\\
+$(\dnfagmiihhiejm{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+1.0000,\ +1.2000)$\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+1.0000,\ +1.0300)$\\
+$(\dnfagmiihhiejm{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+1.0000,\ +1.0300)$\\
+$(\dnfagmiihhiejm{p},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+1.0000,\ -1.5900)$\\
+$(\dnfagmiihhiejm{q},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+1.0000,\ -1.5900)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\dnfagmiihhiejm{x} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=4
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=4$\\
+\textbf{      Encoded values}: +4.0000,\ +6.8269,\ +5.6538,\ +1.9978\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{p},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+1.0000,\ -0.6430)$\\
+$(\dnfagmiihhiejm{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+1.0000,\ -0.6430)$\\
+$(\dnfagmiihhiejm{p},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+1.0000,\ +0.6430)$\\
+$(\dnfagmiihhiejm{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+1.0000,\ +0.6430)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \dnfagmiihhiejm{x}$  (block)}
-    PairFlavour  overlap=(0, 0)  type=11\_sigma  kind=ASSOC  dim=2
-\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=2$\\
-\textbf{      Encoded values}: +3.5661,\ +3.1900\\
+    PairFlavour  overlap=(0, 0)  type=11\_sigma  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +11.3083,\ +53.3240,\ +134.2109,\ +190.1584,\ +143.8079,\ +45.3503\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{a},\ \dnfagmiihhiejm{b})$$\to (+1.1874,\ +1.3342)$\\
+$(\dnfagmiihhiejm{a},\ \dnfagmiihhiejm{b})$$\to (+1.4765,\ +1.1874)$\\
+$(\dnfagmiihhiejm{a},\ \dnfagmiihhiejm{c})$$\to (+1.4765,\ +1.3342)$\\
 $(\dnfagmiihhiejm{b},\ \dnfagmiihhiejm{a})$$\to (+1.3342,\ +1.1874)$\\
+$(\dnfagmiihhiejm{b},\ \dnfagmiihhiejm{c})$$\to (+1.3342,\ +1.4765)$\\
+$(\dnfagmiihhiejm{c},\ \dnfagmiihhiejm{a})$$\to (+1.1874,\ +1.3342)$\\
+$(\dnfagmiihhiejm{c},\ \dnfagmiihhiejm{b})$$\to (+1.1874,\ +1.4765)$\\
     PairFlavour  overlap=(1, 0)  type=null\_self  kind=NULL\_SELF  dim=0
 \textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
 \quad Decoded pairs $(u, v)$:\\
 $(\dnfagmiihhiejm{a},\ \dnfagmiihhiejm{a})$$\to (+1.1874,\ +1.1874)$\\
 $(\dnfagmiihhiejm{b},\ \dnfagmiihhiejm{b})$$\to (+1.3342,\ +1.3342)$\\
+$(\dnfagmiihhiejm{c},\ \dnfagmiihhiejm{c})$$\to (+1.4765,\ +1.4765)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \fpbeomcfokjooi{x}{y}$  (block)}
-    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +2.5216,\ +0.0000,\ +1.5842,\ +0.0000\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +3.9981,\ +0.0000,\ +5.3073,\ +0.0000,\ +2.3391,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{b}{p})$$\to (+1.3342,\ +0.0000)$\\
-$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{a}{p})$$\to (+1.1874,\ +0.0000)$\\
-    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +2.5216,\ +0.0000,\ +1.5842,\ +0.0000\\
-\quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{a}{p})$$\to (+1.3342,\ +0.0000)$\\
-$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{b}{p})$$\to (+1.1874,\ +0.0000)$\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{p}{q})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{p}{q})$$\to (+1.1874,\ +0.0000)$\\
+$(\dnfagmiihhiejm{c},\ \fpbeomcfokjooi{p}{q})$$\to (+1.3342,\ +0.0000)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \pdcegfomjfhook{x}{y}$  (block)}
-    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +2.5216,\ +0.7000,\ +1.4842,\ +0.9046\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +3.9981,\ -3.0000,\ +2.3073,\ -7.9962,\ -1.6590,\ -4.3073\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{b}{p})$$\to (+1.3342,\ +0.2000)$\\
-$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{a}{p})$$\to (+1.1874,\ +0.5000)$\\
-    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +2.5216,\ +0.7000,\ +1.4842,\ +0.8606\\
-\quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{a}{p})$$\to (+1.3342,\ +0.5000)$\\
-$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{b}{p})$$\to (+1.1874,\ +0.2000)$\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{p}{q})$$\to (+1.4765,\ -1.0000)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{p}{q})$$\to (+1.3342,\ -1.0000)$\\
+$(\dnfagmiihhiejm{c},\ \pdcegfomjfhook{p}{q})$$\to (+1.1874,\ -1.0000)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \fpbeomcfokjooi{x}{y}$  (block)}
-    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +2.5216,\ +1.6200,\ +0.9281,\ +2.0425\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +15.9923,\ +0.0000,\ +117.1373,\ +0.0000,\ +519.6184,\ +0.0000,\ +1554.7706,\ +0.0000,\ +3305.7787,\ +0.0000,\ +5121.4826,\ +0.0000,\ +5825.2045,\ +0.0000,\ +4827.6985,\ +0.0000,\ +2843.1049,\ +0.0000,\ +1129.3678,\ +0.0000,\ +271.6938,\ +0.0000,\ +29.9358,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{a}{b})$$\to (+1.3342,\ +0.8100)$\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{b}{p})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{b}{q})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{c}{p})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{c}{q})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{a}{p})$$\to (+1.3342,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{a}{q})$$\to (+1.3342,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{c}{p})$$\to (+1.3342,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{c}{q})$$\to (+1.3342,\ +0.0000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +7.9962,\ +0.0000,\ +26.5993,\ +0.0000,\ +47.1165,\ +0.0000,\ +46.8716,\ +0.0000,\ +24.8287,\ +0.0000,\ +5.4714,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{a}{p})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{a}{q})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{b}{p})$$\to (+1.3342,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{b}{q})$$\to (+1.3342,\ +0.0000)$\\
+$(\dnfagmiihhiejm{c},\ \fpbeomcfokjooi{c}{p})$$\to (+1.1874,\ +0.0000)$\\
+$(\dnfagmiihhiejm{c},\ \fpbeomcfokjooi{c}{q})$$\to (+1.1874,\ +0.0000)$\\
+
+\subsection{Block: $\dnfagmiihhiejm{x} \times \pdcegfomjfhook{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +15.9923,\ +0.0000,\ +118.6973,\ +0.0000,\ +540.5384,\ +0.0000,\ +1681.8576,\ +0.0000,\ +3766.3481,\ +0.0000,\ +6224.2982,\ +0.0000,\ +7648.5883,\ +0.0000,\ +6936.4566,\ +0.0000,\ +4528.1048,\ +0.0000,\ +2020.0109,\ +0.0000,\ +553.0411,\ +0.0000,\ +70.2940,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{b}{p})$$\to (+1.1874,\ -0.7000)$\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{b}{q})$$\to (+1.3342,\ -0.7000)$\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{c}{p})$$\to (+1.4765,\ -0.5000)$\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{c}{q})$$\to (+1.1874,\ -0.5000)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{a}{p})$$\to (+1.3342,\ +0.7000)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{a}{q})$$\to (+1.1874,\ +0.7000)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{c}{p})$$\to (+1.4765,\ +0.5000)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{c}{q})$$\to (+1.4765,\ -0.2000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +7.9962,\ +0.0000,\ +27.3793,\ +0.0000,\ +51.1445,\ +0.0000,\ +54.8162,\ +0.0000,\ +31.8945,\ +0.0000,\ +7.8591,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{a}{p})$$\to (+1.4765,\ -0.7000)$\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{a}{q})$$\to (+1.4765,\ +0.7000)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{b}{p})$$\to (+1.3342,\ +0.5000)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{b}{q})$$\to (+1.1874,\ +0.2000)$\\
+$(\dnfagmiihhiejm{c},\ \pdcegfomjfhook{c}{p})$$\to (+1.3342,\ -0.5000)$\\
+$(\dnfagmiihhiejm{c},\ \pdcegfomjfhook{c}{q})$$\to (+1.1874,\ -0.2000)$\\
+
+\subsection{Block: $\dnfagmiihhiejm{x} \times \fpbeomcfokjooi{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +3.9981,\ +1.6900,\ +4.8633,\ +4.3515,\ +1.9181,\ +2.9918\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{b}{c})$$\to (+1.3342,\ +1.1200)$\\
+$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{a}{c})$$\to (+1.4765,\ +0.8100)$\\
+$(\dnfagmiihhiejm{c},\ \fpbeomcfokjooi{a}{b})$$\to (+1.1874,\ -0.2400)$\\
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +7.9962,\ +3.3800,\ +22.8552,\ +22.6755,\ +26.7283,\ +59.6993,\ +4.7645,\ +76.6858,\ -14.1741,\ +47.4925,\ -8.2128,\ +11.0421\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{a}{b})$$\to (+1.4765,\ +1.1200)$\\
+$(\dnfagmiihhiejm{a},\ \fpbeomcfokjooi{a}{c})$$\to (+1.1874,\ +1.1200)$\\
 $(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{a}{b})$$\to (+1.1874,\ +0.8100)$\\
+$(\dnfagmiihhiejm{b},\ \fpbeomcfokjooi{b}{c})$$\to (+1.3342,\ +0.8100)$\\
+$(\dnfagmiihhiejm{c},\ \fpbeomcfokjooi{a}{c})$$\to (+1.4765,\ -0.2400)$\\
+$(\dnfagmiihhiejm{c},\ \fpbeomcfokjooi{b}{c})$$\to (+1.3342,\ -0.2400)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \pdcegfomjfhook{x}{y}$  (block)}
-    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +2.5216,\ +1.8200,\ +0.7561,\ +2.2947\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +3.9981,\ +1.3000,\ +5.5306,\ +3.2470,\ +2.8502,\ +2.5238\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{a}{b})$$\to (+1.3342,\ +0.9100)$\\
-$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{a}{b})$$\to (+1.1874,\ +0.9100)$\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{b}{c})$$\to (+1.4765,\ +0.9100)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{a}{c})$$\to (+1.3342,\ +0.9800)$\\
+$(\dnfagmiihhiejm{c},\ \pdcegfomjfhook{a}{b})$$\to (+1.1874,\ -0.5900)$\\
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +7.9962,\ +2.6000,\ +25.3559,\ +17.5430,\ +39.9914,\ +48.9122,\ +30.3174,\ +69.9165,\ +6.7367,\ +51.0380,\ -2.4527,\ +15.0917\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{a}{b})$$\to (+1.4765,\ -0.5900)$\\
+$(\dnfagmiihhiejm{a},\ \pdcegfomjfhook{a}{c})$$\to (+1.3342,\ -0.5900)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{a}{b})$$\to (+1.4765,\ +0.9800)$\\
+$(\dnfagmiihhiejm{b},\ \pdcegfomjfhook{b}{c})$$\to (+1.3342,\ +0.9100)$\\
+$(\dnfagmiihhiejm{c},\ \pdcegfomjfhook{a}{c})$$\to (+1.1874,\ +0.9100)$\\
+$(\dnfagmiihhiejm{c},\ \pdcegfomjfhook{b}{c})$$\to (+1.1874,\ +0.9800)$\\
 
 \subsection{Block: $\dnfagmiihhiejm{x} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
-    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +2.5216,\ +0.0000,\ +3.0242,\ -0.1761\\
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +15.9923,\ +117.1373,\ +519.6184,\ +1554.7706,\ +3305.7787,\ +5121.4826,\ +5825.2045,\ +4827.6985,\ +2843.1049,\ +1129.3678,\ +271.6938,\ +29.9358\\
 \quad Decoded pairs $(u, v)$:\\
-$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.3342,\ +1.2000)$\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+1.4765,\ -0.0000)$\\
+$(\dnfagmiihhiejm{c},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+1.3342,\ -0.0000)$\\
+$(\dnfagmiihhiejm{c},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+1.3342,\ -0.0000)$\\
+$(\dnfagmiihhiejm{a},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+1.3342,\ +0.0000)$\\
+$(\dnfagmiihhiejm{a},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+1.3342,\ +0.0000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 0)  type=12  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +7.9962,\ +26.5993,\ +47.1165,\ +46.8716,\ +24.8287,\ +5.4714\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{b},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+1.4765,\ +0.0000)$\\
+$(\dnfagmiihhiejm{c},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+1.3342,\ +0.0000)$\\
+$(\dnfagmiihhiejm{a},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+1.3342,\ -0.0000)$\\
+$(\dnfagmiihhiejm{b},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+1.1874,\ -0.0000)$\\
+$(\dnfagmiihhiejm{c},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+1.1874,\ -0.0000)$\\
+
+\subsection{Block: $\dnfagmiihhiejm{x} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +15.9923,\ +127.1953,\ +654.2952,\ +2406.8990,\ +6640.4046,\ +14054.4075,\ +22965.6441,\ +28758.7978,\ +26951.0762,\ +17999.4163,\ +7735.4211,\ +1640.2216\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+1.1874,\ +1.5900)$\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+1.1874,\ +1.5900)$\\
+$(\dnfagmiihhiejm{b},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+1.4765,\ +1.2000)$\\
+$(\dnfagmiihhiejm{b},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+1.4765,\ +1.2000)$\\
+$(\dnfagmiihhiejm{c},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.3342,\ +1.0300)$\\
+$(\dnfagmiihhiejm{c},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+1.3342,\ +1.0300)$\\
+$(\dnfagmiihhiejm{a},\ -\kblbmcpggoncpf{b}{c}{p})$$\to (+1.1874,\ -1.5900)$\\
+$(\dnfagmiihhiejm{a},\ -\kblbmcpggoncpf{b}{c}{q})$$\to (+1.1874,\ -1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +15.9923,\ +0.0000,\ +127.1953,\ +0.0000,\ +653.3436,\ +0.0000,\ +2395.3663,\ +0.0000,\ +6572.5381,\ -0.0000,\ +13804.9212,\ -0.0000,\ +22339.0427,\ -0.0000,\ +27649.1661,\ -0.0000,\ +25568.2570,\ +0.0000,\ +16830.6354,\ -0.0000,\ +7126.1835,\ -0.0000,\ +1490.5721,\ -0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.4765,\ -1.5900)$\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+1.3342,\ -1.5900)$\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+1.4765,\ -1.0300)$\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+1.3342,\ -1.2000)$\\
 $(\dnfagmiihhiejm{b},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+1.1874,\ -1.2000)$\\
+$(\dnfagmiihhiejm{b},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+1.1874,\ -1.0300)$\\
+$(\dnfagmiihhiejm{b},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+1.4765,\ +1.5900)$\\
+$(\dnfagmiihhiejm{b},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+1.3342,\ +1.5900)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\dnfagmiihhiejm{x} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(1, 0)  type=12  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +7.9962,\ +27.8397,\ +53.7285,\ +60.6021,\ +37.9391,\ +10.3729\\
+\quad Decoded pairs $(u, v)$:\\
+$(\dnfagmiihhiejm{a},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+1.4765,\ +0.6430)$\\
+$(\dnfagmiihhiejm{b},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+1.3342,\ +0.6430)$\\
+$(\dnfagmiihhiejm{c},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+1.1874,\ +0.6430)$\\
+$(\dnfagmiihhiejm{a},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+1.4765,\ -0.6430)$\\
+$(\dnfagmiihhiejm{b},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+1.3342,\ -0.6430)$\\
+$(\dnfagmiihhiejm{c},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+1.1874,\ -0.6430)$\\
 
 \subsection{Block: $\fpbeomcfokjooi{x}{y} \times \fpbeomcfokjooi{x}{y}$  (block)}
-    PairFlavour  overlap=(0, 1)  type=11\_sigma  kind=ASSOC  dim=2
-\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=2$\\
-\textbf{      Encoded values}: +0.0000,\ +0.0000\\
+    PairFlavour  overlap=(0, 2)  type=null\_self  kind=NULL\_SELF  dim=0
+\textbf{PairFlavour} overlap$=(0, 2)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 2)  type=11  kind=ASSOC  dim=2
+\textbf{PairFlavour} overlap$=(0, 2)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=2$\\
+\textbf{      Encoded values}: +0.0000,\ -1.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{p}{q})$$\to (+0.0000,\ -1.0000)$\\
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \fpbeomcfokjooi{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{a}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{a}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{b}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{b}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{c}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{c}{q})$$\to (+0.0000,\ +0.0000)$\\
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.7800,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.1521,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0049,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{a}{p})$$\to (+0.0000,\ -0.7000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{a}{q})$$\to (+0.0000,\ -0.5000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{b}{p})$$\to (+0.0000,\ +0.7000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{b}{q})$$\to (+0.0000,\ +0.5000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{c}{p})$$\to (+0.0000,\ -0.2000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{c}{q})$$\to (+0.0000,\ +0.2000)$\\
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \fpbeomcfokjooi{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +0.0000,\ +1.6900,\ -0.4440,\ +0.0000,\ +0.0000,\ +0.2177\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{a}{b})$$\to (+0.0000,\ +1.1200)$\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{a}{c})$$\to (+0.0000,\ +0.8100)$\\
+$(\fpbeomcfokjooi{p}{q},\ \fpbeomcfokjooi{b}{c})$$\to (+0.0000,\ -0.2400)$\\
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +0.0000,\ +1.3000,\ +0.2233,\ +0.0000,\ +0.0000,\ +0.5262\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{a}{b})$$\to (+0.0000,\ -0.5900)$\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{a}{c})$$\to (+0.0000,\ +0.9800)$\\
+$(\fpbeomcfokjooi{p}{q},\ \pdcegfomjfhook{b}{c})$$\to (+0.0000,\ +0.9100)$\\
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 2)  type=12  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 2)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+0.0000,\ -0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+0.0000,\ -0.0000)$\\
+$(\fpbeomcfokjooi{p}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ -0.0000)$\\
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 1)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +10.0580,\ +0.0000,\ +40.9913,\ +0.0000,\ +86.6819,\ +0.0000,\ +100.4717,\ +0.0000,\ +60.6378,\ +0.0000,\ +14.9163\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{p}{q},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ +1.5900)$\\
+$(\fpbeomcfokjooi{p}{q},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+0.0000,\ +1.5900)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=2
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=2$\\
+\textbf{      Encoded values}: +0.0000,\ +0.4134\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{p}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+$(\fpbeomcfokjooi{p}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ +0.6430)$\\
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 2)  type=null\_self  kind=NULL\_SELF  dim=0
+\textbf{PairFlavour} overlap$=(0, 2)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{p}{q})$$\to (-1.0000,\ -1.0000)$\\
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \fpbeomcfokjooi{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: -6.0000,\ +0.0000,\ +15.0000,\ +0.0000,\ -20.0000,\ +0.0000,\ +15.0000,\ +0.0000,\ -6.0000,\ +0.0000,\ +1.0000,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{p}{q},\ \fpbeomcfokjooi{a}{p})$$\to (-1.0000,\ +0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ \fpbeomcfokjooi{a}{q})$$\to (-1.0000,\ +0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ \fpbeomcfokjooi{b}{p})$$\to (-1.0000,\ +0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ \fpbeomcfokjooi{b}{q})$$\to (-1.0000,\ +0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ \fpbeomcfokjooi{c}{p})$$\to (-1.0000,\ +0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ \fpbeomcfokjooi{c}{q})$$\to (-1.0000,\ +0.0000)$\\
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: -6.0000,\ +0.0000,\ +15.7800,\ +0.0000,\ -23.1200,\ +0.0000,\ +19.8321,\ +0.0000,\ -9.4242,\ +0.0000,\ +1.9370,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{a}{p})$$\to (-1.0000,\ +0.7000)$\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{a}{q})$$\to (-1.0000,\ +0.5000)$\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{b}{p})$$\to (-1.0000,\ +0.2000)$\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{b}{q})$$\to (-1.0000,\ -0.7000)$\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{c}{p})$$\to (-1.0000,\ -0.2000)$\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{c}{q})$$\to (-1.0000,\ -0.5000)$\\
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \fpbeomcfokjooi{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: -3.0000,\ +1.6900,\ +2.5560,\ -3.3800,\ -0.5560,\ +1.9077\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{p}{q},\ \fpbeomcfokjooi{a}{b})$$\to (-1.0000,\ +1.1200)$\\
+$(\pdcegfomjfhook{p}{q},\ \fpbeomcfokjooi{a}{c})$$\to (-1.0000,\ +0.8100)$\\
+$(\pdcegfomjfhook{p}{q},\ \fpbeomcfokjooi{b}{c})$$\to (-1.0000,\ -0.2400)$\\
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: -3.0000,\ +1.3000,\ +3.2233,\ -2.6000,\ -1.2233,\ +1.8262\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{a}{b})$$\to (-1.0000,\ -0.5900)$\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{a}{c})$$\to (-1.0000,\ +0.9800)$\\
+$(\pdcegfomjfhook{p}{q},\ \pdcegfomjfhook{b}{c})$$\to (-1.0000,\ +0.9100)$\\
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 2)  type=12  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 2)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: -6.0000,\ +15.0000,\ -20.0000,\ +15.0000,\ -6.0000,\ +1.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{a}{p}{q})$$\to (-1.0000,\ +0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{b}{p}{q})$$\to (-1.0000,\ +0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{c}{p}{q})$$\to (-1.0000,\ +0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (-1.0000,\ -0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (-1.0000,\ -0.0000)$\\
+$(\pdcegfomjfhook{p}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (-1.0000,\ -0.0000)$\\
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 1)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: -12.0000,\ +76.0580,\ -320.5800,\ +988.6013,\ -2326.8903,\ +4270.6178,\ -6142.2191,\ +6877.2694,\ -5857.9958,\ +3630.0616,\ -1483.7636,\ +314.7569\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (-1.0000,\ -1.5900)$\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (-1.0000,\ -1.5900)$\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (-1.0000,\ -1.2000)$\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (-1.0000,\ -1.2000)$\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (-1.0000,\ -1.0300)$\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (-1.0000,\ -1.0300)$\\
+$(\pdcegfomjfhook{p}{q},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (-1.0000,\ +1.5900)$\\
+$(\pdcegfomjfhook{p}{q},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (-1.0000,\ +1.5900)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=2
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=2$\\
+\textbf{      Encoded values}: -2.0000,\ +1.4134\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{p}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-1.0000,\ -0.6430)$\\
+$(\pdcegfomjfhook{p}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (-1.0000,\ +0.6430)$\\
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \fpbeomcfokjooi{x}{y}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=11\_sigma  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{b}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \fpbeomcfokjooi{b}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{c}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \fpbeomcfokjooi{c}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \fpbeomcfokjooi{a}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \fpbeomcfokjooi{a}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \fpbeomcfokjooi{c}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \fpbeomcfokjooi{c}{p})$$\to (+0.0000,\ +0.0000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(0, 1)  type=11\_sigma  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
 $(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{b}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \fpbeomcfokjooi{b}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{c}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \fpbeomcfokjooi{c}{q})$$\to (+0.0000,\ +0.0000)$\\
 $(\fpbeomcfokjooi{b}{p},\ \fpbeomcfokjooi{a}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \fpbeomcfokjooi{a}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \fpbeomcfokjooi{c}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \fpbeomcfokjooi{c}{q})$$\to (+0.0000,\ +0.0000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 0)  type=11\_sigma  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{a}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \fpbeomcfokjooi{a}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \fpbeomcfokjooi{b}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \fpbeomcfokjooi{b}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{c}{p},\ \fpbeomcfokjooi{c}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{c}{q},\ \fpbeomcfokjooi{c}{p})$$\to (+0.0000,\ +0.0000)$\\
     PairFlavour  overlap=(1, 1)  type=null\_self  kind=NULL\_SELF  dim=0
 \textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
 \quad Decoded pairs $(u, v)$:\\
 $(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{a}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \fpbeomcfokjooi{a}{q})$$\to (+0.0000,\ +0.0000)$\\
 $(\fpbeomcfokjooi{b}{p},\ \fpbeomcfokjooi{b}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \fpbeomcfokjooi{b}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{c}{p},\ \fpbeomcfokjooi{c}{p})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{c}{q},\ \fpbeomcfokjooi{c}{q})$$\to (+0.0000,\ +0.0000)$\\
 
 \subsection{Block: $\fpbeomcfokjooi{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
-    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +0.0000,\ +0.7000,\ -0.1000,\ +0.0000\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +1.5600,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.9126,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.2471,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0308,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0015,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{b}{p})$$\to (+0.0000,\ +0.5000)$\\
-$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{a}{p})$$\to (+0.0000,\ +0.2000)$\\
-    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +0.0000,\ +0.7000,\ -0.1000,\ +0.0000\\
+$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{b}{q})$$\to (+0.0000,\ +0.7000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \pdcegfomjfhook{b}{p})$$\to (+0.0000,\ +0.7000)$\\
+$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{c}{q})$$\to (+0.0000,\ -0.7000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \pdcegfomjfhook{c}{p})$$\to (+0.0000,\ -0.7000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{a}{q})$$\to (+0.0000,\ -0.5000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \pdcegfomjfhook{a}{p})$$\to (+0.0000,\ -0.5000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{c}{q})$$\to (+0.0000,\ +0.5000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \pdcegfomjfhook{c}{p})$$\to (+0.0000,\ +0.5000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +1.5600,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.9126,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.2471,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0308,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0015,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{a}{p})$$\to (+0.0000,\ +0.5000)$\\
-$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{b}{p})$$\to (+0.0000,\ +0.2000)$\\
+$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{b}{p})$$\to (+0.0000,\ +0.7000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \pdcegfomjfhook{b}{q})$$\to (+0.0000,\ +0.7000)$\\
+$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{c}{p})$$\to (+0.0000,\ -0.7000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \pdcegfomjfhook{c}{q})$$\to (+0.0000,\ -0.7000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{a}{p})$$\to (+0.0000,\ -0.5000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \pdcegfomjfhook{a}{q})$$\to (+0.0000,\ -0.5000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{c}{p})$$\to (+0.0000,\ +0.5000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \pdcegfomjfhook{c}{q})$$\to (+0.0000,\ +0.5000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.7800,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.1521,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0049,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{a}{q})$$\to (+0.0000,\ -0.7000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \pdcegfomjfhook{a}{p})$$\to (+0.0000,\ -0.5000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{b}{q})$$\to (+0.0000,\ +0.7000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \pdcegfomjfhook{b}{p})$$\to (+0.0000,\ +0.5000)$\\
+$(\fpbeomcfokjooi{c}{p},\ \pdcegfomjfhook{c}{q})$$\to (+0.0000,\ -0.2000)$\\
+$(\fpbeomcfokjooi{c}{q},\ \pdcegfomjfhook{c}{p})$$\to (+0.0000,\ +0.2000)$\\
+    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.7800,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.1521,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0049,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{a}{p})$$\to (+0.0000,\ -0.7000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \pdcegfomjfhook{a}{q})$$\to (+0.0000,\ -0.5000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{b}{p})$$\to (+0.0000,\ +0.7000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \pdcegfomjfhook{b}{q})$$\to (+0.0000,\ +0.5000)$\\
+$(\fpbeomcfokjooi{c}{p},\ \pdcegfomjfhook{c}{p})$$\to (+0.0000,\ -0.2000)$\\
+$(\fpbeomcfokjooi{c}{q},\ \pdcegfomjfhook{c}{q})$$\to (+0.0000,\ +0.2000)$\\
 
 \subsection{Block: $\fpbeomcfokjooi{x}{y} \times \fpbeomcfokjooi{x}{y}$  (block)}
-    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +0.0000,\ +1.6200,\ -0.6561,\ +0.0000\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +3.3800,\ -3.7441,\ +0.0000,\ +0.0000,\ -1.0653,\ -0.5388,\ +0.0000,\ +0.0000,\ -0.1933,\ -0.0474,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{a}{b})$$\to (+0.0000,\ +0.8100)$\\
+$(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{b}{c})$$\to (+0.0000,\ +1.1200)$\\
+$(\fpbeomcfokjooi{a}{q},\ \fpbeomcfokjooi{b}{c})$$\to (+0.0000,\ +1.1200)$\\
+$(\fpbeomcfokjooi{b}{p},\ \fpbeomcfokjooi{a}{c})$$\to (+0.0000,\ +0.8100)$\\
+$(\fpbeomcfokjooi{b}{q},\ \fpbeomcfokjooi{a}{c})$$\to (+0.0000,\ +0.8100)$\\
+$(\fpbeomcfokjooi{c}{p},\ \fpbeomcfokjooi{a}{b})$$\to (+0.0000,\ -0.2400)$\\
+$(\fpbeomcfokjooi{c}{q},\ \fpbeomcfokjooi{a}{b})$$\to (+0.0000,\ -0.2400)$\\
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +6.7600,\ -18.9126,\ +0.0000,\ +0.0000,\ -27.4406,\ +20.1419,\ +0.0000,\ +0.0000,\ +3.9480,\ +4.1119,\ +0.0000,\ +0.0000,\ +2.2752,\ +0.2333,\ +0.0000,\ +0.0000,\ +0.3093,\ +0.0137,\ +0.0000,\ +0.0000,\ +0.0183,\ +0.0022,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{a}{b})$$\to (+0.0000,\ +1.1200)$\\
+$(\fpbeomcfokjooi{a}{q},\ \fpbeomcfokjooi{a}{b})$$\to (+0.0000,\ +1.1200)$\\
+$(\fpbeomcfokjooi{a}{p},\ \fpbeomcfokjooi{a}{c})$$\to (+0.0000,\ +1.1200)$\\
+$(\fpbeomcfokjooi{a}{q},\ \fpbeomcfokjooi{a}{c})$$\to (+0.0000,\ +1.1200)$\\
 $(\fpbeomcfokjooi{b}{p},\ \fpbeomcfokjooi{a}{b})$$\to (+0.0000,\ +0.8100)$\\
+$(\fpbeomcfokjooi{b}{q},\ \fpbeomcfokjooi{a}{b})$$\to (+0.0000,\ +0.8100)$\\
+$(\fpbeomcfokjooi{b}{p},\ \fpbeomcfokjooi{b}{c})$$\to (+0.0000,\ +0.8100)$\\
+$(\fpbeomcfokjooi{b}{q},\ \fpbeomcfokjooi{b}{c})$$\to (+0.0000,\ +0.8100)$\\
+        ... (4 more pairs)
 
 \subsection{Block: $\fpbeomcfokjooi{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
-    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +0.0000,\ +1.8200,\ -0.8281,\ +0.0000\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +2.6000,\ -1.2434,\ +0.0000,\ +0.0000,\ +1.6329,\ -1.3182,\ +0.0000,\ +0.0000,\ +0.2350,\ -0.2768,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{a}{b})$$\to (+0.0000,\ +0.9100)$\\
-$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{a}{b})$$\to (+0.0000,\ +0.9100)$\\
+$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{b}{c})$$\to (+0.0000,\ -0.5900)$\\
+$(\fpbeomcfokjooi{a}{q},\ \pdcegfomjfhook{b}{c})$$\to (+0.0000,\ -0.5900)$\\
+$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{a}{c})$$\to (+0.0000,\ +0.9800)$\\
+$(\fpbeomcfokjooi{b}{q},\ \pdcegfomjfhook{a}{c})$$\to (+0.0000,\ +0.9800)$\\
+$(\fpbeomcfokjooi{c}{p},\ \pdcegfomjfhook{a}{b})$$\to (+0.0000,\ +0.9100)$\\
+$(\fpbeomcfokjooi{c}{q},\ \pdcegfomjfhook{a}{b})$$\to (+0.0000,\ +0.9100)$\\
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +5.2000,\ -9.2468,\ +0.0000,\ +0.0000,\ -3.1999,\ -9.5814,\ +0.0000,\ +0.0000,\ -10.4452,\ -1.1640,\ +0.0000,\ +0.0000,\ -6.3288,\ +1.6586,\ +0.0000,\ +0.0000,\ -1.5236,\ +0.6746,\ +0.0000,\ +0.0000,\ -0.1301,\ +0.0766,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{a}{b})$$\to (+0.0000,\ -0.5900)$\\
+$(\fpbeomcfokjooi{a}{q},\ \pdcegfomjfhook{a}{b})$$\to (+0.0000,\ -0.5900)$\\
+$(\fpbeomcfokjooi{a}{p},\ \pdcegfomjfhook{a}{c})$$\to (+0.0000,\ -0.5900)$\\
+$(\fpbeomcfokjooi{a}{q},\ \pdcegfomjfhook{a}{c})$$\to (+0.0000,\ -0.5900)$\\
+$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{a}{b})$$\to (+0.0000,\ +0.9800)$\\
+$(\fpbeomcfokjooi{b}{q},\ \pdcegfomjfhook{a}{b})$$\to (+0.0000,\ +0.9800)$\\
+$(\fpbeomcfokjooi{b}{p},\ \pdcegfomjfhook{b}{c})$$\to (+0.0000,\ +0.9800)$\\
+$(\fpbeomcfokjooi{b}{q},\ \pdcegfomjfhook{b}{c})$$\to (+0.0000,\ +0.9800)$\\
+        ... (4 more pairs)
 
 \subsection{Block: $\fpbeomcfokjooi{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
-    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +1.4400,\ +0.0000\\
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ -1.2000)$\\
-$(\fpbeomcfokjooi{b}{p},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ +1.2000)$\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{q},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ -0.0000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+0.0000,\ -0.0000)$\\
+$(\fpbeomcfokjooi{b}{q},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+0.0000,\ -0.0000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{q},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{p},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{q},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+0.0000,\ -0.0000)$\\
+$(\fpbeomcfokjooi{c}{p},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ -0.0000)$\\
+$(\fpbeomcfokjooi{c}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ -0.0000)$\\
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +10.0580,\ +0.0000,\ +40.9913,\ +0.0000,\ +86.6819,\ +0.0000,\ +100.4717,\ +0.0000,\ +60.6378,\ +0.0000,\ +14.9163\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{b}{p},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{c}{p},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{c}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{a}{p},\ -\kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ +1.5900)$\\
+$(\fpbeomcfokjooi{a}{q},\ -\kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ +1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(0, 1)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +10.0580,\ +0.0000,\ +40.9913,\ +0.0000,\ +86.6819,\ +0.0000,\ +100.4717,\ +0.0000,\ +60.6378,\ +0.0000,\ +14.9163\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{b}{p},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{b}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{c}{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{c}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{a}{p},\ -\kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ +1.5900)$\\
+$(\fpbeomcfokjooi{a}{q},\ -\kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ +1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +10.0580,\ +0.0000,\ +0.0000,\ +0.0000,\ +40.9913,\ +0.0000,\ +0.0000,\ +0.0000,\ +86.6819,\ +0.0000,\ +0.0000,\ +0.0000,\ +100.4717,\ +0.0000,\ +0.0000,\ +0.0000,\ +60.6378,\ +0.0000,\ +0.0000,\ +0.0000,\ +14.9163,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{b}{p},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{b}{q},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{b}{p},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ +1.5900)$\\
+$(\fpbeomcfokjooi{b}{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ +1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +10.0580,\ +0.0000,\ +0.0000,\ +0.0000,\ +40.9913,\ +0.0000,\ +0.0000,\ +0.0000,\ +86.6819,\ +0.0000,\ +0.0000,\ +0.0000,\ +100.4717,\ +0.0000,\ +0.0000,\ +0.0000,\ +60.6378,\ +0.0000,\ +0.0000,\ +0.0000,\ +14.9163,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+0.0000,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{a}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+0.0000,\ -1.2000)$\\
+$(\fpbeomcfokjooi{b}{p},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{b}{q},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+0.0000,\ -1.0300)$\\
+$(\fpbeomcfokjooi{b}{p},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ +1.5900)$\\
+$(\fpbeomcfokjooi{b}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ +1.5900)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(1, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +2.4807,\ +0.0000,\ +2.5641,\ +0.0000,\ +1.4135,\ +0.0000,\ +0.4383,\ +0.0000,\ +0.0725,\ +0.0000,\ +0.0050\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{p},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+$(\fpbeomcfokjooi{a}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+$(\fpbeomcfokjooi{b}{p},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+$(\fpbeomcfokjooi{b}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+$(\fpbeomcfokjooi{c}{p},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+$(\fpbeomcfokjooi{c}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+$(\fpbeomcfokjooi{a}{p},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ +0.6430)$\\
+$(\fpbeomcfokjooi{a}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ +0.6430)$\\
+        ... (4 more pairs)
 
 \subsection{Block: $\pdcegfomjfhook{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
-    PairFlavour  overlap=(0, 1)  type=11\_sigma  kind=ASSOC  dim=2
-\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=2$\\
-\textbf{      Encoded values}: +0.9899,\ +0.2900\\
+    PairFlavour  overlap=(0, 0)  type=11\_sigma  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ -1.5600,\ +0.0000,\ +0.9126,\ -0.0000,\ -0.2198,\ +0.0000,\ +0.0095,\ +0.0000,\ +0.0027,\ +0.0000,\ +0.0129\\
 \quad Decoded pairs $(u, v)$:\\
-$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{b}{p})$$\to (+0.2000,\ +0.5000)$\\
-$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{a}{p})$$\to (+0.5000,\ +0.2000)$\\
+$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{b}{q})$$\to (+0.5000,\ +0.7000)$\\
+$(\pdcegfomjfhook{a}{q},\ \pdcegfomjfhook{b}{p})$$\to (+0.7000,\ +0.5000)$\\
+$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{c}{q})$$\to (+0.7000,\ +0.2000)$\\
+$(\pdcegfomjfhook{a}{q},\ \pdcegfomjfhook{c}{p})$$\to (+0.2000,\ +0.7000)$\\
+$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{a}{q})$$\to (+0.5000,\ -0.2000)$\\
+$(\pdcegfomjfhook{b}{q},\ \pdcegfomjfhook{a}{p})$$\to (+0.2000,\ -0.5000)$\\
+$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{c}{q})$$\to (-0.2000,\ -0.7000)$\\
+$(\pdcegfomjfhook{b}{q},\ \pdcegfomjfhook{c}{p})$$\to (-0.5000,\ -0.7000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(0, 1)  type=11\_sigma  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +1.5600,\ -0.0000,\ +0.9126,\ -0.0000,\ +0.2198,\ -0.0000,\ +0.0095,\ -0.0000,\ -0.0027,\ +0.0000,\ +0.0129\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{b}{p})$$\to (+0.7000,\ -0.5000)$\\
+$(\pdcegfomjfhook{a}{q},\ \pdcegfomjfhook{b}{q})$$\to (+0.5000,\ -0.7000)$\\
+$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{c}{p})$$\to (+0.2000,\ -0.7000)$\\
+$(\pdcegfomjfhook{a}{q},\ \pdcegfomjfhook{c}{q})$$\to (+0.7000,\ -0.2000)$\\
+$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{a}{p})$$\to (-0.2000,\ -0.5000)$\\
+$(\pdcegfomjfhook{b}{q},\ \pdcegfomjfhook{a}{q})$$\to (-0.5000,\ -0.2000)$\\
+$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{c}{p})$$\to (-0.7000,\ +0.2000)$\\
+$(\pdcegfomjfhook{b}{q},\ \pdcegfomjfhook{c}{q})$$\to (-0.7000,\ +0.5000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 0)  type=11\_sigma  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +0.0000,\ +1.5600,\ +0.0000,\ +0.6084,\ +0.0000,\ +0.0392\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{a}{q})$$\to (+0.7000,\ -0.7000)$\\
+$(\pdcegfomjfhook{a}{q},\ \pdcegfomjfhook{a}{p})$$\to (+0.5000,\ -0.5000)$\\
+$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{b}{q})$$\to (-0.7000,\ +0.7000)$\\
+$(\pdcegfomjfhook{b}{q},\ \pdcegfomjfhook{b}{p})$$\to (-0.5000,\ +0.5000)$\\
+$(\pdcegfomjfhook{c}{p},\ \pdcegfomjfhook{c}{q})$$\to (+0.2000,\ -0.2000)$\\
+$(\pdcegfomjfhook{c}{q},\ \pdcegfomjfhook{c}{p})$$\to (-0.2000,\ +0.2000)$\\
     PairFlavour  overlap=(1, 1)  type=null\_self  kind=NULL\_SELF  dim=0
 \textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
 \quad Decoded pairs $(u, v)$:\\
-$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{a}{p})$$\to (+0.2000,\ +0.2000)$\\
-$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{b}{p})$$\to (+0.5000,\ +0.5000)$\\
+$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{a}{p})$$\to (-0.7000,\ -0.7000)$\\
+$(\pdcegfomjfhook{a}{q},\ \pdcegfomjfhook{a}{q})$$\to (-0.5000,\ -0.5000)$\\
+$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{b}{p})$$\to (-0.2000,\ -0.2000)$\\
+$(\pdcegfomjfhook{b}{q},\ \pdcegfomjfhook{b}{q})$$\to (+0.2000,\ +0.2000)$\\
+$(\pdcegfomjfhook{c}{p},\ \pdcegfomjfhook{c}{p})$$\to (+0.5000,\ +0.5000)$\\
+$(\pdcegfomjfhook{c}{q},\ \pdcegfomjfhook{c}{q})$$\to (+0.7000,\ +0.7000)$\\
 
 \subsection{Block: $\pdcegfomjfhook{x}{y} \times \fpbeomcfokjooi{x}{y}$  (block)}
-    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +0.7000,\ +1.6200,\ -0.5561,\ +0.5670\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +3.3800,\ -4.5241,\ -0.0000,\ +0.0000,\ -2.3671,\ -0.0651,\ +0.0000,\ -0.0000,\ -0.3392,\ -0.1683,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\pdcegfomjfhook{a}{p},\ \fpbeomcfokjooi{a}{b})$$\to (+0.5000,\ +0.8100)$\\
-$(\pdcegfomjfhook{b}{p},\ \fpbeomcfokjooi{a}{b})$$\to (+0.2000,\ +0.8100)$\\
+$(\pdcegfomjfhook{a}{p},\ \fpbeomcfokjooi{b}{c})$$\to (+0.5000,\ +1.1200)$\\
+$(\pdcegfomjfhook{a}{q},\ \fpbeomcfokjooi{b}{c})$$\to (+0.7000,\ +0.8100)$\\
+$(\pdcegfomjfhook{b}{p},\ \fpbeomcfokjooi{a}{c})$$\to (-0.5000,\ +1.1200)$\\
+$(\pdcegfomjfhook{b}{q},\ \fpbeomcfokjooi{a}{c})$$\to (-0.7000,\ +0.8100)$\\
+$(\pdcegfomjfhook{c}{p},\ \fpbeomcfokjooi{a}{b})$$\to (+0.2000,\ -0.2400)$\\
+$(\pdcegfomjfhook{c}{q},\ \fpbeomcfokjooi{a}{b})$$\to (-0.2000,\ -0.2400)$\\
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +6.7600,\ -20.4726,\ +0.0000,\ -0.0000,\ -36.6844,\ +44.4512,\ -0.0000,\ +0.0000,\ +41.4253,\ -33.6972,\ -0.0000,\ +0.0000,\ -24.2761,\ +14.0721,\ +0.0000,\ -0.0000,\ +6.4766,\ -2.8173,\ -0.0000,\ +0.0000,\ -1.1257,\ +0.2399,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \fpbeomcfokjooi{a}{b})$$\to (-0.7000,\ -0.2400)$\\
+$(\pdcegfomjfhook{a}{q},\ \fpbeomcfokjooi{a}{b})$$\to (-0.7000,\ +1.1200)$\\
+$(\pdcegfomjfhook{a}{p},\ \fpbeomcfokjooi{a}{c})$$\to (-0.5000,\ -0.2400)$\\
+$(\pdcegfomjfhook{a}{q},\ \fpbeomcfokjooi{a}{c})$$\to (+0.7000,\ -0.2400)$\\
+$(\pdcegfomjfhook{b}{p},\ \fpbeomcfokjooi{a}{b})$$\to (+0.5000,\ -0.2400)$\\
+$(\pdcegfomjfhook{b}{q},\ \fpbeomcfokjooi{a}{b})$$\to (+0.7000,\ +1.1200)$\\
+$(\pdcegfomjfhook{b}{p},\ \fpbeomcfokjooi{b}{c})$$\to (-0.5000,\ +0.8100)$\\
+$(\pdcegfomjfhook{b}{q},\ \fpbeomcfokjooi{b}{c})$$\to (-0.2000,\ +1.1200)$\\
+        ... (4 more pairs)
 
 \subsection{Block: $\pdcegfomjfhook{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
-    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +0.7000,\ +1.8200,\ -0.7281,\ +0.6370\\
+    PairFlavour  overlap=(0, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +2.6000,\ -2.0234,\ +0.0000,\ +0.0000,\ +0.9395,\ -1.6868,\ +0.0000,\ +0.0000,\ -0.0250,\ -0.6192,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{a}{b})$$\to (+0.5000,\ +0.9100)$\\
-$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{a}{b})$$\to (+0.2000,\ +0.9100)$\\
+$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{b}{c})$$\to (-0.7000,\ +0.9100)$\\
+$(\pdcegfomjfhook{a}{q},\ \pdcegfomjfhook{b}{c})$$\to (-0.5000,\ +0.9800)$\\
+$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{a}{c})$$\to (+0.7000,\ +0.9100)$\\
+$(\pdcegfomjfhook{b}{q},\ \pdcegfomjfhook{a}{c})$$\to (+0.5000,\ +0.9800)$\\
+$(\pdcegfomjfhook{c}{p},\ \pdcegfomjfhook{a}{b})$$\to (-0.2000,\ -0.5900)$\\
+$(\pdcegfomjfhook{c}{q},\ \pdcegfomjfhook{a}{b})$$\to (+0.2000,\ -0.5900)$\\
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +5.2000,\ -10.8068,\ -0.0000,\ +0.0000,\ -10.6185,\ +5.1708,\ +0.0000,\ -0.0000,\ +5.4759,\ -11.3264,\ +0.0000,\ +0.0000,\ -10.0996,\ +2.7457,\ +0.0000,\ +0.0000,\ +0.6239,\ -2.8179,\ +0.0000,\ -0.0000,\ -2.5284,\ +0.6807,\ -0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{a}{b})$$\to (-0.7000,\ -0.5900)$\\
+$(\pdcegfomjfhook{a}{q},\ \pdcegfomjfhook{a}{b})$$\to (-0.5000,\ -0.5900)$\\
+$(\pdcegfomjfhook{a}{p},\ \pdcegfomjfhook{a}{c})$$\to (+0.7000,\ -0.5900)$\\
+$(\pdcegfomjfhook{a}{q},\ \pdcegfomjfhook{a}{c})$$\to (+0.5000,\ -0.5900)$\\
+$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{a}{b})$$\to (-0.7000,\ +0.9800)$\\
+$(\pdcegfomjfhook{b}{q},\ \pdcegfomjfhook{a}{b})$$\to (+0.7000,\ +0.9800)$\\
+$(\pdcegfomjfhook{b}{p},\ \pdcegfomjfhook{b}{c})$$\to (-0.5000,\ +0.9100)$\\
+$(\pdcegfomjfhook{b}{q},\ \pdcegfomjfhook{b}{c})$$\to (+0.5000,\ +0.9100)$\\
+        ... (4 more pairs)
 
 \subsection{Block: $\pdcegfomjfhook{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
-    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=4
-\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=4$\\
-\textbf{      Encoded values}: +0.7000,\ +0.0000,\ +1.5400,\ -0.3600\\
+    PairFlavour  overlap=(0, 1)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ -1.5600,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.9126,\ +0.0000,\ +0.0000,\ +0.0000,\ -0.2471,\ +0.0000,\ -0.0000,\ +0.0000,\ +0.0308,\ +0.0000,\ +0.0000,\ +0.0000,\ -0.0015,\ +0.0000,\ -0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
 \quad Decoded pairs $(u, v)$:\\
-$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.5000,\ +1.2000)$\\
-$(\pdcegfomjfhook{b}{p},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.2000,\ -1.2000)$\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+0.7000,\ +0.0000)$\\
+$(\pdcegfomjfhook{a}{q},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+0.7000,\ +0.0000)$\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{c}{p}{q})$$\to (-0.7000,\ +0.0000)$\\
+$(\pdcegfomjfhook{a}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (-0.7000,\ -0.0000)$\\
+$(\pdcegfomjfhook{b}{p},\ \kblbmcpggoncpf{a}{p}{q})$$\to (-0.5000,\ -0.0000)$\\
+$(\pdcegfomjfhook{b}{q},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (-0.5000,\ -0.0000)$\\
+$(\pdcegfomjfhook{b}{p},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.5000,\ +0.0000)$\\
+$(\pdcegfomjfhook{b}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+0.5000,\ +0.0000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ -0.7800,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.1521,\ +0.0000,\ +0.0000,\ +0.0000,\ -0.0049,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{a}{p}{q})$$\to (-0.7000,\ +0.0000)$\\
+$(\pdcegfomjfhook{a}{q},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (-0.5000,\ +0.0000)$\\
+$(\pdcegfomjfhook{b}{p},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+0.7000,\ +0.0000)$\\
+$(\pdcegfomjfhook{b}{q},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+0.5000,\ -0.0000)$\\
+$(\pdcegfomjfhook{c}{p},\ \kblbmcpggoncpf{c}{p}{q})$$\to (-0.2000,\ -0.0000)$\\
+$(\pdcegfomjfhook{c}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+0.2000,\ -0.0000)$\\
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +8.4980,\ +0.0000,\ +32.6451,\ +0.0000,\ +74.9539,\ +0.0000,\ +108.9323,\ +0.0000,\ +93.2282,\ +0.0000,\ +42.2161\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.2000,\ -1.5900)$\\
+$(\pdcegfomjfhook{a}{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (-0.2000,\ -1.5900)$\\
+$(\pdcegfomjfhook{b}{p},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+0.7000,\ -1.2000)$\\
+$(\pdcegfomjfhook{b}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.5000,\ -1.0300)$\\
+$(\pdcegfomjfhook{c}{p},\ \kblbmcpggoncpf{a}{b}{q})$$\to (-0.7000,\ -1.2000)$\\
+$(\pdcegfomjfhook{c}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (-0.5000,\ -1.0300)$\\
+$(\pdcegfomjfhook{a}{p},\ -\kblbmcpggoncpf{b}{c}{q})$$\to (+0.7000,\ +1.2000)$\\
+$(\pdcegfomjfhook{a}{q},\ -\kblbmcpggoncpf{b}{c}{p})$$\to (+0.2000,\ +1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(0, 1)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +8.4980,\ +0.0000,\ +32.6451,\ +0.0000,\ +74.9539,\ +0.0000,\ +108.9323,\ +0.0000,\ +93.2282,\ +0.0000,\ +42.2161\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.2000,\ -1.5900)$\\
+$(\pdcegfomjfhook{a}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (-0.2000,\ -1.5900)$\\
+$(\pdcegfomjfhook{b}{p},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.7000,\ -1.2000)$\\
+$(\pdcegfomjfhook{b}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+0.5000,\ -1.0300)$\\
+$(\pdcegfomjfhook{c}{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (-0.7000,\ -1.2000)$\\
+$(\pdcegfomjfhook{c}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (-0.5000,\ -1.0300)$\\
+$(\pdcegfomjfhook{a}{p},\ -\kblbmcpggoncpf{b}{c}{p})$$\to (+0.7000,\ +1.2000)$\\
+$(\pdcegfomjfhook{a}{q},\ -\kblbmcpggoncpf{b}{c}{q})$$\to (+0.2000,\ +1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +8.4980,\ +6.3900,\ -0.0000,\ -0.0000,\ +14.3494,\ +44.1434,\ -0.0000,\ +0.0000,\ -28.3068,\ +104.9126,\ -0.0000,\ -0.0000,\ -107.5651,\ +100.7828,\ +0.0000,\ -0.0000,\ -108.4640,\ +22.6706,\ +0.0000,\ -0.0000,\ -33.8292,\ -11.7340\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+0.7000,\ -1.5900)$\\
+$(\pdcegfomjfhook{a}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.5000,\ -1.5900)$\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{a}{c}{q})$$\to (-0.2000,\ -1.2000)$\\
+$(\pdcegfomjfhook{a}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.7000,\ -1.0300)$\\
+$(\pdcegfomjfhook{b}{p},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+0.5000,\ -1.2000)$\\
+$(\pdcegfomjfhook{b}{q},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.2000,\ -1.0300)$\\
+$(\pdcegfomjfhook{b}{p},\ \kblbmcpggoncpf{b}{c}{q})$$\to (-0.7000,\ +1.5900)$\\
+$(\pdcegfomjfhook{b}{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (-0.5000,\ +1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +8.4980,\ -6.3900,\ +0.0000,\ +0.0000,\ +14.3494,\ -44.1434,\ +0.0000,\ -0.0000,\ -28.3068,\ -104.9126,\ +0.0000,\ +0.0000,\ -107.5651,\ -100.7828,\ +0.0000,\ +0.0000,\ -108.4640,\ -22.6706,\ +0.0000,\ -0.0000,\ -33.8292,\ +11.7340\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.7000,\ +1.5900)$\\
+$(\pdcegfomjfhook{a}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+0.5000,\ +1.5900)$\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{a}{c}{p})$$\to (-0.2000,\ +1.2000)$\\
+$(\pdcegfomjfhook{a}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+0.7000,\ +1.0300)$\\
+$(\pdcegfomjfhook{b}{p},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.5000,\ +1.2000)$\\
+$(\pdcegfomjfhook{b}{q},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+0.2000,\ +1.0300)$\\
+$(\pdcegfomjfhook{b}{p},\ \kblbmcpggoncpf{b}{c}{p})$$\to (-0.7000,\ -1.5900)$\\
+$(\pdcegfomjfhook{b}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (-0.5000,\ -1.5900)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(1, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +0.9207,\ -0.0000,\ +1.5418,\ -0.0000,\ +1.1362,\ -0.0000,\ +0.7563,\ -0.0000,\ +0.3093,\ -0.0000,\ +0.0739\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{p},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.7000,\ -0.6430)$\\
+$(\pdcegfomjfhook{a}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-0.7000,\ -0.6430)$\\
+$(\pdcegfomjfhook{b}{p},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.5000,\ -0.6430)$\\
+$(\pdcegfomjfhook{b}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-0.5000,\ -0.6430)$\\
+$(\pdcegfomjfhook{c}{p},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.2000,\ -0.6430)$\\
+$(\pdcegfomjfhook{c}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-0.2000,\ -0.6430)$\\
+$(\pdcegfomjfhook{a}{p},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.7000,\ +0.6430)$\\
+$(\pdcegfomjfhook{a}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (-0.7000,\ +0.6430)$\\
+        ... (4 more pairs)
 
 \subsection{Block: $\fpbeomcfokjooi{x}{y} \times \fpbeomcfokjooi{x}{y}$  (block)}
+    PairFlavour  overlap=(1, 0)  type=11\_sigma  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +4.7800,\ +10.5364,\ +14.1307,\ +12.0340,\ +6.2732,\ +1.7889\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{b},\ \fpbeomcfokjooi{a}{c})$$\to (-0.2400,\ +1.1200)$\\
+$(\fpbeomcfokjooi{a}{c},\ \fpbeomcfokjooi{a}{b})$$\to (-0.2400,\ +0.8100)$\\
+$(\fpbeomcfokjooi{a}{b},\ \fpbeomcfokjooi{b}{c})$$\to (+0.8100,\ +1.1200)$\\
+$(\fpbeomcfokjooi{b}{c},\ \fpbeomcfokjooi{a}{b})$$\to (+1.1200,\ +0.8100)$\\
+$(\fpbeomcfokjooi{a}{c},\ \fpbeomcfokjooi{b}{c})$$\to (+1.1200,\ -0.2400)$\\
+$(\fpbeomcfokjooi{b}{c},\ \fpbeomcfokjooi{a}{c})$$\to (+0.8100,\ -0.2400)$\\
     PairFlavour  overlap=(2, 0)  type=null\_self  kind=NULL\_SELF  dim=0
 \textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
 \quad Decoded pairs $(u, v)$:\\
-$(\fpbeomcfokjooi{a}{b},\ \fpbeomcfokjooi{a}{b})$$\to (+0.8100,\ +0.8100)$\\
+$(\fpbeomcfokjooi{a}{b},\ \fpbeomcfokjooi{a}{b})$$\to (-0.2400,\ -0.2400)$\\
+$(\fpbeomcfokjooi{a}{c},\ \fpbeomcfokjooi{a}{c})$$\to (+0.8100,\ +0.8100)$\\
+$(\fpbeomcfokjooi{b}{c},\ \fpbeomcfokjooi{b}{c})$$\to (+1.1200,\ +1.1200)$\\
 
 \subsection{Block: $\fpbeomcfokjooi{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
-    PairFlavour  overlap=(2, 0)  type=11  kind=ASSOC  dim=2
-\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=2$\\
-\textbf{      Encoded values}: +0.8100,\ +0.9100\\
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +3.3800,\ +2.6000,\ +2.5007,\ +8.5673,\ -4.5116,\ +11.3877,\ -9.5180,\ +5.4343,\ -6.3584,\ -0.9672,\ -1.2926,\ -1.7926\\
 \quad Decoded pairs $(u, v)$:\\
-$(\fpbeomcfokjooi{a}{b},\ \pdcegfomjfhook{a}{b})$$\to (+0.8100,\ +0.9100)$\\
+$(\fpbeomcfokjooi{a}{b},\ \pdcegfomjfhook{a}{c})$$\to (+1.1200,\ -0.5900)$\\
+$(\fpbeomcfokjooi{a}{c},\ \pdcegfomjfhook{a}{b})$$\to (+0.8100,\ -0.5900)$\\
+$(\fpbeomcfokjooi{a}{b},\ \pdcegfomjfhook{b}{c})$$\to (+1.1200,\ +0.9100)$\\
+$(\fpbeomcfokjooi{b}{c},\ \pdcegfomjfhook{a}{b})$$\to (+0.8100,\ +0.9800)$\\
+$(\fpbeomcfokjooi{a}{c},\ \pdcegfomjfhook{b}{c})$$\to (-0.2400,\ +0.9800)$\\
+$(\fpbeomcfokjooi{b}{c},\ \pdcegfomjfhook{a}{c})$$\to (-0.2400,\ +0.9100)$\\
+    PairFlavour  overlap=(2, 0)  type=11  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +1.6900,\ +1.3000,\ +0.6673,\ +0.2207,\ +1.0660,\ -0.4442\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{b},\ \pdcegfomjfhook{a}{b})$$\to (+1.1200,\ +0.9800)$\\
+$(\fpbeomcfokjooi{a}{c},\ \pdcegfomjfhook{a}{c})$$\to (+0.8100,\ +0.9100)$\\
+$(\fpbeomcfokjooi{b}{c},\ \pdcegfomjfhook{b}{c})$$\to (-0.2400,\ -0.5900)$\\
 
 \subsection{Block: $\fpbeomcfokjooi{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
-    PairFlavour  overlap=(2, 0)  type=12  kind=ASSOC  dim=2
-\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=2$\\
-\textbf{      Encoded values}: +1.6200,\ +2.0961\\
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +3.3800,\ +3.7441,\ +1.0653,\ -0.5388,\ -0.1933,\ +0.0474\\
 \quad Decoded pairs $(u, v)$:\\
-$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.8100,\ +1.2000)$\\
-$(\fpbeomcfokjooi{a}{b},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.8100,\ -1.2000)$\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+1.1200,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{c},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+1.1200,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{c},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+0.8100,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{b},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+0.8100,\ -0.0000)$\\
+$(\fpbeomcfokjooi{a}{c},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (-0.2400,\ -0.0000)$\\
+$(\fpbeomcfokjooi{b}{c},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (-0.2400,\ -0.0000)$\\
+    PairFlavour  overlap=(1, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.7600,\ +18.9126,\ +27.4406,\ +20.1419,\ +3.9480,\ -4.1119,\ -2.2752,\ +0.2333,\ +0.3093,\ -0.0137,\ -0.0183,\ +0.0022\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+1.1200,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{c},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+1.1200,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+1.1200,\ +0.0000)$\\
+$(\fpbeomcfokjooi{b}{c},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+1.1200,\ -0.0000)$\\
+$(\fpbeomcfokjooi{a}{c},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.8100,\ -0.0000)$\\
+$(\fpbeomcfokjooi{b}{c},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.8100,\ -0.0000)$\\
+$(\fpbeomcfokjooi{a}{b},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+0.8100,\ +0.0000)$\\
+$(\fpbeomcfokjooi{a}{c},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+0.8100,\ +0.0000)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +6.7600,\ +0.0000,\ +28.9706,\ +0.0000,\ +81.9304,\ -0.0000,\ +182.5098,\ -0.0000,\ +317.3109,\ -0.0000,\ +471.8350,\ -0.0000,\ +574.4634,\ +0.0000,\ +612.5140,\ +0.0000,\ +514.8609,\ +0.0000,\ +384.0874,\ +0.0000,\ +198.4450,\ +0.0000,\ +93.3348,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+1.1200,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+0.8100,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{c},\ \kblbmcpggoncpf{a}{b}{p})$$\to (-0.2400,\ -1.2000)$\\
+$(\fpbeomcfokjooi{a}{c},\ \kblbmcpggoncpf{a}{b}{q})$$\to (-0.2400,\ -1.0300)$\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+1.1200,\ -1.2000)$\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.8100,\ -1.0300)$\\
+$(\fpbeomcfokjooi{b}{c},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+1.1200,\ +1.5900)$\\
+$(\fpbeomcfokjooi{b}{c},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+0.8100,\ +1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(2, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +6.7600,\ +28.9706,\ +88.4413,\ +218.6210,\ +440.5627,\ +747.9918,\ +1056.1305,\ +1254.6568,\ +1207.9684,\ +922.4338,\ +489.6353,\ +157.4689\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{a}{b}{p})$$\to (-0.2400,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{a}{b}{q})$$\to (-0.2400,\ -1.5900)$\\
+$(\fpbeomcfokjooi{a}{c},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+1.1200,\ -1.0300)$\\
+$(\fpbeomcfokjooi{a}{c},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+1.1200,\ -1.0300)$\\
+$(\fpbeomcfokjooi{b}{c},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.8100,\ -1.2000)$\\
+$(\fpbeomcfokjooi{b}{c},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.8100,\ -1.2000)$\\
+$(\fpbeomcfokjooi{a}{b},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (-0.2400,\ +1.5900)$\\
+$(\fpbeomcfokjooi{a}{b},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (-0.2400,\ +1.5900)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\fpbeomcfokjooi{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(2, 0)  type=12  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +3.3800,\ +4.9844,\ +3.8602,\ +2.3357,\ +1.5450,\ +0.8403\\
+\quad Decoded pairs $(u, v)$:\\
+$(\fpbeomcfokjooi{a}{b},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-0.2400,\ -0.6430)$\\
+$(\fpbeomcfokjooi{a}{c},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+1.1200,\ -0.6430)$\\
+$(\fpbeomcfokjooi{b}{c},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.8100,\ -0.6430)$\\
+$(\fpbeomcfokjooi{a}{b},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+1.1200,\ +0.6430)$\\
+$(\fpbeomcfokjooi{a}{c},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.8100,\ +0.6430)$\\
+$(\fpbeomcfokjooi{b}{c},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (-0.2400,\ +0.6430)$\\
 
 \subsection{Block: $\pdcegfomjfhook{x}{y} \times \pdcegfomjfhook{x}{y}$  (block)}
+    PairFlavour  overlap=(1, 0)  type=11\_sigma  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11\_sigma}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +3.6770,\ +7.2066,\ +10.3451,\ +9.7461,\ +6.3330,\ +2.7526\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{b},\ \pdcegfomjfhook{a}{c})$$\to (+0.9800,\ -0.5900)$\\
+$(\pdcegfomjfhook{a}{c},\ \pdcegfomjfhook{a}{b})$$\to (+0.9100,\ -0.5900)$\\
+$(\pdcegfomjfhook{a}{b},\ \pdcegfomjfhook{b}{c})$$\to (+0.9800,\ +0.9100)$\\
+$(\pdcegfomjfhook{b}{c},\ \pdcegfomjfhook{a}{b})$$\to (+0.9100,\ +0.9800)$\\
+$(\pdcegfomjfhook{a}{c},\ \pdcegfomjfhook{b}{c})$$\to (-0.5900,\ +0.9800)$\\
+$(\pdcegfomjfhook{b}{c},\ \pdcegfomjfhook{a}{c})$$\to (-0.5900,\ +0.9100)$\\
     PairFlavour  overlap=(2, 0)  type=null\_self  kind=NULL\_SELF  dim=0
 \textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
 \quad Decoded pairs $(u, v)$:\\
-$(\pdcegfomjfhook{a}{b},\ \pdcegfomjfhook{a}{b})$$\to (+0.9100,\ +0.9100)$\\
+$(\pdcegfomjfhook{a}{b},\ \pdcegfomjfhook{a}{b})$$\to (-0.5900,\ -0.5900)$\\
+$(\pdcegfomjfhook{a}{c},\ \pdcegfomjfhook{a}{c})$$\to (+0.9100,\ +0.9100)$\\
+$(\pdcegfomjfhook{b}{c},\ \pdcegfomjfhook{b}{c})$$\to (+0.9800,\ +0.9800)$\\
 
 \subsection{Block: $\pdcegfomjfhook{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
-    PairFlavour  overlap=(2, 0)  type=12  kind=ASSOC  dim=2
-\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=2$\\
-\textbf{      Encoded values}: +1.8200,\ +2.2681\\
+    PairFlavour  overlap=(0, 0)  type=12  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +2.6000,\ +1.2434,\ -1.6329,\ -1.3182,\ +0.2350,\ +0.2768\\
 \quad Decoded pairs $(u, v)$:\\
-$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.9100,\ +1.2000)$\\
-$(\pdcegfomjfhook{a}{b},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.9100,\ -1.2000)$\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{c}{p}{q})$$\to (-0.5900,\ +0.0000)$\\
+$(\pdcegfomjfhook{a}{c},\ \kblbmcpggoncpf{b}{p}{q})$$\to (-0.5900,\ +0.0000)$\\
+$(\pdcegfomjfhook{b}{c},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+0.9800,\ +0.0000)$\\
+$(\pdcegfomjfhook{a}{b},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+0.9800,\ -0.0000)$\\
+$(\pdcegfomjfhook{a}{c},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+0.9100,\ -0.0000)$\\
+$(\pdcegfomjfhook{b}{c},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+0.9100,\ -0.0000)$\\
+    PairFlavour  overlap=(1, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +5.2000,\ +9.2468,\ +3.1999,\ -9.5814,\ -10.4452,\ +1.1640,\ +6.3288,\ +1.6586,\ -1.5236,\ -0.6746,\ +0.1301,\ +0.0766\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{a}{p}{q})$$\to (-0.5900,\ +0.0000)$\\
+$(\pdcegfomjfhook{a}{c},\ \kblbmcpggoncpf{a}{p}{q})$$\to (-0.5900,\ +0.0000)$\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{b}{p}{q})$$\to (-0.5900,\ +0.0000)$\\
+$(\pdcegfomjfhook{b}{c},\ \kblbmcpggoncpf{b}{p}{q})$$\to (-0.5900,\ -0.0000)$\\
+$(\pdcegfomjfhook{a}{c},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.9800,\ -0.0000)$\\
+$(\pdcegfomjfhook{b}{c},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.9800,\ -0.0000)$\\
+$(\pdcegfomjfhook{a}{b},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+0.9800,\ +0.0000)$\\
+$(\pdcegfomjfhook{a}{c},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (+0.9800,\ +0.0000)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +5.2000,\ +0.0000,\ +19.3048,\ -0.0000,\ +44.1431,\ -0.0000,\ +88.3113,\ -0.0000,\ +137.8122,\ -0.0000,\ +217.1767,\ -0.0000,\ +269.5218,\ -0.0000,\ +324.6213,\ -0.0000,\ +280.9677,\ -0.0000,\ +279.5834,\ -0.0000,\ +185.4809,\ -0.0000,\ +133.7534,\ -0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{a}{c}{p})$$\to (-0.5900,\ +1.2000)$\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{a}{c}{q})$$\to (-0.5900,\ +1.0300)$\\
+$(\pdcegfomjfhook{a}{c},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.9800,\ +1.5900)$\\
+$(\pdcegfomjfhook{a}{c},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+0.9100,\ +1.5900)$\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.9800,\ +1.2000)$\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.9100,\ +1.0300)$\\
+$(\pdcegfomjfhook{b}{c},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (-0.5900,\ -1.2000)$\\
+$(\pdcegfomjfhook{b}{c},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (-0.5900,\ -1.0300)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(2, 0)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +5.2000,\ +19.3048,\ +52.0675,\ +125.1057,\ +249.4131,\ +435.0611,\ +636.0779,\ +824.2870,\ +888.3968,\ +786.4776,\ +473.5668,\ +173.8698\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{a}{b}{p})$$\to (-0.5900,\ -1.5900)$\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{a}{b}{q})$$\to (-0.5900,\ -1.5900)$\\
+$(\pdcegfomjfhook{a}{c},\ \kblbmcpggoncpf{a}{c}{p})$$\to (-0.5900,\ +1.5900)$\\
+$(\pdcegfomjfhook{a}{c},\ \kblbmcpggoncpf{a}{c}{q})$$\to (-0.5900,\ +1.5900)$\\
+$(\pdcegfomjfhook{b}{c},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.9100,\ -1.2000)$\\
+$(\pdcegfomjfhook{b}{c},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.9100,\ -1.2000)$\\
+$(\pdcegfomjfhook{a}{b},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (+0.9800,\ -1.0300)$\\
+$(\pdcegfomjfhook{a}{b},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (+0.9800,\ -1.0300)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\pdcegfomjfhook{x}{y} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(2, 0)  type=12  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +2.6000,\ +2.4837,\ +0.5170,\ +0.5921,\ +1.7446,\ +1.2990\\
+\quad Decoded pairs $(u, v)$:\\
+$(\pdcegfomjfhook{a}{b},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-0.5900,\ -0.6430)$\\
+$(\pdcegfomjfhook{a}{c},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-0.5900,\ +0.6430)$\\
+$(\pdcegfomjfhook{b}{c},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.9800,\ -0.6430)$\\
+$(\pdcegfomjfhook{a}{b},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.9100,\ -0.6430)$\\
+$(\pdcegfomjfhook{a}{c},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.9800,\ +0.6430)$\\
+$(\pdcegfomjfhook{b}{c},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.9100,\ +0.6430)$\\
 
 \subsection{Block: $\kblbmcpggoncpf{x}{y}{z} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 2)  type=neg\_sigma  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(0, 2)$, type=\texttt{neg\_sigma}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(-\kblbmcpggoncpf{a}{p}{q},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(-\kblbmcpggoncpf{a}{p}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (-0.0000,\ -0.0000)$\\
+$(\kblbmcpggoncpf{b}{p}{q},\ \kblbmcpggoncpf{a}{p}{q})$$\to (-0.0000,\ -0.0000)$\\
+$(-\kblbmcpggoncpf{b}{p}{q},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (-0.0000,\ -0.0000)$\\
+$(\kblbmcpggoncpf{b}{p}{q},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(-\kblbmcpggoncpf{b}{p}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 2)  type=null\_self  kind=NULL\_SELF  dim=0
+\textbf{PairFlavour} overlap$=(1, 2)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{a}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\kblbmcpggoncpf{b}{p}{q},\ \kblbmcpggoncpf{b}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(\kblbmcpggoncpf{c}{p}{q},\ \kblbmcpggoncpf{c}{p}{q})$$\to (+0.0000,\ +0.0000)$\\
+$(-\kblbmcpggoncpf{a}{p}{q},\ -\kblbmcpggoncpf{a}{p}{q})$$\to (-0.0000,\ -0.0000)$\\
+$(-\kblbmcpggoncpf{b}{p}{q},\ -\kblbmcpggoncpf{b}{p}{q})$$\to (-0.0000,\ -0.0000)$\\
+$(-\kblbmcpggoncpf{c}{p}{q},\ -\kblbmcpggoncpf{c}{p}{q})$$\to (-0.0000,\ -0.0000)$\\
+
+\subsection{Block: $\kblbmcpggoncpf{x}{y}{z} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(0, 1)  type=12  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(0, 1)$, type=\texttt{12}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +0.0000,\ +10.0580,\ +0.0000,\ +40.9913,\ +0.0000,\ +86.6819,\ +0.0000,\ +100.4717,\ +0.0000,\ +60.6378,\ +0.0000,\ +14.9163\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ -1.5900)$\\
+$(-\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ -1.5900)$\\
+$(\kblbmcpggoncpf{b}{p}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.0000,\ -1.2000)$\\
+$(-\kblbmcpggoncpf{b}{p}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (-0.0000,\ -1.2000)$\\
+$(\kblbmcpggoncpf{c}{p}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (-0.0000,\ -1.0300)$\\
+$(-\kblbmcpggoncpf{c}{p}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (-0.0000,\ -1.0300)$\\
+$(\kblbmcpggoncpf{a}{p}{q},\ -\kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ +1.5900)$\\
+$(-\kblbmcpggoncpf{a}{p}{q},\ -\kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ +1.5900)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +10.0580,\ +0.0000,\ +0.0000,\ +0.0000,\ +40.9913,\ +0.0000,\ +0.0000,\ +0.0000,\ +86.6819,\ +0.0000,\ +0.0000,\ +0.0000,\ +100.4717,\ +0.0000,\ +0.0000,\ +0.0000,\ +60.6378,\ +0.0000,\ +0.0000,\ +0.0000,\ +14.9163,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+0.0000,\ -1.5900)$\\
+$(-\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+0.0000,\ -1.5900)$\\
+$(\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+0.0000,\ -1.2000)$\\
+$(-\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (-0.0000,\ -1.2000)$\\
+$(\kblbmcpggoncpf{b}{p}{q},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (-0.0000,\ -1.0300)$\\
+$(-\kblbmcpggoncpf{b}{p}{q},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (-0.0000,\ -1.0300)$\\
+$(\kblbmcpggoncpf{b}{p}{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+0.0000,\ +1.5900)$\\
+$(-\kblbmcpggoncpf{b}{p}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+0.0000,\ +1.5900)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\kblbmcpggoncpf{x}{y}{z} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(1, 0)  type=22  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{22}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: -2.4807,\ +2.5641,\ -1.4135,\ +0.4383,\ -0.0725,\ +0.0050\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ +0.6430)$\\
+$(-\kblbmcpggoncpf{a}{p}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ +0.6430)$\\
+$(\kblbmcpggoncpf{a}{p}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+$(-\kblbmcpggoncpf{a}{p}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (-0.0000,\ -0.6430)$\\
+$(\kblbmcpggoncpf{b}{p}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-0.0000,\ +0.6430)$\\
+$(-\kblbmcpggoncpf{b}{p}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-0.0000,\ +0.6430)$\\
+$(\kblbmcpggoncpf{b}{p}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+$(-\kblbmcpggoncpf{b}{p}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+0.0000,\ -0.6430)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\kblbmcpggoncpf{x}{y}{z} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(1, 0)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 0)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ +9.2388,\ -0.0000,\ -0.0000,\ -14.7572,\ +0.0000,\ +0.0000,\ -0.0000,\ +0.0000,\ +98.5481,\ -0.0000,\ +0.0000,\ -301.4282,\ +0.0000,\ +0.0000,\ -0.0000,\ -0.0000,\ +257.2546,\ +0.0000,\ +0.0000,\ -1268.5418,\ -0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{b}{p},\ \kblbmcpggoncpf{a}{c}{q})$$\to (-1.0300,\ +1.5900)$\\
+$(\kblbmcpggoncpf{a}{b}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (-1.2000,\ +1.5900)$\\
+$(\kblbmcpggoncpf{a}{c}{p},\ \kblbmcpggoncpf{a}{b}{q})$$\to (-1.5900,\ +1.2000)$\\
+$(\kblbmcpggoncpf{a}{c}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (-1.5900,\ +1.0300)$\\
+$(-\kblbmcpggoncpf{a}{b}{p},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+1.0300,\ +1.2000)$\\
+$(-\kblbmcpggoncpf{a}{b}{q},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+1.2000,\ +1.0300)$\\
+$(\kblbmcpggoncpf{b}{c}{p},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (-1.2000,\ -1.0300)$\\
+$(\kblbmcpggoncpf{b}{c}{q},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (-1.0300,\ -1.2000)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(1, 1)  type=11  kind=ASSOC  dim=24
+\textbf{PairFlavour} overlap$=(1, 1)$, type=\texttt{11}, kind=\texttt{ASSOC}, encoded dim$=24$\\
+\textbf{      Encoded values}: +0.0000,\ +0.0000,\ +0.0000,\ -9.2388,\ +0.0000,\ -0.0000,\ -14.7572,\ -0.0000,\ +0.0000,\ +0.0000,\ -0.0000,\ -98.5481,\ +0.0000,\ -0.0000,\ -301.4282,\ -0.0000,\ -0.0000,\ -0.0000,\ -0.0000,\ -257.2546,\ +0.0000,\ +0.0000,\ -1268.5418,\ +0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{b}{p},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+1.5900,\ +1.0300)$\\
+$(\kblbmcpggoncpf{a}{b}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+1.5900,\ +1.2000)$\\
+$(\kblbmcpggoncpf{a}{c}{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.2000,\ +1.5900)$\\
+$(\kblbmcpggoncpf{a}{c}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+1.0300,\ +1.5900)$\\
+$(-\kblbmcpggoncpf{a}{b}{p},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+1.2000,\ -1.0300)$\\
+$(-\kblbmcpggoncpf{a}{b}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+1.0300,\ -1.2000)$\\
+$(\kblbmcpggoncpf{b}{c}{p},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (-1.0300,\ +1.2000)$\\
+$(\kblbmcpggoncpf{b}{c}{q},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (-1.2000,\ +1.0300)$\\
+        ... (4 more pairs)
+    PairFlavour  overlap=(2, 0)  type=neg\_sigma  kind=ASSOC  dim=6
+\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{neg\_sigma}, kind=\texttt{ASSOC}, encoded dim$=6$\\
+\textbf{      Encoded values}: -20.1160,\ -163.9651,\ +693.4549,\ +1607.5466,\ -1940.4080,\ -954.6460\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{b}{p},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+1.5900,\ -1.5900)$\\
+$(-\kblbmcpggoncpf{a}{b}{p},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (-1.5900,\ +1.5900)$\\
+$(\kblbmcpggoncpf{a}{b}{q},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.5900,\ -1.5900)$\\
+$(-\kblbmcpggoncpf{a}{b}{q},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (-1.5900,\ +1.5900)$\\
+$(\kblbmcpggoncpf{a}{c}{p},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+1.2000,\ -1.2000)$\\
+$(-\kblbmcpggoncpf{a}{c}{p},\ -\kblbmcpggoncpf{a}{c}{q})$$\to (-1.2000,\ +1.2000)$\\
+$(\kblbmcpggoncpf{a}{c}{q},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+1.2000,\ -1.2000)$\\
+$(-\kblbmcpggoncpf{a}{c}{q},\ -\kblbmcpggoncpf{a}{c}{p})$$\to (-1.2000,\ +1.2000)$\\
+        ... (4 more pairs)
     PairFlavour  overlap=(2, 1)  type=null\_self  kind=NULL\_SELF  dim=0
 \textbf{PairFlavour} overlap$=(2, 1)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
 \quad Decoded pairs $(u, v)$:\\
-$(\kblbmcpggoncpf{a}{b}{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.2000,\ +1.2000)$\\
-$(-\kblbmcpggoncpf{a}{b}{p},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (-1.2000,\ -1.2000)$\\
+$(\kblbmcpggoncpf{a}{b}{p},\ \kblbmcpggoncpf{a}{b}{p})$$\to (+1.0300,\ +1.0300)$\\
+$(\kblbmcpggoncpf{a}{b}{q},\ \kblbmcpggoncpf{a}{b}{q})$$\to (+1.0300,\ +1.0300)$\\
+$(\kblbmcpggoncpf{a}{c}{p},\ \kblbmcpggoncpf{a}{c}{p})$$\to (+1.2000,\ +1.2000)$\\
+$(\kblbmcpggoncpf{a}{c}{q},\ \kblbmcpggoncpf{a}{c}{q})$$\to (+1.2000,\ +1.2000)$\\
+$(\kblbmcpggoncpf{b}{c}{p},\ \kblbmcpggoncpf{b}{c}{p})$$\to (+1.5900,\ +1.5900)$\\
+$(\kblbmcpggoncpf{b}{c}{q},\ \kblbmcpggoncpf{b}{c}{q})$$\to (+1.5900,\ +1.5900)$\\
+$(-\kblbmcpggoncpf{a}{b}{p},\ -\kblbmcpggoncpf{a}{b}{p})$$\to (-1.0300,\ -1.0300)$\\
+$(-\kblbmcpggoncpf{a}{b}{q},\ -\kblbmcpggoncpf{a}{b}{q})$$\to (-1.0300,\ -1.0300)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\kblbmcpggoncpf{x}{y}{z} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(2, 0)  type=neg  kind=ASSOC  dim=12
+\textbf{PairFlavour} overlap$=(2, 0)$, type=\texttt{neg}, kind=\texttt{ASSOC}, encoded dim$=12$\\
+\textbf{      Encoded values}: +7.5773,\ +0.0000,\ +31.0800,\ -0.0000,\ +72.8464,\ -0.0000,\ +116.6920,\ -0.0000,\ +108.6872,\ -0.0000,\ +64.6121,\ -0.0000\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{b}{p},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+1.5900,\ -0.6430)$\\
+$(-\kblbmcpggoncpf{a}{b}{p},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (-1.5900,\ +0.6430)$\\
+$(\kblbmcpggoncpf{a}{b}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+1.5900,\ +0.6430)$\\
+$(-\kblbmcpggoncpf{a}{b}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (-1.5900,\ -0.6430)$\\
+$(\kblbmcpggoncpf{a}{c}{p},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+1.2000,\ -0.6430)$\\
+$(-\kblbmcpggoncpf{a}{c}{p},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-1.2000,\ +0.6430)$\\
+$(\kblbmcpggoncpf{a}{c}{q},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (+1.0300,\ -0.6430)$\\
+$(-\kblbmcpggoncpf{a}{c}{q},\ \kblbmcpggoncpf{a}{b}{c})$$\to (-1.0300,\ +0.6430)$\\
+        ... (4 more pairs)
+
+\subsection{Block: $\kblbmcpggoncpf{x}{y}{z} \times \kblbmcpggoncpf{x}{y}{z}$  (block)}
+    PairFlavour  overlap=(3, 0)  type=null\_self  kind=NULL\_SELF  dim=0
+\textbf{PairFlavour} overlap$=(3, 0)$, type=\texttt{null\_self}, kind=\texttt{NULL\_SELF}, encoded dim$=0$\\
+\quad Decoded pairs $(u, v)$:\\
+$(\kblbmcpggoncpf{a}{b}{c},\ \kblbmcpggoncpf{a}{b}{c})$$\to (+0.6430,\ +0.6430)$\\
+$(-\kblbmcpggoncpf{a}{b}{c},\ -\kblbmcpggoncpf{a}{b}{c})$$\to (-0.6430,\ -0.6430)$\\
 
 \section{Alignment Decoder  (recovers the G-orbit of repS evaluations)}
-\textbf{  |repS|}: $|repS| = 7$\\\\
-\textbf{  |G|}: $|G| = 2$\\\\
-\textbf{  Decoded vectors}: decoded column vectors: $2$\\\\
+\textbf{  |repS|}: $|repS| = 11$\\\\
+\textbf{  |G|}: $|G| = 12$\\\\
+\textbf{  Decoded vectors}: decoded column vectors: $12$\\\\
 
   Decoded alignment table  (rows=repS atoms, cols=group elements):
 \textbf{Decoded alignment table} (rows$=\text{repS}$ atoms, columns$=g\in G$):\\
 \begin{table}[h]\centering
 \caption{Decoded alignment table}
-\begin{tabular}{lrr}
+\begin{tabular}{lrrrrrrrrrrrr}
 \toprule
-Atom & $g_{0}$ & $g_{1}$ \\
+Atom & $g_{0}$ & $g_{1}$ & $g_{2}$ & $g_{3}$ & $g_{4}$ & $g_{5}$ & $g_{6}$ & $g_{7}$ & $g_{8}$ & $g_{9}$ & $g_{10}$ & $g_{11}$ \\
 \midrule
-$\dnfagmiihhiejm{a}$ & +1.1874 & +1.3342 \\
-$\dnfagmiihhiejm{p}$ & +1.0000 & +1.0000 \\
-$\pdcegfomjfhook{a}{b}$ & +0.9100 & +0.9100 \\
-$\pdcegfomjfhook{a}{p}$ & +0.2000 & +0.5000 \\
-$\fpbeomcfokjooi{a}{b}$ & +0.8100 & +0.8100 \\
-$\fpbeomcfokjooi{a}{p}$ & +0.0000 & +0.0000 \\
-$\kblbmcpggoncpf{a}{b}{p}$ & -1.2000 & +1.2000 \\
+$\dnfagmiihhiejm{a}$ & +1.4765 & +1.4765 & +1.3342 & +1.3342 & +1.1874 & +1.1874 & +1.1874 & +1.1874 & +1.3342 & +1.3342 & +1.4765 & +1.4765 \\
+$\dnfagmiihhiejm{p}$ & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 \\
+$\pdcegfomjfhook{a}{b}$ & -0.5900 & +0.9800 & -0.5900 & +0.9100 & +0.9800 & +0.9100 & +0.9100 & +0.9800 & +0.9100 & -0.5900 & +0.9800 & -0.5900 \\
+$\pdcegfomjfhook{a}{p}$ & -0.7000 & -0.7000 & -0.5000 & -0.5000 & -0.2000 & -0.2000 & +0.2000 & +0.2000 & +0.5000 & +0.5000 & +0.7000 & +0.7000 \\
+$\pdcegfomjfhook{p}{q}$ & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 \\
+$\fpbeomcfokjooi{a}{b}$ & -0.2400 & +1.1200 & -0.2400 & +0.8100 & +1.1200 & +0.8100 & +0.8100 & +1.1200 & +0.8100 & -0.2400 & +1.1200 & -0.2400 \\
+$\fpbeomcfokjooi{a}{p}$ & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 \\
+$\fpbeomcfokjooi{p}{q}$ & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 \\
+$\kblbmcpggoncpf{a}{b}{c}$ & -0.6430 & -0.6430 & -0.6430 & -0.6430 & -0.6430 & -0.6430 & -0.6430 & -0.6430 & -0.6430 & -0.6430 & -0.6430 & -0.6430 \\
+$\kblbmcpggoncpf{a}{b}{p}$ & -1.5900 & -1.0300 & -1.5900 & -1.2000 & -1.0300 & +1.2000 & -1.2000 & +1.0300 & +1.2000 & +1.5900 & +1.0300 & +1.5900 \\
+$\kblbmcpggoncpf{a}{p}{q}$ & +0.0000 & +0.0000 & +0.0000 & +0.0000 & -0.0000 & -0.0000 & -0.0000 & -0.0000 & -0.0000 & -0.0000 & +0.0000 & +0.0000 \\
 \bottomrule\end{tabular}\end{table}
 
   Ground truth  (direct evaluation of g·repS on event):
 \textbf{Ground truth} (direct evaluation of $g \cdot \text{repS}$ on event):\\
 \begin{table}[h]\centering
 \caption{Ground truth alignment table}
-\begin{tabular}{lrr}
+\begin{tabular}{lrrrrrrrrrrrr}
 \toprule
-Atom & $g_{0}$ & $g_{1}$ \\
+Atom & $g_{0}$ & $g_{1}$ & $g_{2}$ & $g_{3}$ & $g_{4}$ & $g_{5}$ & $g_{6}$ & $g_{7}$ & $g_{8}$ & $g_{9}$ & $g_{10}$ & $g_{11}$ \\
 \midrule
-$\dnfagmiihhiejm{a}$ & +1.3342 & +1.1874 \\
-$\dnfagmiihhiejm{p}$ & +1.0000 & +1.0000 \\
-$\pdcegfomjfhook{a}{b}$ & +0.9100 & +0.9100 \\
-$\pdcegfomjfhook{a}{p}$ & +0.5000 & +0.2000 \\
-$\fpbeomcfokjooi{a}{b}$ & +0.8100 & +0.8100 \\
-$\fpbeomcfokjooi{a}{p}$ & +0.0000 & +0.0000 \\
-$\kblbmcpggoncpf{a}{b}{p}$ & +1.2000 & -1.2000 \\
+$\dnfagmiihhiejm{a}$ & +1.3342 & +1.3342 & +1.3342 & +1.3342 & +1.1874 & +1.1874 & +1.1874 & +1.1874 & +1.4765 & +1.4765 & +1.4765 & +1.4765 \\
+$\dnfagmiihhiejm{p}$ & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 \\
+$\pdcegfomjfhook{a}{b}$ & +0.9100 & +0.9100 & -0.5900 & -0.5900 & +0.9100 & +0.9100 & +0.9800 & +0.9800 & -0.5900 & -0.5900 & +0.9800 & +0.9800 \\
+$\pdcegfomjfhook{a}{p}$ & +0.5000 & -0.5000 & +0.5000 & -0.5000 & +0.2000 & -0.2000 & +0.2000 & -0.2000 & -0.7000 & +0.7000 & -0.7000 & +0.7000 \\
+$\pdcegfomjfhook{p}{q}$ & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 \\
+$\fpbeomcfokjooi{a}{b}$ & +0.8100 & +0.8100 & -0.2400 & -0.2400 & +0.8100 & +0.8100 & +1.1200 & +1.1200 & -0.2400 & -0.2400 & +1.1200 & +1.1200 \\
+$\fpbeomcfokjooi{a}{p}$ & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 \\
+$\fpbeomcfokjooi{p}{q}$ & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +0.0000 \\
+$\kblbmcpggoncpf{a}{b}{c}$ & -0.6430 & -0.6430 & +0.6430 & +0.6430 & +0.6430 & +0.6430 & -0.6430 & -0.6430 & -0.6430 & -0.6430 & +0.6430 & +0.6430 \\
+$\kblbmcpggoncpf{a}{b}{p}$ & +1.2000 & -1.2000 & +1.5900 & -1.5900 & -1.2000 & +1.2000 & +1.0300 & -1.0300 & -1.5900 & +1.5900 & -1.0300 & +1.0300 \\
+$\kblbmcpggoncpf{a}{p}{q}$ & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 \\
 \bottomrule\end{tabular}\end{table}
 
   Multiset comparison  (decoded vs ground truth):
 \textbf{Multiset comparison:}\\
-\textcolor{green!60!black}{\textbf{MATCH}} (multisets equal, atol$=10^{-8}$)
+\textcolor{red}{\textbf{MISMATCH}} — decoded multiset differs from ground truth
 
   Max |error| per repS row (decoded vs ground truth):
 \textbf{Max $|$error$|$ per repS row:}\\
@@ -383,17 +1450,21 @@ $\kblbmcpggoncpf{a}{b}{p}$ & +1.2000 & -1.2000 \\
 \textbf{    Mymag(p)}: $\dnfagmiihhiejm{p}$: max err $= 0.00e+00$\\\\
 \textbf{    dot(a,b)}: $\pdcegfomjfhook{a}{b}$: max err $= 0.00e+00$\\\\
 \textbf{    dot(a,p)}: $\pdcegfomjfhook{a}{p}$: max err $= 0.00e+00$\\\\
+\textbf{    dot(p,q)}: $\pdcegfomjfhook{p}{q}$: max err $= 0.00e+00$\\\\
 \textbf{    dot(a,b)}: $\fpbeomcfokjooi{a}{b}$: max err $= 0.00e+00$\\\\
 \textbf{    dot(a,p)}: $\fpbeomcfokjooi{a}{p}$: max err $= 0.00e+00$\\\\
+\textbf{    dot(p,q)}: $\fpbeomcfokjooi{p}{q}$: max err $= 0.00e+00$\\\\
+\textbf{    eps(a,b,c)}: $\kblbmcpggoncpf{a}{b}{c}$: max err $= 1.29e+00$\\\\
 \textbf{    eps(a,b,p)}: $\kblbmcpggoncpf{a}{b}{p}$: max err $= 0.00e+00$\\\\
+\textbf{    eps(a,p,q)}: $\kblbmcpggoncpf{a}{p}{q}$: max err $= 0.00e+00$\\\\
 
 \section{Summary}
-\textbf{  Phase 1 encoded length}: Phase 1 encoded length: $10$ reals\\\\
-\textbf{  Phase 2 encoded length}: Phase 2 encoded length: $90$ reals\\\\
-\textbf{  Total encoded length}: Total encoded length: $100$ reals\\\\
-\textbf{  repS size}: $|\text{repS}| = 7$ atoms\\\\
-\textbf{  |G|}: $|G| = 2$ group elements\\\\
-\textbf{  Decoded vectors}: decoded alignment vectors: $2$\\\\
+\textbf{  Phase 1 encoded length}: Phase 1 encoded length: $35$ reals\\\\
+\textbf{  Phase 2 encoded length}: Phase 2 encoded length: $1214$ reals\\\\
+\textbf{  Total encoded length}: Total encoded length: $1249$ reals\\\\
+\textbf{  repS size}: $|\text{repS}| = 11$ atoms\\\\
+\textbf{  |G|}: $|G| = 12$ group elements\\\\
+\textbf{  Decoded vectors}: decoded alignment vectors: $12$\\\\
 
   TeX output written to: /Users/lester/github/Echinocoder/symcoder/demo\_roundtrip.tex
   Compile with:  pdflatex demo\_roundtrip.tex
