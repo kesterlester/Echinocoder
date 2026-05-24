@@ -365,10 +365,10 @@ def run():
 
             _sl = list("xyzw")[:fo.operation.rank]
             out.subsection(
-                f"FO: {fo.operation.name}  flavour={tuple(fo.flavour.counts)}",
-                tex=f"FO: ${_op_tex_sample(fo.operation, _sl)}$  flavour $= {tuple(fo.flavour.counts)}$"
+                f"FlavouredOperator: {fo.operation.name}  flavour={tuple(fo.flavour.counts)}",
+                tex=f"FlavouredOperator: ${_op_tex_sample(fo.operation, _sl)}$  flavour $= {tuple(fo.flavour.counts)}$"
             )
-            out.kv("  Canonical rep", _atom_text(fo.canonical_representative()),
+            out.kv("  Canonical representative", _atom_text(fo.canonical_representative()),
                    tex=f"$\\displaystyle{_atom_tex(fo.canonical_representative())}$")
             out.kv("  Encoder", method, tex=method_tex + r"\\")
             out.kv("  Orbit atoms", "  ".join(_atom_text(a) for a in orbit_atoms),
