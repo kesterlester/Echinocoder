@@ -189,13 +189,6 @@ class DualOut:
 # TeX pretty-printing for operators and atoms
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Map op name → function(labels) → tex math string (no surrounding $)
-_TEX_OP: dict = {
-    "mag":  lambda ls: rf"|\vc{{{ls[0]}}}|",
-    "dot":  lambda ls: rf"\vc{{{ls[0]}}} \cdot \vc{{{ls[1]}}}",
-    "eps3": lambda ls: rf"\varepsilon(\vc{{{ls[0]}}},\vc{{{ls[1]}}},\vc{{{ls[2]}}})",
-}
-
 
 def _tex_escape(s: str) -> str:
     """Minimal TeX escaping for plain-text strings."""
@@ -224,10 +217,7 @@ def _atom_tex(atom) -> str:
         cmd  = _TEX_CMD_REGISTRY[op.name]
         args = "".join(f"{{{lbl}}}" for lbl in atom.labels)
         return sign + cmd + args
-    fn = _TEX_OP.get(op.name)
-    if fn is None:
-        return _tex_escape(_atom_text(atom))
-    return sign + fn(list(atom.labels))
+    return _tex_escape(_atom_text(atom))
 
 
 def _op_tex_sample(op, sample_labels) -> str:
@@ -236,9 +226,6 @@ def _op_tex_sample(op, sample_labels) -> str:
         cmd  = _TEX_CMD_REGISTRY[op.name]
         args = "".join(f"{{{lbl}}}" for lbl in sample_labels[:op.rank])
         return cmd + args
-    fn = _TEX_OP.get(op.name)
-    if fn:
-        return fn(list(sample_labels))
     return _tex_escape(op.name)
 
 
@@ -290,18 +277,22 @@ def run():
                rf"$G = S_{{electrons}} \times S_{{muons}} = S_2 \times S_1$,"
                rf" order $= {ctx.the_group.order()}$")
 
+        plan = Plan(context=ctx, operations=(mag, dot, eps3))
+
         out.blank()
         out.line("Operations:")
-        out.line("  mag(x)       = |x|           (rank 1, symmetric)",
-                 tex=r"\textbf{mag}(\vc{x}) $= |\vc{x}|$ \quad (rank 1, symmetric)\\")
-        out.line("  dot(x,y)     = x·y           (rank 2, symmetric)",
-                 tex=r"\textbf{dot}(\vc{x},\vc{y}) $= \vc{x}\cdot\vc{y}$ \quad (rank 2, symmetric)\\")
-        out.line("  eps3(x,y,z)  = x·(y×z)       (rank 3, antisymmetric)",
-                 tex=r"\textbf{eps3}(\vc{x},\vc{y},\vc{z}) $= \vc{x}\cdot(\vc{y}\times\vc{z})$"
-                     r" \quad (rank 3, antisymmetric)\\")
-
-        # Plan and event
-        plan  = Plan(context=ctx, operations=(mag, dot, eps3))
+        _pl = list("xyzw")
+        for op in plan.operations:
+            pl   = _pl[:op.rank]
+            args = ",".join(pl)
+            sym  = op.argument_symmetry.name.lower()
+            args_vc = ",".join(rf"\vc{{{p}}}" for p in pl)
+            out.line(
+                f"  {op.name}({args})  (rank {op.rank}, {sym})",
+                tex=(rf"\textbf{{{_tex_escape(op.name)}}}({args_vc})"
+                     rf" $= {_op_tex_sample(op, pl)}$"
+                     rf" \quad (rank {op.rank}, {sym})\\")
+            )
 
         # Fixed event (3-D vectors; eps3 needs ≥3 dimensions)
         event = {
