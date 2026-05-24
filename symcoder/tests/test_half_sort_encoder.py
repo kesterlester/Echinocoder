@@ -12,8 +12,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from symatom import repS, Context, Plan, VectorType, ArgumentSymmetry
-from symcoder import EvaluableOperation
+from symatom import repS, Context, Plan, Operation, VectorType, ArgumentSymmetry
 from symcoder.encoders import (
     HalfSortEncoder,
     HalfSortEncoderFactory,
@@ -30,7 +29,7 @@ from symcoder.encoders import (
 
 @pytest.fixture
 def eps3():
-    return EvaluableOperation(
+    return Operation(
         "eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))),
@@ -39,7 +38,7 @@ def eps3():
 
 @pytest.fixture
 def dot():
-    return EvaluableOperation(
+    return Operation(
         "dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda v: float(np.dot(v[0], v[1])),
@@ -48,7 +47,7 @@ def dot():
 
 @pytest.fixture
 def mag():
-    return EvaluableOperation(
+    return Operation(
         "mag", rank=1, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))),

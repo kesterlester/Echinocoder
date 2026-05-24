@@ -35,8 +35,8 @@ import numpy as np
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _REPO)
 
-from symatom import ArgumentSymmetry, VectorType, Context, Plan, repS as _repS_fn
-from symcoder import EvaluableOperation, evaluate, decode_alignment
+from symatom import ArgumentSymmetry, Operation, VectorType, Context, Plan, repS as _repS_fn
+from symcoder import evaluate, decode_alignment
 from symcoder.encoders import (
     OrbitEncoderFactory, SortEncoderFactory, HalfSortEncoderFactory,
     standard_row_pair_factories, OverlapBlockEncoderFactory, Phase2EncoderFactory,
@@ -250,15 +250,15 @@ def _tex_num(v: float) -> str:
 def run():
     # Create operations before opening DualOut so write_tex_header can emit
     # their \newcommands in the LaTeX preamble.
-    mag  = EvaluableOperation("mag",  rank=1, odd_parity=False,
+    mag  = Operation("mag",  rank=1, odd_parity=False,
                               argument_symmetry=ArgumentSymmetry.SYMMETRIC,
                               eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))),
                               tex=r"|\vc{#1}|")
-    dot  = EvaluableOperation("dot",  rank=2, odd_parity=False,
+    dot  = Operation("dot",  rank=2, odd_parity=False,
                               argument_symmetry=ArgumentSymmetry.SYMMETRIC,
                               eval_fn=lambda v: float(np.dot(v[0], v[1])),
                               tex=r"\vc{#1} \cdot \vc{#2}")
-    eps3 = EvaluableOperation("eps3", rank=3, odd_parity=True,
+    eps3 = Operation("eps3", rank=3, odd_parity=True,
                               argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
                               eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))),
                               tex=r"\varepsilon(\vc{#1},\vc{#2},\vc{#3})")

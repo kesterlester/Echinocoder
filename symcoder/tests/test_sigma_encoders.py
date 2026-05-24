@@ -14,8 +14,8 @@ The tests verify:
 """
 import pytest
 import numpy as np
-from symatom import ArgumentSymmetry, VectorType, Context, Plan
-from symcoder import EvaluableOperation, encode, describe_encoding
+from symatom import ArgumentSymmetry, Operation, VectorType, Context, Plan
+from symcoder import encode, describe_encoding
 from symcoder.encoders import (
     OrbitEncoderFactory, SortEncoderFactory, HalfSortEncoderFactory,
     standard_row_pair_factories, OverlapBlockEncoderFactory, Phase2EncoderFactory,
@@ -32,7 +32,7 @@ from symcoder.encoders.row_pair_encoders import (
 
 @pytest.fixture
 def dot():
-    return EvaluableOperation(
+    return Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
@@ -40,7 +40,7 @@ def dot():
 
 @pytest.fixture
 def eps3():
-    return EvaluableOperation(
+    return Operation(
         name="eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),

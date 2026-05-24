@@ -2,10 +2,10 @@
 import pytest
 import numpy as np
 from symatom import (
-    ArgumentSymmetry, VectorType, Context, Plan,
+    ArgumentSymmetry, Operation, VectorType, Context, Plan,
     repS, canonical_pair_flavours,
 )
-from symcoder import EvaluableOperation, evaluate
+from symcoder import evaluate
 from symcoder.pairs import eval_pair_orbit
 
 
@@ -15,7 +15,7 @@ from symcoder.pairs import eval_pair_orbit
 
 @pytest.fixture
 def dot():
-    return EvaluableOperation(
+    return Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
@@ -23,7 +23,7 @@ def dot():
 
 @pytest.fixture
 def eps3():
-    return EvaluableOperation(
+    return Operation(
         name="eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),

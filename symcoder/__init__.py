@@ -5,7 +5,7 @@ Takes symatom's symbolic atom/orbit machinery and produces concrete
 invariant embeddings of physics events via polynomial zipping.
 
 Public API:
-  eval         : EvaluableOperation, evaluate
+  eval         : evaluate
   encode       : encode, encode_and_describe, describe_encoding
   describe     : SegmentInfo
   encoders     : OrbitEncoderFactory (Phase 1 top level)
@@ -14,7 +14,7 @@ Public API:
                  OverlapBlockEncoderFactory  (Phase 2 block level)
                  Phase2EncoderFactory        (Phase 2 top level)
 """
-from .eval               import EvaluableOperation, evaluate
+from .eval               import evaluate
 from .encode             import encode, encode_and_describe, describe_encoding
 from .alignment_decoder  import decode_alignment
 from .describe      import SegmentInfo, Phase1Tree, OverlapBlockNode, Phase2Tree, EncodingTree
@@ -32,7 +32,6 @@ from .encoders import (
 )
 
 __all__ = [
-    "EvaluableOperation",
     "evaluate",
     "decode_alignment",
     "encode",

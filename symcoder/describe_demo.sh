@@ -3,14 +3,15 @@
 cd /Users/lester/github/Echinocoder && venv/bin/python -c "
 import numpy as np
 from symatom import ArgumentSymmetry, VectorType, Context, Plan
-from symcoder import EvaluableOperation, encode, describe_encoding
+from symatom import Operation
+from symcoder import encode, describe_encoding
 
-mag  = EvaluableOperation('mag',  rank=1, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-                           eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))))
-dot  = EvaluableOperation('dot',  rank=2, parity=+1, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-                           eval_fn=lambda v: float(np.dot(v[0], v[1])))
-eps3 = EvaluableOperation('eps3', rank=3, parity=-1, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                           eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))))
+mag  = Operation('mag',  rank=1, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+                 eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))))
+dot  = Operation('dot',  rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+                 eval_fn=lambda v: float(np.dot(v[0], v[1])))
+eps3 = Operation('eps3', rank=3, odd_parity=True,  argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                 eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))))
 
 ctx = Context((
    VectorType('electrons', ('a','b','c')),

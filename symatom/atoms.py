@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
+from typing import Callable
 from enum import Enum
 
 
@@ -37,6 +38,16 @@ class Operation:
     The framework is agnostic about what the operation *is*; it only uses
     these declared properties.
 
+    eval_fn parameter
+    -----------------
+    eval_fn(vectors) -> float
+        vectors : list of arrays, one per label, in atom.labels order.
+        Return value : the numerical value of the operation on those vectors,
+        BEFORE the atom's sign is applied.  The sign is applied by evaluate().
+        eval_fn is excluded from equality and hashing so that two Operations
+        with identical symbolic properties compare equal regardless of which
+        callable was attached.
+
     Optional tex parameter
     ----------------------
     tex : str | None
@@ -53,6 +64,7 @@ class Operation:
     rank:               int             # number of vector arguments (>= 1)
     odd_parity:         bool            # True → parity = -1 (pseudoscalar); False → parity = +1 (scalar)
     argument_symmetry:  ArgumentSymmetry
+    eval_fn:            Callable = field(kw_only=True, compare=False, hash=False)
     tex:                str | None = field(default=None, kw_only=True,
                                            compare=False, hash=False)
 

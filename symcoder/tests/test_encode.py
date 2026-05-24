@@ -2,10 +2,10 @@
 import pytest
 import numpy as np
 from symatom import (
-    ArgumentSymmetry, VectorType, Context, Plan,
+    ArgumentSymmetry, Operation, VectorType, Context, Plan,
     repS, canonical_pair_flavours,
 )
-from symcoder import EvaluableOperation, encode, describe_encoding
+from symcoder import encode, describe_encoding
 
 
 # ---------------------------------------------------------------------------
@@ -14,7 +14,7 @@ from symcoder import EvaluableOperation, encode, describe_encoding
 
 @pytest.fixture
 def dot():
-    return EvaluableOperation(
+    return Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
@@ -22,7 +22,7 @@ def dot():
 
 @pytest.fixture
 def eps3():
-    return EvaluableOperation(
+    return Operation(
         name="eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
@@ -178,12 +178,12 @@ def test_encode_two_groups_permutation_invariant(dot, orbit_factory, phase2_fact
 def _make_ops_and_event():
     """Shared setup: four 3-D vectors, all four symmetry-class operation pairs."""
     labels = ("a", "b", "c", "d")
-    dot = EvaluableOperation(
+    dot = Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
     )
-    eps3 = EvaluableOperation(
+    eps3 = Operation(
         name="eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
@@ -205,7 +205,7 @@ def _make_ops_and_event():
 ])
 def test_compressed_encoding_permutation_invariant_dot(perm, ctx, orbit_factory, phase2_factory):
     """Compressed encoding of dot-only plan is invariant under label permutation."""
-    dot = EvaluableOperation(
+    dot = Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
@@ -235,7 +235,7 @@ def test_compressed_encoding_permutation_invariant_eps3(perm, ctx, orbit_factory
     be sign-compressed (e.g. eps3(a,p,v) mixing electron and muon labels) are
     covered by the two-group permutation invariance tests in test_integration.py.
     """
-    eps3 = EvaluableOperation(
+    eps3 = Operation(
         name="eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
@@ -278,12 +278,12 @@ def test_compressed_length_type12_type21(ctx):
     these pairs correctly for 1-group problems; it is NOT a general criterion for
     TYPE_12/TYPE_21 detection in multi-group contexts.
     """
-    dot = EvaluableOperation(
+    dot = Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
     )
-    eps3 = EvaluableOperation(
+    eps3 = Operation(
         name="eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
@@ -313,7 +313,7 @@ def test_compressed_length_type12_type21(ctx):
 # ---------------------------------------------------------------------------
 
 def _make_eps2():
-    return EvaluableOperation(
+    return Operation(
         name="eps2", rank=2, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(vecs[0][0]*vecs[1][1] - vecs[0][1]*vecs[1][0]),

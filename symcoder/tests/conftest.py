@@ -1,8 +1,7 @@
 """Shared pytest fixtures for symcoder tests."""
 import numpy as np
 import pytest
-from symatom import ArgumentSymmetry, VectorType, Context
-from symcoder import EvaluableOperation
+from symatom import ArgumentSymmetry, Operation, VectorType, Context
 from symcoder.encoders import (
     OrbitEncoderFactory,
     SortEncoderFactory,
@@ -59,13 +58,13 @@ def ctx():
 
 @pytest.fixture
 def ops():
-    mag  = EvaluableOperation('mag',  rank=1, odd_parity=False,
+    mag  = Operation('mag',  rank=1, odd_parity=False,
                               argument_symmetry=ArgumentSymmetry.SYMMETRIC,
                               eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))))
-    dot  = EvaluableOperation('dot',  rank=2, odd_parity=False,
+    dot  = Operation('dot',  rank=2, odd_parity=False,
                               argument_symmetry=ArgumentSymmetry.SYMMETRIC,
                               eval_fn=lambda v: float(np.dot(v[0], v[1])))
-    eps3 = EvaluableOperation('eps3', rank=3, odd_parity=True,
+    eps3 = Operation('eps3', rank=3, odd_parity=True,
                               argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
                               eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))))
     return mag, dot, eps3

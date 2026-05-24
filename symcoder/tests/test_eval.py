@@ -1,9 +1,8 @@
-"""Tests for EvaluableOperation and evaluate()."""
-import math
+"""Tests for Operation.eval_fn and evaluate()."""
 import pytest
 import numpy as np
-from symatom import ArgumentSymmetry, Atom, Context, VectorType
-from symcoder import EvaluableOperation, evaluate
+from symatom import ArgumentSymmetry, Atom, Operation
+from symcoder import evaluate
 
 
 # ---------------------------------------------------------------------------
@@ -12,7 +11,7 @@ from symcoder import EvaluableOperation, evaluate
 
 @pytest.fixture
 def dot():
-    return EvaluableOperation(
+    return Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
@@ -20,7 +19,7 @@ def dot():
 
 @pytest.fixture
 def eps3():
-    return EvaluableOperation(
+    return Operation(
         name="eps3", rank=3, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], np.cross(vecs[1], vecs[2]))),
@@ -37,30 +36,26 @@ def event_3d():
 
 
 # ---------------------------------------------------------------------------
-# EvaluableOperation is a valid Operation
+# Operation basics
 # ---------------------------------------------------------------------------
 
-def test_evaluable_operation_is_operation(dot):
-    from symatom.atoms import Operation
-    assert isinstance(dot, Operation)
-
-def test_evaluable_operation_repr(dot):
+def test_operation_repr(dot):
     r = repr(dot)
     assert "dot" in r
     assert "rank=2" in r
     assert "SYMMETRIC" in r
 
-def test_evaluable_operations_equal_by_symbolic_fields(dot):
-    dot2 = EvaluableOperation(
+def test_operations_equal_by_symbolic_fields(dot):
+    dot2 = Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-        eval_fn=lambda vecs: 999.0,   # different callable
+        eval_fn=lambda vecs: 999.0,   # different callable — equality ignores it
     )
     assert dot == dot2
 
-def test_evaluable_operation_rank_validation():
+def test_operation_rank_validation():
     with pytest.raises(ValueError):
-        EvaluableOperation(
+        Operation(
             name="bad", rank=0, odd_parity=False,
             argument_symmetry=ArgumentSymmetry.SYMMETRIC,
             eval_fn=lambda vecs: 0.0,
@@ -82,7 +77,7 @@ def test_evaluate_dot_parallel(dot, event_3d):
 
 def test_evaluate_dot_self_via_rank1():
     # dot(a,a) is ill-formed; use a rank-1 squared-length op instead
-    lenSq = EvaluableOperation(
+    lenSq = Operation(
         name="lenSq", rank=1, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[0])),
@@ -119,17 +114,3 @@ def test_evaluate_eps3_argument_sort_sign(eps3, event_3d):
     assert atom.sign == -1
     assert evaluate(atom, event_3d) == pytest.approx(-1.0)
 
-
-# ---------------------------------------------------------------------------
-# evaluate() — error on plain Operation
-# ---------------------------------------------------------------------------
-
-def test_evaluate_raises_on_plain_operation(event_3d):
-    from symatom.atoms import Operation
-    plain_dot = Operation(
-        name="dot", rank=2, odd_parity=False,
-        argument_symmetry=ArgumentSymmetry.SYMMETRIC,
-    )
-    atom = Atom(plain_dot, ("a", "b"), sign=+1)
-    with pytest.raises(TypeError, match="eval_fn"):
-        evaluate(atom, event_3d)

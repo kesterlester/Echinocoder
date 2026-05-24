@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from symatom import Plan
+from symatom import Operation, Plan
 
-from symcoder import encode, encode_and_describe, describe_encoding, EvaluableOperation
+from symcoder import encode, encode_and_describe, describe_encoding
 from symcoder.eval import evaluate
 from symcoder.encoders.sort_encoder import SortEncoder, HalfSortEncoder
 

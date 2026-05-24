@@ -1,19 +1,25 @@
 """
-symatom demo — run with:  python -m symatom.demo
-Prints atoms, flavoured operators, and pair flavours for a small physics context.
+symatom demo — run with either:
+    python -m symatom.demo          (from repo root)
+    python symatom/demo.py          (from repo root)
+    python demo.py                  (from inside symatom/)
 """
-from .atoms   import ArgumentSymmetry, Operation, VectorType
-from .context import Context, Plan
-from .rep     import repS, canonical_pair_flavours, FlavouredOperator, Flavour
+from __future__ import annotations
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from symatom.atoms   import ArgumentSymmetry, Operation, VectorType
+from symatom.context import Context, Plan
+from symatom.rep     import repS, canonical_pair_flavours, FlavouredOperator, Flavour
 
 
 # ---------------------------------------------------------------------------
 # A typical two-family context
 # ---------------------------------------------------------------------------
 
-mass = Operation("m",  rank=1, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-dot  = Operation("dot",  rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
-eps3 = Operation("eps", rank=3, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+mass = Operation("m",   rank=1, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC,    eval_fn=lambda v: 0.0)
+dot  = Operation("dot", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC,    eval_fn=lambda v: 0.0)
+eps3 = Operation("eps", rank=3, odd_parity=True,  argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC, eval_fn=lambda v: 0.0)
 
 electrons = VectorType("electrons", labels=("A", "B", "C", ))
 muons     = VectorType("muons",     labels=("P", "Q", ))
@@ -86,7 +92,7 @@ def demo_scrambled_labels():
         ("apple","toast")  →  already sorted                         → sign=+1
     Output: a mix of + and - atoms despite all being passed sign=+1.
     """
-    eps2 = Operation("eps2", rank=2, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    eps2 = Operation("eps2", rank=2, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC, eval_fn=lambda v: 0.0)
     scrambled = VectorType("scrambled", labels=("zebra", "apple", "toast"))
     ctx_s = Context(types=(scrambled,))
     fo = FlavouredOperator(operation=eps2, flavour=Flavour((2,)), context=ctx_s)

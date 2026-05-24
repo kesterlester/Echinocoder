@@ -8,15 +8,18 @@ from symatom import ArgumentSymmetry, Operation, VectorType, Atom, are_negatives
 
 @pytest.fixture
 def dot():
-    return Operation("dot", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+    return Operation("dot", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+                   eval_fn=lambda v: 0.0)
 
 @pytest.fixture
 def eps3():
-    return Operation("eps3", rank=3, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    return Operation("eps3", rank=3, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                   eval_fn=lambda v: 0.0)
 
 @pytest.fixture
 def unstructured_op():
-    return Operation("foo", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.UNSTRUCTURED)
+    return Operation("foo", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.UNSTRUCTURED,
+                   eval_fn=lambda v: 0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +35,8 @@ def test_operation_valid(dot):
 
 def test_operation_invalid_rank():
     with pytest.raises(ValueError, match="rank"):
-        Operation("bad", rank=0, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+        Operation("bad", rank=0, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+                   eval_fn=lambda v: 0.0)
 
 def test_operation_frozen(dot):
     with pytest.raises(Exception):
@@ -44,45 +48,47 @@ def test_operation_tex_none_by_default(dot):
 def test_operation_tex_stored():
     op = Operation("eps", rank=2, odd_parity=True,
                    argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                   tex=r"\epsilon_{#1#2}")
+                   eval_fn=lambda v: 0.0, tex=r"\epsilon_{#1#2}")
     assert op.tex == r"\epsilon_{#1#2}"
 
 def test_operation_tex_excluded_from_equality():
     op_a = Operation("eps", rank=2, odd_parity=True,
                      argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                     tex=r"\epsilon_{#1#2}")
+                     eval_fn=lambda v: 0.0, tex=r"\epsilon_{#1#2}")
     op_b = Operation("eps", rank=2, odd_parity=True,
                      argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                     tex=r"\varepsilon_{#1#2}")
+                     eval_fn=lambda v: 0.0, tex=r"\varepsilon_{#1#2}")
     op_c = Operation("eps", rank=2, odd_parity=True,
-                     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+                     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                     eval_fn=lambda v: 0.0)
     assert op_a == op_b
     assert op_a == op_c
 
 def test_operation_tex_excluded_from_hash():
     op_a = Operation("eps", rank=2, odd_parity=True,
                      argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                     tex=r"\epsilon_{#1#2}")
+                     eval_fn=lambda v: 0.0, tex=r"\epsilon_{#1#2}")
     op_b = Operation("eps", rank=2, odd_parity=True,
-                     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+                     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                     eval_fn=lambda v: 0.0)
     assert hash(op_a) == hash(op_b)
 
 def test_operation_tex_rank_9_ok():
     op = Operation("big", rank=9, odd_parity=False,
                    argument_symmetry=ArgumentSymmetry.UNSTRUCTURED,
-                   tex="#1#2#3#4#5#6#7#8#9")
+                   eval_fn=lambda v: 0.0, tex="#1#2#3#4#5#6#7#8#9")
     assert op.tex is not None
 
 def test_operation_tex_rank_10_raises():
     with pytest.raises(ValueError, match="9 LaTeX parameters"):
         Operation("huge", rank=10, odd_parity=False,
                   argument_symmetry=ArgumentSymmetry.UNSTRUCTURED,
-                  tex="#1#2#3#4#5#6#7#8#9#10")
+                  eval_fn=lambda v: 0.0, tex="#1#2#3#4#5#6#7#8#9#10")
 
 def test_operation_tex_repr():
     op = Operation("eps", rank=2, odd_parity=True,
                    argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
-                   tex=r"\epsilon_{#1#2}")
+                   eval_fn=lambda v: 0.0, tex=r"\epsilon_{#1#2}")
     assert r"\epsilon_{#1#2}" in repr(op)
 
 def test_operation_no_tex_repr(dot):

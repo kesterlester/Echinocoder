@@ -3,13 +3,13 @@ Tests verifying that symcoder.encode() handles contexts with empty VectorTypes.
 """
 import numpy as np
 import pytest
-from symatom import ArgumentSymmetry, VectorType, Context, Plan
-from symcoder import EvaluableOperation, encode
+from symatom import ArgumentSymmetry, Operation, VectorType, Context, Plan
+from symcoder import encode
 
 
 @pytest.fixture
 def dot():
-    return EvaluableOperation(
+    return Operation(
         name="dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),

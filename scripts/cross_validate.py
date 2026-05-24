@@ -38,7 +38,7 @@ sys.path.insert(0, str(_REPO))
 # ── imports — update these names if the API was renamed ──────────────────────
 # Rename VectorType → VectorType here once step 1 is committed.
 from symatom import ArgumentSymmetry, Operation, VectorType, Context, Plan   # noqa: E402
-from symcoder import EvaluableOperation, encode                                # noqa: E402
+from symcoder import encode                                                    # noqa: E402
 
 _BASELINE = Path(__file__).parent / "cross_validate_baseline.npy"
 _VEC_DIM  = 5       # dimensionality of each vector
@@ -53,12 +53,12 @@ def _make_plan() -> Plan:
     muons     = VectorType("muons",     ("P", "Q"))
     ctx = Context((electrons, muons))
 
-    dot = EvaluableOperation(
+    dot = Operation(
         "dot", rank=2, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda vecs: float(np.dot(vecs[0], vecs[1])),
     )
-    eps = EvaluableOperation(
+    eps = Operation(
         "eps", rank=2, odd_parity=True,
         argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
         # 2D antisymmetric invariant embedded in higher-dim vectors

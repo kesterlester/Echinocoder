@@ -18,15 +18,18 @@ from symatom.rep import (
 
 @pytest.fixture
 def mass():
-    return Operation("mass", rank=1, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+    return Operation("mass", rank=1, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+                   eval_fn=lambda v: 0.0)
 
 @pytest.fixture
 def dot():
-    return Operation("dot", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC)
+    return Operation("dot", rank=2, odd_parity=False, argument_symmetry=ArgumentSymmetry.SYMMETRIC,
+                   eval_fn=lambda v: 0.0)
 
 @pytest.fixture
 def eps3():
-    return Operation("eps3", rank=3, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC)
+    return Operation("eps3", rank=3, odd_parity=True, argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
+                   eval_fn=lambda v: 0.0)
 
 @pytest.fixture
 def electrons():

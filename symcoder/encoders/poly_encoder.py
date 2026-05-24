@@ -55,12 +55,7 @@ elif spec.form == OrbitSpecForm.REPRESENTATIVE_ATOM:
 else:
     return []   # EXPLICIT_ORBIT not supported
 
-# 2. Check the operation is evaluable (has eval_fn):
-from symcoder.eval import EvaluableOperation
-if not isinstance(fo.operation, EvaluableOperation):
-    return []
-
-# 3. Only ANTISYMMETRIC operations benefit from polynomial compression here.
+# 2. Only ANTISYMMETRIC operations benefit from polynomial compression here.
 if fo.operation.argument_symmetry != ArgumentSymmetry.ANTISYMMETRIC:
     return []
 
