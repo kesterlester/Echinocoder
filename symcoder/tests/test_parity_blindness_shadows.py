@@ -53,6 +53,7 @@ from symcoder.encoders import (
     OrbitEncoderFactory, SortEncoderFactory, HalfSortEncoderFactory,
     standard_row_pair_factories, OverlapBlockEncoderFactory, Phase2EncoderFactory,
 )
+from symcoder.experiments.encoding_fidelity_search import canonical_invariant
 from symcoder.tests._parity_shadow_events import SHADOW_EVENTS
 
 
@@ -129,19 +130,57 @@ def encoders():
 def test_parity_flip_distinguishable(encoders, shadow_idx, raw_event):
     """encode(E) and encode(P(E)) must differ by more than ATOL.
 
-    Currently fails (xfail) for every shadow event: the encoder produces
-    *exactly* the same output for E and P(E).
+    Two-part claim:
+
+      (i)  E is chiral: E and P(E) are NOT related by any rotation +
+           label permutation, hence lie in distinct SO(3) x S_n orbits.
+           Verified up front using the classical Gram + signed-determinants
+           invariant (Weyl's first fundamental theorem for SO(n)).  If this
+           ever fails for a fixture event, the test is vacuous on that event
+           and is *skipped* (not failed) — see comment below for why skip
+           rather than assert.
+
+      (ii) encode(E) == encode(P(E)).  The encoder, despite incorporating
+           eps3 (a pseudoscalar that flips under parity), collapses chiral
+           E and P(E) to the same Phase 1 + Phase 2 output.
+
+    Currently fails (xfail) on every shadow event: both (i) and (ii) hold.
+
+    Why ``pytest.skip`` for achiral events rather than ``assert``:
+    ``@pytest.mark.xfail(strict=True)`` catches any assertion failure as the
+    "expected" failure.  If a fixture event were achiral, an assertion-style
+    chirality check would itself trigger xfail and *look* like the encoder
+    failure we're documenting, when really the fixture has gone stale.
+    ``pytest.skip`` is not caught by xfail and is therefore the honest tool
+    for "this case is no longer applicable, regenerate the fixture."
     """
     orbit_enc, phase2_enc = encoders
-    event = _to_event(raw_event)
+    event   = _to_event(raw_event)
     flipped = _parity_flip(event)
 
+    # (i) Chirality precondition: confirm E and P(E) are in DIFFERENT
+    # SO(3) x S_n orbits using Weyl's complete invariant for SO(n).  If they
+    # happen to share an orbit (event is achiral), the parity test is
+    # vacuous on this event and we skip rather than fail.
+    inv_pos = canonical_invariant(event,   group="SO3")
+    inv_neg = canonical_invariant(flipped, group="SO3")
+    if inv_pos == inv_neg:
+        pytest.skip(
+            f"shadow #{shadow_idx} is achiral (E is SO(3) x S_n-equivalent to "
+            f"P(E)); parity-blindness test is vacuous here.  "
+            f"Fixture should be regenerated if this happens — see "
+            f"symcoder/tests/_parity_shadow_events.py."
+        )
+
+    # (ii) Encoder distinguishability: for a chiral E, an SO(3)-faithful
+    # encoder must produce different outputs for E and P(E).
     enc_pos = _encode(orbit_enc, phase2_enc, event)
     enc_neg = _encode(orbit_enc, phase2_enc, flipped)
 
     max_diff = float(np.max(np.abs(enc_pos - enc_neg)))
     assert max_diff > ATOL, (
-        f"shadow #{shadow_idx}: encoder is parity-blind on this event.\n"
+        f"shadow #{shadow_idx}: event is chiral (SO(3) x S_n distinguishes "
+        f"E from P(E)), yet the encoder is parity-blind on it.\n"
         f"  encode(E)  - encode(P(E)) max |diff| = {max_diff:.3e}\n"
         f"  required:                            >  {ATOL:.3e}\n"
         f"  E = {raw_event}"
