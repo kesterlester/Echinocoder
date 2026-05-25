@@ -198,8 +198,9 @@ class HalfSortEncoder(AtomOrbitEncoder):
     condition physically before returning this encoder.
     """
 
-    def __init__(self, representatives: list) -> None:
-        self._representatives = list(representatives)
+    def __init__(self, orbit: list, representatives: list) -> None:
+        self._orbit = list(orbit) # Full orbit.
+        self._representatives = list(representatives) # Half of the orbit, whose elements are evaluated and modded.
 
     @property
     def output_dim(self) -> int:
@@ -263,4 +264,4 @@ class HalfSortEncoderFactory(AtomOrbitEncoderFactory):
         reps = _try_neg_pair_partition(orbit)
         if reps is None:
             return []
-        return [HalfSortEncoder(reps)]
+        return [HalfSortEncoder(orbit, reps)]

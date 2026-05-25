@@ -360,10 +360,14 @@ def run_demo(
                 orbit_atoms = enc._representatives
                 method = "HalfSortEncoder  (stores |eval| of sign=+1 reps)"
                 method_tex = r"\texttt{HalfSortEncoder} — stores $|\text{eval}|$ of sign$=+1$ representatives"
-            else:
-                orbit_atoms = enc._orbit
+            elif isinstance(enc, SortEncoder):
+                orbit_atoms = enc._orbit #TODO: _orbit is private and a member of only SortEncoder and HalfSortEncoder. There is no guarantee that future Phase1 encoders will have _orbit. Likely there should be an api change  requirement for Phase1 encoders to uniformly tell callers what their orbit was, or ask them to provide descriptions for this demo.  Also relatedly : #TODO : see if any other code is looking at private mthods like this.
                 method = "SortEncoder  (stores eval of full orbit)"
                 method_tex = r"\texttt{SortEncoder} — stores eval of full orbit"
+            else:
+                orbit_atoms = enc._orbit #TODO: _orbit is private and a member of only SortEncoder and HalfSortEncoder. There is no guarantee that future Phase1 encoders will have _orbit. Likely there should be an api change  requirement for Phase1 encoders to uniformly tell callers what their orbit was, or ask them to provide descriptions for this demo.  Also relatedly : #TODO : see if any other code is looking at private mthods like this.
+                method = f"[{enc.method_name}] Encoder  (working method not known)"
+                method_tex = r""
 
             _sl = list("xyzw")[:fo.operation.rank]
             out.subsection(
@@ -373,7 +377,10 @@ def run_demo(
             out.kv("  Canonical representative", atom_text(fo.canonical_representative()),
                    tex=f"$\\displaystyle{atom_tex(fo.canonical_representative())}$")
             out.kv("  Encoder", method, tex=method_tex + r"\\")
-            out.kv("  Orbit atoms", "  ".join(atom_text(a) for a in orbit_atoms),
+            out.kv("  Orbit atoms", "  ".join(atom_text(a) for a in enc._orbit), 
+                   tex=r",\ ".join(f"${atom_tex(a)}$" for a in enc._orbit)) #TODO: _orbit is private and a member of only SortEncoder and HalfSortEncoder. There is no guarantee that future Phase1 encoders will have _orbit. Likely there should be an api change  requirement for Phase1 encoders to uniformly tell callers what their orbit was, or ask them to provide descriptions for this demo.  Also relatedly : #TODO : see if any other code is looking at private mthods like this.
+            if isinstance(enc, HalfSortEncoder):
+                out.kv("  represented by ", "  ".join(atom_text(a) for a in orbit_atoms),
                    tex=r",\ ".join(f"${atom_tex(a)}$" for a in orbit_atoms))
 
             eval_vals = [evaluate(a, event) for a in orbit_atoms]
