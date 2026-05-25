@@ -1,7 +1,7 @@
 PYTHON   := ../venv/bin/python
 PDFLATEX := pdflatex
 
-.PHONY: regenerate_pdfs
+.PHONY: regenerate_pdfs clean
 
 regenerate_pdfs: demo_roundtrip.pdf demo_shadow_event_parity_+1.pdf demo_shadow_event_parity_-1.pdf
 
@@ -30,3 +30,6 @@ demo_shadow_event_parity_+1.pdf: demo_shadow_event_parity_+1.tex
 
 demo_shadow_event_parity_-1.pdf: demo_shadow_event_parity_-1.tex
 	SOURCE_DATE_EPOCH=0 $(PDFLATEX) -interaction=nonstopmode $<
+
+clean:
+	rm -f *.log *.aux
