@@ -6,13 +6,13 @@ Public API:
   atoms      : ArgumentSymmetry, Operation, VectorType, Atom, are_negatives
   context    : Context, Plan
   orbit_enum : OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
-  rep        : Flavour, FlavouredOperator, repS
+  rep        : Flavour, FlavouredOperator, repS, rep
   group      : TheGroup, GroupElement
 """
 from .atoms      import ArgumentSymmetry, Operation, VectorType, Atom, are_negatives
 from .context    import Context, Plan
 from .orbit_enum import OrbitEnumerator, BruteForceOrbitEnumerator, DirectOrbitEnumerator
-from .rep        import (Flavour, FlavouredOperator, repS,
+from .rep        import (Flavour, FlavouredOperator, repS, rep,
                          PairFlavour, pair_flavour_of,
                          canonical_pair_flavours,
                          brute_force_canonical_pair_flavours)
@@ -32,6 +32,7 @@ __all__ = [
     "Flavour",
     "FlavouredOperator",
     "repS",
+    "rep",
     "PairFlavour",
     "pair_flavour_of",
     "canonical_pair_flavours",

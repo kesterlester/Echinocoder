@@ -49,6 +49,7 @@ import pytest
 
 from symatom import ArgumentSymmetry, Operation, VectorType, Context, Plan
 import symcoder.operations.euclidean3
+from symcoder import encode as symcoder_encode
 from symcoder.encoders import (
     OrbitEncoderFactory, SortEncoderFactory, HalfSortEncoderFactory,
     standard_row_pair_factories, OverlapBlockEncoderFactory, Phase2EncoderFactory,
@@ -86,19 +87,35 @@ def _make_plan():
     return plan
 
 
-def _build_encoders(plan):
-    orbit_fac  = OrbitEncoderFactory([HalfSortEncoderFactory(), SortEncoderFactory()])
-    phase2_fac = Phase2EncoderFactory([
+def _orbit_factory():
+    return OrbitEncoderFactory([HalfSortEncoderFactory(), SortEncoderFactory()])
+
+
+def _phase2_factory():
+    return Phase2EncoderFactory([
         OverlapBlockEncoderFactory(standard_row_pair_factories(),
                                    use_complementarity_drop=False)
     ])
-    return orbit_fac.build(plan), phase2_fac.build(plan)
 
 
-def _encode(orbit_enc, phase2_enc, event):
-    ph1 = np.asarray(orbit_enc.encode(event).values,  dtype=float)
-    ph2 = np.asarray(phase2_enc.encode(event).values, dtype=float)
-    return np.concatenate([ph1, ph2])
+def _encode_default(plan, event):
+    """Top-level encode with default-on Phase 3 (simplicial-complex embedding).
+
+    Phase 3 is enabled by ``symcoder.encode``'s default, so it is included
+    here without an explicit factory argument.
+    """
+    return symcoder_encode(plan, event,
+                           orbit_factory=_orbit_factory(),
+                           phase2_factory=_phase2_factory())
+
+
+def _encode_no_phase3(plan, event):
+    """Top-level encode with Phase 3 explicitly disabled — the historical
+    Phase 1 + Phase 2 only output, used by the no-Phase-3 regression case."""
+    return symcoder_encode(plan, event,
+                           orbit_factory=_orbit_factory(),
+                           phase2_factory=_phase2_factory(),
+                           phase3_factory=None)
 
 
 def _to_event(event_dict):
@@ -110,24 +127,14 @@ def _parity_flip(event):
 
 
 @pytest.fixture(scope="module")
-def encoders():
-    plan = _make_plan()
-    return _build_encoders(plan)
+def plan():
+    return _make_plan()
 
 
 @pytest.mark.parametrize("shadow_idx,raw_event",
                          list(enumerate(SHADOW_EVENTS)),
                          ids=[f"shadow_{i:02d}" for i in range(len(SHADOW_EVENTS))])
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Known parity-blindness of the current Phase 1 + Phase 2 encoder on "
-        "structured events.  encode(E) == encode(P(E)) for this shadow event "
-        "even though E and its parity flip are in different SO(3) orbits.  "
-        "See module docstring."
-    ),
-)
-def test_parity_flip_distinguishable(encoders, shadow_idx, raw_event):
+def test_parity_flip_distinguishable(plan, shadow_idx, raw_event):
     """encode(E) and encode(P(E)) must differ by more than ATOL.
 
     Two-part claim:
@@ -137,24 +144,21 @@ def test_parity_flip_distinguishable(encoders, shadow_idx, raw_event):
            Verified up front using the classical Gram + signed-determinants
            invariant (Weyl's first fundamental theorem for SO(n)).  If this
            ever fails for a fixture event, the test is vacuous on that event
-           and is *skipped* (not failed) — see comment below for why skip
-           rather than assert.
+           and is *skipped* (not failed) — Skip rather than assert because a
+           failed assertion would be indistinguishable from a real encoder
+           bug; ``pytest.skip`` is the honest signal that the fixture has
+           gone stale and needs regeneration.
 
-      (ii) encode(E) == encode(P(E)).  The encoder, despite incorporating
-           eps3 (a pseudoscalar that flips under parity), collapses chiral
-           E and P(E) to the same Phase 1 + Phase 2 output.
+      (ii) encode(E) ≠ encode(P(E)).  The encoder, with the default-on
+           Phase 3 simplicial-complex embedding of the full alignment table,
+           must produce different outputs for chiral E and P(E).
 
-    Currently fails (xfail) on every shadow event: both (i) and (ii) hold.
-
-    Why ``pytest.skip`` for achiral events rather than ``assert``:
-    ``@pytest.mark.xfail(strict=True)`` catches any assertion failure as the
-    "expected" failure.  If a fixture event were achiral, an assertion-style
-    chirality check would itself trigger xfail and *look* like the encoder
-    failure we're documenting, when really the fixture has gone stale.
-    ``pytest.skip`` is not caught by xfail and is therefore the honest tool
-    for "this case is no longer applicable, regenerate the fixture."
+    History: before Phase 3 was added, this test failed (xfail) on every
+    shadow event because Phase 1 + Phase 2 alone are parity-blind on these
+    structured inputs.  ``test_parity_flip_no_phase3_still_blind`` below
+    pins the historical Phase 1 + Phase 2 behaviour as an xfail to make the
+    regression explicit.
     """
-    orbit_enc, phase2_enc = encoders
     event   = _to_event(raw_event)
     flipped = _parity_flip(event)
 
@@ -173,9 +177,10 @@ def test_parity_flip_distinguishable(encoders, shadow_idx, raw_event):
         )
 
     # (ii) Encoder distinguishability: for a chiral E, an SO(3)-faithful
-    # encoder must produce different outputs for E and P(E).
-    enc_pos = _encode(orbit_enc, phase2_enc, event)
-    enc_neg = _encode(orbit_enc, phase2_enc, flipped)
+    # encoder must produce different outputs for E and P(E).  Phase 3 is
+    # on by default in symcoder.encode.
+    enc_pos = _encode_default(plan, event)
+    enc_neg = _encode_default(plan, flipped)
 
     max_diff = float(np.max(np.abs(enc_pos - enc_neg)))
     assert max_diff > ATOL, (
@@ -184,4 +189,47 @@ def test_parity_flip_distinguishable(encoders, shadow_idx, raw_event):
         f"  encode(E)  - encode(P(E)) max |diff| = {max_diff:.3e}\n"
         f"  required:                            >  {ATOL:.3e}\n"
         f"  E = {raw_event}"
+    )
+
+
+@pytest.mark.parametrize("shadow_idx,raw_event",
+                         list(enumerate(SHADOW_EVENTS)),
+                         ids=[f"shadow_{i:02d}" for i in range(len(SHADOW_EVENTS))])
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Historical parity-blindness of Phase 1 + Phase 2 alone (no Phase 3) "
+        "on structured events.  encode(E, phase3=None) == encode(P(E), phase3=None) "
+        "for this shadow event even though E and its parity flip are in "
+        "different SO(3) orbits.  This test pins the historical bug as an "
+        "xfail to make explicit which encoder weakness Phase 3 was added to "
+        "address.  See module docstring."
+    ),
+)
+def test_parity_flip_no_phase3_still_blind(plan, shadow_idx, raw_event):
+    """With Phase 3 explicitly disabled the encoder must still be parity-blind.
+
+    This is the *companion* to test_parity_flip_distinguishable: the latter
+    confirms that Phase 3 (default-on) restores parity-faithfulness; this
+    one pins the historical Phase-1+2-only behaviour so the regression
+    remains visible.  Both are needed to document the fix.
+    """
+    event   = _to_event(raw_event)
+    flipped = _parity_flip(event)
+
+    # Same chirality precondition as the main test.
+    inv_pos = canonical_invariant(event,   group="SO3")
+    inv_neg = canonical_invariant(flipped, group="SO3")
+    if inv_pos == inv_neg:
+        pytest.skip(
+            f"shadow #{shadow_idx} is achiral; no-Phase-3 regression vacuous."
+        )
+
+    enc_pos = _encode_no_phase3(plan, event)
+    enc_neg = _encode_no_phase3(plan, flipped)
+
+    max_diff = float(np.max(np.abs(enc_pos - enc_neg)))
+    assert max_diff > ATOL, (
+        f"shadow #{shadow_idx}: Phase 1 + Phase 2 alone is parity-blind here "
+        f"(expected — this test is xfail-pinned).  max |diff| = {max_diff:.3e}"
     )

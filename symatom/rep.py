@@ -308,6 +308,73 @@ def repS(context: Context, operations) -> list:
 
 
 # ---------------------------------------------------------------------------
+# rep — the unpruned analogue of repS
+# ---------------------------------------------------------------------------
+
+
+def rep(context: Context, operations) -> list:
+    """
+    Return a flat list of all distinct :class:`Atom`s spanned by the given
+    operations and the labels in ``context``.
+
+    Concretely: for every operation ``op`` in ``operations`` and every
+    G-orbit (i.e. every flavour combination), every atom in that orbit is
+    yielded — one per sign-canonical form (so for ANTISYMMETRIC ops with
+    paired ± atoms only the sign=+1 representative is emitted; both halves
+    of any such pair have identical magnitudes by antisymmetry).
+
+    Whereas :func:`repS` returns one ``FlavouredOperator`` per orbit (i.e.\
+    one canonical representative per orbit-type), :func:`rep` returns *every*
+    atom across all orbits.  The size relation is:
+
+        |rep| = sum over (op, flavour) of |orbit(op, flavour)|
+
+    For a 3-electron, 2-muon plan with mag (rank 1, symmetric), dot
+    (rank 2, symmetric), and eps3 (rank 3, antisymmetric), this gives
+    5 mags + C(5,2)=10 dots + C(5,3)=10 eps3 atoms = 25 atoms total,
+    versus |repS|=8 in the same setup.
+
+    Why this exists
+    ---------------
+    :func:`repS` was historically derived from :func:`rep` by pruning rows
+    that *appeared* duplicative when only Phase 1 (per-row orbit value
+    multisets) and Phase 2 (per-row-pair joint value multisets) were
+    considered as the encoding target.  That pruning is only valid if
+    Phase 1 + Phase 2 marginals are sufficient for faithful encoding —
+    an assumption now known to be false on certain structured (chirality-
+    degenerate) inputs.  See
+    ``DOCS/parity_blindness_and_repS_concern.pdf`` for the full history.
+
+    The Phase 3 simplicial-complex multiset encoder
+    (``symcoder/encoders/phase3_simplicial.py``) builds its alignment
+    table using :func:`rep` rather than :func:`repS`, so that no rows
+    that might be needed for chirality discrimination have already been
+    discarded by the pre-encoding pruning.
+
+    Parameters
+    ----------
+    context : Context
+    operations : iterable of Operation
+
+    Returns
+    -------
+    list[Atom]
+        Every atom in canonical sign form, ordered first by appearance
+        in ``operations``, then by flavour (via ``_valid_flavours``),
+        then by the canonical iteration order within each flavour's
+        ``FlavouredOperator.atoms_one_per_sign()``.  The exact iteration
+        order is irrelevant for downstream multiset-style encoders, but
+        is deterministic so describe-mode output is stable.
+    """
+    atoms = []
+    for op in operations:
+        for fl in _valid_flavours(context.types, op.rank):
+            fo = FlavouredOperator(operation=op, flavour=fl, context=context)
+            atoms.extend(fo.atoms_one_per_sign())
+    return atoms
+
+
+# ---------------------------------------------------------------------------
 # PairFlavour
 # ---------------------------------------------------------------------------
 

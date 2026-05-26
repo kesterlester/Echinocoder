@@ -8,7 +8,7 @@ from symcoder import encode, describe_encoding, SegmentInfo, EncodingTree
 
 _NULL_KINDS = ("NULL_SELF", "NULL_COMP")
 _PAIR_KINDS  = ("ASSOC", "NULL_SELF", "NULL_COMP")
-_ALL_KINDS   = ("ORBIT", "ASSOC", "NULL_SELF", "NULL_COMP")
+_ALL_KINDS   = ("ORBIT", "ASSOC", "NULL_SELF", "NULL_COMP", "SIMPLICIAL")
 
 
 @pytest.fixture

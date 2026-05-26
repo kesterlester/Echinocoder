@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import groupby
 from symatom import Operation, repS
 from symatom.rep import canonical_pair_flavours
@@ -117,8 +117,10 @@ class SegmentInfo:
     kind:             str
     start:            int
     length:           int
-    op_u:             Operation
-    flavour_u:        tuple
+    # op_u / flavour_u may be None for whole-table segments (e.g. SIMPLICIAL,
+    # which spans the entire repS orbit table rather than a single operator).
+    op_u:             Operation | None
+    flavour_u:        tuple | None
     op_v:             Operation | None = None
     flavour_v:        tuple | None = None
     overlap:          tuple | None = None
@@ -134,25 +136,29 @@ class SegmentInfo:
 
     def __str__(self) -> str:
         idx     = f"[{self.start}:{self.stop}]"
-        fl_u    = ",".join(str(c) for c in self.flavour_u)
+        fl_u    = (",".join(str(c) for c in self.flavour_u)
+                   if self.flavour_u is not None else ".")
+        op_u    = self.op_u.name if self.op_u is not None else "."
         op_v    = self.op_v.name if self.op_v is not None else "."
         fl_v    = (",".join(str(c) for c in self.flavour_v)
                    if self.flavour_v is not None else ".")
         ov      = (",".join(str(c) for c in self.overlap)
                    if self.overlap   is not None else ".")
         # Single "variant" column: symmetry class (SS/SA/AS/AA) for pair rows,
-        # SC (sign-compressed) or "." for ORBIT rows.
+        # SC (sign-compressed) or "." for ORBIT rows, method_name for SIMPLICIAL.
         if self.kind == "ORBIT":
             if self.method_name is not None:
                 variant = self.method_name
             else:
                 variant = "SC" if self.sign_compressed else "."
+        elif self.kind == "SIMPLICIAL":
+            variant = self.method_name or "simplicial"
         else:
             variant = self.symmetry_class
         full    = self.notional_length if self.notional_length is not None else self.length
         ex      = f"  |  {self.example}" if self.example is not None else ""
         return (
-            f"{idx}  {self.kind}  {self.op_u.name}  {op_v}  {variant}"
+            f"{idx}  {self.kind}  {op_u}  {op_v}  {variant}"
             f"  u=({fl_u})  v=({fl_v})  shared=({ov})"
             f"  len={self.length}  full={full}{ex}"
         )
@@ -165,11 +171,13 @@ class SegmentInfo:
             "stop":             self.stop,
             "length":           self.length,
             "notional_length":  full,
-            "op_u":             self.op_u.name,
-            "flavour_u":        list(self.flavour_u),
+            "op_u":             self.op_u.name if self.op_u is not None else None,
+            "flavour_u":        list(self.flavour_u) if self.flavour_u is not None else None,
         }
         if self.kind == "ORBIT":
             d["sign_compressed"] = self.sign_compressed
+            d["method_name"]     = self.method_name
+        elif self.kind == "SIMPLICIAL":
             d["method_name"]     = self.method_name
         else:
             d.update({
@@ -231,22 +239,52 @@ class Phase2Tree:
 
 
 @dataclass
+class Phase3Tree:
+    """Container for the Phase 3 simplicial-complex multiset segment.
+
+    Holds one SegmentInfo (kind="SIMPLICIAL") covering the whole simplicial
+    embedding of the alignment table T.  ``n`` and ``k`` record the table
+    shape (|G| and |repS|) for descriptive purposes.
+
+    An empty Phase3Tree (no segments) means Phase 3 is disabled.
+    """
+    segments: list   # list[SegmentInfo]
+    n: int | None = None
+    k: int | None = None
+
+    def flat(self) -> list:
+        return list(self.segments)
+
+    def __iter__(self):
+        return iter(self.segments)
+
+    def __len__(self):
+        return len(self.segments)
+
+    def __getitem__(self, idx):
+        return self.segments[idx]
+
+
+@dataclass
 class EncodingTree:
     """
     Top-level tree mirroring the full encoder hierarchy.
 
     phase1  — flat collection of orbit segments (Phase 1)
     phase2  — nested collection of overlap-block nodes (Phase 2)
+    phase3  — (optional) the simplicial-complex multiset segment over the
+              full alignment table.  Empty Phase3Tree if Phase 3 disabled.
 
     List-like protocol (flat iteration) is supported so that existing code
     using `for s in tree`, `tree[i]`, `len(tree)` continues to work unchanged.
-    Use tree.phase1 / tree.phase2 for structured access.
+    Use tree.phase1 / tree.phase2 / tree.phase3 for structured access.
     """
     phase1: Phase1Tree
     phase2: Phase2Tree
+    phase3: Phase3Tree = field(default_factory=lambda: Phase3Tree(segments=[]))
 
     def flat(self) -> list:
-        return self.phase1.flat() + self.phase2.flat()
+        return self.phase1.flat() + self.phase2.flat() + self.phase3.flat()
 
     def __iter__(self):
         return iter(self.flat())
@@ -259,7 +297,9 @@ class EncodingTree:
 
     def __eq__(self, other):
         if isinstance(other, EncodingTree):
-            return self.phase1 == other.phase1 and self.phase2 == other.phase2
+            return (self.phase1 == other.phase1
+                    and self.phase2 == other.phase2
+                    and self.phase3 == other.phase3)
         if isinstance(other, list):
             return self.flat() == other
         return NotImplemented

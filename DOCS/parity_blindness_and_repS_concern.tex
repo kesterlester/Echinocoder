@@ -1,0 +1,522 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!60!black}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  framesep=4pt,
+  rulecolor=\color{gray!50},
+  backgroundcolor=\color{gray!5},
+  columns=fullflexible,
+}
+
+\title{Parity Blindness, Phase 3, and the \texttt{repS} Concern \\
+       \large How a residual faithfulness defect in the symcoder encoder
+               was diagnosed and closed by switching from \texttt{repS}
+               to \texttt{rep}}
+\author{Echinocoder / symcoder working notes}
+\date{2026-05-25 (initial), 2026-05-26 (resolution recorded)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document captures an investigation into a class of faithfulness
+defects in the symcoder encoder.  Phase 1 + Phase 2 of the existing
+encoder were found to be parity-blind on 31 specific
+``shadow'' events.  A new ``Phase 3'' was added in which the
+deterministically faithful simplicial-complex multiset embedder is
+applied to the alignment table $T$ of the event.  In its first
+implementation Phase 3 closed 29 of the 31 cases.  The two remaining
+shadows turned out to be a symptom of the more interesting structural
+problem the title alludes to: the alignment table was being built over
+\texttt{repS}, the pre-pruned ``short'' atom set, whose pruning had
+been justified \emph{only} under the (now-known-false) assumption that
+pair-row marginals are sufficient.  Switching Phase 3 to use the
+unpruned \texttt{rep} closed all 31 cases.  The document records the
+chain of reasoning, the implementation, and the residual open
+questions, so that the work can be picked up cold from the repository.
+\end{abstract}
+
+\tableofcontents
+
+\section{What problem are we solving?}
+
+\subsection{The encoder's contract}
+Echinocoder's symcoder encodes a labelled event $E$ (a tuple of vectors
+in $\mathbb{R}^d$, labelled by particle names) as a fixed-length real
+vector that is invariant under:
+\begin{itemize}[nosep]
+  \item the \emph{label-permutation group} $H = S_{n_1} \times S_{n_2}
+        \times \cdots$ acting on particle labels of each type;
+  \item the rotation group $SO(d)$ acting on the underlying vectors;
+  \item (for $d=3$ specifically) \emph{not} the full $O(3)$: parity
+        (reflection) is supposed to be preserved by the encoder because
+        the operator set includes the pseudoscalar $\varepsilon_3$.
+\end{itemize}
+
+\noindent
+End users use only the encoder; decoders exist solely as validation
+tools that confirm round-trips lose nothing other than the intended
+$H \times SO(d)$ ambiguity.
+
+\subsection{The defect: parity blindness on structured events}
+For ``generic'' real-valued events the existing two-phase encoder
+(Phase~1: per-orbit value multisets; Phase~2: per-row-pair joint value
+multisets) is empirically parity-faithful: $\text{encode}(E)$ differs
+from $\text{encode}(P(E))$ whenever $E$ and $P(E) = \{-v : v \in E\}$
+lie in distinct $SO(3) \times H$ orbits.
+
+However, for certain \emph{structured} events --- typically with
+antipodal muons (e.g.\ $q = -p$) and integer-valued electron
+coordinates --- the encoder produces \emph{exactly the same output}
+for $E$ and $P(E)$, despite the two being in different $SO(3) \times H$
+orbits.  This was discovered by the empirical search in
+\texttt{symcoder/experiments/encoding\_fidelity\_search.py} and pinned
+by 31 regression test cases in
+\texttt{symcoder/tests/test\_parity\_blindness\_shadows.py},
+parametrised over the fixture
+\texttt{symcoder/tests/\_parity\_shadow\_events.py}.
+
+The 31 ``shadow events'' are events for which
+$\text{encode}(E) = \text{encode}(P(E))$ exactly, yet the Gram-matrix
+plus signed-determinant invariant (Weyl's First Fundamental Theorem for
+$SO(n)$) distinguishes them.  All 31 are chiral in the strict sense:
+the chirality precondition in the test file confirms this case-by-case.
+
+\subsection{Why Phase 1 + Phase 2 alone is insufficient}
+For any antisymmetric operation (such as $\varepsilon_3$), the
+multiset of orbit values is intrinsically palindromic under negation
+(every value $v$ appears together with $-v$ in the orbit).  Hence
+Phase~1 \emph{never} distinguishes parity for these rows.
+
+Phase~2 (per-row-pair joint value multisets) usually breaks this
+palindrome on generic inputs but does not always: for the 31 shadow
+events the joint multisets are palindromic in the antisymmetric
+coordinate too.
+
+This is a property of \emph{pair-row} marginals.  The information
+needed to distinguish chirality lives at higher arity (joint structure
+across $\ge 3$ rows simultaneously); pair marginals miss it on
+structured inputs.
+
+\section{The attempted fix: Phase 3 simplicial-complex embedding}
+
+\subsection{Architecture}
+A new encoder factory has been wired into
+\texttt{symcoder/encode.py}:
+
+\begin{lstlisting}
+encode(plan, event,
+       orbit_factory=...,        # Phase 1
+       phase2_factory=...,       # Phase 2
+       phase3_factory=Phase3SimplicialEncoderFactory()  # default on
+)
+\end{lstlisting}
+
+The new factory builds a \texttt{Phase3SimplicialEncoder} (defined in
+\texttt{symcoder/encoders/phase3\_simplicial.py}) which:
+
+\begin{enumerate}[nosep]
+  \item Computes the full \emph{alignment table}
+        $T \in \mathbb{R}^{|G| \times |\text{repS}|}$ by direct
+        evaluation: $T_{g,i} = \text{eval}(g \cdot \text{atom}_i, E)$
+        where the rows are indexed by all group elements
+        $g \in G$ and the columns by all canonical \texttt{repS} atoms.
+  \item Treats $T$ as a \emph{multiset of $|G|$ tuples of dimension
+        $|\text{repS}|$} (i.e.\ the column ordering is forgotten).
+  \item Feeds this multiset to the existing top-level
+        \texttt{C0HomDeg1\_simplicialComplex\_embedder\_2} simplicial
+        embedder, which produces a deterministically faithful
+        embedding of any multiset of $n$ $k$-tuples in
+        $2nk + 1 - k$ reals.
+  \item Concatenates that vector to the end of the existing
+        Phase~1 + Phase~2 output, with a new \texttt{Phase3Tree}
+        segment-descriptor entry so users can slice it off if they
+        only want the smooth Phase~1+2 prefix.
+\end{enumerate}
+
+\subsection{First-pass result: 29 out of 31 shadow events fixed}
+With \texttt{phase3\_factory} on by default and the alignment table
+built over \texttt{repS}, 29 of the 31 parity regression tests pass:
+$\text{encode}(E) \neq \text{encode}(P(E))$ at the required tolerance.
+A companion test
+(\texttt{test\_parity\_flip\_no\_phase3\_still\_blind}) explicitly
+passes \texttt{phase3\_factory=None} and pins all 31 of the original
+failures as \texttt{xfail} so that the historical Phase-1+2-only bug
+remains visible.
+
+The two surviving failures (shadows 16 and 24) led to the deeper
+finding described in \S4.
+
+\section{The two intermediate failures: shadows 16 and 24}
+
+\emph{Note (post-resolution):} the failures discussed in this section
+were observed when Phase 3 used \texttt{repS}.  After switching Phase 3
+to use the unpruned \texttt{rep} (see \S6), both shadows now pass.
+The diagnostic content below is retained because it explains
+\emph{why} the \texttt{repS} pruning was wrong --- which is also the
+reason \texttt{repS} cannot in general be trusted as the column set of
+the alignment table.
+
+
+\subsection{What the diagnostic shows}
+For these two shadow events, the alignment tables $T(E)$ and
+$T(P(E))$ are \emph{the same multiset of 12 column vectors},
+bit-for-bit identical (zero difference at IEEE precision after lex
+sorting).  Hence \emph{any} encoder whose input is the multiset of
+columns of $T$ must produce identical output for these two events.
+
+This is not a numerical artefact of the simplicial encoder's
+piecewise-linear corner structure.  It was checked with
+\texttt{np.array\_equal} on lex-sorted rows.
+
+\subsection{Why this is mathematically possible}
+The label group $H$ acts on $T$ (viewed as a function
+$G \to \mathbb{R}^{|\text{repS}|}$) by \emph{left translation}:
+$T(\sigma \cdot E)(g) = T(E)(\sigma^{-1} \cdot g)$.  An $H$-invariant
+encoding need only be invariant under this left-translation action.
+
+The multiset-of-columns is invariant under \emph{any} permutation of
+columns --- including permutations that are \emph{not} left
+translations by any $\sigma \in H$.  So
+``multiset of columns'' is a \emph{strictly coarser} equivalence than
+``function modulo left translation by $H$''.
+
+In other words: two distinct functions $T_1, T_2 : G \to
+\mathbb{R}^{|\text{repS}|}$ can give the same column-multiset without
+being in the same $H$-orbit.  For shadows 16 and 24 this happens; the
+encoder consequently cannot distinguish them.
+
+\subsection{The geometric cause}
+For these events $T(E)$ has a high-symmetry column pattern: many
+columns share the same Phase-1-style $(\text{mag}, \text{dot})$
+profile, and within each such cluster the $\varepsilon_3$ values come
+in $\pm$ pairs.  A column-permutation that pairs each $+$-eps column
+with its $-$-eps counterpart, while leaving the $(\text{mag}, \text{dot})$
+profile per cluster unchanged, takes $T(E)$ to $T(P(E))$ as a
+multiset --- but this permutation is \emph{not} of the form ``left
+translation by some $\sigma \in H$.''
+
+\section{The \texttt{repS} concern (the key insight at the end of session)}
+
+\subsection{Historical pruning}
+The \texttt{repS} set used in the current code is the result of a
+historical pruning process:
+
+\begin{itemize}[nosep]
+  \item \texttt{rep} (original): \emph{all} mags, all (dissimilar)
+        dot pairs, and all (dissimilar) $\varepsilon_3$ triples
+        across the labels of the plan.  By Weyl's First Fundamental
+        Theorem this is information-complete for $SO(3)$ invariants
+        of the labelled vector tuple.
+  \item \texttt{repL} (intermediate): a longer-than-\texttt{repS}
+        intermediate pruning, no longer present in the codebase.
+  \item \texttt{repS} (current, ``short''): further pruned by
+        observing that many pairs of \texttt{rep} rows are
+        $G$-orbit-equivalent (e.g.\ $(\text{dot}(a,b), \text{dot}(c,d))$
+        and $(\text{dot}(a,d), \text{dot}(b,c))$ both have the same
+        $G$-orbit at the pair level), so only one of each duplicate
+        pair needs to be stored.
+\end{itemize}
+
+\subsection{Why the pruning is now suspect}
+The pruning from \texttt{rep} $\to$ \texttt{repL} $\to$ \texttt{repS}
+was justified \emph{under the assumption that Phase 1 + Phase 2
+multisets are sufficient}: the duplicates being eliminated were
+duplicates \emph{at the pair-row marginal level}.
+
+We now know (from the 31 shadow events) that pair-row marginals are
+\emph{not} sufficient for faithful encoding.  Therefore the pruning
+that yielded \texttt{repS} was based on a false premise: rows that
+look ``duplicate'' at the pair-marginal level may carry distinct
+joint information once we look at higher-arity marginals (such as the
+full alignment table).
+
+In particular, feeding \texttt{repS}-derived $T$ to the simplicial
+encoder makes the same mistake the pair-only pruning made: it throws
+away rows whose presence might break the column-multiset palindrome.
+
+\subsection{Concrete construction of \texttt{rep}}
+The full \texttt{rep} can be regenerated from a plan as the
+concatenation of:
+
+\begin{enumerate}[nosep]
+  \item $[\text{mag}(v) : v \in \text{labels}]$ --- one mag per label.
+  \item $[\text{dot}(a,b) : \{a,b\} \subset \text{labels},\ a \neq b]$
+        --- one dot per \emph{unordered} pair of distinct labels.
+        Iterating over \emph{combinations} (not permutations) avoids
+        double-counting; the dot constructor already
+        canonicalises its arguments.
+  \item $[\varepsilon_3(a,b,c) : \{a,b,c\} \subset \text{labels},\
+        a,b,c \text{ distinct}]$ --- one $\varepsilon_3$ per
+        \emph{unordered} triple of distinct labels.  Again iteration
+        over combinations is enough; the $\varepsilon_3$ constructor
+        is antisymmetric and canonicalises.
+\end{enumerate}
+
+For a 3-electron, 2-muon plan:
+\[
+  |\text{rep}| = \underbrace{5}_{\text{mags}}
+               + \underbrace{\binom{5}{2}}_{\text{dots} = 10}
+               + \underbrace{\binom{5}{3}}_{\varepsilon_3 = 10}
+               = 25,
+\]
+versus $|\text{repS}| = 8$ currently used.  $T$ becomes
+$|G| \times |\text{rep}| = 12 \times 25 = 300$ entries.  The
+simplicial embedder size then becomes $2 \cdot 12 \cdot 25 + 1 - 25 =
+576$ reals, replacing the current 185.
+
+\subsection{The hypothesis (now confirmed)}
+Using \texttt{rep} (not \texttt{repS}) in the Phase 3 alignment table
+\emph{should} make the column-multiset of $T$ injective on
+$SO(3) \times H$ orbits for the two stubborn shadow events.  When
+this swap was implemented, all 31 shadow events --- including 16 and
+24 --- did indeed become distinguishable by the encoder.  See \S6 for
+the implementation and the resulting test status.
+
+\medskip
+\noindent
+\textbf{An important caveat that has not been disproven.}  Even with
+\texttt{rep}, the column-multiset of $T$ is a strictly coarser
+equivalence than ``function modulo left-translation by $H$''.  We have
+no theorem that says \texttt{rep}'s column-multiset is a complete
+invariant for $SO(3) \times H$ in general.  All we know is that on the
+31 events of the current fixture it suffices; an adversarial event
+constructed against the column-multiset of \texttt{rep} is still
+mathematically possible (just harder to find than against
+\texttt{repS}).  See \S\ref{sec:open-questions}.
+
+\section{The resolution: switching Phase 3 from \texttt{repS} to \texttt{rep}}
+\label{sec:resolution}
+
+\subsection{What was changed in the code}
+
+\begin{enumerate}[nosep]
+  \item A new function \texttt{rep(context, operations)} was added to
+        \texttt{symatom/rep.py}, exported from \texttt{symatom/\_\_init\_\_.py}.
+        It flattens \texttt{repS}'s FlavouredOperators into a list of
+        individual \texttt{Atom}s: every atom across every G-orbit, with
+        one atom per sign-canonical form.  For symmetric ops this is one
+        atom per unordered label combination of the operation's rank; for
+        antisymmetric ops it is one atom per unordered label combination
+        (the $\pm$ pair is collapsed by storing only the
+        \texttt{sign=+1} representative).
+  \item \texttt{symcoder/encoders/phase3\_simplicial.py} was switched
+        from \texttt{repS} to \texttt{rep}.  The alignment table is now
+        $(|G|, |\text{rep}|)$ instead of $(|G|, |\text{repS}|)$.
+  \item No other production code was touched.  Phase 1 and Phase 2
+        continue to use \texttt{repS} internally, which is correct:
+        the \texttt{repS} pruning was justified at the pair-marginal
+        level, and Phase 1 + Phase 2 only consume pair marginals.  Only
+        Phase 3, which claims full faithfulness, needed \texttt{rep}.
+\end{enumerate}
+
+\subsection{What this costs}
+
+For the 3-electron, 2-muon parity-fixture plan:
+
+\medskip
+\noindent
+\begin{tabular}{lrr}
+\toprule
+                                    & \texttt{repS}   & \texttt{rep} \\
+\midrule
+\#\,atoms ($=k$)                    & 8               & 25 \\
+alignment table shape               & $12 \times 8$   & $12 \times 25$ \\
+Phase 3 output size $2nk+1-k$       & 185 reals       & 576 reals \\
+total encoder output (Ph1+Ph2+Ph3)  & $\approx 800$ reals & $\approx 1200$ reals \\
+\bottomrule
+\end{tabular}
+\medskip
+
+\noindent
+The growth scales as roughly
+$\binom{|\text{labels}|}{\text{rank of $\varepsilon$}}$ for the
+$\varepsilon$ row count, which is the dominant cost for plans with
+many particles and rank-3 (or higher) antisymmetric operations.  This
+is a known and accepted cost; it is the price of taking the unpruned
+information-complete set of rows.
+
+\subsection{Test status after the change}
+
+\begin{itemize}[nosep]
+  \item \texttt{test\_parity\_flip\_distinguishable} (Phase 3 on,
+        \texttt{rep}-based): \textbf{31 of 31 pass}.
+  \item \texttt{test\_parity\_flip\_no\_phase3\_still\_blind}
+        (Phase 3 off, pinning the historical bug): 31 of 31 xfail
+        (as expected).
+  \item Total symcoder/symatom suite: 622 passed, 32 xfailed.
+        The 32 xfails are 1 original alignment-decoder xfail + the
+        31 historical-no-Phase-3 xfails.
+\end{itemize}
+
+\section{File locations and how to reproduce}
+
+\subsection{Code under investigation}
+\begin{itemize}[nosep]
+  \item \texttt{symcoder/encode.py} --- top-level encode functions; Phase 3
+        wired in with default-on \texttt{phase3\_factory} sentinel.
+  \item \texttt{symcoder/encoders/phase3\_simplicial.py} --- the new
+        \texttt{Phase3SimplicialEncoder} + factory.  Now uses the
+        unpruned \texttt{rep}.
+  \item \texttt{symatom/rep.py} --- defines both \texttt{repS} (the
+        historical pruned set, still used by Phase 1 + Phase 2) and the
+        new \texttt{rep} function used by Phase 3.
+  \item \texttt{symcoder/describe.py} --- \texttt{SegmentInfo},
+        \texttt{Phase3Tree}, \texttt{EncodingTree.phase3}.
+  \item \texttt{C0HomDeg1\_simplicialComplex\_embedder\_2\_for\_array\_of\_reals\_as\_multiset.py}
+        --- the underlying simplicial-complex multiset embedder
+        (top-level Echinocoder file, not part of any package).
+        Output size $2nk+1-k$ for input shape $(n,k)$.
+\end{itemize}
+
+\subsection{Tests}
+\begin{itemize}[nosep]
+  \item \texttt{symcoder/tests/test\_parity\_blindness\_shadows.py}:
+    \begin{itemize}[nosep]
+      \item \texttt{test\_parity\_flip\_distinguishable} (Phase 3 on):
+            31/31 pass after the \texttt{repS} $\to$ \texttt{rep} fix.
+      \item \texttt{test\_parity\_flip\_no\_phase3\_still\_blind}
+            (Phase 3 off, xfail-pinned): 31/31 xfail.
+    \end{itemize}
+  \item \texttt{symcoder/tests/\_parity\_shadow\_events.py} ---
+        auto-generated fixture; 31 shadow events as Python literals.
+\end{itemize}
+
+\subsection{Experimental discovery script}
+\texttt{symcoder/experiments/encoding\_fidelity\_search.py} ---
+brute-force search over event families; SO(3) and O(3) oracles based
+on Gram-plus-signed-dets up to typed permutations of labels.
+Re-runnable to discover further shadow events or to validate that a
+fix really fixes \emph{all} known shadows.
+
+\subsection{One-shot diagnostic}
+To check whether $T(E)$ and $T(P(E))$ are the same multiset for any
+event, see the snippet near the end of the chat: build the table with
+\texttt{Phase3SimplicialEncoder.\_build\_table}, lex-sort the rows,
+compare with \texttt{np.array\_equal}.
+
+\section{Status and remaining open questions}
+
+\subsection{Status today (after resolution)}
+\begin{itemize}[nosep]
+  \item Phase 3 is implemented, wired in, default-on, and uses the
+        unpruned \texttt{rep} as the alignment-table column set.
+  \item Test suite: \textbf{622 passed, 32 xfailed}.  The 32 xfails are
+        1 pre-existing alignment-decoder xfail + 31
+        historical-no-Phase-3 xfails.  All 31 parity-blindness
+        regression cases pass with Phase 3 on.
+  \item Both demos (\texttt{demo\_roundtrip.py},
+        \texttt{demo\_shadow\_event.py}) still build; the
+        parity-blindness demo PDFs are visibly distinguishable now
+        that Phase 3 is on.
+  \item No production code outside Phase 3 was changed.  Phase 1 and
+        Phase 2 continue to use \texttt{repS}; that is correct because
+        the \texttt{repS} pruning is valid at the pair-marginal level.
+\end{itemize}
+
+\subsection{Recommended follow-ups (no longer urgent, but worth doing)}
+
+\begin{enumerate}
+  \item \textbf{Stress-test the \texttt{rep} column-multiset
+        faithfulness.}  The current fixture has 31 shadow events;
+        \texttt{rep} clears all 31, but does not prove the
+        column-multiset of $T(\text{rep})$ is a complete $SO(3)
+        \times H$ invariant in general.  Extending
+        \texttt{encoding\_fidelity\_search.py} to search against the
+        \texttt{rep}-based encoder (rather than the \texttt{repS}
+        one) might surface fresh adversarial events.
+  \item \textbf{Document the dual role of \texttt{repS} vs \texttt{rep}.}
+        The current docstrings explain why Phase 3 uses \texttt{rep},
+        but the broader narrative ``\texttt{repS} for pair-marginal
+        encoders only; \texttt{rep} for whole-table encoders that
+        claim faithfulness'' should probably be surfaced in
+        \texttt{SPEC.md} as a top-level design principle.
+  \item \textbf{Per-row sparsity / sub-selection of \texttt{rep}.}
+        \texttt{rep} grows as $\binom{|\text{labels}|}{\text{rank}}$
+        which is painful for large plans.  Worth investigating
+        whether there is a structured \emph{subset} of \texttt{rep}
+        (call it \texttt{repM} for medium) which is still sufficient
+        for whole-table faithfulness but smaller.  Any such subset
+        must be characterised by a proof, not a heuristic, since the
+        history of \texttt{repS} is a cautionary tale.
+\end{enumerate}
+
+\label{sec:open-questions}
+\subsection{Open theoretical question}
+
+\begin{itemize}[nosep]
+  \item Multiset-of-columns of $T(\text{rep})$ is still a strictly
+        coarser equivalence than ``function modulo left-translation
+        by $H$''.  Even with \texttt{rep} fixed, palindromic
+        column-multisets may remain possible in principle.
+  \item If so, the next architectural lever is to encode $T$ as a
+        function modulo $H$ (e.g.\ via canonical lex-min over the
+        $|H|$ left-translations of $T$) rather than as a multiset.
+        This is more corner-prone than simplicial but is the only
+        obvious way to recover the lost group-labelling structure.
+  \item Alternatively, augment $T$ with derived rows
+        (e.g.\ row-products of antisymmetric and symmetric rows)
+        whose presence breaks the column-multiset palindrome.
+        Construction of provably non-palindromic augmentations is
+        an open problem.
+\end{itemize}
+
+\label{sec:rep-construction}
+\section*{Appendix: explicit \texttt{rep} construction recipe}
+
+\noindent
+\emph{Note:} this recipe was the design proposal during the
+investigation.  The actual implementation in
+\texttt{symatom/rep.py} achieves the same result by reusing existing
+machinery: it constructs a \texttt{FlavouredOperator} for every
+(operation, flavour) pair, then iterates over each
+\texttt{FlavouredOperator.atoms\_one\_per\_sign()}.  Whether you read
+the recipe as ``iterate combinations across all labels for each
+operation rank'' (this appendix) or ``flatten every G-orbit in
+\texttt{repS}'' (the implementation), the resulting atom list is
+identical.
+
+\bigskip
+\noindent
+Given a \texttt{Plan} with \texttt{context.types[i].labels} for each
+particle type $i$, and any choice of operations (rank-1 symmetric,
+rank-2 symmetric, rank-3 antisymmetric, etc.):
+
+\begin{enumerate}[nosep]
+  \item Let \texttt{labels} be the concatenated tuple of all labels
+        across all types.
+  \item Emit one $\text{mag}(\ell)$ atom for each $\ell \in
+        \texttt{labels}$.
+  \item Emit one $\text{dot}(\ell_i, \ell_j)$ atom for each unordered
+        pair $\{\ell_i, \ell_j\} \subseteq \texttt{labels}$ with
+        $\ell_i \neq \ell_j$
+        (i.e.\ \texttt{itertools.combinations(labels, 2)}).
+  \item Emit one $\varepsilon_3(\ell_i, \ell_j, \ell_k)$ atom for each
+        unordered triple $\{\ell_i, \ell_j, \ell_k\} \subseteq
+        \texttt{labels}$ with the three labels pairwise distinct
+        (i.e.\ \texttt{itertools.combinations(labels, 3)}).
+\end{enumerate}
+
+\noindent
+The dot and $\varepsilon_3$ atom constructors are responsible for
+their own canonical-form sorting (lex order for symmetric ops, sign
+extraction for antisymmetric ops), so iterating over
+\texttt{combinations} (unordered) is sufficient.
+
+For multi-type plans the labels of different types are concatenated;
+no special treatment is required because \texttt{mag}, \texttt{dot},
+and $\varepsilon_3$ operate on labels independent of which type each
+label belongs to.
+
+\end{document}
