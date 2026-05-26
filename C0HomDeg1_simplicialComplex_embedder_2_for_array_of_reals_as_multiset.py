@@ -16,6 +16,38 @@ class Embedder(MultisetEmbedder):
         metadata = None
         return MultisetEmbedder.embed_kOne_sorting(data), metadata
 
+    def _pre_hash_state(self, data: np.ndarray):
+        """Return (second_diffs, canonical_eji_counts) — the inputs to the hash step.
+
+        second_diffs       : float64 array, shape (num_v,)
+        canonical_eji_counts: uint16 array,  shape (num_v, n, k)
+        """
+        assert MultisetEmbedder.is_generic_data(data)
+        n, k = data.shape
+
+        flattened_data_separated_by_cpt = [[(data[j][i], Eji(j, i)) for j in range(n)] for i in range(k)]
+        sorted_data_separated_by_cpt = [sorted(cpt, key=lambda x: -x[0]) for cpt in flattened_data_separated_by_cpt]
+        difference_data_by_cpt = [[(x[0] - y[0], x[1]) for x, y in pairwise(cpt)] for cpt in sorted_data_separated_by_cpt]
+        difference_data_with_MSVs_by_cpt = [[
+            (delta, Maximal_Simplex_Vertex(set(eji for (_, eji) in cpt[:i + 1])))
+            for i, (delta, _) in enumerate(cpt)]
+            for cpt in difference_data_by_cpt]
+        difference_data_with_MSVs = [bit for cpt in difference_data_with_MSVs_by_cpt for bit in cpt]
+        sorted_ddmsvs = sorted(difference_data_with_MSVs, key=lambda x: -x[0])
+
+        num_v = n * k - k
+        deltas = [d for d, _ in sorted_ddmsvs]
+        msvs = [msv for _, msv in sorted_ddmsvs]
+
+        subdivided = [
+            ((i + 1) * (deltas[i] - (deltas[i + 1] if i + 1 < num_v else 0)),
+             Eji_LinComb(n, k, msvs[:i + 1]))
+            for i in range(num_v)]
+        canonical_data = [(delta, lc.get_canonical_form()) for delta, lc in subdivided]
+        second_diffs = np.array([d for d, _ in canonical_data], dtype=np.float64)
+        canonical_eji_counts = np.array([lc._eji_counts for _, lc in canonical_data], dtype=np.uint16)
+        return second_diffs, canonical_eji_counts
+
     def embed_generic(self, data: np.ndarray, debug=False) -> (np.ndarray, Any):
         assert MultisetEmbedder.is_generic_data(data) # Precondition
         if debug:
