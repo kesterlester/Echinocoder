@@ -112,9 +112,24 @@ class Phase3EncoderFactory:
     Parameters
     ----------
     factories : iterable
-        Iterable of Phase-3 sub-factories.  Each must have a ``build(plan)``
-        method returning an encoder with ``encode(event)``, ``output_dim``,
-        and ``describe(start_offset)``.
+        Iterable of Phase-3 sub-factories.  Each must have an
+        ``assess(plan)`` method returning a list of bound encoders (often a
+        singleton, sometimes empty — see below) and a ``build(plan)``
+        method that returns a single bound encoder or raises.
+
+    Plan compatibility and refusal
+    ------------------------------
+    Each sub-factory's ``assess(plan)`` may legitimately return an empty
+    list, indicating that the sub-factory cannot honour the user's
+    construction parameters on this plan (e.g.\ a Vandermonde factory
+    with ``scale=λ`` applied to a plan whose operations don't declare
+    ``mass_dimension``).  Such sub-factories are silently skipped; the
+    composite encoder is built from whichever sub-factories *do* offer.
+
+    If *every* sub-factory refuses, ``build(plan)`` raises a clear error
+    rather than silently returning an empty composite — Phase 3 was
+    explicitly requested by the user and producing a zero-length
+    encoding is almost certainly not what they wanted.
 
     See module docstring for usage examples.
     """
@@ -123,5 +138,21 @@ class Phase3EncoderFactory:
         self._factories = list(factories)
 
     def build(self, plan) -> Phase3CompositeEncoder:
-        encoders = [f.build(plan) for f in self._factories]
+        encoders = []
+        refusals = []
+        for f in self._factories:
+            offered = f.assess(plan) if hasattr(f, "assess") else [f.build(plan)]
+            if not offered:
+                refusals.append(type(f).__name__)
+            encoders.extend(offered)
+        if not encoders and self._factories:
+            raise RuntimeError(
+                f"Phase3EncoderFactory.build: every sub-factory refused to "
+                f"offer a bound encoder for this plan.  Refusing factories: "
+                f"{refusals}.  Common cause: a Vandermonde factory was "
+                f"constructed with scale set, but the plan contains "
+                f"operation(s) without a declared mass_dimension; either "
+                f"drop the scale (scale=None) or declare a mass_dimension "
+                f"on every Operation in the plan."
+            )
         return Phase3CompositeEncoder(encoders)
