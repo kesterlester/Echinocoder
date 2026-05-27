@@ -4,6 +4,7 @@ import numpy as np
 from .encoders.orbit_encoder import OrbitEncoderFactory, OrbitEncoder
 from .encoders.phase2_encoder import Phase2EncoderFactory
 from .encoders.phase3_simplicial import Phase3SimplicialEncoderFactory
+from .encoders.phase3_factory import Phase3EncoderFactory
 from .describe import SegmentInfo, EncodingTree, Phase1Tree, Phase2Tree, Phase3Tree
 
 
@@ -16,13 +17,23 @@ _DEFAULT_PHASE3 = object()
 def _resolve_phase3_factory(phase3_factory):
     """Apply the default-on policy for phase3_factory.
 
-    Returns a Phase3SimplicialEncoderFactory instance when the caller did not
-    specify one (i.e. left it at the _DEFAULT_PHASE3 sentinel).  Returns None
-    when the caller explicitly disabled Phase 3 by passing None.  Otherwise
-    returns the caller's factory unchanged.
+    Returns a Phase3EncoderFactory containing a single
+    Phase3SimplicialEncoderFactory when the caller did not specify one
+    (i.e. left it at the _DEFAULT_PHASE3 sentinel).  Returns None when the
+    caller explicitly disabled Phase 3 by passing None.  Otherwise returns
+    the caller's factory unchanged.
+
+    The default uses the simplicial encoder alone, not the larger
+    Vandermonde-Cinf alternative, because (a) it is the smallest of the
+    Phase 3 options for typical plan sizes and (b) it has already been
+    verified to fix all 31 known parity-shadow regression cases.  Users who
+    want smoothness (Vandermonde-Cinf) or unit-friendly dimensions
+    (Vandermonde-C0), or several Phase 3 encoders concatenated, can
+    construct a Phase3EncoderFactory directly with the desired sub-factory
+    list.
     """
     if phase3_factory is _DEFAULT_PHASE3:
-        return Phase3SimplicialEncoderFactory()
+        return Phase3EncoderFactory([Phase3SimplicialEncoderFactory()])
     return phase3_factory
 
 

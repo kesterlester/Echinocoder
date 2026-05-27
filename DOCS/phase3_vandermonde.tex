@@ -1,0 +1,375 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!60!black}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  framesep=4pt,
+  rulecolor=\color{gray!50},
+  backgroundcolor=\color{gray!5},
+  columns=fullflexible,
+}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+
+\title{Phase 3 Vandermonde Encoder: \\
+       \large DFT-node power sums and sort-encodings of the
+              rep alignment table}
+\author{Echinocoder / symcoder working notes}
+\date{2026-05-26}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document describes the mathematics behind
+\texttt{symcoder.encoders.phase3\_vandermonde}, an alternative Phase 3
+one-shot whole-table encoder for the symcoder pipeline.  Like the
+simplicial-complex Phase 3 encoder it consumes the alignment table $T$
+of shape $(|G|, |\text{rep}|)$ and produces a permutation-invariant
+embedding; unlike the simplicial encoder it does so via polynomial
+projections (Vandermonde-power-sums) or via sorted-projections, both with
+a one-line correctness proof.  The implementation uses complex
+roots-of-unity nodes (a DFT setup) for the C-infinity variant to achieve
+perfect numerical conditioning, and admits an optional dimensional
+``scale'' parameter to fold out per-row unit mismatches.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ------------------------------------------------------------------
+\section{Setting and notation}
+
+We embed a multiset of $n$ vectors in $\mathbb{R}^k$.  Concretely the
+multiset is the column-set of the alignment table
+\[
+  T \in \mathbb{R}^{n \times k}, \qquad
+  T_{i, j} \;=\; \text{eval}\!\bigl(g_i \cdot \text{rep\_atoms}[j],\ E\bigr),
+\]
+where $g_1, \ldots, g_n$ enumerate the group $G$ (so $n = |G|$) and
+$\text{rep\_atoms}$ is the unpruned list of $|\text{rep}| = k$
+canonical atoms over which Phase 3 encoders work.  We treat $T$ as a
+multiset of $n$ rows of $\mathbb{R}^k$; the encoder must be invariant
+under permutation of rows.
+
+The label-permutation group $H$ acts on $T$ by left-translation of
+$g$-index.  An $H$-invariant encoding therefore inherits multiset
+invariance automatically.
+
+%% ------------------------------------------------------------------
+\section{Vandermonde projection}
+
+For each ``Vandermonde node'' $t_c \in \mathbb{C}$ (one per
+$c = 0, 1, \ldots, m_{\text{proj}} - 1$), define the linear functional
+\[
+  L_c \;:\; \mathbb{R}^k \to \mathbb{C}, \qquad
+  L_c(x) \;=\; \sum_{j=1}^{k} t_c^{\,j-1}\, x_j.
+\]
+Apply $L_c$ to every row of $T$:
+\[
+  y_{c, i} \;=\; L_c(T_{i, \cdot}), \qquad i = 1, \ldots, n.
+\]
+Then $y_{c, \cdot}$ is a multiset (or rather a sequence
+later treated as a multiset) of $n$ values in $\mathbb{C}$, one per row
+of $T$.
+
+%% ------------------------------------------------------------------
+\section{Two ways to encode a multiset of $n$ scalars}
+
+The encoder stores, for each $c$, an $n$-real representation of the
+multiset $\{y_{c, 1}, \ldots, y_{c, n}\}$.  Two complementary choices
+are implemented.
+
+\subsection{Power-sum encoding (C-infinity mode)}
+
+The classical Newton-Girard identities relate the power sums
+$p_q = \sum_i y_i^q$ to the elementary symmetric polynomials $e_q$ of
+$\{y_i\}$ via a triangular set of recursions.  Knowing $p_1, p_2, \ldots,
+p_n$ therefore determines $e_1, \ldots, e_n$, which are the
+coefficients (up to sign) of the polynomial
+\[
+  \prod_{i=1}^{n} (X - y_i)
+  \;=\; X^n - e_1 X^{n-1} + e_2 X^{n-2} - \cdots \pm e_n,
+\]
+whose roots are precisely $\{y_i\}$.  Hence:
+
+\begin{lemma}[Univariate Newton-Girard]
+The first $n$ power sums $p_1, p_2, \ldots, p_n$ uniquely determine the
+multiset of $n$ scalars $\{y_1, \ldots, y_n\}$.
+\end{lemma}
+
+The C-infinity encoding for projection $c$ is therefore
+\[
+  M_{c, p} \;=\; \sum_{i=1}^{n} y_{c, i}^{\,p}, \qquad p = 1, 2, \ldots, n.
+\]
+Each $M_{c, p}$ is a polynomial in the entries of $T$, so the encoding
+is $C^\infty$ everywhere.
+
+\subsection{Sort encoding (C-zero mode)}
+
+The same multiset can equivalently be encoded by its ascending sort:
+\[
+  S_{c, p} \;=\; \text{sort}(y_{c, 1}, \ldots, y_{c, n})_p,
+  \qquad p = 1, \ldots, n.
+\]
+Sorting is the canonical bijection between multisets of reals and
+ascending tuples of reals.  $S_{c, p}$ is continuous and Lipschitz in
+the entries of $T$, but not differentiable at value-ties.  It is
+``dimensionally homogeneous'' with $T$ (no powers are taken), which is
+why this mode is offered as an alternative to power sums.
+
+\subsection{Bridging projections: how many nodes are enough?}
+
+A multiset of $n$ values in $\mathbb{C}$ determined per projection
+does not by itself recover the original multiset of $n$ vectors in
+$\mathbb{R}^k$.  We need enough projections to disambiguate the joint
+distribution.  Expanding the $p$-th power sum:
+\[
+  M_{c, p} \;=\; \sum_i \Bigl(\sum_j t_c^{j-1}\, T_{i, j}\Bigr)^{\!p}
+  \;=\; \sum_{(a_1, \ldots, a_k):\,|a|=p}
+        \binom{p}{a}\, t_c^{(j-1)\,a_j}\,
+        \underbrace{\sum_i \prod_j T_{i, j}^{a_j}}_{\text{multi-symmetric
+        power sum}\ P_{a}(T)}.
+\]
+So $M_{c, p}$ is a polynomial in $t_c$ of degree $(k-1)\,p$ whose
+coefficients are the multivariate (multi-symmetric) power sums
+$P_a(T)$ of total degree $|a| = p$.
+
+\begin{theorem}
+If $t_0, \ldots, t_{m-1}$ are $m$ distinct complex numbers with
+$m \ge (k - 1)\,n + 1$, the values $\{M_{c, p} : 0 \le c < m,\
+1 \le p \le n\}$ determine all multi-symmetric power sums of total
+degree $\le n$ of the row-multiset of $T$.  Those in turn determine
+the row-multiset itself.
+\label{thm:bridging}
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+For each $p$, $M_{\cdot, p}$ as a function of $t$ is a polynomial of
+degree $(k-1)\, p \le (k-1)\,n$ in $t$.  Knowing it at $(k-1)\,n + 1$
+distinct points determines it (Vandermonde non-singularity).  Hence
+all $P_a(T)$ for $|a| \le n$ are recovered.  The multi-symmetric
+analogue of Newton-Girard (\emph{multi-symmetric power sums up to
+total degree $n$ separate multisets of $n$ tuples}) then yields the
+multiset of rows.
+\end{proof}
+
+The sort-encoding admits the same statement: per projection,
+$\{S_{c, 1}, \ldots, S_{c, n}\}$ is equivalent in information content
+to $\{M_{c, 1}, \ldots, M_{c, n}\}$ by Newton-Girard, and the
+Vandermonde / multi-symmetric argument is identical.
+
+%% ------------------------------------------------------------------
+\section{Numerical issues and the choice of nodes}
+
+Theorem~\ref{thm:bridging} requires only that the $t_c$ be distinct;
+their magnitudes are otherwise free.  Two issues constrain the actual
+choice in float64 arithmetic.
+
+\subsection{Overflow with large-magnitude nodes}
+
+The naive choice $t_c = c + 1$ (distinct positive integers) gives
+$t_{m-1}^{\,k-1} \approx m^{k-1}$.  For the parity-fixture plan
+($m = 289$, $k = 25$) this is $289^{24} \approx 10^{58}$, which
+overflows float64 at the projection matrix stage before any sum is
+even taken.
+
+\subsection{Underflow with bounded-magnitude real nodes}
+
+Putting $|t_c| < 1$ (e.g.\ Chebyshev nodes in $(-1, 1)$) fixes
+overflow.  But $t_c^{\,k-1}$ then becomes very small for nodes near
+zero, so those projection-matrix entries silently underflow to zero.
+The Vandermonde matrix becomes ill-conditioned even when no element
+literally overflows or underflows.
+
+\subsection{Unit-circle (DFT) nodes resolve both}
+
+The choice
+\[
+  t_c \;=\; \exp\!\Bigl(\frac{2\pi i\,c}{m_{\text{proj}}}\Bigr),
+  \qquad c = 0, 1, \ldots, m_{\text{proj}} - 1
+\]
+gives the $m_{\text{proj}}$-th roots of unity.  All are distinct (so
+Theorem~\ref{thm:bridging} applies).  All have modulus exactly $1$,
+so $|t_c^{\,j-1}| = 1$ for every $j$: no overflow, no underflow.
+Furthermore the resulting Vandermonde matrix is (up to a unitary
+normalisation) the DFT matrix, which has condition number $1$
+exactly.  This is the gold-standard numerical choice.
+
+%% ------------------------------------------------------------------
+\section{From complex outputs to a real-valued vector}
+
+With complex $t_c$ the projections $y_{c, i}$ and power sums $M_{c, p}$
+are complex.  To package the encoding as a real vector we exploit
+conjugate symmetry.
+
+\begin{lemma}
+$M_p(t) = \sum_i (L_t(T_{i, \cdot}))^p$, viewed as a function of
+$t \in \mathbb{C}$, is a polynomial in $t$ with real coefficients.
+Therefore $M_p(\overline{t}) = \overline{M_p(t)}$.
+\end{lemma}
+
+\begin{proof}
+$L_t(T_{i, \cdot}) = \sum_j t^{j-1} T_{i, j}$ with real $T_{i, j}$, so
+the coefficient of $t^d$ in $L_t(T_{i, \cdot})$ is real.  Raising to
+the $p$-th power and summing over $i$ preserves reality of
+coefficients.
+\end{proof}
+
+\paragraph{Consequence.}
+The lower-half roots of unity carry no additional information beyond
+the upper-half ones: $M_p$ at $\overline{t}$ is determined by $M_p$ at
+$t$.  So we store only the upper-half (and real-axis) nodes.  For
+$m_{\text{proj}}$ odd there is exactly one real-axis node $t = +1$ at
+$c = 0$; for $m_{\text{proj}}$ even there are two, $t = +1$ at
+$c = 0$ and $t = -1$ at $c = m_{\text{proj}}/2$.  The encoding layout:
+
+\begin{itemize}[nosep]
+  \item $c = 0$ (node $t = +1$): emit $\mathrm{Re}(M_{0, p})$ for
+        $p = 1, \ldots, n$.  ($n$ reals; $\mathrm{Im}$ is zero by the
+        lemma.)
+  \item For each $c = 1, \ldots, \lfloor (m_{\text{proj}} - 1)/2 \rfloor$
+        (upper-half nodes): emit $\mathrm{Re}(M_{c, p})$ and
+        $\mathrm{Im}(M_{c, p})$ interleaved, for $p = 1, \ldots, n$.
+        ($2n$ reals per such $c$.)
+  \item If $m_{\text{proj}}$ even, $c = m_{\text{proj}}/2$ (node
+        $t = -1$): emit $\mathrm{Re}(M_{c, p})$ for $p = 1, \ldots, n$.
+        ($n$ reals.)
+\end{itemize}
+
+Total reals:
+\[
+  n + 2n \cdot \left\lfloor \frac{m_{\text{proj}} - 1}{2}\right\rfloor
+    + [m_{\text{proj}} \text{ even}] \cdot n
+  \;=\; n \cdot m_{\text{proj}}.
+\]
+The same total size as if we had used $m_{\text{proj}}$ real-valued
+nodes, but with perfect numerical conditioning.
+
+%% ------------------------------------------------------------------
+\section{The optional scale parameter}
+
+\subsection{The unit-mismatch problem}
+
+In the C-infinity mode the encoding $M_{c, p}$ has the same physical
+units as $y^p$.  But the columns of $T$ themselves have different
+units when the rep atoms are of different mass dimension: $\text{mag}$
+columns are in units of length, $\text{dot}$ columns in length-squared,
+$\varepsilon_3$ columns in length-cubed.  Mixing these in the
+projection $L_c(T_{i, \cdot})$ and then raising to the $p$-th power
+gives output magnitudes that span $\sim |y|^1$ to $\sim |y|^n$ across
+$p$.  For $n = 12$ that is twelve orders of magnitude of dynamic range
+baked into the encoding before anything else has happened.
+
+\subsection{Dimensional homogenisation}
+
+We define the \emph{mass dimension} of an operation as the homogeneity
+degree of its $\text{eval\_fn}$ under uniform scaling of its vector
+arguments:
+\[
+  \text{eval\_fn}(k v_1, \ldots, k v_r)
+  \;=\; k^{\text{mass\_dim}}\, \text{eval\_fn}(v_1, \ldots, v_r).
+\]
+Concretely
+$\text{mag}\!:1$,
+$\text{magSq}\!:2$,
+$\text{dot}\!:2$,
+$\varepsilon_3\!:3$.
+This degree is declared on the \texttt{Operation} object as the new
+\texttt{mass\_dimension} field.
+
+Given a user-supplied length scale $\lambda > 0$, the encoder first
+divides each column of $T$ by $\lambda$ raised to that column's mass
+dimension:
+\[
+  T'_{i, j} \;=\; T_{i, j}\, /\, \lambda^{\text{mass\_dim}(j)}.
+\]
+The resulting $T'$ is dimensionless and has entries of order unity
+when $\lambda$ matches the natural scale of the event.  Power sums of
+$T'$ stay within a few orders of magnitude regardless of $p$.
+
+\paragraph{Why $\lambda$ must be external, not derived.}
+A natural temptation is to set $\lambda$ to (say) the largest absolute
+entry of $T$ at encoding time.  This is unsafe: the event values can
+be arbitrarily close to zero (e.g.\ the parity-fixture event with
+$p = (0,0,1), q = (0,0,-1)$ has many zero entries in $T$), so no
+data-derived $\lambda$ is bounded away from zero.  A bad $\lambda$
+amplifies rather than reduces dynamic range.
+
+The scale is therefore a fixed encoder parameter and is recorded in
+the segment descriptor so that downstream consumers can undo it.
+
+%% ------------------------------------------------------------------
+\section{Summary of guarantees and limitations}
+
+\begin{itemize}[nosep]
+  \item \textbf{Faithfulness.}  The encoder is deterministically
+        faithful (separates distinct row-multisets of $T$) by
+        Theorem~\ref{thm:bridging}.  No genericity assumption; no
+        ``measure-zero failures''.
+  \item \textbf{Smoothness.}  Cinf mode is $C^\infty$ in $T$
+        (polynomials).  C0 mode is Lipschitz continuous but not
+        differentiable at value-ties.
+  \item \textbf{Numerical conditioning.}  Cinf mode uses DFT nodes,
+        giving an implicit Vandermonde matrix of condition number $1$
+        and no over/underflow in the projection step.
+  \item \textbf{Output size.}  $m_{\text{proj}} \cdot n$ reals where
+        $m_{\text{proj}} = (k-1)\,n + 1$, so $\mathcal{O}(n^2 k)$.
+        Larger than the simplicial encoder's
+        $2 n k + 1 - k = \mathcal{O}(nk)$ but with a one-line
+        correctness proof and a smooth output (Cinf) or a
+        dimensionally-homogeneous one (C0).
+  \item \textbf{Scale parameter.}  In Cinf mode an external length
+        scale $\lambda$ may be supplied to keep $M_{c, p}$ magnitudes
+        bounded across $p$.  Doesn't affect faithfulness; only
+        numerical conditioning.
+  \item \textbf{What it does not do.}  Does not address the unit
+        mismatch \emph{within} a single power $p$ across different
+        $c$.  Does not provide an order-$O(nk)$ alternative to the
+        simplicial encoder; that remains an open problem.
+\end{itemize}
+
+%% ------------------------------------------------------------------
+\section{Code map}
+
+\begin{tabular}{lp{9cm}}
+\toprule
+File & Role \\
+\midrule
+\texttt{symatom/atoms.py} &
+  Adds the \texttt{mass\_dimension} field to \texttt{Operation}.
+\\
+\texttt{symcoder/operations/euclidean\{2,3\}.py} &
+  Declares mass dimensions on the standard library operations.
+\\
+\texttt{symcoder/encoders/phase3\_common.py} &
+  Shared helpers: \texttt{build\_alignment\_table},
+  \texttt{column\_mass\_dimensions}, \texttt{apply\_scale}.
+\\
+\texttt{symcoder/encoders/phase3\_vandermonde.py} &
+  This encoder.  \texttt{Phase3VandermondeEncoder} +
+  \texttt{Phase3VandermondeEncoderFactory}.
+\\
+\texttt{symcoder/encoders/phase3\_factory.py} &
+  Stacking wrapper.  \texttt{Phase3EncoderFactory} composes any
+  number of Phase 3 sub-encoders.
+\\
+\texttt{symcoder/encoders/phase3\_simplicial.py} &
+  The simplicial alternative.  Same input ($T$), different output style.
+\\
+\bottomrule
+\end{tabular}
+
+\end{document}

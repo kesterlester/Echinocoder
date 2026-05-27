@@ -61,6 +61,34 @@ class Operation:
         ValueError at construction time.
         tex is excluded from equality and hashing — it is display metadata,
         not part of the symbolic identity of the operation.
+
+    Optional mass_dimension parameter
+    ---------------------------------
+    mass_dimension : int | None
+        The homogeneity degree of ``eval_fn`` under uniform scaling of its
+        vector arguments:
+
+            eval_fn(k * v_1, k * v_2, ..., k * v_r) ==
+                k**mass_dimension * eval_fn(v_1, v_2, ..., v_r)
+
+        Examples:
+          * ``mag(v) = sqrt(v · v)``        — mass_dimension = 1
+          * ``magSq(v) = v · v``            — mass_dimension = 2
+          * ``dot(u, v) = u · v``           — mass_dimension = 2
+          * ``eps3(u, v, w) = u·(v×w)``     — mass_dimension = 3
+
+        Default is ``None``, meaning "unspecified".  Encoders that wish to
+        pre-divide their input by some user-supplied length scale ``λ``
+        (to keep numerical magnitudes bounded — see
+        ``symcoder.encoders.phase3_common.apply_scale``) require every
+        operation involved to declare a mass_dimension; encoders that don't
+        rescale (most of them) can leave it as ``None``.
+
+        Hashing/equality: mass_dimension is *not* part of the symbolic
+        identity of the operation (it is a property derivable from
+        ``eval_fn``).  Two operations with the same ``eval_fn`` but different
+        declared mass_dimensions would be a bug in the caller; we don't
+        prevent it but we don't double-count it either.
     """
     name:               str
     rank:               int             # number of vector arguments (>= 1)
@@ -68,6 +96,8 @@ class Operation:
     argument_symmetry:  ArgumentSymmetry
     eval_fn:            Callable = field(kw_only=True)
     tex:                str | None = field(default=None, kw_only=True,
+                                           compare=False, hash=False)
+    mass_dimension:     int | None = field(default=None, kw_only=True,
                                            compare=False, hash=False)
 
     def __post_init__(self):
@@ -77,6 +107,11 @@ class Operation:
             raise ValueError(
                 f"tex macro requires at most 9 LaTeX parameters; "
                 f"operation '{self.name}' has rank {self.rank}"
+            )
+        if self.mass_dimension is not None and not isinstance(self.mass_dimension, int):
+            raise ValueError(
+                f"mass_dimension must be int or None, "
+                f"got {type(self.mass_dimension).__name__}"
             )
 
     @property

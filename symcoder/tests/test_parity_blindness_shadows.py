@@ -75,6 +75,7 @@ def _make_plan():
         "Mymag", rank=1, odd_parity=False,
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))),
+        mass_dimension=1,        # |k v| = k |v|
     )
     electrons = VectorType("electrons", ("a", "b", "c"))
     muons     = VectorType("muons",     ("p", "q"))

@@ -47,9 +47,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from symatom import rep as _rep_fn
 from symcoder.encoders._base import EncodingResult
-from symcoder.eval import evaluate
+from symcoder.encoders.phase3_common import build_alignment_table, rep_atoms_for
 
 # ---------------------------------------------------------------------------
 # Lazy-import the top-level simplicial embedder (it lives outside any package).
@@ -113,7 +112,7 @@ class Phase3SimplicialEncoder:
     def __init__(self, plan) -> None:
         self._plan       = plan
         self._the_group  = plan.context.the_group
-        self._rep_atoms  = _rep_fn(plan.context, plan.operations)
+        self._rep_atoms  = rep_atoms_for(plan)
         self._embedder   = _SimplicialEmbedder()
 
         n = self._the_group.order()
@@ -128,14 +127,9 @@ class Phase3SimplicialEncoder:
 
     def _build_table(self, event: dict) -> np.ndarray:
         """Return T of shape (|G|, |rep|), dtype float64."""
-        group_elements = list(self._the_group.all_group_elements())
-        n = len(group_elements)
-        k = len(self._rep_atoms)
-        T = np.empty((n, k), dtype=np.float64)
-        for i, g in enumerate(group_elements):
-            for j, atom in enumerate(self._rep_atoms):
-                T[i, j] = float(evaluate(g.apply(atom), event))
-        return T
+        return build_alignment_table(
+            self._plan, event, self._the_group, self._rep_atoms
+        )
 
     def encode(self, event: dict) -> EncodingResult:
         T = self._build_table(event)
@@ -185,14 +179,23 @@ class Phase3SimplicialEncoder:
 
 class Phase3SimplicialEncoderFactory:
     """
-    Factory for Phase3SimplicialEncoder.  Sole entry point for callers that
-    want to opt in/out of Phase 3 at the top-level ``encode`` API.
+    Factory for Phase3SimplicialEncoder.  Used directly by callers that want
+    a single Phase-3 simplicial encoder, or as a sub-factory inside a
+    stacking ``Phase3EncoderFactory``.
 
-    Passing ``phase3_factory=None`` to ``encode`` / ``encode_and_describe``
-    suppresses Phase 3 entirely; passing an instance of this factory turns
-    it on.  Defaults at the call sites are ``Phase3SimplicialEncoderFactory()``
-    — i.e. Phase 3 is on by default.
+    Plan compatibility (``assess``)
+    -------------------------------
+    The simplicial encoder has no per-operation requirements (it does not
+    need ``mass_dimension``, for example), so ``assess(plan)`` always
+    returns a singleton list containing a bound encoder.  Provided for
+    interface symmetry with sibling Phase-3 factories.
     """
 
+    def assess(self, plan) -> list:
+        """Return ``[bound_encoder]`` — simplicial encoder is plan-agnostic."""
+        return [Phase3SimplicialEncoder(plan)]
+
     def build(self, plan) -> Phase3SimplicialEncoder:
-        return Phase3SimplicialEncoder(plan)
+        """Build a single bound encoder.  Defined in terms of ``assess`` so
+        the two APIs cannot drift apart."""
+        return self.assess(plan)[0]

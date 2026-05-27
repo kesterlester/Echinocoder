@@ -49,6 +49,7 @@ def main():
         argument_symmetry=ArgumentSymmetry.SYMMETRIC,
         eval_fn=lambda v: float(np.sqrt(np.dot(v[0], v[0]))),
         tex=r"|\vc{#1}|",
+        mass_dimension=1,
     )
 
     electrons = VectorType("electrons", ("a", "b", "c"))

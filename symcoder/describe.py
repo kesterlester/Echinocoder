@@ -145,14 +145,15 @@ class SegmentInfo:
         ov      = (",".join(str(c) for c in self.overlap)
                    if self.overlap   is not None else ".")
         # Single "variant" column: symmetry class (SS/SA/AS/AA) for pair rows,
-        # SC (sign-compressed) or "." for ORBIT rows, method_name for SIMPLICIAL.
+        # SC (sign-compressed) or "." for ORBIT rows, method_name for the
+        # whole-table Phase 3 segments (SIMPLICIAL, VANDERMONDE).
         if self.kind == "ORBIT":
             if self.method_name is not None:
                 variant = self.method_name
             else:
                 variant = "SC" if self.sign_compressed else "."
-        elif self.kind == "SIMPLICIAL":
-            variant = self.method_name or "simplicial"
+        elif self.kind in ("SIMPLICIAL", "VANDERMONDE"):
+            variant = self.method_name or self.kind.lower()
         else:
             variant = self.symmetry_class
         full    = self.notional_length if self.notional_length is not None else self.length
@@ -177,7 +178,7 @@ class SegmentInfo:
         if self.kind == "ORBIT":
             d["sign_compressed"] = self.sign_compressed
             d["method_name"]     = self.method_name
-        elif self.kind == "SIMPLICIAL":
+        elif self.kind in ("SIMPLICIAL", "VANDERMONDE"):
             d["method_name"]     = self.method_name
         else:
             d.update({

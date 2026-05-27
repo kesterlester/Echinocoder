@@ -19,6 +19,7 @@ mag = Operation(
     argument_symmetry=ArgumentSymmetry.SYMMETRIC,
     eval_fn=lambda v: float(np.linalg.norm(v[0])),
     tex=r"|\mathbf{#1}|",
+    mass_dimension=1,                # |k v| = k |v|
 )
 
 dot = Operation(
@@ -26,6 +27,7 @@ dot = Operation(
     argument_symmetry=ArgumentSymmetry.SYMMETRIC,
     eval_fn=lambda v: float(np.dot(v[0], v[1])),
     tex=r"\mathbf{#1} \cdot \mathbf{#2}",
+    mass_dimension=2,                # (k u)·(k v) = k^2 u·v
 )
 
 eps = Operation(
@@ -33,4 +35,5 @@ eps = Operation(
     argument_symmetry=ArgumentSymmetry.ANTISYMMETRIC,
     eval_fn=lambda v: float(np.dot(v[0], np.cross(v[1], v[2]))),
     tex=r"\varepsilon(\mathbf{#1},\mathbf{#2},\mathbf{#3})",
+    mass_dimension=3,                # (k u)·((k v) × (k w)) = k^3 u·(v×w)
 )
