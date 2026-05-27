@@ -1,0 +1,119 @@
+
+\documentclass[a4paper,11pt]{article}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{array}
+\newcommand{\vc}[1]{\ensuremath{\mathbf{#1}}}
+
+\newcommand{\dnfagmiihhiejm}[1]{|\vc{#1}|}
+\newcommand{\pdcegfomjfhook}[2]{\mathbf{#1} \cdot \mathbf{#2}}
+\newcommand{\kblbmcpggoncpf}[3]{\varepsilon(\mathbf{#1},\mathbf{#2},\mathbf{#3})}
+\title{symcoder Phase-3 Vandermonde demo (Cinf)\\\large standalone Vandermonde encoder (Cinf, scale=4), shadow event \#0}
+\date{}\begin{document}\maketitle
+
+\section{About this document}
+This document demonstrates the Phase-3 Vandermonde one-shot encoder running on its own, with Phase 1 and Phase 2 disabled.  The Vandermonde encoder is deterministically faithful on the full rep alignment table, so it is a valid standalone encoder; this document shows exactly what it consumes (the rep atoms and the alignment table $T$) and what it emits.\\[1ex]
+\textbf{Mode}: \textbf{Mode:} \texttt{Cinf}\\\\
+\textbf{Scale (lambda)}: \textbf{Scale ($\lambda$):} \texttt{4}\\\\
+See \texttt{DOCS/phase3\_vandermonde.pdf} for the mathematical derivation (DFT-node power sums, conjugate-pair compression, optional dimensional rescaling).\\[1ex]
+
+\section{Setup}
+\textbf{Particle types}: electrons $= \{a, b, c\}$,\quad muons $= \{p, q\}$\\
+\textbf{Group G}: $G = S_{\text{electrons}} \times S_{\text{muons}} = S_{3} \times S_{2}$, order $= 12$\\
+
+Operations:
+
+$\dnfagmiihhiejm{x}$ \quad (rank 1, symmetric)\\
+$\pdcegfomjfhook{x}{y}$ \quad (rank 2, symmetric)\\
+$\kblbmcpggoncpf{x}{y}{z}$ \quad (rank 3, antisymmetric)\\
+
+\textbf{Event vectors (3-D):}\\
+\textbf{  a}: $\vc{a} = (-1.00,\ -1.00,\ -1.00)$\\\\
+\textbf{  b}: $\vc{b} = (-1.00,\ -1.00,\ 0.00)$\\\\
+\textbf{  c}: $\vc{c} = (1.00,\ -1.00,\ -1.00)$\\\\
+\textbf{  p}: $\vc{p} = (0.00,\ 1.00,\ 0.00)$\\\\
+\textbf{  q}: $\vc{q} = (0.00,\ -1.00,\ 0.00)$\\\\
+
+\section{Phase 3 Encoding  (one-shot whole-table; rep size 25, |G|=12)}
+\textbf{rep atoms (25):} the unpruned set used by Phase 3 — every distinct atom across all G-orbits, not just one canonical representative per orbit.\\
+\textbf{    [ 0]}: $[0]\ \ \dnfagmiihhiejm{a}$\\\\
+\textbf{    [ 1]}: $[1]\ \ \dnfagmiihhiejm{b}$\\\\
+\textbf{    [ 2]}: $[2]\ \ \dnfagmiihhiejm{c}$\\\\
+\textbf{    [ 3]}: $[3]\ \ \dnfagmiihhiejm{p}$\\\\
+\textbf{    [ 4]}: $[4]\ \ \dnfagmiihhiejm{q}$\\\\
+\textbf{    [ 5]}: $[5]\ \ \pdcegfomjfhook{a}{b}$\\\\
+\textbf{    [ 6]}: $[6]\ \ \pdcegfomjfhook{a}{c}$\\\\
+\textbf{    [ 7]}: $[7]\ \ \pdcegfomjfhook{b}{c}$\\\\
+\textbf{    [ 8]}: $[8]\ \ \pdcegfomjfhook{a}{p}$\\\\
+\textbf{    [ 9]}: $[9]\ \ \pdcegfomjfhook{a}{q}$\\\\
+\textbf{    [10]}: $[10]\ \ \pdcegfomjfhook{b}{p}$\\\\
+\textbf{    [11]}: $[11]\ \ \pdcegfomjfhook{b}{q}$\\\\
+\textbf{    [12]}: $[12]\ \ \pdcegfomjfhook{c}{p}$\\\\
+\textbf{    [13]}: $[13]\ \ \pdcegfomjfhook{c}{q}$\\\\
+\textbf{    [14]}: $[14]\ \ \pdcegfomjfhook{p}{q}$\\\\
+\textbf{    [15]}: $[15]\ \ \kblbmcpggoncpf{a}{b}{c}$\\\\
+\textbf{    [16]}: $[16]\ \ \kblbmcpggoncpf{a}{b}{p}$\\\\
+\textbf{    [17]}: $[17]\ \ \kblbmcpggoncpf{a}{b}{q}$\\\\
+\textbf{    [18]}: $[18]\ \ \kblbmcpggoncpf{a}{c}{p}$\\\\
+\textbf{    [19]}: $[19]\ \ \kblbmcpggoncpf{a}{c}{q}$\\\\
+\textbf{    [20]}: $[20]\ \ \kblbmcpggoncpf{b}{c}{p}$\\\\
+\textbf{    [21]}: $[21]\ \ \kblbmcpggoncpf{b}{c}{q}$\\\\
+\textbf{    [22]}: $[22]\ \ \kblbmcpggoncpf{a}{p}{q}$\\\\
+\textbf{    [23]}: $[23]\ \ \kblbmcpggoncpf{b}{p}{q}$\\\\
+\textbf{    [24]}: $[24]\ \ \kblbmcpggoncpf{c}{p}{q}$\\\\
+
+\textbf{Alignment table $T$} (rows $=$ rep atoms, columns $= g \in G$):\\
+\begin{table}[h]\centering
+\caption{Phase 3 input alignment table T}
+\begin{tabular}{lrrrrrrrrrrrr}
+\toprule
+Atom & $g_{0}$ & $g_{1}$ & $g_{2}$ & $g_{3}$ & $g_{4}$ & $g_{5}$ & $g_{6}$ & $g_{7}$ & $g_{8}$ & $g_{9}$ & $g_{10}$ & $g_{11}$ \\
+\midrule
+$\dnfagmiihhiejm{a}$ & +1.7321 & +1.7321 & +1.7321 & +1.7321 & +1.4142 & +1.4142 & +1.4142 & +1.4142 & +1.7321 & +1.7321 & +1.7321 & +1.7321 \\
+$\dnfagmiihhiejm{b}$ & +1.4142 & +1.4142 & +1.7321 & +1.7321 & +1.7321 & +1.7321 & +1.7321 & +1.7321 & +1.7321 & +1.7321 & +1.4142 & +1.4142 \\
+$\dnfagmiihhiejm{c}$ & +1.7321 & +1.7321 & +1.4142 & +1.4142 & +1.7321 & +1.7321 & +1.7321 & +1.7321 & +1.4142 & +1.4142 & +1.7321 & +1.7321 \\
+$\dnfagmiihhiejm{p}$ & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 \\
+$\dnfagmiihhiejm{q}$ & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 \\
+$\pdcegfomjfhook{a}{b}$ & +2.0000 & +2.0000 & +1.0000 & +1.0000 & +2.0000 & +2.0000 & +0.0000 & +0.0000 & +1.0000 & +1.0000 & +0.0000 & +0.0000 \\
+$\pdcegfomjfhook{a}{c}$ & +1.0000 & +1.0000 & +2.0000 & +2.0000 & +0.0000 & +0.0000 & +2.0000 & +2.0000 & +0.0000 & +0.0000 & +1.0000 & +1.0000 \\
+$\pdcegfomjfhook{b}{c}$ & +0.0000 & +0.0000 & +0.0000 & +0.0000 & +1.0000 & +1.0000 & +1.0000 & +1.0000 & +2.0000 & +2.0000 & +2.0000 & +2.0000 \\
+$\pdcegfomjfhook{a}{p}$ & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 \\
+$\pdcegfomjfhook{a}{q}$ & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 \\
+$\pdcegfomjfhook{b}{p}$ & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 \\
+$\pdcegfomjfhook{b}{q}$ & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 \\
+$\pdcegfomjfhook{c}{p}$ & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 \\
+$\pdcegfomjfhook{c}{q}$ & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 \\
+$\pdcegfomjfhook{p}{q}$ & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 & -1.0000 \\
+$\kblbmcpggoncpf{a}{b}{c}$ & -2.0000 & -2.0000 & +2.0000 & +2.0000 & +2.0000 & +2.0000 & -2.0000 & -2.0000 & -2.0000 & -2.0000 & +2.0000 & +2.0000 \\
+$\kblbmcpggoncpf{a}{b}{p}$ & +1.0000 & -1.0000 & -2.0000 & +2.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & +2.0000 & -2.0000 & +1.0000 & -1.0000 \\
+$\kblbmcpggoncpf{a}{b}{q}$ & -1.0000 & +1.0000 & +2.0000 & -2.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & -2.0000 & +2.0000 & -1.0000 & +1.0000 \\
+$\kblbmcpggoncpf{a}{c}{p}$ & -2.0000 & +2.0000 & +1.0000 & -1.0000 & -1.0000 & +1.0000 & -1.0000 & +1.0000 & +1.0000 & -1.0000 & +2.0000 & -2.0000 \\
+$\kblbmcpggoncpf{a}{c}{q}$ & +2.0000 & -2.0000 & -1.0000 & +1.0000 & +1.0000 & -1.0000 & +1.0000 & -1.0000 & -1.0000 & +1.0000 & -2.0000 & +2.0000 \\
+$\kblbmcpggoncpf{b}{c}{p}$ & -1.0000 & +1.0000 & +1.0000 & -1.0000 & -2.0000 & +2.0000 & +2.0000 & -2.0000 & +1.0000 & -1.0000 & -1.0000 & +1.0000 \\
+$\kblbmcpggoncpf{b}{c}{q}$ & +1.0000 & -1.0000 & -1.0000 & +1.0000 & +2.0000 & -2.0000 & -2.0000 & +2.0000 & -1.0000 & +1.0000 & +1.0000 & -1.0000 \\
+$\kblbmcpggoncpf{a}{p}{q}$ & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 \\
+$\kblbmcpggoncpf{b}{p}{q}$ & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 \\
+$\kblbmcpggoncpf{c}{p}{q}$ & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 & +0.0000 & -0.0000 \\
+\bottomrule\end{tabular}\end{table}
+
+\textbf{Phase 3 segments (1):}\\
+\textbf{    [    0:3468 ]  kind=VANDERMONDE  method=vandermonde\_cinf\_dft  len=3468}: $[0{:}3468]$  kind \texttt{VANDERMONDE}  method \texttt{vandermonde\_cinf\_dft}  length $3468$\\\\
+
+\textbf{Encoded output:} $3468$ reals, range $[-1.8964e+04,\ +1.8972e+04]$, max$|\cdot| = +1.8972e+04$.\\
+\textit{First values:}\\
+\textbf{    }: +22.1349,\ +40.8414,\ +75.3784,\ +139.1609,\ +256.9876,\ +474.7126,\ +877.1477,\ +1621.2040\\
+\textit{Last 8 values:}\\
+\textbf{    }: +0.3352,\ -0.2118,\ +0.2561,\ -0.1884,\ +0.1961,\ -0.1660,\ +0.1497,\ -0.1460\\
+
+\section{Summary}
+\textbf{  Phase 3 encoded length}: Phase 3 encoded length: $3468$ reals\\\\
+\textbf{  Total encoded length}: Total encoded length: $3468$ reals\\\\
+\textbf{  repS size}: $|\text{repS}| = 8$ atoms\\\\
+\textbf{  |G|}: $|G| = 12$ group elements\\\\
+
+  TeX output written to: /Users/lester/github/Echinocoder/symcoder/demo\_vandermonde.tex
+  Compile with:  pdflatex demo\_vandermonde.tex
+
+\end{document}

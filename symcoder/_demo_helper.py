@@ -237,6 +237,11 @@ class DualOut:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+# Sentinel for "caller didn't pass a factory; build the standard one".
+# Distinct from explicit ``None`` (which means "skip that phase entirely").
+_DEFAULT_FACTORY = object()
+
+
 def run_demo(
     plan,
     ctx,
@@ -247,8 +252,17 @@ def run_demo(
     subtitle: str,
     intro_callback: Optional[Callable[[DualOut], None]] = None,
     use_comp_drop: bool = False,
+    orbit_factory=_DEFAULT_FACTORY,
+    phase2_factory=_DEFAULT_FACTORY,
+    phase3_factory=None,
 ) -> None:
-    """Render the full encode → decode → explain narrative to ``tex_path``.
+    """Render an encode → decode → explain narrative to ``tex_path``.
+
+    The narrative is *phase-conditional*: each of Phase 1 (orbit), Phase 2
+    (overlap-block pair), and Phase 3 (whole-table) is narrated only when
+    its factory argument is present.  The Alignment-Decoder section is
+    additionally gated on Phase 1 AND Phase 2 being present, since the
+    alignment decoder is fed from both.
 
     Parameters
     ----------
@@ -269,9 +283,38 @@ def run_demo(
         parity-blindness demo to emit an "About this document" preamble.
     use_comp_drop
         Whether the Phase 2 OverlapBlock factory should drop the
-        complementarity-implied selection.  False produces the most
-        explicit/readable Phase 2 output; True produces the most compact.
+        complementarity-implied selection.  Only affects the *default*
+        Phase 2 factory; a caller-supplied ``phase2_factory`` ignores this
+        flag.  ``False`` produces the most explicit/readable Phase 2
+        output; ``True`` produces the most compact.
+    orbit_factory
+        Phase 1 sub-factory chain.  Default (sentinel): build the
+        standard ``OrbitEncoderFactory([HalfSortEncoderFactory(),
+        SortEncoderFactory()])``.  Pass ``None`` explicitly to *skip*
+        Phase 1 narration entirely.
+    phase2_factory
+        Phase 2 factory.  Default (sentinel): build the standard
+        ``Phase2EncoderFactory([OverlapBlockEncoderFactory(...)])``.
+        Pass ``None`` explicitly to skip Phase 2 narration.
+    phase3_factory
+        Phase 3 factory (e.g.\ a stacking ``Phase3EncoderFactory`` or
+        a single sub-factory with ``.build(plan)``).  Default ``None``,
+        meaning Phase 3 is not narrated.  Pass a factory instance to
+        include the Phase 3 section.
     """
+    # Resolve factory sentinels.  An explicit ``None`` from the caller is
+    # treated as "skip"; the sentinel means "build the standard one here".
+    if orbit_factory is _DEFAULT_FACTORY:
+        orbit_factory = OrbitEncoderFactory(
+            [HalfSortEncoderFactory(), SortEncoderFactory()]
+        )
+    if phase2_factory is _DEFAULT_FACTORY:
+        phase2_factory = Phase2EncoderFactory([
+            OverlapBlockEncoderFactory(
+                standard_row_pair_factories(),
+                use_complementarity_drop=use_comp_drop,
+            )
+        ])
     with DualOut(tex_path) as out:
         # ── Derive setup display strings from ctx ────────────────────────
         ctx_title = ",  ".join(
@@ -327,231 +370,366 @@ def run_demo(
             vec_tex  = r",\ ".join(f"{v:.2f}" for v in vec)
             out.kv(f"  {lbl}", vec_text, tex=rf"$\vc{{{lbl}}} = ({vec_tex})$\\")
 
-        # ── Build encoders and encode ────────────────────────────────────
-        orbit_factory   = OrbitEncoderFactory([HalfSortEncoderFactory(), SortEncoderFactory()])
-        phase2_factory  = Phase2EncoderFactory([
-            OverlapBlockEncoderFactory(
-                standard_row_pair_factories(), use_complementarity_drop=use_comp_drop
-            )
-        ])
+        # ── Build encoders for each active phase ─────────────────────────
+        orbit_enc   = orbit_factory.build(plan)  if orbit_factory  is not None else None
+        phase2_enc  = phase2_factory.build(plan) if phase2_factory is not None else None
+        phase3_enc  = phase3_factory.build(plan) if phase3_factory is not None else None
 
-        orbit_enc  = orbit_factory.build(plan)
-        phase2_enc = phase2_factory.build(plan)
-        phase1_vals = orbit_enc.encode(event).values
-        phase2_vals = phase2_enc.encode(event).values
+        phase1_vals = orbit_enc.encode(event).values  if orbit_enc  is not None else None
+        phase2_vals = phase2_enc.encode(event).values if phase2_enc is not None else None
+        phase3_vals = phase3_enc.encode(event).values if phase3_enc is not None else None
 
         fo_list    = _repS_fn(ctx, plan.operations)
         repS_atoms = [fo.canonical_representative() for fo in fo_list]
+        phase1_results: dict = {}
 
         # ── Phase 1 encoding ─────────────────────────────────────────────
-        out.section("Phase 1 Encoding  (one orbit per FlavouredOperator in repS)")
-        out.line(f"  {len(orbit_enc._selections)} FlavouredOperators in repS")
-        out.blank()
+        if orbit_enc is not None:
+            out.section("Phase 1 Encoding  (one orbit per FlavouredOperator in repS)")
+            out.line(f"  {len(orbit_enc._selections)} FlavouredOperators in repS")
+            out.blank()
 
-        phase1_results = {}
-        cursor = 0
-        for fo, enc in orbit_enc._selections:
-            key    = (fo.operation, tuple(fo.flavour.counts))
-            chunk  = phase1_vals[cursor : cursor + enc.output_dim]
-            decoded = enc.decode(chunk)
-            phase1_results[key] = decoded
+            phase1_results = {}
+            cursor = 0
+            for fo, enc in orbit_enc._selections:
+                key    = (fo.operation, tuple(fo.flavour.counts))
+                chunk  = phase1_vals[cursor : cursor + enc.output_dim]
+                decoded = enc.decode(chunk)
+                phase1_results[key] = decoded
 
-            if isinstance(enc, HalfSortEncoder):
-                orbit_atoms = enc._representatives
-                method = "HalfSortEncoder  (stores |eval| of sign=+1 reps)"
-                method_tex = r"\texttt{HalfSortEncoder} — stores $|\text{eval}|$ of sign$=+1$ representatives"
-            elif isinstance(enc, SortEncoder):
-                orbit_atoms = enc._orbit #TODO: _orbit is private and a member of only SortEncoder and HalfSortEncoder. There is no guarantee that future Phase1 encoders will have _orbit. Likely there should be an api change  requirement for Phase1 encoders to uniformly tell callers what their orbit was, or ask them to provide descriptions for this demo.  Also relatedly : #TODO : see if any other code is looking at private mthods like this.
-                method = "SortEncoder  (stores eval of full orbit)"
-                method_tex = r"\texttt{SortEncoder} — stores eval of full orbit"
-            else:
-                orbit_atoms = enc._orbit #TODO: _orbit is private and a member of only SortEncoder and HalfSortEncoder. There is no guarantee that future Phase1 encoders will have _orbit. Likely there should be an api change  requirement for Phase1 encoders to uniformly tell callers what their orbit was, or ask them to provide descriptions for this demo.  Also relatedly : #TODO : see if any other code is looking at private mthods like this.
-                method = f"[{enc.method_name}] Encoder  (working method not known)"
-                method_tex = r""
+                if isinstance(enc, HalfSortEncoder):
+                    orbit_atoms = enc._representatives
+                    method = "HalfSortEncoder  (stores |eval| of sign=+1 reps)"
+                    method_tex = r"\texttt{HalfSortEncoder} — stores $|\text{eval}|$ of sign$=+1$ representatives"
+                elif isinstance(enc, SortEncoder):
+                    orbit_atoms = enc._orbit
+                    method = "SortEncoder  (stores eval of full orbit)"
+                    method_tex = r"\texttt{SortEncoder} — stores eval of full orbit"
+                else:
+                    orbit_atoms = enc._orbit
+                    method = f"[{enc.method_name}] Encoder  (working method not known)"
+                    method_tex = r""
 
-            _sl = list("xyzw")[:fo.operation.rank]
-            out.subsection(
-                f"FlavouredOperator: {fo.operation.name}  flavour={tuple(fo.flavour.counts)}",
-                tex=f"FlavouredOperator: ${op_tex_sample(fo.operation, _sl)}$  flavour $= {tuple(fo.flavour.counts)}$"
-            )
-            out.kv("  Canonical representative", atom_text(fo.canonical_representative()),
-                   tex=f"$\\displaystyle{atom_tex(fo.canonical_representative())}$")
-            out.kv("  Encoder", method, tex=method_tex + r"\\")
-            out.kv("  Orbit atoms", "  ".join(atom_text(a) for a in enc._orbit), 
-                   tex=r",\ ".join(f"${atom_tex(a)}$" for a in enc._orbit)) #TODO: _orbit is private and a member of only SortEncoder and HalfSortEncoder. There is no guarantee that future Phase1 encoders will have _orbit. Likely there should be an api change  requirement for Phase1 encoders to uniformly tell callers what their orbit was, or ask them to provide descriptions for this demo.  Also relatedly : #TODO : see if any other code is looking at private mthods like this.
-            if isinstance(enc, HalfSortEncoder):
-                out.kv("  represented by ", "  ".join(atom_text(a) for a in orbit_atoms),
-                   tex=r",\ ".join(f"${atom_tex(a)}$" for a in orbit_atoms))
+                _sl = list("xyzw")[:fo.operation.rank]
+                out.subsection(
+                    f"FlavouredOperator: {fo.operation.name}  flavour={tuple(fo.flavour.counts)}",
+                    tex=f"FlavouredOperator: ${op_tex_sample(fo.operation, _sl)}$  flavour $= {tuple(fo.flavour.counts)}$"
+                )
+                out.kv("  Canonical representative", atom_text(fo.canonical_representative()),
+                       tex=f"$\\displaystyle{atom_tex(fo.canonical_representative())}$")
+                out.kv("  Encoder", method, tex=method_tex + r"\\")
+                out.kv("  Orbit atoms", "  ".join(atom_text(a) for a in enc._orbit),
+                       tex=r",\ ".join(f"${atom_tex(a)}$" for a in enc._orbit))
+                if isinstance(enc, HalfSortEncoder):
+                    out.kv("  represented by ", "  ".join(atom_text(a) for a in orbit_atoms),
+                       tex=r",\ ".join(f"${atom_tex(a)}$" for a in orbit_atoms))
 
-            eval_vals = [evaluate(a, event) for a in orbit_atoms]
-            out.kv("  Eval values",
-                   "  ".join(fmtf(v) for v in eval_vals),
-                   tex=r",\ ".join(tex_num(v) for v in eval_vals))
+                eval_vals = [evaluate(a, event) for a in orbit_atoms]
+                out.kv("  Eval values",
+                       "  ".join(fmtf(v) for v in eval_vals),
+                       tex=r",\ ".join(tex_num(v) for v in eval_vals))
 
-            out.kv(f"  Encoded [{chunk.size} reals]",
-                   "  ".join(fmtf(v) for v in chunk),
-                   tex=r",\ ".join(tex_num(v) for v in chunk))
+                out.kv(f"  Encoded [{chunk.size} reals]",
+                       "  ".join(fmtf(v) for v in chunk),
+                       tex=r",\ ".join(tex_num(v) for v in chunk))
 
-            cursor += enc.output_dim
+                cursor += enc.output_dim
 
         # ── Phase 2 encoding ─────────────────────────────────────────────
-        _drop_label = "enabled" if use_comp_drop else "disabled"
-        out.section(f"Phase 2 Encoding  (OverlapBlocks, complementarity-drop {_drop_label})")
+        if phase2_enc is not None:
+            _drop_label = "enabled" if use_comp_drop else "disabled"
+            out.section(f"Phase 2 Encoding  (OverlapBlocks, complementarity-drop {_drop_label})")
 
-        p2cursor = 0
-        for spec, block_enc in phase2_enc._block_encoders:
-            pf0 = block_enc._selections[0].pf
-            block_title = (f"{pf0.op_u.name}[{tuple(pf0.flavour_u.counts)}] "
-                           f"× {pf0.op_v.name}[{tuple(pf0.flavour_v.counts)}]")
-            _qs = list("xyzw")
-            block_title_tex = (f"${op_tex_sample(pf0.op_u, _qs)}"
-                               f" \\times "
-                               f"{op_tex_sample(pf0.op_v, _qs)}$"
-                               f"  (block)")
+            p2cursor = 0
+            for spec, block_enc in phase2_enc._block_encoders:
+                pf0 = block_enc._selections[0].pf
+                block_title = (f"{pf0.op_u.name}[{tuple(pf0.flavour_u.counts)}] "
+                               f"× {pf0.op_v.name}[{tuple(pf0.flavour_v.counts)}]")
+                _qs = list("xyzw")
+                block_title_tex = (f"${op_tex_sample(pf0.op_u, _qs)}"
+                                   f" \\times "
+                                   f"{op_tex_sample(pf0.op_v, _qs)}$"
+                                   f"  (block)")
 
-            out.subsection(f"Block: {block_title}", tex=f"Block: {block_title_tex}")
+                out.subsection(f"Block: {block_title}", tex=f"Block: {block_title_tex}")
 
-            block_slice = phase2_vals[p2cursor : p2cursor + block_enc.output_dim]
-            decoded_list = block_enc.decode(block_slice, phase1_results)
+                block_slice = phase2_vals[p2cursor : p2cursor + block_enc.output_dim]
+                decoded_list = block_enc.decode(block_slice, phase1_results)
 
-            sel_cursor = 0
-            for sel, decoded in zip(block_enc._selections, decoded_list):
-                pf   = sel.pf
-                kind = "NULL_SELF" if sel.encoder.output_dim == 0 and sel.encoder.method_name == "null_self" \
-                       else ("NULL_COMP" if sel.is_comp_drop else "ASSOC")
-                enc_dim  = sel.encoder.output_dim
-                method   = sel.encoder.method_name
-                stored_dim = 0 if sel.is_comp_drop else enc_dim
+                sel_cursor = 0
+                for sel, decoded in zip(block_enc._selections, decoded_list):
+                    pf   = sel.pf
+                    kind = "NULL_SELF" if sel.encoder.output_dim == 0 and sel.encoder.method_name == "null_self" \
+                           else ("NULL_COMP" if sel.is_comp_drop else "ASSOC")
+                    enc_dim  = sel.encoder.output_dim
+                    method   = sel.encoder.method_name
+                    stored_dim = 0 if sel.is_comp_drop else enc_dim
 
-                out.line(f"    PairFlavour  overlap={tuple(pf.overlap)}"
-                         f"  type={method}  kind={kind}  dim={enc_dim}")
-                out._t(f"\\textbf{{PairFlavour}} overlap$={tuple(pf.overlap)}$,"
-                       f" type=\\texttt{{{tex_escape(method)}}}, kind=\\texttt{{{tex_escape(kind)}}},"
-                       f" encoded dim$={enc_dim}$\\\\")
+                    out.line(f"    PairFlavour  overlap={tuple(pf.overlap)}"
+                             f"  type={method}  kind={kind}  dim={enc_dim}")
+                    out._t(f"\\textbf{{PairFlavour}} overlap$={tuple(pf.overlap)}$,"
+                           f" type=\\texttt{{{tex_escape(method)}}}, kind=\\texttt{{{tex_escape(kind)}}},"
+                           f" encoded dim$={enc_dim}$\\\\")
 
-                sel_vals = block_slice[sel_cursor : sel_cursor + stored_dim]
-                if stored_dim > 0:
-                    out.kv("      Encoded values",
-                           "  ".join(fmtf(v) for v in sel_vals),
-                           tex=r",\ ".join(tex_num(v) for v in sel_vals))
-                elif sel.is_comp_drop:
-                    out.line("      [not stored — reconstructed from complement]",
-                             tex=r"\textit{not stored --- reconstructed from complement}\\")
+                    sel_vals = block_slice[sel_cursor : sel_cursor + stored_dim]
+                    if stored_dim > 0:
+                        out.kv("      Encoded values",
+                               "  ".join(fmtf(v) for v in sel_vals),
+                               tex=r",\ ".join(tex_num(v) for v in sel_vals))
+                    elif sel.is_comp_drop:
+                        out.line("      [not stored — reconstructed from complement]",
+                                 tex=r"\textit{not stored --- reconstructed from complement}\\")
 
-                _emit_decoded_pair_multiset(out, decoded)
+                    _emit_decoded_pair_multiset(out, decoded)
 
-                sel_cursor += stored_dim
+                    sel_cursor += stored_dim
 
-            p2cursor += block_enc.output_dim
+                p2cursor += block_enc.output_dim
 
-        # Rebuild all_pair_decoded list for alignment decoder
-        all_pair_decoded = []
-        p2cursor = 0
-        for _, block_enc in phase2_enc._block_encoders:
-            block_slice  = phase2_vals[p2cursor : p2cursor + block_enc.output_dim]
-            decoded_list = block_enc.decode(block_slice, phase1_results)
-            all_pair_decoded.extend(decoded_list)
-            p2cursor += block_enc.output_dim
+        # ── Phase 3 encoding (one-shot whole-table) ──────────────────────
+        if phase3_enc is not None:
+            _emit_phase3_section(out, plan, ctx, event, phase3_enc, phase3_vals)
 
-        # ── Alignment decoding ───────────────────────────────────────────
-        out.section("Alignment Decoder  (recovers the G-orbit of repS evaluations)")
+        # ── Alignment decoder (needs Phase 1 + Phase 2 outputs together) ──
+        if orbit_enc is not None and phase2_enc is not None:
+            # Rebuild all_pair_decoded list for alignment decoder
+            all_pair_decoded = []
+            p2cursor = 0
+            for _, block_enc in phase2_enc._block_encoders:
+                block_slice  = phase2_vals[p2cursor : p2cursor + block_enc.output_dim]
+                decoded_list = block_enc.decode(block_slice, phase1_results)
+                all_pair_decoded.extend(decoded_list)
+                p2cursor += block_enc.output_dim
 
-        decoded_align = decode_alignment(plan, phase1_results, all_pair_decoded, atol=1e-10)
+            out.section("Alignment Decoder  (recovers the G-orbit of repS evaluations)")
 
-        n_cols = ctx.the_group.order()
-        n_reps = len(repS_atoms)
-        out.kv("  |repS|", str(n_reps), tex=rf"$|repS| = {n_reps}$\\")
-        out.kv("  |G|",    str(n_cols), tex=rf"$|G| = {n_cols}$\\")
-        out.kv("  Decoded vectors", str(len(decoded_align.vectors)),
-               tex=rf"decoded column vectors: ${len(decoded_align.vectors)}$\\")
+            decoded_align = decode_alignment(plan, phase1_results, all_pair_decoded, atol=1e-10)
 
-        the_group = ctx.the_group
-        gt_vectors = [
-            tuple(evaluate(g.apply(atom), event) for atom in repS_atoms)
-            for g in the_group.all_group_elements()
-        ]
+            n_cols = ctx.the_group.order()
+            n_reps = len(repS_atoms)
+            out.kv("  |repS|", str(n_reps), tex=rf"$|repS| = {n_reps}$\\")
+            out.kv("  |G|",    str(n_cols), tex=rf"$|G| = {n_cols}$\\")
+            out.kv("  Decoded vectors", str(len(decoded_align.vectors)),
+                   tex=rf"decoded column vectors: ${len(decoded_align.vectors)}$\\")
 
-        out.blank()
-        out.line("  Decoded alignment table  (rows=repS atoms, cols=group elements):")
-        out._t(r"\textbf{Decoded alignment table} (rows$=\text{repS}$ atoms, columns$=g\in G$):\\")
+            the_group = ctx.the_group
+            gt_vectors = [
+                tuple(evaluate(g.apply(atom), event) for atom in repS_atoms)
+                for g in the_group.all_group_elements()
+            ]
 
-        col_spec = "l" + "r" * n_cols
-        col_hdrs_text = ["atom"] + [f"col {c}" for c in range(n_cols)]
-        col_hdrs_tex  = ["Atom"]  + [f"$g_{{{c}}}$" for c in range(n_cols)]
-        out.begin_table(col_spec, caption="Decoded alignment table")
-        out.table_row(col_hdrs_text, col_hdrs_tex)
-        out.table_mid()
+            out.blank()
+            out.line("  Decoded alignment table  (rows=repS atoms, cols=group elements):")
+            out._t(r"\textbf{Decoded alignment table} (rows$=\text{repS}$ atoms, columns$=g\in G$):\\")
 
-        if decoded_align.vectors:
+            col_spec = "l" + "r" * n_cols
+            col_hdrs_text = ["atom"] + [f"col {c}" for c in range(n_cols)]
+            col_hdrs_tex  = ["Atom"]  + [f"$g_{{{c}}}$" for c in range(n_cols)]
+            out.begin_table(col_spec, caption="Decoded alignment table")
+            out.table_row(col_hdrs_text, col_hdrs_tex)
+            out.table_mid()
+
+            if decoded_align.vectors:
+                for r, atom in enumerate(repS_atoms):
+                    row_vals = [vec[r] for vec in decoded_align.vectors]
+                    cells_text = [atom_text(atom)] + [fmtf(v, 7) for v in row_vals]
+                    cells_tex  = [f"${atom_tex(atom)}$"] + [tex_num(v) for v in row_vals]
+                    out.table_row(cells_text, cells_tex)
+
+            out.end_table()
+
+            out.blank()
+            out.line("  Ground truth  (direct evaluation of g·repS on event):")
+            out._t(r"\textbf{Ground truth} (direct evaluation of $g \cdot \text{repS}$ on event):\\")
+            out.begin_table(col_spec, caption="Ground truth alignment table")
+            out.table_row(col_hdrs_text, col_hdrs_tex)
+            out.table_mid()
             for r, atom in enumerate(repS_atoms):
-                row_vals = [vec[r] for vec in decoded_align.vectors]
-                cells_text = [atom_text(atom)] + [fmtf(v, 7) for v in row_vals]
-                cells_tex  = [f"${atom_tex(atom)}$"] + [tex_num(v) for v in row_vals]
+                gt_row = [vec[r] for vec in gt_vectors]
+                cells_text = [atom_text(atom)] + [fmtf(v, 7) for v in gt_row]
+                cells_tex  = [f"${atom_tex(atom)}$"] + [tex_num(v) for v in gt_row]
                 out.table_row(cells_text, cells_tex)
+            out.end_table()
 
-        out.end_table()
+            out.blank()
+            out.line("  Multiset comparison  (decoded vs ground truth):")
+            out._t(r"\textbf{Multiset comparison:}\\")
 
-        out.blank()
-        out.line("  Ground truth  (direct evaluation of g·repS on event):")
-        out._t(r"\textbf{Ground truth} (direct evaluation of $g \cdot \text{repS}$ on event):\\")
-        out.begin_table(col_spec, caption="Ground truth alignment table")
-        out.table_row(col_hdrs_text, col_hdrs_tex)
-        out.table_mid()
-        for r, atom in enumerate(repS_atoms):
-            gt_row = [vec[r] for vec in gt_vectors]
-            cells_text = [atom_text(atom)] + [fmtf(v, 7) for v in gt_row]
-            cells_tex  = [f"${atom_tex(atom)}$"] + [tex_num(v) for v in gt_row]
-            out.table_row(cells_text, cells_tex)
-        out.end_table()
+            dec_sorted = sorted(decoded_align.vectors)
+            gt_sorted  = sorted(gt_vectors)
+            atol = 1e-8
+            ok = (len(dec_sorted) == len(gt_sorted) and
+                  all(max(abs(a - b) for a, b in zip(da, ga)) <= atol
+                      for da, ga in zip(dec_sorted, gt_sorted)))
 
-        out.blank()
-        out.line("  Multiset comparison  (decoded vs ground truth):")
-        out._t(r"\textbf{Multiset comparison:}\\")
+            status_text = "✓ MATCH  (multisets equal within atol=1e-8)" if ok \
+                     else "✗ MISMATCH — decoded multiset differs from ground truth"
+            status_tex  = (r"\textcolor{green!60!black}{\textbf{MATCH}}"
+                           r" (multisets equal, atol$=10^{-8}$)") if ok \
+                     else (r"\textcolor{red}{\textbf{MISMATCH}}"
+                           r" — decoded multiset differs from ground truth")
+            out.line(f"  {status_text}", tex=status_tex)
 
-        dec_sorted = sorted(decoded_align.vectors)
-        gt_sorted  = sorted(gt_vectors)
-        atol = 1e-8
-        ok = (len(dec_sorted) == len(gt_sorted) and
-              all(max(abs(a - b) for a, b in zip(da, ga)) <= atol
-                  for da, ga in zip(dec_sorted, gt_sorted)))
-
-        status_text = "✓ MATCH  (multisets equal within atol=1e-8)" if ok \
-                 else "✗ MISMATCH — decoded multiset differs from ground truth"
-        status_tex  = (r"\textcolor{green!60!black}{\textbf{MATCH}}"
-                       r" (multisets equal, atol$=10^{-8}$)") if ok \
-                 else (r"\textcolor{red}{\textbf{MISMATCH}}"
-                       r" — decoded multiset differs from ground truth")
-        out.line(f"  {status_text}", tex=status_tex)
-
-        out.blank()
-        out.line("  Max |error| per repS row (decoded vs ground truth):")
-        out._t(r"\textbf{Max $|$error$|$ per repS row:}\\")
-        for r, atom in enumerate(repS_atoms):
-            dec_row = sorted(vec[r] for vec in decoded_align.vectors)
-            gt_row  = sorted(vec[r] for vec in gt_vectors)
-            max_err = max(abs(d - g) for d, g in zip(dec_row, gt_row))
-            out.kv(f"    {atom_text(atom)}",
-                   f"max_err = {max_err:.2e}",
-                   tex=f"${atom_tex(atom)}$: max err $= {max_err:.2e}$\\\\")
+            out.blank()
+            out.line("  Max |error| per repS row (decoded vs ground truth):")
+            out._t(r"\textbf{Max $|$error$|$ per repS row:}\\")
+            for r, atom in enumerate(repS_atoms):
+                dec_row = sorted(vec[r] for vec in decoded_align.vectors)
+                gt_row  = sorted(vec[r] for vec in gt_vectors)
+                max_err = max(abs(d - g) for d, g in zip(dec_row, gt_row))
+                out.kv(f"    {atom_text(atom)}",
+                       f"max_err = {max_err:.2e}",
+                       tex=f"${atom_tex(atom)}$: max err $= {max_err:.2e}$\\\\")
 
         # ── Summary ──────────────────────────────────────────────────────
         out.section("Summary")
-        phase1_dim = orbit_enc.output_dim
-        phase2_dim = phase2_enc.output_dim
-        out.kv("  Phase 1 encoded length", str(phase1_dim),
-               tex=rf"Phase 1 encoded length: ${phase1_dim}$ reals\\")
-        out.kv("  Phase 2 encoded length", str(phase2_dim),
-               tex=rf"Phase 2 encoded length: ${phase2_dim}$ reals\\")
-        out.kv("  Total encoded length",   str(phase1_dim + phase2_dim),
-               tex=rf"Total encoded length: ${phase1_dim + phase2_dim}$ reals\\")
+        n_reps   = len(repS_atoms)
+        n_cols   = ctx.the_group.order()
+        running_total = 0
+        if orbit_enc is not None:
+            d1 = orbit_enc.output_dim
+            running_total += d1
+            out.kv("  Phase 1 encoded length", str(d1),
+                   tex=rf"Phase 1 encoded length: ${d1}$ reals\\")
+        if phase2_enc is not None:
+            d2 = phase2_enc.output_dim
+            running_total += d2
+            out.kv("  Phase 2 encoded length", str(d2),
+                   tex=rf"Phase 2 encoded length: ${d2}$ reals\\")
+        if phase3_enc is not None:
+            d3 = phase3_enc.output_dim
+            running_total += d3
+            out.kv("  Phase 3 encoded length", str(d3),
+                   tex=rf"Phase 3 encoded length: ${d3}$ reals\\")
+        out.kv("  Total encoded length",   str(running_total),
+               tex=rf"Total encoded length: ${running_total}$ reals\\")
         out.kv("  repS size",              str(n_reps),
                tex=rf"$|\text{{repS}}| = {n_reps}$ atoms\\")
         out.kv("  |G|",                    str(n_cols),
                tex=rf"$|G| = {n_cols}$ group elements\\")
-        out.kv("  Decoded vectors",        str(len(decoded_align.vectors)),
-               tex=rf"decoded alignment vectors: ${len(decoded_align.vectors)}$\\")
         out.line(f"\n  TeX output written to: {tex_path}")
         out.line("  Compile with:  pdflatex " + os.path.basename(tex_path))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase-3 narrative
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _emit_phase3_section(out, plan, ctx, event: dict, phase3_enc, phase3_vals) -> None:
+    """Render the Phase 3 narrative: rep atoms, alignment table T, encoder
+    descriptor, and encoded-output summary.
+
+    Phase 3 encoders consume the full rep alignment table T(event) as a
+    multiset of |G| rows in R^{|rep|}.  Unlike Phase 1 and Phase 2 they
+    don't have per-orbit / per-pair structure to traverse — there's a
+    single composite output vector — so the narrative is shorter.
+
+    Layout:
+      * Section header
+      * The rep atom list (one row per Phase 3 column)
+      * The alignment table T (transposed: rows=atoms, cols=group elements)
+        — same shape as the alignment-decoder ground truth elsewhere in the
+        document, but emitted here for the Phase-3-only case where there is
+        no alignment-decoder section.
+      * The Phase 3 segment descriptors (kind, method, length per sub-encoder)
+      * A small preview of the encoded output (first/last few values, range).
+    """
+    # Lazy import to avoid cycles at module load time.
+    from symcoder.encoders.phase3_common import (
+        rep_atoms_for, build_alignment_table,
+    )
+
+    rep_atoms = rep_atoms_for(plan)
+    the_group = ctx.the_group
+    n_cols    = the_group.order()
+    n_rep     = len(rep_atoms)
+
+    out.section(
+        f"Phase 3 Encoding  (one-shot whole-table; rep size {n_rep}, |G|={n_cols})"
+    )
+
+    # ── rep atoms ────────────────────────────────────────────────────────
+    out.line(
+        f"  rep atoms ({n_rep}, the unpruned set used by Phase 3 — every "
+        f"distinct atom, NOT just one canonical representative per orbit):",
+        tex=(rf"\textbf{{rep atoms ({n_rep}):}} the unpruned set used by "
+             rf"Phase 3 — every distinct atom across all G-orbits, not just "
+             rf"one canonical representative per orbit.\\"),
+    )
+    for j, atom in enumerate(rep_atoms):
+        out.kv(f"    [{j:>2d}]", atom_text(atom),
+               tex=f"$[{j}]\\ \\ {atom_tex(atom)}$\\\\")
+
+    # ── alignment table T ────────────────────────────────────────────────
+    out.blank()
+    out.line(
+        "  Alignment table T  (rows = rep atoms, columns = group elements):",
+        tex=(r"\textbf{Alignment table $T$} "
+             r"(rows $=$ rep atoms, columns $= g \in G$):\\"),
+    )
+
+    T = build_alignment_table(plan, event, the_group, rep_atoms)  # (n_cols, n_rep)
+    # Transposed display: rows = atom, columns = group element.
+    col_spec     = "l" + "r" * n_cols
+    col_hdrs_t   = ["atom"] + [f"col {c}" for c in range(n_cols)]
+    col_hdrs_x   = ["Atom"] + [f"$g_{{{c}}}$" for c in range(n_cols)]
+    out.begin_table(col_spec, caption="Phase 3 input alignment table T")
+    out.table_row(col_hdrs_t, col_hdrs_x)
+    out.table_mid()
+    for j, atom in enumerate(rep_atoms):
+        row_vals = T[:, j].tolist()
+        cells_t  = [atom_text(atom)] + [fmtf(v, 7) for v in row_vals]
+        cells_x  = [f"${atom_tex(atom)}$"] + [tex_num(v) for v in row_vals]
+        out.table_row(cells_t, cells_x)
+    out.end_table()
+
+    # ── Segment descriptors (one per Phase 3 sub-encoder) ────────────────
+    out.blank()
+    tree = phase3_enc.describe(start_offset=0)
+    out.line(
+        f"  Phase 3 segments ({len(tree.segments)}):",
+        tex=rf"\textbf{{Phase 3 segments ({len(tree.segments)}):}}\\",
+    )
+    for seg in tree.segments:
+        out.kv(
+            f"    [{seg.start:>5d}:{seg.stop:<5d}]  kind={seg.kind}  "
+            f"method={seg.method_name}  len={seg.length}",
+            "",
+            tex=(rf"$[{seg.start}{{:}}{seg.stop}]$  "
+                 rf"kind \texttt{{{tex_escape(seg.kind)}}}  "
+                 rf"method \texttt{{{tex_escape(seg.method_name or '-')}}}  "
+                 rf"length ${seg.length}$"
+                 rf"\\"),
+        )
+
+    # ── Encoded-output preview ───────────────────────────────────────────
+    import numpy as _np
+    vals = _np.asarray(phase3_vals)
+    out.blank()
+    out.line(
+        f"  Encoded output: {vals.size} reals, "
+        f"range [{vals.min():+.4e}, {vals.max():+.4e}], "
+        f"max|·| = {float(_np.max(_np.abs(vals))):+.4e}.",
+        tex=(rf"\textbf{{Encoded output:}} ${vals.size}$ reals, "
+             rf"range $[{vals.min():+.4e},\ {vals.max():+.4e}]$, "
+             rf"max$|\cdot| = {float(_np.max(_np.abs(vals))):+.4e}$.\\"),
+    )
+
+    # Show up to first 8 and last 8 entries for context.
+    head_n = min(8, vals.size)
+    tail_n = min(8, vals.size - head_n)
+    out.line("  First values:",
+             tex=r"\textit{First values:}\\")
+    out.kv("    ",
+           "  ".join(fmtf(v) for v in vals[:head_n]),
+           tex=r",\ ".join(tex_num(v) for v in vals[:head_n]))
+    if tail_n > 0:
+        out.line(f"  Last {tail_n} values:",
+                 tex=rf"\textit{{Last {tail_n} values:}}\\")
+        out.kv("    ",
+               "  ".join(fmtf(v) for v in vals[-tail_n:]),
+               tex=r",\ ".join(tex_num(v) for v in vals[-tail_n:]))
 
 
 # ─────────────────────────────────────────────────────────────────────────────

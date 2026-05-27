@@ -3,7 +3,7 @@ PDFLATEX := pdflatex
 
 .PHONY: regenerate_pdfs clean
 
-regenerate_pdfs: demo_roundtrip.pdf demo_shadow_event_parity_+1.pdf demo_shadow_event_parity_-1.pdf
+regenerate_pdfs: demo_roundtrip.pdf demo_shadow_event_parity_+1.pdf demo_shadow_event_parity_-1.pdf demo_simplex2.pdf demo_vandermonde.pdf
 
 # ─── Round-trip demo ──────────────────────────────────────────────────────
 
@@ -29,6 +29,20 @@ demo_shadow_event_parity_+1.pdf: demo_shadow_event_parity_+1.tex
 	SOURCE_DATE_EPOCH=0 $(PDFLATEX) -interaction=nonstopmode $<
 
 demo_shadow_event_parity_-1.pdf: demo_shadow_event_parity_-1.tex
+	SOURCE_DATE_EPOCH=0 $(PDFLATEX) -interaction=nonstopmode $<
+
+# ─── Standalone Phase-3 demos (no Phase 1 / Phase 2 narration) ───────────
+
+demo_simplex2.tex: demo_simplex2.py $(wildcard *.py) $(wildcard tests/_parity_shadow_events.py) $(wildcard ../symatom/*.py) $(wildcard operations/*.py) $(wildcard encoders/*.py)
+	$(PYTHON) $<
+
+demo_simplex2.pdf: demo_simplex2.tex
+	SOURCE_DATE_EPOCH=0 $(PDFLATEX) -interaction=nonstopmode $<
+
+demo_vandermonde.tex: demo_vandermonde.py $(wildcard *.py) $(wildcard tests/_parity_shadow_events.py) $(wildcard ../symatom/*.py) $(wildcard operations/*.py) $(wildcard encoders/*.py)
+	$(PYTHON) $<
+
+demo_vandermonde.pdf: demo_vandermonde.tex
 	SOURCE_DATE_EPOCH=0 $(PDFLATEX) -interaction=nonstopmode $<
 
 clean:
