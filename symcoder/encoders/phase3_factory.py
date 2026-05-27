@@ -21,15 +21,46 @@ The user picks any subset by passing a list of factories to
 concatenated end-to-end, just as Phase 1 stacks ``SortEncoderFactory`` and
 ``HalfSortEncoderFactory`` and Phase 2 stacks block factories.
 
-Concatenation rather than min-selection?
-----------------------------------------
-Phase 1 picks the *minimum*-output-dim encoder per orbit (min_assess
-policy), because the encoders are exact alternatives — having more than one
-adds redundancy.  Phase 3 *concatenates* by default because the user
-explicitly told us they want to be able to "use them all" — different
-encoders here have different smoothness / scale / faithfulness trade-offs
-and may be useful simultaneously to downstream consumers.  Passing a
-single-element list to this factory recovers single-encoder behaviour.
+Architectural relationship to Phase 1 / Phase 2
+-----------------------------------------------
+Phase 3 mirrors the Phase-1 and Phase-2 factory pattern in spirit (sub-
+factories expose ``assess`` to report whether they can offer a bound
+encoder; the stacking wrapper collects them and raises if everyone
+refuses) but diverges in two deliberate ways:
+
+1. **No per-orbit "spec" argument.**  Phase 1's
+   ``AtomOrbitEncoderFactory.assess(spec, plan)`` is called once per
+   FlavouredOperator with the per-orbit spec.  Phase 2's
+   ``OverlapBlockEncoderFactory.assess(spec, plan)`` is called once per
+   overlap block.  Phase 3 is a *whole-table* encoder — there is no
+   per-orbit or per-block iteration to do — so its sub-factory
+   ``assess(plan)`` takes the plan alone and is called once.  Adding a
+   vacuous ``spec`` would be cargo-cult.
+
+2. **Concatenate, not min-select.**  Phase 1 picks
+   ``min(offered, key=output_dim)`` per orbit because its alternative
+   encoders are *interchangeable* — they all losslessly encode the same
+   orbit, so storing two would be redundant.  Phase 3's sub-encoders are
+   *complementary*: simplicial vs Vandermonde-Cinf vs Vandermonde-C0
+   trade off smoothness, output magnitude, and (in principle) faithfulness
+   against each other in non-overlapping ways, and may legitimately be
+   useful side-by-side to downstream consumers.  Concatenating is the
+   honest default; users who want only one pass a one-element factory
+   list.
+
+In short: same ``assess``-then-collect skeleton, different selection
+policy and a one-shot rather than per-orbit dispatch.
+
+Refusal semantics
+-----------------
+A sub-factory's ``assess(plan)`` may return ``[]`` when the user's
+construction parameters cannot be honoured on the given plan — for
+instance, a ``Phase3VandermondeEncoderFactory(scale=λ)`` applied to a
+plan whose operations don't all declare a ``mass_dimension`` returns
+``[]``.  The stacking wrapper silently skips refusing sub-factories,
+but raises a clear ``RuntimeError`` if *every* sub-factory refuses
+(producing a zero-length composite is almost never what the caller
+wanted).
 
 Examples
 --------
@@ -44,11 +75,12 @@ Both Vandermonde variants together::
         Phase3VandermondeEncoderFactory(mode="C0"),
     ])
 
-All three side by side::
+All three side by side, with the Cinf variant dimensionally rescaled to
+a ~1 GeV reference scale::
 
     Phase3EncoderFactory([
         Phase3SimplicialEncoderFactory(),
-        Phase3VandermondeEncoderFactory(mode="Cinf"),
+        Phase3VandermondeEncoderFactory(mode="Cinf", scale=1.0),
         Phase3VandermondeEncoderFactory(mode="C0"),
     ])
 """
