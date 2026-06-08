@@ -44,25 +44,99 @@ with \textbf{[?]}.
 
 %% -----------------------------------------------------------------------
 \section{Background and motivation}
+\label{sec:background}
 
-\textbf{[?]} The broader Echinocoder project appears to be concerned with
-encoding multisets of vectors in $k$-dimensional space, and specifically with
-understanding when such an encoding fails to be injective. An encoding
-associates to each input multiset a set of dot products with a fixed collection
-of $n$ \emph{encoding direction vectors} (the ``good bats''). The encoding is
-injective if no two distinct input multisets produce the same output.
+\subsection*{The Echinocoder project}
 
-The present sub-project addresses a specific obstruction to injectivity. If
-there exist $M$ vectors $\vec{q}_1, \ldots, \vec{q}_M \in \mathbb{R}^k$ each
-of which is \emph{orthogonal} to all the encoding direction vectors---these are
-the \emph{bad bats}---then certain pairs of multisets built from the $\vec{q}_i$
-are invisible to the encoder. The code searches for the smallest such pairs,
-called confusable multisets.
+The broader Echinocoder project is concerned with \emph{embeddings} of
+multisets of vectors: injective continuous maps from the space
+$SP^n(\mathbb{R}^k)$ of $n$-element multisets of vectors in $\mathbb{R}^k$
+into some Euclidean space $\mathbb{R}^N$. A fundamental requirement is that
+such a map be invariant under all permutations of the $n$ input vectors whilst
+still distinguishing genuinely distinct multisets.
 
-The key parameters are:
+\subsection*{Dotting encoders}
+
+One natural class of encoders---the \emph{dotting encoders}---works as follows.
+Fix $m$ direction vectors $\vec{d}_1, \ldots, \vec{d}_m \in \mathbb{R}^k$,
+called the \emph{encoding directions} (or \emph{good bats} in the project's
+terminology). For an input multiset $X = \{\vec{v}_1, \ldots, \vec{v}_n\}
+\subset \mathbb{R}^k$, and for each encoding direction $\vec{d}_j$ separately,
+compute the $n$ dot products $\vec{v}_1\cdot\vec{d}_j,\ldots,
+\vec{v}_n\cdot\vec{d}_j$ and sort them into non-decreasing order.
+Concatenating these $m$ sorted $n$-tuples gives the encoding of $X$ as a
+vector in $\mathbb{R}^{mn}$.  This output is automatically symmetric (invariant
+under permutations of the $\vec{v}_i$).  The encoder is \emph{injective}---and
+hence an embedding---if and only if no two distinct multisets in
+$SP^n(\mathbb{R}^k)$ produce the same output.
+
+The central open question for dotting encoders is: how many directions $m$ are
+needed to guarantee injectivity for multisets of size $n$ in dimension $k$, and
+can $m$ be kept small?
+
+\subsection*{Adversarial inputs: bad bats and confusable multisets}
+
+To probe the limits of any dotting encoder one can try to construct pairs of
+\emph{distinct} multisets that it cannot distinguish.  The
+\texttt{MinimalConfusableSets} sub-project is devoted to this adversarial
+construction, and in particular to finding the \emph{smallest} such pairs for
+given $m$ and $k$.
+
+The construction exploits a linear-algebraic obstruction that exists for
+\emph{any} choice of encoding directions. In $\mathbb{R}^k$, any $k-1$
+linearly independent vectors span a $(k-1)$-dimensional hyperplane, and there
+is exactly one direction in $\mathbb{R}^k$ (up to scaling) orthogonal to all
+of them. Given $m$ encoding directions, partition them into
+$M = \lceil m/(k-1) \rceil$ groups of (at most) $k-1$ directions each. For
+the $j$-th group, take the unique direction in $\mathbb{R}^k$ orthogonal to
+all members of that group; call it $\vec{q}_j$. These $M$ vectors
+$\vec{q}_1, \ldots, \vec{q}_M \in \mathbb{R}^k$ are the \emph{bad bats}.
+
+Crucially, each bad bat $\vec{q}_j$ satisfies $\vec{q}_j \cdot \vec{d} = 0$
+for the $k-1$ encoding directions $\vec{d}$ in its own group, but is
+generically \emph{not} orthogonal to the encoding directions in any other
+group. In particular, once $m \geq k$ directions are in general position, no
+non-zero vector in $\mathbb{R}^k$ can be orthogonal to \emph{all} of them
+simultaneously: bad bats exist because each is orthogonal only to a small
+group of $k-1$ directions, not to the full set of $m$.
+
+\subsection*{Why the even-odd construction yields confusable pairs}
+
+Building multisets from scaled sums of the bad bats and applying the
+even-odd hypercube construction (Section~\ref{sec:even-odd}) yields pairs of
+multisets $(EE, OO)$ that are \emph{confusable}: for \emph{every} encoding
+direction $\vec{d}_j$, the multiset of dot products
+$\{\,\vec{v} \cdot \vec{d}_j : \vec{v} \in EE\,\}$ equals
+$\{\,\vec{v} \cdot \vec{d}_j : \vec{v} \in OO\,\}$.
+
+The key reason this works is a \emph{toggling symmetry}. Consider any
+encoding direction $\vec{d}$ belonging to group $g$, so that
+$\vec{q}_g \cdot \vec{d} = 0$. For any subset sum
+$\vec{s} = \sum_{j \in I} \alpha_j \vec{q}_j$ of the bad bats, the dot
+product $\vec{s} \cdot \vec{d} = \sum_{j \in I} \alpha_j\,(\vec{q}_j \cdot
+\vec{d})$ receives no contribution from the $j = g$ term.  Consequently,
+including or excluding $\vec{q}_g$ from the sum leaves $\vec{s} \cdot \vec{d}$
+unchanged---while flipping the parity of $|I|$, which is what distinguishes
+the even ($E$) and odd ($O$) families.  The dot-product values of $E$ and $O$
+with respect to $\vec{d}$ are therefore identical as multisets, and this holds
+simultaneously for every encoding direction (each of which belongs to some
+group and has the corresponding bad bat orthogonal to it).
+
+\subsection*{The goal of \texttt{MinimalConfusableSets}}
+
+The size $|EE| = |OO|$ of a confusable pair depends on the specific bad-bat
+configuration and on which subset-sum coincidences are imposed.  The
+\texttt{MinimalConfusableSets} code searches for the \emph{smallest} confusable
+pairs achievable for given values of $M$ and $k$.  A confusable pair of size
+$s$ demonstrates that no dotting encoder with approximately $M(k-1)$ encoding
+directions can injectively encode all multisets of size $\geq s$, regardless
+of which specific directions are chosen.
+
+The two primary parameters throughout this document are therefore:
 \begin{itemize}
   \item $k$: the dimension of the ambient space,
-  \item $M$: the number of bad-bat vectors.
+  \item $M$: the number of bad-bat vectors (equivalently, the number of
+    groups of encoding directions).
 \end{itemize}
 
 %% -----------------------------------------------------------------------
