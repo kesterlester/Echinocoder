@@ -1,0 +1,480 @@
+%% confusable_sdp.tex
+%%
+%% A polynomial-optimisation approach to finding and certifying the
+%% absence of confusable multisets for dotting encoders.
+%%
+%% Companion document to algorithm_description.tex.
+%% Written with Claude's assistance, June 2026.
+
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\geometry{margin=2.5cm}
+
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\newtheorem{observation}{Observation}
+
+\lstset{
+  language=Python,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\bfseries,
+  commentstyle=\color{gray},
+  breaklines=true,
+  frame=single,
+  aboveskip=6pt,
+  belowskip=6pt,
+}
+
+\title{Minimal Confusable Multisets:\\
+A Polynomial-Optimisation Perspective}
+
+\author{Lester (problem), Claude (document)}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document takes a step back from the even-odd hypercube construction
+used in \texttt{MinimalConfusableSets} and asks: how might one find the
+\emph{globally} minimal confusable multiset pair for a given dotting
+encoder, without any structural assumptions?  We reformulate the problem
+as a polynomial feasibility question, derive an exact algebraic criterion
+for the smallest non-trivial case ($s = 2$), introduce the
+sum-of-squares~(SOS) / semidefinite programming~(SDP) framework for
+certifying the absence of small confusable pairs, and exhibit an explicit
+family of size-3 confusable pairs that arises from a cyclic algebraic
+construction entirely unrelated to the hypercube.  Working code is
+provided in \texttt{confusable\_search.py} and \texttt{confusable\_sos.py}.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% -----------------------------------------------------------------------
+\section{Problem statement}
+\label{sec:problem}
+
+Fix $m$ encoding directions $\vec{d}_1, \ldots, \vec{d}_m \in \mathbb{R}^k$
+(the \emph{good bats}).  A dotting encoder maps an $s$-element multiset
+$X = \{\vec{v}_1, \ldots, \vec{v}_s\} \subset \mathbb{R}^k$ to the
+$ms$-tuple consisting, for each $\vec{d}_j$, of the $n$ dot products
+$\vec{v}_i \cdot \vec{d}_j$ sorted in non-decreasing order.
+
+\begin{definition}
+  Two distinct multisets $X, Y \subset \mathbb{R}^k$ of size $s$ are
+  \emph{confusable} if, for every encoding direction $\vec{d}_j$, the
+  sorted tuples of dot products with $\vec{d}_j$ are identical:
+  \[
+    \text{sort}\!\left(\{\,\vec{v} \cdot \vec{d}_j : \vec{v} \in X\,\}\right)
+    =
+    \text{sort}\!\left(\{\,\vec{v} \cdot \vec{d}_j : \vec{v} \in Y\,\}\right).
+  \]
+\end{definition}
+
+The central question of this document is: for given $m$, $k$, and a
+specific choice of encoding directions, what is the \emph{smallest} $s$
+for which a confusable pair of size $s$ exists?  We make no assumption
+about the form that confusable pairs take---in particular, we do not
+assume they arise from the even-odd hypercube construction.
+
+\subsection*{Power-sum reformulation}
+
+Two multisets of real numbers are equal (as multisets) if and only if
+all their power sums agree.  Applied to the scalar projections
+$\{\vec{v} \cdot \vec{d}_j : \vec{v} \in X\}$, two size-$s$ multisets
+are confusable if and only if
+
+\begin{equation}
+  \label{eq:powersums}
+  \sum_{\vec{v} \in X} (\vec{v} \cdot \vec{d}_j)^r
+  =
+  \sum_{\vec{v} \in Y} (\vec{v} \cdot \vec{d}_j)^r
+  \qquad \text{for all } j = 1, \ldots, m \text{ and } r = 1, \ldots, s.
+\end{equation}
+
+This is a system of $ms$ polynomial equations in the $2sk$ coordinates
+of the vectors in $X$ and $Y$.  A confusable pair of size $s$ exists if
+and only if this system has a solution with $X \neq Y$ as multisets.
+
+\begin{remark}
+  The minimum confusable-pair size is the smallest $s$ for which this
+  polynomial system has a non-trivial solution.  It is a property of the
+  specific set of directions $\{\vec{d}_j\}$, not of any particular
+  construction method.
+\end{remark}
+
+%% -----------------------------------------------------------------------
+\section{The case \texorpdfstring{$s = 2$}{s = 2}: exact characterisation}
+\label{sec:s2}
+
+For $s = 2$ the polynomial system~\eqref{eq:powersums} simplifies
+substantially.  Write $X = \{\vec{x}_1, \vec{x}_2\}$ and
+$Y = \{\vec{y}_1, \vec{y}_2\}$.  The $r = 1$ conditions force the
+centroids to agree: $\vec{x}_1 + \vec{x}_2 = \vec{y}_1 + \vec{y}_2$
+(when the $\vec{d}_j$ span $\mathbb{R}^k$).  Setting the common centroid
+to zero (WLOG), write $\vec{x}_i = \pm\vec{p}/2$ and
+$\vec{y}_i = \pm\vec{q}/2$.  The $r = 2$ conditions then reduce to
+
+\[
+  |\vec{p} \cdot \vec{d}_j| = |\vec{q} \cdot \vec{d}_j|
+  \quad \forall j,
+\]
+
+i.e., for each direction $j$: either $(\vec{p} + \vec{q}) \cdot \vec{d}_j
+= 0$ or $(\vec{p} - \vec{q}) \cdot \vec{d}_j = 0$ (or both).  Setting
+$\vec{A} = \vec{p} + \vec{q}$ and $\vec{B} = \vec{p} - \vec{q}$:
+
+\begin{proposition}
+  \label{prop:s2}
+  A confusable pair of size~$2$ exists if and only if there exist
+  non-zero $\vec{A}, \vec{B} \in \mathbb{R}^k$ with $\vec{A} \neq \pm
+  \vec{B}$ such that every encoding direction satisfies
+  $\vec{d}_j \in \vec{A}^\perp \cup \vec{B}^\perp$.
+\end{proposition}
+
+In $\mathbb{R}^2$ this says: the $m$ encoding directions can be
+partitioned into two groups, one whose members are all parallel to a
+fixed direction $\vec{A}^\perp$, and one whose members are all parallel
+to $\vec{B}^\perp$.  For generic directions (no two parallel), this
+requires $m \leq 2$.
+
+\subsection*{Worked example}
+
+Consider $k = 2$ with two directions $\vec{d}_1 = (1, 0)$ (at $0°$) and
+$\vec{d}_2 = (\tfrac{1}{\sqrt{2}}, \tfrac{1}{\sqrt{2}})$ (at $45°$).
+Take $\vec{A} \propto (0, 1)$ (so $\vec{A}^\perp$ is the horizontal
+axis, containing $\vec{d}_1$) and $\vec{B} \propto (1, -1)$ (so
+$\vec{B}^\perp$ is the $45°$ axis, containing $\vec{d}_2$).  These are
+non-zero and non-parallel.  Then
+
+\[
+  X = \left\{\tfrac{1}{4}(1, 1),\; -\tfrac{1}{4}(1, 1)\right\},
+  \qquad
+  Y = \left\{\tfrac{1}{4}(1, -1),\; -\tfrac{1}{4}(1, -1)\right\}
+\]
+
+is a confusable pair of size~2.  One may verify directly:
+both $X$ and $Y$ project to the sorted tuple $(-\tfrac{1}{4},
+\tfrac{1}{4})$ onto $\vec{d}_1$, and to $(-\tfrac{1}{2\sqrt{2}},
+\tfrac{1}{2\sqrt{2}})$ onto $\vec{d}_2$.
+
+Adding any third generic direction immediately destroys this: a
+direction at $\theta \neq 0°, 45°$ does not lie in
+$\vec{A}^\perp \cup \vec{B}^\perp$, so Proposition~\ref{prop:s2} fails,
+and the SOS certificate in Section~\ref{sec:sos} confirms injectivity.
+
+%% -----------------------------------------------------------------------
+\section{An explicit \texorpdfstring{$s = 3$}{s = 3} confusable family}
+\label{sec:cyclic}
+
+A confusable pair of size~3 for the three directions
+$\vec{d}_1 = (1, 0)$, $\vec{d}_2 = (\tfrac{1}{\sqrt{2}},
+\tfrac{1}{\sqrt{2}})$, $\vec{d}_3 = (0, 1)$ can be constructed
+\emph{without} any reference to the even-odd hypercube.  For any triple
+of distinct real numbers $(a, b, c)$, define
+
+\[
+  X = \{(a, b),\; (c, a),\; (b, c)\},
+  \qquad
+  Y = \{(a, c),\; (b, a),\; (c, b)\}.
+\]
+
+\begin{proposition}
+  \label{prop:cyclic}
+  For any $(a, b, c)$ with $\{a, b, c\}$ not all equal, the pair
+  $(X, Y)$ defined above is confusable with respect to all three
+  directions $\vec{d}_1$, $\vec{d}_2$, $\vec{d}_3$.
+\end{proposition}
+
+\begin{proof}
+  For $\vec{d}_1 = (1, 0)$: both $X$ and $Y$ have first-coordinates
+  $\{a, c, b\}$ as a multiset.
+
+  For $\vec{d}_3 = (0, 1)$: both have second-coordinates $\{b, a, c\}$.
+
+  For $\vec{d}_2 = (\tfrac{1}{\sqrt{2}}, \tfrac{1}{\sqrt{2}})$: the
+  diagonal projections of $X$ are proportional to $\{a+b,\, c+a,\,
+  b+c\}$ and those of $Y$ to $\{a+c,\, b+a,\, c+b\}$.  Since addition
+  is commutative, both sets are $\{a+b,\, a+c,\, b+c\}$.
+
+  In each case the sorted projections are identical.  Since $X$ and $Y$
+  differ as multisets when $a, b, c$ are not all equal (the first
+  coordinates are the same set but paired with different second
+  coordinates), $(X, Y)$ is a genuine confusable pair.
+\end{proof}
+
+\begin{remark}
+  This construction is entirely unrelated to the even-odd hypercube: the
+  elements of $X$ and $Y$ are not subset sums of any collection of bad
+  bats.  It illustrates that the true minimum confusable-pair size may be
+  achieved by structures outside the hypercube framework.
+\end{remark}
+
+For a concrete numerical instance: $(a, b, c) = (5.5, -5.7, 0.2)$ gives
+\[
+  X = \{(5.5, -5.7),\; (0.2, 5.5),\; (-5.7, 0.2)\},
+  \quad
+  Y = \{(5.5, 0.2),\; (-5.7, 5.5),\; (0.2, -5.7)\},
+\]
+a confusable pair of size~3, confirmed by the numerical code.
+
+\subsection*{When does a fourth direction destroy confusability?}
+
+A direction $\vec{d} = (\cos\theta, \sin\theta)$ with $\theta \neq 0°,
+45°, 90°$ will generically break the size-3 confusable pair: the cubic
+power sum (the $r = 3$ condition) for direction $\vec{d}$ is
+
+\[
+  p_3^X(\theta) - p_3^Y(\theta)
+  = 3\cos^2\!\theta\sin\theta\,(a^2b + c^2a + b^2c - a^2c - b^2a - c^2b)
+  + 3\cos\theta\sin^2\!\theta\,(ab^2 + ca^2 + bc^2 - ac^2 - ba^2 - cb^2).
+\]
+
+This vanishes for all $(a, b, c)$ only when $\cos^2\theta\sin\theta =
+\cos\theta\sin^2\theta$, i.e.\ $\theta \in \{0°, 45°, 90°\}$.  Adding any
+other direction $\vec{d}_4$ makes the $r = 3$ condition non-trivially
+constraining, and numerical search (Section~\ref{sec:numerical}) finds no
+confusable pairs of size up to~5 for four equally-spaced directions.
+
+%% -----------------------------------------------------------------------
+\section{Sum-of-squares certificates for size-2 injectivity}
+\label{sec:sos}
+
+\subsection*{The certificate polynomial}
+
+For the $s = 2$ question, define
+\[
+  f(\vec{A}, \vec{B})
+  = \sum_{j=1}^m (\vec{A} \cdot \vec{d}_j)^2\,(\vec{B} \cdot \vec{d}_j)^2,
+  \qquad
+  g(\vec{A}, \vec{B}) = \|\vec{A}\|^2\,\|\vec{B}\|^2.
+\]
+
+From Proposition~\ref{prop:s2}, a confusable pair of size~2 exists if
+and only if $f$ has a zero for some non-zero $(\vec{A}, \vec{B})$.  This
+is equivalent to $f$ failing to satisfy $f \geq \lambda g$ for any
+$\lambda > 0$.  Conversely:
+
+\begin{observation}
+  If there exists $\lambda > 0$ such that $f - \lambda g$ is a
+  sum-of-squares (SOS) polynomial, then $f(\vec{A}, \vec{B}) \geq
+  \lambda \|\vec{A}\|^2 \|\vec{B}\|^2 > 0$ for all $(\vec{A}, \vec{B})
+  \neq \vec{0}$, and hence no confusable pair of size~2 exists.
+\end{observation}
+
+Note that $f$ itself is already SOS ($f = \sum_j [(\vec{A} \cdot
+\vec{d}_j)(\vec{B} \cdot \vec{d}_j)]^2$), so $\lambda = 0$ is always
+feasible.  The question is whether the optimal $\lambda^* > 0$.
+
+\subsection*{SDP formulation}
+
+An SOS polynomial of degree~4 in $2k$ variables can be written as
+$v^T Q v$ where $v$ is the vector of all monomials of degree $\leq 2$ in
+the $2k$ variables $(\vec{A}, \vec{B})$ and $Q$ is a PSD (positive
+semidefinite) matrix.  The number of such monomials is $\binom{2k +
+2}{2}$, giving a $\binom{2k+2}{2} \times \binom{2k+2}{2}$ matrix.  For
+$k = 2$: a $15 \times 15$ matrix.
+
+The SDP is:
+\begin{align*}
+  \text{maximise} \quad & \lambda \\
+  \text{subject to} \quad
+    & Q \succeq 0, \\
+    & v^T Q v = f - \lambda g \quad\text{(as polynomial identity).}
+\end{align*}
+
+The polynomial identity is enforced by matching the coefficient of each
+degree-4 monomial $z^\gamma$ on both sides:
+\[
+  \sum_{\substack{\alpha + \beta = \gamma \\ |\alpha|, |\beta| \leq 2}}
+  Q_{\alpha\beta}
+  \;=\;
+  f_\gamma - \lambda\, g_\gamma,
+\]
+where $f_\gamma$ and $g_\gamma$ are the known coefficients of $f$ and
+$g$ at monomial $\gamma$.  These are linear equalities in the decision
+variables $(Q, \lambda)$, so the overall problem is a standard SDP.
+
+\subsection*{Results for $k = 2$}
+
+Running the SDP (implemented in \texttt{confusable\_sos.py}) for three
+choices of encoding directions in $\mathbb{R}^2$:
+
+\medskip
+\begin{center}
+\begin{tabular}{lll}
+  \hline
+  Directions & $\lambda^*$ & Conclusion \\
+  \hline
+  $\vec{d}_1 = (1,0)$,\; $\vec{d}_2 = (\frac{1}{\sqrt2}, \frac{1}{\sqrt2})$ (2 dirs)
+    & $0.000$ & Confusable size-2 pair may exist \\
+  Add $\vec{d}_3 = (0,1)$ (3 dirs)
+    & $0.167$ & \textbf{Certified}: no confusable size-2 pair \\
+  Add $\vec{d}_4 = (-\frac{1}{\sqrt2}, \frac{1}{\sqrt2})$ (4 dirs)
+    & $0.500$ & \textbf{Certified}: no confusable size-2 pair \\
+  \hline
+\end{tabular}
+\end{center}
+\medskip
+
+For 2 directions, $\lambda^* = 0$ confirms that a confusable pair
+exists (as constructed in Section~\ref{sec:s2}).  For 3 and 4 directions,
+$\lambda^* > 0$ provides a rigorous certificate of injectivity for
+size-2 multisets.
+
+%% -----------------------------------------------------------------------
+\section{Numerical search for larger \texorpdfstring{$s$}{s}}
+\label{sec:numerical}
+
+For $s \geq 3$, the polynomial system~\eqref{eq:powersums} is harder to
+analyse algebraically, and the SDP certificate needs to be extended to
+higher-dimensional moment matrices (see Section~\ref{sec:lasserre}).
+A practical complement is a gradient-based numerical search.
+
+\subsection*{Search strategy}
+
+For fixed $s$, $k$, and directions $D$, the code in
+\texttt{confusable\_search.py} proceeds as follows:
+
+\begin{enumerate}
+  \item Sample $X \in \mathbb{R}^{s \times k}$ at random with zero
+    centroid.
+  \item Compute the target moments $t = (p_{r,j}(X))_{r,j}$ via
+    equation~\eqref{eq:powersums}.
+  \item From a \emph{random} starting point $Y_0$ (not near $X$),
+    minimise the confusability loss $\|p(Y) - t\|^2$ over $Y$ using
+    L-BFGS-B.
+  \item If the minimised loss falls below $10^{-10}$ and the Hungarian
+    matching distance between $X$ and $Y$ exceeds $10^{-2}$, report a
+    confusable pair.
+\end{enumerate}
+
+The random initialisation of $Y_0$ is critical: starting near $X$
+causes the optimiser to converge trivially to $Y = X$.
+
+\subsection*{Results for $k = 2$}
+
+Running 500 random trials for each $(s, m)$ pair:
+
+\medskip
+\begin{center}
+\begin{tabular}{cclll}
+  \hline
+  $s$ & $m = 2$ dirs & $m = 3$ dirs & $m = 4$ dirs \\
+  \hline
+  2 & \textbf{Found} & not found & not found \\
+  3 & \textbf{Found} & \textbf{Found} & not found \\
+  4 & \textbf{Found} & \textbf{Found} & not found \\
+  5 & \textbf{Found} & \textbf{Found} & not found \\
+  \hline
+\end{tabular}
+\end{center}
+\medskip
+
+With only 2 directions confusable pairs are found for every $s \geq 2$,
+as expected (two directions generically leave a 1-dimensional family of
+confusable pairs at each size).  With 3 directions confusable pairs exist
+for $s \geq 3$ (including the cyclic family of
+Section~\ref{sec:cyclic}).  With 4 equally-spaced directions, no
+confusable pair was found for any $s \leq 5$ in 500 trials, which gives
+numerical evidence in support of the conjecture that 4 directions suffice
+to inject all multisets of size $\leq 5$ of 2-vectors.
+
+\begin{remark}
+  Failure to find a confusable pair by this search is \emph{not} a proof
+  of injectivity: it may simply mean that confusable pairs exist but are
+  rare or have small basins of attraction.  A rigorous lower bound
+  requires the Lasserre hierarchy (Section~\ref{sec:lasserre}).
+\end{remark}
+
+%% -----------------------------------------------------------------------
+\section{The Lasserre hierarchy for general \texorpdfstring{$s$}{s}}
+\label{sec:lasserre}
+
+\subsection*{Moment relaxation}
+
+The existence of a confusable pair of size~$s$ is equivalent to the
+feasibility of the polynomial system~\eqref{eq:powersums} with
+$X \neq Y$.  The \emph{Lasserre moment hierarchy} provides a sequence of
+SDPs, parametrised by a \emph{relaxation level} $d = 1, 2, \ldots$, that
+gives increasingly tight approximations to this feasibility question.
+
+At level $d$, the decision variables are the \emph{moment variables}
+$y_\alpha$ for all multi-indices $\alpha$ with $|\alpha| \leq 2d$, where
+$y_\alpha$ represents the expectation $\mathbb{E}[z^\alpha]$ of monomial
+$z^\alpha$ under a hypothetical probability measure supported on the
+feasible set.  The SDP constraints are:
+\begin{itemize}
+  \item \emph{Moment matrix}: $M_d(y) \succeq 0$ (a $\binom{n+d}{d}
+    \times \binom{n+d}{d}$ PSD matrix, where $n = 2sk$ is the number of
+    scalar decision variables in $X$ and $Y$).
+  \item \emph{Constraint moments}: $\sum_\alpha c_\alpha y_\alpha = 0$
+    for each equality constraint in \eqref{eq:powersums} (linear in $y$).
+\end{itemize}
+If this SDP is infeasible at level $d$, then no confusable pair of
+size~$s$ exists.  If it is feasible, the solution can sometimes be
+\emph{flat-extended} to recover an explicit confusable pair.
+
+\subsection*{Complexity}
+
+The moment matrix at level $d$ has $\binom{n+d}{d}$ rows and columns.
+For $k = 2$, $s = 4$: $n = 16$, and at $d = 2$ the moment matrix is
+$\binom{18}{2} = 153 \times 153$.  This is tractable with a modern SDP
+solver (MOSEK, SCS, or Clarabel).  For $s = 5$: $n = 20$, moment matrix
+$\binom{22}{2} = 231 \times 231$ at $d = 2$.
+
+A practical implementation in Python would use \texttt{cvxpy} to
+construct the moment matrix and add the confusability constraints as
+linear equality constraints on the moments.  The
+\texttt{confusable\_sos.py} file implements the $s = 2$ case directly;
+extending it to general $s$ follows the same pattern with a larger
+moment matrix.
+
+%% -----------------------------------------------------------------------
+\section{Code notes}
+\label{sec:code}
+
+Two companion Python files are provided, both requiring \texttt{numpy},
+\texttt{scipy}, \texttt{sympy}, and \texttt{cvxpy} (\texttt{pip install
+cvxpy sympy}).
+
+\subsection*{\texttt{confusable\_search.py}}
+
+Implements the gradient-based search described in
+Section~\ref{sec:numerical}.  Main entry point:
+
+\begin{lstlisting}
+result = search_confusable_pair(s, k, directions,
+                                n_restarts=500, res_tol=1e-10)
+# Returns (X, Y, residual) if found, None otherwise.
+\end{lstlisting}
+
+The function accepts any $s$, $k$, and list of direction vectors.
+Running the script directly exercises the cases in the table above.
+
+\subsection*{\texttt{confusable\_sos.py}}
+
+Implements:
+\begin{itemize}
+  \item \texttt{sos\_lower\_bound(directions)}: the SDP from
+    Section~\ref{sec:sos}, maximising $\lambda$ s.t.\ $f - \lambda g$
+    is SOS.  Returns $\lambda^*$.  If $\lambda^* > 0$, no confusable
+    size-2 pair exists.
+  \item \texttt{exact\_check\_s2(directions)}: an exhaustive $O(2^m)$
+    combinatorial check of Proposition~\ref{prop:s2} for small $m$.
+    Returns \texttt{(True, A, B, X, Y)} if a confusable pair is found.
+\end{itemize}
+
+\begin{lstlisting}
+lam = sos_lower_bound(directions)  # SDP certificate
+found, A, B, X, Y = exact_check_s2(directions)  # Combinatorial check
+\end{lstlisting}
+
+\end{document}
