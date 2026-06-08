@@ -139,6 +139,38 @@ The two primary parameters throughout this document are therefore:
     groups of encoding directions).
 \end{itemize}
 
+\subsection*{An important caveat: the construction is not known to be exhaustive}
+
+The even-odd hypercube construction gives a \emph{sufficient} condition for
+producing confusable pairs, but it is not known to be \emph{necessary}.  The
+definition of a confusable pair is simply: two distinct multisets
+$X, Y \subset \mathbb{R}^k$ of equal size such that for every encoding
+direction $\vec{d}_j$ the multiset of dot products
+$\{\,\vec{v}\cdot\vec{d}_j : \vec{v}\in X\,\}$ equals
+$\{\,\vec{v}\cdot\vec{d}_j : \vec{v}\in Y\,\}$.
+Nothing in this definition requires $X$ or $Y$ to arise from subset sums of
+bad bats, or for their elements to have any particular combinatorial structure.
+Sporadic confusable pairs may exist---pairs whose elements bear no relationship
+to any even-odd hypercube construction---and some of those might be smaller
+than any pair the code can find.
+
+Consequently the output of \texttt{MinimalConfusableSets} is an upper bound on
+the true minimum confusable-pair size for two \emph{distinct} reasons:
+\begin{enumerate}
+  \item \emph{Incomplete search within the hypercube family.}  Some pruning
+    strategies in the code are acknowledged to be potentially over-aggressive
+    (Section~\ref{sec:pruning}), so not every hypercube-family pair is
+    guaranteed to be found.  This is a correctable deficiency.
+  \item \emph{The hypercube family may not cover all confusable pairs.}  Even
+    a hypothetically perfect, bug-free search within the current framework
+    would only establish a minimum over pairs of a specific structured form.
+    The truly minimal confusable pair might take a completely different form
+    that the construction never generates.  No theorem, and at present no
+    strong conjecture, rules this out.
+\end{enumerate}
+Reason~(1) affects the reliability of the search within its chosen scope.
+Reason~(2) is a more fundamental limitation on the scope itself.
+
 %% -----------------------------------------------------------------------
 \section{The even-odd hypercube construction}
 \label{sec:even-odd}
@@ -467,10 +499,12 @@ The following diagram gives the overall data flow.
     This avoids floating-point errors in the null-space computation at the cost
     of speed.
 
-  \item The search is \emph{not} proved to be exhaustive (the pruning
-    strategies marked ``probably wrong'' in the code may over-prune). The
-    output is therefore a \emph{upper bound} on the minimum confusable-set
-    size, not necessarily the true minimum. \textbf{[?]}
+  \item The output is an upper bound on the true minimum confusable-pair size
+    for two distinct reasons, discussed in Section~\ref{sec:background}: (1)
+    some pruning strategies may be over-aggressive, missing pairs within the
+    hypercube family; and (2), more fundamentally, the hypercube construction
+    is not known to cover all possible confusable pairs---the true minimum
+    might arise from a completely different structure.
 
   \item The \texttt{only\_output\_odd\_ones} flag in \texttt{config.py}
     restricts the search to vertex matches with an odd number of $+1$ entries.
