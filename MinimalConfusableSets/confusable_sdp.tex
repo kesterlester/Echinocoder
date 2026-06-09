@@ -210,20 +210,50 @@ of distinct real numbers $(a, b, c)$, define
   coordinates), $(X, Y)$ is a genuine confusable pair.
 \end{proof}
 
+\subsection*{Relationship to the even-odd hypercube}
+
+The cyclic family has a non-trivial intersection with the $M = 3$
+single-cancellation hypercube construction.  One can show that a
+single-cancellation hypercube with $M = 3$ bad bats always produces a
+centred pair satisfying $EE = -OO$ (the pair is centrosymmetric about its
+common centroid).  The cyclic pair $(X, Y)$ is centrosymmetric if and
+only if one of $a, b, c$ equals their common mean $\mu = (a+b+c)/3$,
+i.e.\ one of the deviations $(a - \mu, b - \mu, c - \mu)$ is zero.
+
+Concretely, the cyclic subfamily with $\{a - \mu,\, b - \mu,\, c - \mu\}
+\propto \{0, 1, -1\}$ is exactly what the standard $M = 3$ hypercube
+construction produces for the bad bats perpendicular to the three
+encoding directions.
+
+The remaining members of the cyclic family --- those where all three
+deviations from the mean are non-zero --- are genuinely outside the $M =
+3$ single-cancellation hypercube.  Crucially, this distinction is
+\emph{translation-invariant}: translating both multisets by the same
+vector preserves confusability but leaves the deviations from the mean
+unchanged, so no translation can convert a non-hypercube instance into a
+hypercube one.
+
 \begin{remark}
-  This construction is entirely unrelated to the even-odd hypercube: the
-  elements of $X$ and $Y$ are not subset sums of any collection of bad
-  bats.  It illustrates that the true minimum confusable-pair size may be
-  achieved by structures outside the hypercube framework.
+  Whether the non-hypercube instances of the cyclic family can be
+  produced by a hypercube construction with $M > 3$ or with multiple
+  cancellations is a separate question not pursued here.  What is clear
+  is that the full 2-parameter cyclic family is strictly larger than the
+  1-parameter subfamily that the $M = 3$ single-cancellation hypercube
+  produces, and the two cannot be brought into agreement by any
+  translation.
 \end{remark}
 
-For a concrete numerical instance: $(a, b, c) = (5.5, -5.7, 0.2)$ gives
+For a concrete numerical instance lying outside the hypercube subfamily:
+$(a, b, c) = (5.5, -5.7, 0.2)$ has mean $\mu = 0$ and deviations
+$(5.5, -5.7, 0.2)$, none of which is zero.  This gives
 \[
   X = \{(5.5, -5.7),\; (0.2, 5.5),\; (-5.7, 0.2)\},
   \quad
   Y = \{(5.5, 0.2),\; (-5.7, 5.5),\; (0.2, -5.7)\},
 \]
-a confusable pair of size~3, confirmed by the numerical code.
+a confusable pair of size~3 that is confirmed by the numerical code and
+is not reachable by any translation of any $M = 3$ single-cancellation
+hypercube pair.
 
 \subsection*{When does a fourth direction destroy confusability?}
 
