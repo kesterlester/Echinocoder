@@ -1,9 +1,5 @@
-algorithm_description.aux
-algorithm_description.log
-algorithm_description.out
-algorithm_description.toc
 decider_functions_tom_rep
-confusable_sdp.aux
-confusable_sdp.log
-confusable_sdp.out
-confusable_sdp.toc
+*.aux
+*.log
+*.out
+*.toc
