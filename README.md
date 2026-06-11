@@ -10,11 +10,12 @@ In this context, the 'order' of the embedding is deemed to be the number of real
 
 Most embedders work only reals inputs and generate only real embeddings as that's the whole purpose of the libarary. However, some embedders will accept complex numbers as inputs and can generate complex numbers as outputs.  Where this is the case it is not always documented. Some of the embedders which can process complex inputs and outputs are nonetheless used (in complex mode) as steps in the implementation of other embedders.  The capacity for some embedders to process complex numbers such routines should be considered private (unexposed) even if technically visible. This is to allow interface standardisation.
 
-## Embedders for $SP^n(\mathbb R^k)$ -- for multisets of vectors:
+## Embedders and Encoders for $SP^n(\mathbb R^k)$ -- for multisets of vectors:
 
-All these are (or should be) instances of [MultisetEmbedder](MultisetEmbedder.py).
 
 ### Embedder summaries:
+
+All these are (or should be) instances of [MultisetEmbedder](MultisetEmbedder.py).
 
 | Method                | Order (leading) | Exact order (for $n>1$ and $k>1$) | Piecewise Linear | Infinitely Differentiable | Notes                                                                                                                                                                                                 | Source                                                                          |
 |-----------------------|----------------|-----------------------------------|------------------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
@@ -26,6 +27,8 @@ All these are (or should be) instances of [MultisetEmbedder](MultisetEmbedder.py
 The orders (i.e. embedding sizes) quoted in the table above are for $n>1$ and $k>1$ only. For $n\le 1$ or $k\le 1$ each algorithm should fall back to an optimal embedding, i.e. one for which the exact order is $nk$.
 
 ### Encoder summaries:
+
+All these are (or should be) instances of [MultisetEncoder](MultisetEncoder.py).
 
 | Method | Order (leading) | Exact order (for $n>1$ and $k>1$) | Piecewise Linear | Infinitely Differentiable | Notes                                                                                                                                                                                                                       | Source |
 |--------|-----------------|---------------|------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
