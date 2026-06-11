@@ -1,0 +1,18 @@
+==========================================================================================
+Phase 1 Survey: Certified lower bounds on f(DD(i)) for k=4, i in [1,16]
+==========================================================================================
+
+i= 1 (M=1): Theory => f(DD(1)) = 1 (proven)
+
+i= 2 (M=1): Theory => f(DD(2)) = 1 (proven)
+
+i= 3 (M=1): Theory => f(DD(3)) = 1 (proven)
+
+i= 4 (M=2): Theory => f(DD(4)) = 2 (proven)
+
+i= 5 (M=2): Theory => f(DD(5)) = 2 (proven)
+
+i= 6 (M=2): Theory => f(DD(6)) = 2 (proven)
+
+i= 7 (M=3):   Generating candidate directions (max_norm=12)... 177712 candidates
+  Searching 500 random 7-tuples...  Searching 500 random 7-tuples... 50/500  Searching 500 random 7-tuples... 100/500  Searching 500 random 7-tuples... 150/500  Searching 500 random 7-tuples... 200/500  Searching 500 random 7-tuples... 250/500  Searching 500 random 7-tuples... 300/500
