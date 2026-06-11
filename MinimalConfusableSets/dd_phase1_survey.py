@@ -81,7 +81,14 @@ def hypercube_upper_bound(i, k=4):
 def search_best_directions(i, k=4, num_trials=500, max_norm=12, verbose=False):
     """
     Grid search: try num_trials random i-tuples of directions.
-    Return the best lambda* achieved.
+    Return the best lambda* achieved and whether it was exactly verified.
+
+    Uses exact rational arithmetic for certificate verification:
+    enumerate_directions is called with return_int_vecs=True so that the
+    canonical integer form of each direction is kept alongside the float unit
+    vector.  When a promising certificate is found, verify_sos_certificate_exact
+    rebuilds f_D and g_D with exact Rational coefficients (no sqrt, no floats)
+    and checks the polynomial identity against the SDP output.
 
     Returns:
         (best_lambda_star, best_verified, num_directions_tried)
@@ -92,15 +99,19 @@ def search_best_directions(i, k=4, num_trials=500, max_norm=12, verbose=False):
     if verbose:
         print(f"  Generating candidate directions (max_norm={max_norm})...", end='', flush=True)
 
-    directions_float = list(cds.enumerate_directions(k, max_norm, use_float=True, lazy=False))
+    # Enumerate as (float_vec, canonical_int_vec) pairs
+    directions_both = list(cds.enumerate_directions(k, max_norm, use_float=True,
+                                                    lazy=False, return_int_vecs=True))
+    directions_float = [d for d, _ in directions_both]
 
     if verbose:
         print(f" {len(directions_float)} candidates")
         print(f"  Searching {num_trials} random {i}-tuples...", end='', flush=True)
 
-    best_lambda = -np.inf
+    best_lambda   = -np.inf
     best_verified = False
-    num_tried = 0
+    best_Q        = None
+    best_int_vecs = None
 
     import random
     random.seed(42 + i)  # Reproducible
@@ -108,27 +119,32 @@ def search_best_directions(i, k=4, num_trials=500, max_norm=12, verbose=False):
     for trial in range(num_trials):
         # Sample i directions randomly
         D_indices = [random.randint(0, len(directions_float) - 1) for _ in range(i)]
-        D = [directions_float[idx] for idx in D_indices]
+        D     = [directions_float[idx] for idx in D_indices]
         D_sym = [Matrix(d) for d in D]
 
-        # Compute SOS certificate
+        # Compute SOS certificate (float SDP — fast)
         lam, Q, status = cds.sos_sdp_for_directions(D_sym, k=k, s=2, verbose=False)
 
         if lam is None:
             continue
 
         if lam > best_lambda:
-            best_lambda = lam
-            # Try verification only for promising candidates
-            if lam > 0.001:
-                best_verified = cds.verify_sos_certificate(D_sym, lam, Q, k=k, verbose=False)
+            best_lambda   = lam
+            best_Q        = Q
+            best_int_vecs = [directions_both[idx][1] for idx in D_indices]
 
-        num_tried += 1
-        if verbose and (trial + 1) % max(50, num_trials // 10) == 0:
-            print(f"\r  Searching {num_trials} random {i}-tuples... {trial+1}/{num_trials}", end='', flush=True)
+        num_tried = trial + 1
+        if verbose and num_tried % max(50, num_trials // 10) == 0:
+            print(f"\r  Searching {num_trials} random {i}-tuples... {num_tried}/{num_trials}",
+                  end='', flush=True)
 
     if verbose:
         print()
+
+    # Verify the single best candidate using exact rational arithmetic
+    if best_lambda > 0.001 and best_int_vecs is not None and best_Q is not None:
+        best_verified, _ = cds.verify_sos_certificate_exact(
+            best_int_vecs, best_lambda, best_Q, k=k, verbose=False)
 
     return best_lambda if best_lambda > -np.inf else None, best_verified, len(directions_float)
 

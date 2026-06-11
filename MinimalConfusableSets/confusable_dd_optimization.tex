@@ -410,6 +410,125 @@ sampling.
 - Integration with the MinimalConfusableSets hypercube code to compare upper bounds.
 
 %% -----------------------------------------------------------------------
+\section{Extension to \texorpdfstring{$s \geq 3$}{s >= 3}: Lasserre moment hierarchy}
+\label{sec:lasserre}
+
+For $s \geq 3$, the power-sum system becomes more complex, and the fixed-degree SOS
+approach (Section~\ref{sec:inner-oracle}) becomes impractical.  The \emph{Lasserre
+moment hierarchy} provides a sequence of increasingly tight SDP relaxations that can
+certify the non-existence of confusable pairs for any $s$.
+
+\subsection*{Moment relaxation setup}
+
+Given fixed directions $D$ and multiset size $s$, the confusable pair constraint is
+\[
+  \sum_{v \in X} (v \cdot d_j)^r = \sum_{v \in Y} (v \cdot d_j)^r,
+  \quad j=1,\ldots,m,\; r=1,\ldots,s.
+\]
+
+The \emph{Lasserre hierarchy at level} $d$ introduces \emph{moment variables}
+$y_\alpha$ for all multi-indices $\alpha$ with $|\alpha| \leq 2d$, where $\alpha$
+ranges over the $2sk$ variables $(x_1, \ldots, x_s, y_1, \ldots, y_s) \in \mathbb{R}^{2sk}$.
+These represent ``generalized moments'' of a hypothetical probability measure supported
+on the solution set.
+
+\subsection*{The moment matrix}
+
+The \emph{moment matrix} at level $d$ is a $N_d \times N_d$ matrix indexed by monomials
+of degree $\leq d$, where $N_d = \binom{2sk + d}{d}$:
+
+\[
+  M_d(y)_{\alpha\beta} = y_{\alpha+\beta}, \quad |\alpha|, |\beta| \leq d.
+\]
+
+\begin{definition}
+  A \emph{Lasserre certificate at level} $d$ for directions $D$ and size $s$ is a
+  semidefinite programme asserting:
+  \begin{enumerate}
+    \item $M_d(y) \succeq 0$ (PSD moment matrix).
+    \item For each power-sum equation $\sum (x_i \cdot d_j)^r = \sum (y_i \cdot d_j)^r$,
+          the corresponding linear constraint on $\{y_\alpha\}$ is satisfied.
+    \item Normalisation: $y_0 = 1$ (measure has total weight 1).
+  \end{enumerate}
+  If this SDP is **infeasible**, then no confusable pair of size $s$ exists for directions $D$.
+\end{definition}
+
+\begin{remark}
+  **Convergence**: As $d$ increases, the Lasserre hierarchy provides increasingly tight
+  lower bounds.  At some level $d^*$, either the SDP becomes infeasible (proving no confusable
+  pair exists), or it remains feasible (suggesting one may exist, and a higher $d$ is needed).
+\end{remark}
+
+\subsection*{Practical implementation for $k=4, s=3, d=2$}
+
+For $k=4, s=3, d=2$:
+\begin{itemize}
+  \item Total variables: $2sk = 24$
+  \item Moment variables: $y_\alpha$ for $|\alpha| \leq 4$, giving $\binom{28}{4} = 20,475$ variables
+  \item Moment matrix: $M_2$ has $\binom{26}{2} = 325$ rows and columns
+  \item Power-sum constraints: $(s-1)m = 2m$ linear equations in $y_\alpha$
+  \item SDP constraint: $M_2(y) \succeq 0$
+\end{itemize}
+
+**Computational complexity**: Solving the SDP takes $O(325^3) \approx 3 \times 10^7$ operations.
+Compared to the $s=2$ case ($45 \times 45$ moment matrix), this is $(\frac{325}{45})^3 \approx 500\times$
+slower.  Still tractable on modern hardware (seconds to minutes).
+
+\subsection*{Encoding power-sum constraints}
+
+For each direction $d_j$ and exponent $r=1,\ldots,s$, the constraint
+\[
+  \sum_{i=1}^s (x_i \cdot d_j)^r = \sum_{i=1}^s (y_i \cdot d_j)^r
+\]
+is a polynomial equation.  Expanding and collecting terms, this becomes a linear equation
+in the moment variables $\{y_\alpha\}$.  For example, the $r=2$ constraint for $d_j = (d_{j1}, d_{j2}, d_{j3}, d_{j4})$ is:
+\[
+  \sum_{i=1}^s (d_{j1} x_{i1} + \cdots + d_{j4} x_{i4})^2
+  = \sum_{i=1}^s (d_{j1} y_{i1} + \cdots + d_{j4} y_{i4})^2,
+\]
+which, when expanded, is linear in the moments $\{y_\alpha\}$.
+
+\subsection*{Algorithm}
+
+\begin{algorithm}
+\textbf{Input}: directions $D$, size $s$, relaxation level $d$.
+
+\begin{enumerate}
+  \item Construct the set of all monomials of degree $\leq d$ in $2sk$ variables (count: $N_d$).
+  \item Construct the moment matrix $M_d$ (symbolic, size $N_d \times N_d$).
+  \item Extract the coefficients of all power-sum equations as linear constraints on $\{y_\alpha\}$.
+  \item Form the SDP:
+    \begin{align*}
+      \text{feasibility} \quad & M_d(y) \succeq 0, \\
+      & \text{(power-sum constraints)}, \\
+      & y_0 = 1.
+    \end{align*}
+  \item Solve using a standard SDP solver (CVXPY + SCS/MOSEK).
+  \item \textbf{Return}: \texttt{INFEASIBLE} (no confusable pair exists) or \texttt{FEASIBLE} (may exist).
+\end{enumerate}
+\end{algorithm}
+
+\subsection*{Verification and interpretation}
+
+If the SDP is **infeasible** at level $d$, the certificate is rigorous: no confusable pair
+of size $s$ exists.  This directly translates to $f(D) > s$.
+
+If the SDP is **feasible**, a confusable pair may or may not exist.  Higher relaxation
+levels ($d' > d$) give tighter bounds.  In practice, try $d=1,2,3$ in sequence until
+infeasibility is proved.
+
+\subsection*{Limitations and future work}
+
+- **Moment matrix size grows rapidly**: $\binom{2sk+d}{d}$ scales poorly in $s$ and $k$.
+  For $s=4, k=4, d=2$: the moment matrix is $\binom{32}{2} = 496 \times 496$ (larger than $s=3, d=2$).
+- **Numerical precision**: Large moment matrices are ill-conditioned. Verification becomes
+  challenging. Consider using arbitrary-precision SDP solvers (future work).
+- **Integration with grid search**: For each direction set and size $s$, we need to solve
+  a new Lasserre SDP at level $d=2$.  For the outer optimization (Section~\ref{sec:search}),
+  this becomes expensive.  Efficient strategies: (a) use $d=1$ first (faster), then refine
+  with $d=2$ if promising; (b) use caching to avoid re-solving for similar direction sets.
+
+%% -----------------------------------------------------------------------
 \section{Relation to other approaches}
 \label{sec:comparison}
 

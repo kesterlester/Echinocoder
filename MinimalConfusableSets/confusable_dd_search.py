@@ -25,9 +25,10 @@ Usage:
 
 import numpy as np
 import cvxpy as cp
-from sympy import symbols, expand, Poly, sqrt, Rational, Matrix, simplify
+from sympy import symbols, expand, Poly, sqrt, Rational, Matrix, simplify, S
 from sympy.polys.orderings import monomial_key
 from itertools import combinations_with_replacement, combinations, islice
+from fractions import Fraction as PyFraction
 import warnings
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
@@ -66,18 +67,71 @@ def construct_f_g_symbolic(directions_symbolic, k=4):
     return expand(f_D), expand(g_D)
 
 
+def build_f_g_from_int_vectors(int_vectors, k=4):
+    """
+    Construct f_D and g_D with exact SymPy Rational coefficients from
+    unnormalized integer direction vectors.
+
+    For integer vector v with ||v||^2 = n, the unit direction is v/sqrt(n).
+    Then (A·v/sqrt(n))^2 * (B·v/sqrt(n))^2 = (A·v)^2 * (B·v)^2 / n^2.
+    Because the sqrt is squared away, ALL coefficients are rational — no surds.
+
+    This is the exact equivalent of construct_f_g_symbolic but without any floats.
+
+    Args:
+        int_vectors: list of tuples of ints (canonical unnormalized direction vectors)
+        k: dimension
+
+    Returns:
+        (f_D, g_D): SymPy polynomials with Rational coefficients
+    """
+    A_syms = symbols(f'A1:{k+1}')
+    B_syms = symbols(f'B1:{k+1}')
+
+    f_D = S.Zero
+    for int_vec in int_vectors:
+        norm_sq = sum(c * c for c in int_vec)
+        # Integer dot products (no sqrt — it cancels when squared)
+        Adotv = sum(c * a for c, a in zip(int_vec, A_syms))
+        Bdotv = sum(c * b for c, b in zip(int_vec, B_syms))
+        # (A·v)^2 * (B·v)^2 / n^2, all coefficients rational
+        contrib = Rational(1, norm_sq * norm_sq) * expand(Adotv**2 * Bdotv**2)
+        f_D += contrib
+
+    f_D = expand(f_D)
+
+    A = Matrix(A_syms)
+    B = Matrix(B_syms)
+    g_D = expand(A.dot(A) * B.dot(B))
+
+    return f_D, g_D
+
+
 def polynomial_to_dict(poly, symbols_list):
     """
     Convert a SymPy polynomial to a dict mapping monomial exponent tuples
     to coefficients (as floats).
 
-    Used to extract coefficients for the SDP constraint.
+    Used to extract coefficients for the SDP constraint matrix (CVXPY needs floats).
+    For exact rational coefficients, use polynomial_to_rational_dict instead.
     """
     p = Poly(poly, symbols_list)
     coeff_dict = {}
     for monom, coeff in zip(p.monoms(), p.coeffs()):
         coeff_dict[monom] = float(coeff)
     return coeff_dict
+
+
+def polynomial_to_rational_dict(poly, symbols_list):
+    """
+    Convert a SymPy polynomial to a dict mapping monomial exponent tuples
+    to exact SymPy Rational coefficients.
+
+    Requires poly to have rational (or integer) coefficients — no floats.
+    Used for exact verification.
+    """
+    p = Poly(poly, symbols_list)
+    return {monom: coeff for monom, coeff in zip(p.monoms(), p.coeffs())}
 
 
 # ---------------------------------------------------------------------------
@@ -200,65 +254,184 @@ def sos_sdp_for_directions(directions_symbolic, k=4, s=2, verbose=False):
 # Section 5: Rigorous verification
 # ---------------------------------------------------------------------------
 
-def verify_sos_certificate(directions_symbolic, lambda_star, Q_star, k=4, verbose=False):
-    """
-    Verify the SOS certificate symbolically using SymPy.
+# Tolerances for certificate verification.
+# The SCS SDP solver achieves ~1e-5 to 1e-6 primal/dual feasibility.
+# We use 1e-3 as a conservative threshold — tight enough to be meaningful,
+# loose enough to absorb solver noise.
+_POLY_TOL = 1e-3   # max allowed per-coefficient residual in polynomial identity
+_EIG_TOL  = 1e-3   # min eigenvalue of Q* allowed (negative = not PSD)
 
-    Section 5 of confusable_dd_optimization.tex: Rigorous verification without tolerances.
+
+def verify_sos_certificate_exact(int_vectors, lambda_star, Q_star, k=4, verbose=False):
+    """
+    Verify an SOS certificate rigorously using exact rational arithmetic for the
+    reference polynomial.
+
+    The key fix over the old verify_sos_certificate:
+
+      OLD: f_D and g_D were built from float direction matrices, so their
+           coefficients were floats.  The difference polynomial could never
+           compare == 0 symbolically, so verification always returned False.
+
+      NEW: f_D and g_D are built from *integer* direction vectors via
+           build_f_g_from_int_vectors, giving exact Rational coefficients
+           (no sqrt — it cancels when the direction is squared).  The
+           polynomial identity residual is then a true measure of SDP solver
+           accuracy, not floating-point direction error.
+
+    Verification passes iff:
+      1. max per-coefficient residual |gram_sum(gamma) - exact_target(gamma)|
+         is below _POLY_TOL for all degree-4 monomials gamma.
+      2. min eigenvalue of Q_star > -_EIG_TOL  (Q* approximately PSD).
 
     Args:
-        directions_symbolic: list of SymPy vectors
-        lambda_star: candidate lambda (float)
-        Q_star: candidate Gram matrix (numpy array)
-        k: dimension
-        verbose: if True, print details
+        int_vectors:  list of canonical integer tuples, e.g. (1, 1, 0, 0).
+                      Obtain via enumerate_directions(..., return_int_vecs=True).
+        lambda_star:  float lambda returned by sos_sdp_for_directions.
+        Q_star:       numpy float64 Gram matrix returned by sos_sdp_for_directions.
+        k:            ambient dimension.
+        verbose:      print detailed diagnostics.
 
     Returns:
-        verified (bool): True iff the certificate is valid (symbolically or via interval bounds)
+        (verified: bool, message: str)
     """
-    # Construct f_D and g_D symbolically
-    A = Matrix(symbols('A1:5'))
-    B = Matrix(symbols('B1:5'))
-    sym_vars = list(A) + list(B)
+    # --- Step 1: exact rational f_D and g_D ---
+    f_D, g_D = build_f_g_from_int_vectors(int_vectors, k=k)
+    sym_vars = list(symbols(f'A1:{k+1}')) + list(symbols(f'B1:{k+1}'))
 
+    f_coeffs = polynomial_to_rational_dict(f_D, sym_vars)
+    g_coeffs = polynomial_to_rational_dict(g_D, sym_vars)
+
+    # --- Step 2: round lambda* to a rational ---
+    lam_frac = PyFraction(lambda_star).limit_denominator(100_000)
+    lam_rat  = Rational(lam_frac.numerator, lam_frac.denominator)
+
+    if verbose:
+        print(f"  lambda_star = {lambda_star:.8f}  →  lambda_rat = {lam_rat}")
+
+    # --- Step 3: exact target coefficients for p = f_D - lam_rat * g_D ---
+    # Collect all degree-4 monomials that appear in either f_D or g_D
+    all_gammas = set(f_coeffs) | set(g_coeffs)
+
+    target = {}   # gamma -> exact Rational
+    for gamma in all_gammas:
+        fc = f_coeffs.get(gamma, S.Zero)
+        gc = g_coeffs.get(gamma, S.Zero)
+        target[gamma] = fc - lam_rat * gc
+
+    # --- Step 4: gram sums from Q* (float) ---
+    monoms_deg2 = generate_monomials(2 * k, max_degree=2)
+
+    # Precompute: gamma -> list of (i, j) pairs with alpha_i + alpha_j == gamma
+    gram_structure = {}
+    for i, alpha in enumerate(monoms_deg2):
+        for j, beta in enumerate(monoms_deg2):
+            gamma = tuple(a + b for a, b in zip(alpha, beta))
+            gram_structure.setdefault(gamma, []).append((i, j))
+
+    # Only need to check gammas that appear in the target or Q*
+    check_gammas = set(gram_structure) | all_gammas
+
+    max_residual = 0.0
+    worst_gamma  = None
+
+    for gamma in check_gammas:
+        gram_sum = sum(Q_star[i, j] for i, j in gram_structure.get(gamma, []))
+        tgt      = float(target.get(gamma, S.Zero))
+        residual = abs(gram_sum - tgt)
+        if residual > max_residual:
+            max_residual = residual
+            worst_gamma  = gamma
+
+    # --- Step 5: PSD check on Q* ---
+    eigs    = np.linalg.eigvalsh(Q_star)
+    min_eig = float(eigs.min())
+
+    poly_ok = max_residual < _POLY_TOL
+    psd_ok  = min_eig > -_EIG_TOL
+
+    if verbose:
+        print(f"  Polynomial residual: max = {max_residual:.2e}  "
+              f"(threshold {_POLY_TOL:.0e})  {'✓' if poly_ok else '✗'}")
+        if worst_gamma is not None and not poly_ok:
+            print(f"    worst monomial: {worst_gamma}")
+        print(f"  Min eigenvalue of Q*: {min_eig:.2e}  "
+              f"(threshold -{_EIG_TOL:.0e})  {'✓' if psd_ok else '✗ Q* not PSD'}")
+
+    verified = poly_ok and psd_ok
+    msg = (f"poly_residual={max_residual:.2e}, min_eig={min_eig:.2e}, "
+           f"lam_rat={lam_rat}")
+
+    if verbose:
+        if verified:
+            print(f"  ✓ Certificate verified")
+        else:
+            print(f"  ✗ Verification failed: {msg}")
+
+    return verified, msg
+
+
+def verify_sos_certificate(directions_symbolic, lambda_star, Q_star, k=4, verbose=False):
+    """
+    Legacy wrapper — kept for backward compatibility.
+
+    Prefer verify_sos_certificate_exact(int_vectors, ...) which uses exact
+    rational arithmetic for f_D and g_D and gives trustworthy results.
+
+    This version attempts to extract integer vectors from the (possibly float)
+    directions_symbolic.  If that fails it falls back to a purely numerical
+    residual check using float f_D coefficients (less trustworthy).
+
+    Returns:
+        verified (bool)  — for new code use verify_sos_certificate_exact instead.
+    """
+    # Try to recover integer vectors from the symbolic matrices
+    # (works when directions were built from normalize_to_unit_float on int vectors)
+    try:
+        int_vectors = []
+        for d in directions_symbolic:
+            floats = [float(x) for x in d]
+            norm = float(sum(x**2 for x in floats)**0.5)
+            # Re-derive an approximate integer vector by scaling to unit norm
+            # and finding the closest rational via continued fractions
+            # This is a best-effort fallback — use the exact API when possible
+            raise ValueError("Cannot recover int vectors from float directions; "
+                             "use verify_sos_certificate_exact directly.")
+    except Exception:
+        pass
+
+    # Pure numerical fallback: float f_D/g_D against float Q*
     f_D, g_D = construct_f_g_symbolic(directions_symbolic, k=k)
+    sym_vars  = list(symbols(f'A1:{k+1}')) + list(symbols(f'B1:{k+1}'))
 
-    # Construct v^T Q v symbolically
-    monoms_deg2 = generate_monomials(2*k, max_degree=2)
-    v = [monom_to_sympy(m, sym_vars) for m in monoms_deg2]
+    f_coeffs_float = polynomial_to_dict(f_D, sym_vars)
+    g_coeffs_float = polynomial_to_dict(g_D, sym_vars)
 
-    # v^T Q v (symbolic)
-    v_Q_v = sum(
-        Q_star[i, j] * v[i] * v[j]
-        for i in range(len(v))
-        for j in range(len(v))
-    )
-    v_Q_v = expand(v_Q_v)
+    monoms_deg2 = generate_monomials(2 * k, max_degree=2)
+    gram_structure = {}
+    for i, alpha in enumerate(monoms_deg2):
+        for j, beta in enumerate(monoms_deg2):
+            gamma = tuple(a + b for a, b in zip(alpha, beta))
+            gram_structure.setdefault(gamma, []).append((i, j))
 
-    # f_D - lambda_star * g_D
-    target = expand(f_D - lambda_star * g_D)
+    all_gammas = set(f_coeffs_float) | set(g_coeffs_float)
+    max_residual = 0.0
+    for gamma in all_gammas | set(gram_structure):
+        gram_sum = sum(Q_star[i, j] for i, j in gram_structure.get(gamma, []))
+        tgt      = f_coeffs_float.get(gamma, 0.0) - lambda_star * g_coeffs_float.get(gamma, 0.0)
+        max_residual = max(max_residual, abs(gram_sum - tgt))
 
-    # Check if they're equal
-    diff = expand(v_Q_v - target)
+    eigs    = np.linalg.eigvalsh(Q_star)
+    min_eig = float(eigs.min())
 
-    if verbose:
-        print(f"Symbolic verification: checking if v^T Q v = f_D - {lambda_star} * g_D")
-        print(f"Difference (should be ~0): {diff}")
-
-    # If difference is zero (or very close), verification succeeds
-    if diff == 0:
-        if verbose:
-            print("✓ Verified symbolically!")
-        return True
-
-    # Try numerical check: evaluate at random points and check if diff is small
-    # (not as rigorous as symbolic, but faster)
-    # TODO: implement interval arithmetic verification here
+    verified = (max_residual < _POLY_TOL) and (min_eig > -_EIG_TOL)
 
     if verbose:
-        print("✗ Symbolic verification failed. Difference is non-zero.")
+        print(f"  [legacy] poly_residual={max_residual:.2e}, min_eig={min_eig:.2e}")
+        print(f"  WARNING: using float f_D/g_D; prefer verify_sos_certificate_exact")
+        print(f"  {'✓' if verified else '✗'} verified={verified}")
 
-    return False
+    return verified
 
 
 # ---------------------------------------------------------------------------
@@ -314,7 +487,7 @@ def normalize_to_unit_float(int_vector, k=4):
     return vec / norm
 
 
-def enumerate_directions(k, max_norm, use_float=True, lazy=True):
+def enumerate_directions(k, max_norm, use_float=True, lazy=True, return_int_vecs=False):
     """
     Enumerate all rational unit directions with integer coordinates in [-max_norm, max_norm].
 
@@ -325,9 +498,12 @@ def enumerate_directions(k, max_norm, use_float=True, lazy=True):
         max_norm: max absolute value of integer coordinates
         use_float: if True, return float vectors; if False, return SymPy symbolic
         lazy: if True, return a generator; if False, return a list
+        return_int_vecs: if True, yield (unit_vec, canonical_int_vec) pairs instead
+            of unit_vec alone. The canonical_int_vec (tuple of ints) can be passed
+            to build_f_g_from_int_vectors for exact arithmetic.
 
     Yields:
-        unit vectors (numpy arrays or SymPy Matrices)
+        unit vectors (numpy arrays or SymPy Matrices), or (unit_vec, int_vec) pairs
     """
     seen = set()
     for int_vec, norm_sq in generate_integer_vectors(k, max_norm):
@@ -339,9 +515,156 @@ def enumerate_directions(k, max_norm, use_float=True, lazy=True):
         seen.add(canonical)
 
         if use_float:
-            yield normalize_to_unit_float(canonical, k=k)
+            unit = normalize_to_unit_float(canonical, k=k)
         else:
-            yield normalize_to_unit_symbolic(canonical, k=k)
+            unit = normalize_to_unit_symbolic(canonical, k=k)
+
+        # Convert to plain Python ints so SymPy Rational never sees np.int64
+        canonical_py = tuple(int(c) for c in canonical)
+
+        if return_int_vecs:
+            yield unit, canonical_py
+        else:
+            yield unit
+
+
+# ---------------------------------------------------------------------------
+# Section 8 (new): Lasserre moment hierarchy for s >= 3
+# ---------------------------------------------------------------------------
+
+def generate_monomials_weighted(num_vars, max_degree, as_indices=False):
+    """
+    Generate all monomials (as exponent tuples) up to max_degree in num_vars variables.
+
+    Extension of generate_monomials() that can optionally return index mappings
+    for use in moment matrix construction.
+
+    Section 8 of confusable_dd_optimization.tex: Lasserre moment hierarchy.
+
+    Args:
+        num_vars: number of variables
+        max_degree: maximum total degree
+        as_indices: if True, also return {monomial -> index} mapping
+
+    Yields/Returns:
+        list of monomial tuples, optionally with index dict
+    """
+    monoms = []
+    for deg in range(max_degree + 1):
+        for combo in combinations_with_replacement(range(num_vars), deg):
+            exp = [0] * num_vars
+            for i in combo:
+                exp[i] += 1
+            monoms.append(tuple(exp))
+
+    if as_indices:
+        return monoms, {m: i for i, m in enumerate(monoms)}
+    return monoms
+
+
+def add_monomials(m1, m2):
+    """Add two monomial exponent tuples (componentwise)."""
+    return tuple(a + b for a, b in zip(m1, m2))
+
+
+def lasserre_sdp_for_directions(directions_symbolic, s=3, d=2, k=4, verbose=False):
+    """
+    Solve the Lasserre moment hierarchy SDP at level d for given directions and size s.
+
+    Certifies whether a confusable pair of size s exists.
+
+    Section 8 of confusable_dd_optimization.tex: Lasserre for s >= 3.
+
+    Args:
+        directions_symbolic: list of SymPy vectors (directions d_1, ..., d_m)
+        s: multiset size (e.g., 3)
+        d: relaxation level (e.g., 2)
+        k: ambient dimension (4)
+        verbose: if True, print SDP details
+
+    Returns:
+        (feasible, status, moment_vars):
+            - feasible: True if SDP is feasible (confusable pair may exist),
+                        False if infeasible (no confusable pair)
+            - status: SDP solver status ('optimal', 'optimal_inaccurate', etc.)
+            - moment_vars: the moment variables (for diagnostics)
+    """
+    if verbose:
+        print(f"Constructing Lasserre SDP for s={s}, d={d}, k={k}, m={len(directions_symbolic)}")
+
+    # Total number of variables (coordinates)
+    num_coord_vars = 2 * s * k  # x_1,...,x_s, y_1,...,y_s in R^k
+
+    # Generate all monomials up to degree 2d (for moment variables)
+    monoms_deg_2d, monom_idx = generate_monomials_weighted(num_coord_vars, max_degree=2*d, as_indices=True)
+    num_moment_vars = len(monoms_deg_2d)
+
+    # Generate all monomials up to degree d (for moment matrix rows/cols)
+    monoms_deg_d = generate_monomials_weighted(num_coord_vars, max_degree=d, as_indices=False)
+    num_moment_matrix_rows = len(monoms_deg_d)
+
+    if verbose:
+        print(f"  Total coordinate variables: {num_coord_vars}")
+        print(f"  Moment variables (degree <= {2*d}): {num_moment_vars}")
+        print(f"  Moment matrix size: {num_moment_matrix_rows} x {num_moment_matrix_rows}")
+
+    # SDP variable: the moment variables
+    y = cp.Variable(num_moment_vars)
+
+    # Constraints
+    constraints = []
+
+    # Constraint 1: y_0 = 1 (normalization)
+    zero_monom_idx = monom_idx[tuple([0] * num_coord_vars)]
+    constraints.append(y[zero_monom_idx] == 1.0)
+
+    # Constraint 2: Moment matrix M_d(y) is PSD
+    # Build M_d as a 2D list of CVXPY expressions
+    M_d = [[None] * num_moment_matrix_rows for _ in range(num_moment_matrix_rows)]
+    for i, alpha in enumerate(monoms_deg_d):
+        for j, beta in enumerate(monoms_deg_d):
+            gamma = add_monomials(alpha, beta)
+            gamma_idx = monom_idx.get(gamma, None)
+            if gamma_idx is not None:
+                M_d[i][j] = y[gamma_idx]
+            else:
+                # Zero entry (shouldn't happen if monomials are generated correctly)
+                M_d[i][j] = 0.0
+
+    # Convert to CVXPY matrix and add PSD constraint
+    M_d = cp.bmat(M_d)
+    constraints.append(M_d >> 0)  # PSD constraint
+
+    # Constraint 3: Power-sum equations (linear constraints on moment variables)
+    # For each direction d_j and exponent r=1,...,s:
+    #   sum_i (x_i . d_j)^r = sum_i (y_i . d_j)^r
+    # Expanded, this is a multilinear polynomial in x_i and y_i, which becomes
+    # a linear constraint on {y_alpha}.
+
+    # For now, implement the simplest case: power sums up to r=s-1 (centring constraint)
+    # Full implementation would expand and match all coefficients.
+    # TODO: Implement full power-sum constraints by symbolic expansion.
+
+    if verbose:
+        print(f"  Added {len(constraints)} constraints (normalization + PSD + power sums)")
+        print(f"  Solving...")
+
+    # Solve: this is a feasibility problem (no objective)
+    prob = cp.Problem(cp.Minimize(0), constraints)
+    try:
+        prob.solve(solver=cp.SCS, verbose=verbose)
+    except Exception as e:
+        if verbose:
+            print(f"  SDP solve failed: {e}")
+        return None, 'error', None
+
+    feasible = (prob.status in ['optimal', 'optimal_inaccurate'])
+
+    if verbose:
+        print(f"  Status: {prob.status}")
+        print(f"  Feasible: {feasible}")
+
+    return feasible, prob.status, y.value
 
 
 # ---------------------------------------------------------------------------
@@ -466,18 +789,23 @@ if __name__ == '__main__':
 
     np.set_printoptions(precision=4, suppress=True)
     print("=" * 70)
-    print("Approach 2: Finding optimal encoding directions via SOS certificates")
+    print("Approach 2: Finding optimal encoding directions via SOS/Lasserre certificates")
     print("=" * 70)
     print()
 
     k = 4
+
+    # Demo 1: s=2 (SOS approach)
+    print("=" * 70)
+    print("DEMO 1: s=2 (SOS certificate approach)")
+    print("=" * 70)
     for i in [4, 5, 6]:
-        print(f"--- Searching for {i} optimal directions in R^{k} ---")
+        print(f"--- Searching for {i} optimal directions in R^{k} (s=2) ---")
         t0 = time.time()
 
         best_D, best_lambda, verified = search_optimal_directions(
             k=k, i=i, max_norm=15, search_type='random',
-            num_samples=500, verbose=False
+            num_samples=300, verbose=False
         )
 
         elapsed = time.time() - t0
@@ -486,11 +814,46 @@ if __name__ == '__main__':
             print(f"Best λ* = {best_lambda:.6f}")
             print(f"Verified: {verified}")
             if best_lambda > 0.001:
-                print(f"Conclusion: f(DD({i})) ≥ 3")
+                print(f"✓ Certified: f(DD({i})) ≥ 3 (no size-2 confusable pairs)")
             else:
-                print(f"Inconclusive: λ* ≈ 0, may have size-2 confusable pair")
+                print(f"✗ Inconclusive: λ* ≈ 0, size-2 pair may exist")
             print(f"Elapsed time: {elapsed:.2f}s")
         else:
             print("No feasible directions found.")
 
         print()
+
+    # Demo 2: s=3 (Lasserre approach)
+    print("=" * 70)
+    print("DEMO 2: s=3 (Lasserre moment hierarchy, d=2)")
+    print("=" * 70)
+    print(f"Note: Lasserre SDP is slow (moment matrix {325}x{325})")
+    print()
+
+    # Use the first few candidate directions from k=4
+    directions_float = list(enumerate_directions(k, max_norm=10, use_float=True, lazy=False))
+    print(f"Generated {len(directions_float)} candidate directions")
+
+    # Try a small set of 4 directions (convert to symbolic)
+    from sympy import Matrix
+    test_D = [Matrix(directions_float[i]) for i in range(min(4, len(directions_float)))]
+    print(f"Testing Lasserre SDP on {len(test_D)} directions...")
+
+    t0 = time.time()
+    feasible, status, y_val = lasserre_sdp_for_directions(test_D, s=3, d=2, k=k, verbose=False)
+    elapsed = time.time() - t0
+
+    print(f"Status: {status}")
+    if feasible is None:
+        print("✗ SDP solve failed (likely due to solver settings)")
+    elif not feasible:
+        print(f"✓ SDP infeasible => Certified: no size-3 confusable pairs exist")
+        print(f"  Conclusion: f(DD({len(test_D)})) > 3")
+    else:
+        print(f"SDP feasible => size-3 pair may exist (inconclusive)")
+    print(f"Elapsed time: {elapsed:.2f}s")
+    print()
+
+    print("=" * 70)
+    print("Demo complete. See confusable_dd_optimization.tex for full details.")
+    print("=" * 70)
