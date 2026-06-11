@@ -2,7 +2,6 @@ import hashlib
 import numpy as np
 from typing import Self
 from dataclasses import dataclass
-from injection import hash_to_64_bit_reals_in_unit_interval
 from Maximal_Simplex_Vertex import Maximal_Simplex_Vertex
 from tools import sort_np_array_rows_lexicographically
 
@@ -20,14 +19,10 @@ class Eji_LinComb:
 
     def hash_to_point_in_unit_hypercube(self, dimension):
         m = hashlib.md5()
-        m.update(self._eji_counts)
-        m.update(np.array([self._index])) # creating an array with a single element is a kludge to work around difficulties of using to_bytes on np_integers of unknown size
-        ans = []
-        for i in range(dimension):
-            m.update(i.to_bytes(8))  # TODO: This 8 says 8 byte integers
-            real_1, _ = hash_to_64_bit_reals_in_unit_interval(m)  # TODO: make use of real_2 as well to save CPU
-            ans.append(real_1)
-        return np.asarray(ans)
+        m.update(self._eji_counts.tobytes())
+        m.update(self._index.tobytes())
+        seed = int.from_bytes(m.digest(), 'big')
+        return np.random.default_rng(seed).random(dimension)
 
     def __init__(self, n: int, k: int, list_of_Maximal_Simplex_Vertices: list[Maximal_Simplex_Vertex] | None = None):
         self._index = Eji_LinComb.INT_TYPE(0)
