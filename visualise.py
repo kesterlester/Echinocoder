@@ -59,8 +59,8 @@ def add_bokeh_root():
     
     # Uncomment one of the next few pairs of lines:
     
-    # import Cinf_numpy_polynomial_embedder_for_array_of_reals_as_multiset import Embedder
-    # embedder = Embedder()
+    # from Cinf_numpy_polynomial_encoder_for_array_of_reals_as_multiset import Encoder
+    # embedder = Encoder()
     
     # from Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset import Embedder
     # embedder = Embedder()

@@ -34,8 +34,8 @@ All these are (or should be) instances of [MultisetEncoder](MultisetEncoder.py).
 |--------|-----------------|---------------|------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
 | Dotting Conjecture | $O(nk\cdot \log n)$   | $n((k-1)(\lfloor{ \log_2 n }\rfloor+1)+1)$  | Yes   |   No   | Conjectured (but not yet proved!) to be an embedding.                                                                                                                                                                       | [link](C0HomDeg1_conjectured_dotting_embedder_for_array_of_reals_as_multiset.py) |
 | Dotting Overkill | $O(nk\cdot nk)$ |          | Yes              |  No   | According to P K-H this is provably an embedding, but is probably wasteful of resources. Since proof has been lost it should be re-proved and written down before being trusted as an embedder.                             | | 
-| Polynomial | $O(nk\cdot k)$    | $nk(k-1)$     | No               |  Yes  | This was originally thought to be an embedder,  but the  multisets M1={ (A,X,u), (A,Y,v), (B,X,v),(B, Y, u)} and M2={(A,X,v), (A,Y,u), (B,X,u),(B,Y,v)} are a counterexample that would break injectivity for this encoder. | [link](Cinf_numpy_polynomial_embedder_for_array_of_reals_as_multiset.py) |
-| Hybrid | $O(nk\cdot \sqrt{nk})$ | Minimum of Polynomial and Bursarial orders | No      |  Yes  | This method uses whichever of Polynomial or Bursarial has smallest order.                                                                                                                                                   | [link](Cinf_hybrid_embedder_for_array_of_reals_as_multiset.py) |
+| Polynomial | $O(nk\cdot k)$    | $nk(k-1)$     | No               |  Yes  | This was originally thought to be an embedder,  but the  multisets M1={ (A,X,u), (A,Y,v), (B,X,v),(B, Y, u)} and M2={(A,X,v), (A,Y,u), (B,X,u),(B,Y,v)} are a counterexample that would break injectivity for this encoder. | [link](Cinf_numpy_polynomial_encoder_for_array_of_reals_as_multiset.py) |
+| Hybrid | $O(nk\cdot \sqrt{nk})$ | Minimum of Polynomial and Bursarial orders | No      |  Yes  | This method uses whichever of Polynomial or Bursarial has smallest order.                                                                                                                                                   | [link](Cinf_hybrid_encoder_for_array_of_reals_as_multiset.py) |
 
 The orders (i.e. encoding sizes) quoted in the table above are for $n>1$ and $k>1$ only. For $n\le 1$ or $k\le 1$ each algorithm should fall back to an optimal embedding, i.e. one for which the exact order is $nk$.
 
@@ -43,13 +43,13 @@ The orders (i.e. encoding sizes) quoted in the table above are for $n>1$ and $k>
 
 * The [Simplicial Complex](https://en.wikipedia.org/wiki/Simplicial_complex) embedder works for any $n$ and $k$ and embeds into $2 n k+1$ reals.  The [simplical complex embedder sources](C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py) may be browsed.
 * The [conjectured dotting embedder](C0HomDeg1_conjectured_dotting_embedder_for_array_of_reals_as_multiset.py) is based on the [dotting encoder](C0HomDeg1_dotting_encoder_for_array_of_reals_as_multiset.py). It is CONJECTURED (but not proved) to be an embedder. It has order $O(n k \log n)$. 
-* The [polynomial embedder](Cinf_numpy_polynomial_embedder_for_array_of_reals_as_multiset.py)
-has order $O(n k^2)$ in general, but happens to be optimal (i.e. embeds into $nk$ reals) for $k=1$ or $k=2$.
+* The [polynomial encoder](Cinf_numpy_polynomial_encoder_for_array_of_reals_as_multiset.py)
+has order $O(n k^2)$ in general, but happens to be optimal (i.e. encodes into $nk$ reals) for $k=1$ or $k=2$.
 * The [(vanilla) Busarial embedder](Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset.py)
 has order $O(n^2 k)$.  Its exact order is $n + (k-1) n (n+1)/2$. 
 * The ['even' Busarial embedder](Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset.py)
 has order $Binom(n+k,n)-1$. Although this embedder is very inefficient, its one possible benefit is that it does not treat any components in the $k$-space differently than any other. It is `even handed' (hence the name) w.r.t. the axes of the vectors. 
-* The [Hybrid embedder](Cinf_hybrid_embedder_for_array_of_reals_as_multiset.py)  uses whichever of the Busarial or Polynomial embedders has the smaller order. The Hybrid consequently has order $O((nk)^{\frac 3 2})$.
+* The [Hybrid encoder](Cinf_hybrid_encoder_for_array_of_reals_as_multiset.py)  uses whichever of the Busarial or Polynomial encoders has the smaller order. The Hybrid consequently has order $O((nk)^{\frac 3 2})$.
 
 ## Embedders which work on $SP^m(\mathbb R)$ only.
 

@@ -9,14 +9,14 @@ import C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset as 
 embedder_C0HomDeg1_simplex2 = C0HomDeg1_simplex2.Embedder()
 import C0HomDeg1_conjectured_dotting_embedder_for_array_of_reals_as_multiset as conjectured_dotting
 embedder_conjectured_dotting = conjectured_dotting.Embedder(n=2, k=2)
-import  Cinf_numpy_polynomial_embedder_for_array_of_reals_as_multiset as Cinf_np_ar
-embedder_Cinf_np_ar = Cinf_np_ar.Embedder()
+import  Cinf_numpy_polynomial_encoder_for_array_of_reals_as_multiset as Cinf_np_ar
+embedder_Cinf_np_ar = Cinf_np_ar.Encoder()
 import      Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset as Cinf_sp_bur_ar
 embedder_Cinf_sp_bur_ar = Cinf_sp_bur_ar.Embedder()
 import  Cinf_sympy_evenBursar_embedder_for_array_of_reals_as_multiset as Cinf_sp_evenBur_ar
 embedder_Cinf_sp_evenBur_ar = Cinf_sp_evenBur_ar.Embedder()
-import Cinf_hybrid_embedder_for_array_of_reals_as_multiset as hybrid
-embedder_hybrid = hybrid.Embedder()
+import Cinf_hybrid_encoder_for_array_of_reals_as_multiset as hybrid
+embedder_hybrid = hybrid.Encoder()
 
 import  Cinf_python_polynomial_embedder_for_list_of_reals_as_multiset as embedder_Cinf_py_li
 import   Cinf_numpy_polynomial_embedder_for_list_of_reals_as_multiset as embedder_Cinf_np_li
@@ -150,7 +150,10 @@ def tost_multiset_embedder(data, embedder=None, embedders=None, number_of_shuffl
                 print(f"Skipping test of data on {embedder} as shape ({shuffled_data.shape}) is wrong.")
             else:
                 print(f"Trying embedder {embedder} on {shuffled_data}.")
-                embedding, size_, metadata_ = embedder.embed(shuffled_data, debug = True)
+                if hasattr(embedder, 'encode') and callable(embedder.encode):
+                    embedding, size_, metadata_ = embedder.encode(shuffled_data, debug=True)
+                else:
+                    embedding, size_, metadata_ = embedder.embed(shuffled_data, debug=True)
                 print(f"got {embedding}, {size_}, {metadata_}")
                 #embedding_fails = expected_embedding is not None and not np.array_equal(np.asarray(embedding),np.asarray(expected_embedding))
                 # Check subsequent embeddings are same as first embedding. I.e. check for permutation invariance.
