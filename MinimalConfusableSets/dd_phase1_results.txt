@@ -53,4 +53,7 @@ i=15 (M=5):
 
 i=14 (M=5): ✓ λ*=0.1407 → certified f ≥ 3  [711.1s, 177712 candidates]
 
-i=15 (M=5): 
+i=15 (M=5): ✓ λ*=0.2244 → certified f ≥ 3  [734.8s, 177712 candidates]
+
+i=16 (M=6): ✓ λ*=0.2416 → certified f ≥ 3  [858.4s, 177712 candidates]
+
