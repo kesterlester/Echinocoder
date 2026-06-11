@@ -1,0 +1,530 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{multicol}
+\usepackage[most]{tcolorbox}
+
+% ── Colours ──────────────────────────────────────────────────────────────────
+\definecolor{alg1}{HTML}{1a5276}
+\definecolor{alg2}{HTML}{1e8449}
+\definecolor{shared}{HTML}{6c3483}
+\definecolor{boxbg}{HTML}{f4f6f7}
+\definecolor{notebg}{HTML}{fef9e7}
+
+% ── Coloured boxes ───────────────────────────────────────────────────────────
+\tcbset{
+  defbox/.style={colback=boxbg, colframe=gray!50, boxrule=0.4pt,
+                 arc=2pt, left=6pt, right=6pt, top=4pt, bottom=4pt},
+  notebox/.style={colback=notebg, colframe=orange!60, boxrule=0.4pt,
+                  arc=2pt, left=6pt, right=6pt, top=4pt, bottom=4pt},
+}
+
+% ── Misc macros ──────────────────────────────────────────────────────────────
+\newcommand{\eji}[2]{e_{\!#1,#2}}           % Eji label
+\newcommand{\MSV}[1]{\mathcal{V}_{#1}}      % MSV
+\newcommand{\LC}[1]{L_{#1}}                 % Eji_LinComb
+\newcommand{\hash}[1]{h\!\left(#1\right)}   % hash function
+\newcommand{\canon}[1]{\widetilde{#1}}      % canonical form
+\newcommand{\R}{\mathbb{R}}
+
+\hypersetup{colorlinks=true, linkcolor=alg1, urlcolor=alg1}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\title{\textbf{Simplicial Complex Multiset Embedders}\\[0.4em]
+       \large Algorithms 1 and 2: How They Work and How They Differ}
+\date{\today}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{document}
+\maketitle
+\tableofcontents
+\vspace{1em}
+
+% ═════════════════════════════════════════════════════════════════════════════
+\section{The Problem}
+% ═════════════════════════════════════════════════════════════════════════════
+
+We are given a \emph{multiset} $M$ of $n$ vectors in $\R^k$.
+We represent $M$ as a $k{\times}n$ matrix whose \emph{columns} are the vectors;
+column order is arbitrary.  We want a function
+\[
+  f: \R^{n \times k} \;\longrightarrow\; \R^N
+\]
+that is:
+\begin{itemize}[nosep]
+  \item \textbf{Multiset-invariant}: permuting the columns of $M$ does not change $f(M)$.
+  \item \textbf{Injective (embedding)}: distinct multisets map to distinct outputs,
+        i.e.\ $f$ is an \emph{embedder}, not merely an encoder.
+  \item \textbf{Continuous (C$^0$)}: $f$ is continuous in the entries of $X$.
+  \item \textbf{Positively homogeneous of degree~1 (HomDeg1)}: $f(\lambda X) = \lambda f(X)$
+        for all $\lambda > 0$.
+\end{itemize}
+
+The two algorithms described here achieve this with output sizes:
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcc}
+  \toprule
+  & \textbf{Algorithm 1} & \textbf{Algorithm 2} \\
+  \midrule
+  Output size $N$ & $2nk + 1$ & $2nk + 1 - k$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+Algorithm~2 saves exactly $k$ dimensions.  Both are $C^0$ and HomDeg1 but \emph{not}
+$C^1$ (piecewise-linear kinks appear where sorted order changes).
+
+
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Shared Building Blocks}
+\label{sec:building-blocks}
+% ═════════════════════════════════════════════════════════════════════════════
+
+Both algorithms use the same core data structures and sub-steps.
+
+\subsection*{Labels: Eji}
+Each of the $nk$ matrix entries is identified by a label $\eji{j}{i}$, where
+$j \in \{0,\ldots,n{-}1\}$ is the \emph{column} (vector) index and
+$i \in \{0,\ldots,k{-}1\}$ is the \emph{row} (coordinate) index.
+The set of all labels is $E = \{\eji{j}{i} : 0 \le j < n,\; 0 \le i < k\}$.
+
+\subsection*{Vertices: Maximal Simplex Vertex (MSV)}
+An MSV is a subset $V \subseteq E$; equivalently, a $\{0,1\}$-valued $n{\times}k$
+matrix whose 1-entries mark the members of $V$.
+
+\subsection*{Linear Combinations: Eji\_LinComb}
+An \emph{Eji\_LinComb}~$L$ is an $n{\times}k$ matrix of non-negative integer
+counts obtained by adding MSVs:
+\[
+  L = V_{(0)} + V_{(1)} + \cdots + V_{(\ell-1)},
+  \qquad L[j][i] = \#\bigl\{s : \eji{j}{i} \in V_{(s)}\bigr\}.
+\]
+A companion integer $\ell$ (the \emph{index}) records how many MSVs were summed.
+
+\subsection*{Canonical Form}
+\label{sec:canonical}
+Given an Eji\_LinComb~$L$, its \emph{canonical form} $\canon{L}$ is obtained
+by sorting the columns of $L$'s count matrix lexicographically (one column per
+vector, consistent with the column-vector convention).  This mods out the
+arbitrary labelling of vectors (the $j$-indices), achieving multiset invariance:
+two inputs that are column-permutations of each other produce the same canonical
+Eji\_LinCombs.
+
+\subsection*{Hash to Hypercube}
+\label{sec:hash}
+Each canonical Eji\_LinComb $\canon{L}$ is mapped deterministically to a
+pseudorandom point
+\[
+  \hash{\canon{L}} \;\in\; [0,1]^N
+\]
+by hashing its count matrix and index with MD5 and converting the digest bits
+to floating-point coordinates.  Distinct canonical Eji\_LinCombs are (with
+probability~1 over the choice of hash function) mapped to distinct,
+``generically positioned'' points.
+
+\subsection*{Barycentric Subdivision}
+\label{sec:bary}
+This sub-step, shared identically by both algorithms, converts a sorted list
+of gap--MSV pairs into a list of coefficient--Eji\_LinComb pairs.
+
+\begin{tcolorbox}[defbox]
+\textbf{Input}: $m$ pairs $(\delta_0, V_0), \ldots, (\delta_{m-1}, V_{m-1})$
+with $\delta_0 \ge \delta_1 \ge \cdots \ge \delta_{m-1} \ge 0$.\\[4pt]
+\textbf{Output}: $m$ pairs $(\alpha_i, L_i)$ where
+\[
+  \alpha_i \;=\; (i+1)\bigl(\delta_i - \delta_{i+1}\bigr),
+  \qquad \delta_m := 0,
+\]
+\[
+  L_i \;=\; V_0 + V_1 + \cdots + V_i \quad\text{(Eji\_LinComb with index } i{+}1\text{)}.
+\]
+\end{tcolorbox}
+
+\noindent
+Key properties:
+\begin{itemize}[nosep]
+  \item $\alpha_i \ge 0$ (since gaps are sorted descending).
+  \item $\sum_i \alpha_i = \sum_i \delta_i$ (by Abel summation; the total weight
+        is preserved).
+  \item The $L_i$ are monotone: $L_{i+1} = L_i + V_{i+1} \ge L_i$ entrywise.
+\end{itemize}
+
+\subsection*{Final Output Assembly}
+Given the barycentric pairs $(\alpha_i, L_i)$, each $L_i$ is canonicalised and
+hashed to a point $p_i = \hash{\canon{L_i}} \in [0,1]^{N_{\text{hash}}}$.
+The main body of the embedding is then
+\[
+  \sum_{i=0}^{m-1} \alpha_i \, p_i \;\in\; \R^{N_{\text{hash}}},
+\]
+to which a small number of \emph{anchor values} (global or per-column extrema)
+are appended or prepended to fix the absolute scale.
+
+
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Algorithm 1: Global Sort}
+\label{sec:alg1}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\textcolor{alg1}{\textbf{Source file:}}
+\texttt{C0HomDeg1\_simplicialComplex\_embedder\_1\_for\_array\_of\_reals\_as\_multiset.py}\\
+\textbf{Output size:} $N = 2nk + 1$
+
+\subsection*{Steps}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Global sort.}  Treat all $nk$ matrix entries as labelled
+        scalars and sort them in \emph{descending} order:
+        \[
+          v_0 \;\ge\; v_1 \;\ge\; \cdots \;\ge\; v_{nk-1},
+          \quad v_r = X[j_r][i_r], \quad e_r = \eji{j_r}{i_r}.
+        \]
+
+  \item \textbf{Gaps and prefix MSVs.}  Compute the $nk-1$ consecutive
+        differences $\delta_r = v_r - v_{r+1}$ for $r = 0,\ldots,nk-2$.
+        Associate each gap~$r$ with the \emph{prefix MSV}
+        $V_r = \{e_0, e_1, \ldots, e_r\}$ (the set of labels of the top
+        $r{+}1$ values).
+
+  \item \textbf{Re-sort by gap size.}  Sort the $nk-1$ pairs
+        $(\delta_r, V_r)$ in descending order of $\delta_r$.
+
+  \item \textbf{Barycentric subdivision} (Section~\ref{sec:bary}) with
+        $m = nk-1$.
+
+  \item \textbf{Canonicalise and hash.}  For each $(\alpha_i, L_i)$,
+        compute $\canon{L_i}$ and $p_i = \hash{\canon{L_i}}$ with
+        $N_{\text{hash}} = 2(nk-1)+1 = 2nk-1$.
+
+  \item \textbf{Assemble output.}
+        \[
+          f_1(X) \;=\; \Bigl[\;\underbrace{\textstyle\sum_i \alpha_i\,p_i}_{2nk-1\text{ reals}},\;
+                               \underbrace{v_0}_{\text{global max}},\;
+                               \underbrace{v_{nk-1}}_{\text{global min}}\;\Bigr]
+          \;\in\; \R^{2nk+1}.
+        \]
+\end{enumerate}
+
+\begin{tcolorbox}[notebox]
+\textbf{Note on the maximum.}  Given the global minimum and all $nk-1$ gaps,
+one can reconstruct all $nk$ values; storing the global maximum is technically
+redundant.  It is included for implementation simplicity (a TODO comment in the
+code acknowledges this for degenerate cases).
+\end{tcolorbox}
+
+\subsection*{Worked Example: $n=4$, $k=2$}
+
+Input multiset (four 2-vectors shown as column vectors):
+\[
+  M \;=\; \left\{\;
+    \begin{pmatrix}4\\2\end{pmatrix},\;
+    \begin{pmatrix}-3\\5\end{pmatrix},\;
+    \begin{pmatrix}8\\9\end{pmatrix},\;
+    \begin{pmatrix}2\\7\end{pmatrix}
+  \;\right\}
+\]
+
+\paragraph{Step 1–2: Global sort and gaps.}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{cccc}
+  \toprule
+  Rank $r$ & Value $v_r$ & Label $e_r$ & Gap $\delta_r = v_r - v_{r+1}$ \\
+  \midrule
+  0 & 9 & $\eji{2}{1}$ & 1 \\
+  1 & 8 & $\eji{2}{0}$ & 1 \\
+  2 & 7 & $\eji{3}{1}$ & 2 \\
+  3 & 5 & $\eji{1}{1}$ & 1 \\
+  4 & 4 & $\eji{0}{0}$ & 2 \\
+  5 & 2 & $\eji{0}{1}$ & 0 \\
+  6 & 2 & $\eji{3}{0}$ & 5 \\
+  7 & $-3$ & $\eji{1}{0}$ & — \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Global max $= 9$, global min $= {-3}$.
+The 7 prefix MSVs are $V_r = \{e_0, \ldots, e_r\}$; for example
+$V_2 = \{\eji{2}{1}, \eji{2}{0}, \eji{3}{1}\}$.
+
+\paragraph{Step 3: Re-sort by gap size.}
+After sorting the 7 pairs by $\delta$ descending: gaps of size 5, 2, 2, 1, 1, 1, 0.
+
+\paragraph{Steps 4–5: Barycentric subdivision.}
+Non-zero $\alpha_i$ values (zero terms contribute nothing to the sum):
+\[
+  \alpha_0 = 1\cdot(5-2) = 3, \quad
+  \alpha_2 = 3\cdot(2-1) = 3, \quad
+  \alpha_5 = 6\cdot(1-0) = 6.
+\]
+The remaining $\alpha_i = 0$.
+
+\paragraph{Step 6: Output.}
+$N_{\text{hash}} = 2(8-1)+1 = 15$.
+\[
+  f_1(X) = 3\,p_0 + 3\,p_2 + 6\,p_5 + [\,9,\; {-3}\,] \;\in\; \R^{17}.
+\]
+where each $p_i \in [0,1]^{15}$ is the hash of the corresponding canonical
+Eji\_LinComb.  The full numerical output is:
+\[
+  [\;7.07,\; 6.91,\; 2.78,\; 3.50,\; 1.01,\; 5.51,\; 4.07,\; 4.90,\; 10.02,\;
+   9.51,\; 5.13,\; 2.97,\; 8.04,\; 5.34,\; 7.41,\; 9,\; {-3}\;].
+\]
+
+
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Algorithm 2: Per-Component Sort}
+\label{sec:alg2}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\textcolor{alg2}{\textbf{Source file:}}
+\texttt{C0HomDeg1\_simplicialComplex\_embedder\_2\_for\_array\_of\_reals\_as\_multiset.py}\\
+\textbf{Output size:} $N = 2nk + 1 - k$
+
+\subsection*{Steps}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Per-column sort.}  For each component $i = 0, \ldots, k{-}1$,
+        sort the $n$ values in column~$i$ in \emph{descending} order:
+        \[
+          X[\sigma_i(0)][i] \;\ge\; X[\sigma_i(1)][i] \;\ge\; \cdots \;\ge\; X[\sigma_i(n-1)][i].
+        \]
+
+  \item \textbf{Per-column gaps and prefix MSVs.}  For each column~$i$,
+        compute the $n-1$ consecutive differences within that column:
+        \[
+          \delta^{(i)}_r = X[\sigma_i(r)][i] - X[\sigma_i(r+1)][i], \quad r = 0,\ldots,n-2.
+        \]
+        Associate gap~$r$ in column~$i$ with the prefix MSV
+        $V^{(i)}_r = \{\eji{\sigma_i(0)}{i}, \ldots, \eji{\sigma_i(r)}{i}\}$
+        (all entries \emph{within column~$i$}; no cross-column mixing).
+        Record the $k$ column minima: $m_i = X[\sigma_i(n-1)][i]$.
+
+  \item \textbf{Flatten and re-sort.}  Collect all $k(n-1) = nk-k$ pairs
+        $(\delta^{(i)}_r,\, V^{(i)}_r)$ into one list and sort descending by gap size.
+
+  \item \textbf{Barycentric subdivision} (Section~\ref{sec:bary}) with
+        $m = nk - k$.
+
+  \item \textbf{Canonicalise and hash.}  For each $(\alpha_i, L_i)$, compute
+        $\canon{L_i}$ and $p_i = \hash{\canon{L_i}}$ with
+        $N_{\text{hash}} = 2k(n-1)+1 = 2nk-2k+1$.
+
+  \item \textbf{Assemble output.}
+        \[
+          f_2(X) \;=\; \Bigl[\;\underbrace{m_0,\ldots,m_{k-1}}_{k\text{ col.\ minima}},\;
+                               \underbrace{\textstyle\sum_i \alpha_i\,p_i}_{2nk-2k+1\text{ reals}}
+                               \;\Bigr]
+          \;\in\; \R^{2nk+1-k}.
+        \]
+\end{enumerate}
+
+\begin{tcolorbox}[notebox]
+\textbf{Why no column maxima?}  The maximum of each column is implicitly
+encoded: it equals the column minimum plus the sum of that column's gaps
+(which are embedded in the hash-weighted sum).  Only the minima are needed as
+anchors to fix the absolute scale.
+\end{tcolorbox}
+
+\subsection*{Worked Example: $n=4$, $k=3$}
+
+Input multiset (four 3-vectors shown as column vectors):
+\[
+  M \;=\; \left\{\;
+    \begin{pmatrix}4\\2\\3\end{pmatrix},\;
+    \begin{pmatrix}-3\\5\\1\end{pmatrix},\;
+    \begin{pmatrix}8\\9\\2\end{pmatrix},\;
+    \begin{pmatrix}2\\7\\2\end{pmatrix}
+  \;\right\}
+\]
+Row-0 (coordinate 0) minima: $m_0 = {-3}$,\; row-1: $m_1 = 2$,\; row-2: $m_2 = 1$.
+
+\paragraph{Steps 1–2: Per-column sorts and gaps.}
+
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{clll}
+  \toprule
+  Col.\ $i$ & Sorted desc.\ (value, label) & Gaps $\delta$ & Prefix MSVs (for each gap) \\
+  \midrule
+  0 & $8(\eji{2}{0}),\;4(\eji{0}{0}),\;2(\eji{3}{0}),\;{-3}(\eji{1}{0})$
+    & 4,\;2,\;5
+    & $\{\eji{2}{0}\}$;\;
+      $\{\eji{2}{0},\eji{0}{0}\}$;\;
+      $\{\eji{2}{0},\eji{0}{0},\eji{3}{0}\}$ \\[3pt]
+  1 & $9(\eji{2}{1}),\;7(\eji{3}{1}),\;5(\eji{1}{1}),\;2(\eji{0}{1})$
+    & 2,\;2,\;3
+    & $\{\eji{2}{1}\}$;\;
+      $\{\eji{2}{1},\eji{3}{1}\}$;\;
+      $\{\eji{2}{1},\eji{3}{1},\eji{1}{1}\}$ \\[3pt]
+  2 & $3(\eji{0}{2}),\;2(\eji{2}{2}),\;2(\eji{3}{2}),\;1(\eji{1}{2})$
+    & 1,\;0,\;1
+    & $\{\eji{0}{2}\}$;\;
+      $\{\eji{0}{2},\eji{2}{2}\}$;\;
+      $\{\eji{0}{2},\eji{2}{2},\eji{3}{2}\}$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Total of $3 \times 3 = 9 = nk-k$ pairs (3 per column).
+
+\paragraph{Step 3: Flatten and re-sort by gap size.}
+
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{clll}
+  \toprule
+  Rank $r$ & Gap $\delta_r$ & MSV $V_r$ & Origin \\
+  \midrule
+  0 & 5 & $\{\eji{2}{0}, \eji{0}{0}, \eji{3}{0}\}$ & col~0, gap~2 \\
+  1 & 4 & $\{\eji{2}{0}\}$                           & col~0, gap~0 \\
+  2 & 3 & $\{\eji{2}{1}, \eji{3}{1}, \eji{1}{1}\}$  & col~1, gap~2 \\
+  3 & 2 & $\{\eji{2}{0}, \eji{0}{0}\}$               & col~0, gap~1 \\
+  4 & 2 & $\{\eji{2}{1}\}$                            & col~1, gap~0 \\
+  5 & 2 & $\{\eji{2}{1}, \eji{3}{1}\}$               & col~1, gap~1 \\
+  6 & 1 & $\{\eji{0}{2}\}$                            & col~2, gap~0 \\
+  7 & 1 & $\{\eji{0}{2}, \eji{2}{2}, \eji{3}{2}\}$  & col~2, gap~2 \\
+  8 & 0 & $\{\eji{0}{2}, \eji{2}{2}\}$               & col~2, gap~1 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Step 4: Barycentric subdivision.}
+Gap sequence: $5, 4, 3, 2, 2, 2, 1, 1, 0$.
+\[
+  \alpha_r = (r{+}1)(\delta_r - \delta_{r+1}): \quad
+  1,\; 2,\; 3,\; 0,\; 0,\; 6,\; 0,\; 8,\; 0.
+\]
+Non-zero terms only:
+\[
+  \alpha_0=1\;(\text{uses }L_0),\quad
+  \alpha_1=2\;(\text{uses }L_1),\quad
+  \alpha_2=3\;(\text{uses }L_2),\quad
+  \alpha_5=6\;(\text{uses }L_5),\quad
+  \alpha_7=8\;(\text{uses }L_7).
+\]
+
+The Eji\_LinComb count matrices $L_r = V_0 + \cdots + V_r$ for the non-zero terms are
+(showing index / count matrix, before canonicalisation):
+
+\medskip
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{cl}
+  \toprule
+  Term & Count matrix (rows = coordinates $i{=}0,1,2$;\; cols = vectors $j{=}0,1,2,3$) \\
+  \midrule
+  $L_0$ (idx 1) & $\begin{pmatrix}1&0&1&1\\0&0&0&0\\0&0&0&0\end{pmatrix}$ \\[8pt]
+  $L_1$ (idx 2) & $\begin{pmatrix}1&0&2&1\\0&0&0&0\\0&0&0&0\end{pmatrix}$ \\[8pt]
+  $L_2$ (idx 3) & $\begin{pmatrix}1&0&2&1\\0&1&1&1\\0&0&0&0\end{pmatrix}$ \\[8pt]
+  $L_5$ (idx 6) & $\begin{pmatrix}2&0&3&1\\0&1&3&2\\0&0&0&0\end{pmatrix}$ \\[8pt]
+  $L_7$ (idx 8) & $\begin{pmatrix}2&0&3&1\\0&1&3&2\\2&0&1&1\end{pmatrix}$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Step 6: Output.}
+$N_{\text{hash}} = 2 \times 3 \times 3 + 1 = 19$.
+\[
+  f_2(X) = \bigl[\;\underbrace{-3,\;2,\;1}_{3\text{ col.\ min.}},\;
+                  1\,p_0 + 2\,p_1 + 3\,p_2 + 6\,p_5 + 8\,p_7\;\bigr]
+  \;\in\; \R^{22},
+\]
+where each $p_r \in [0,1]^{19}$.
+
+
+% ═════════════════════════════════════════════════════════════════════════════
+\section{Comparison}
+\label{sec:comparison}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\subsection*{Side-by-Side Summary}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{4.5cm} p{4.5cm} p{4.5cm}}
+  \toprule
+  & \textbf{\textcolor{alg1}{Algorithm 1}} & \textbf{\textcolor{alg2}{Algorithm 2}} \\
+  \midrule
+  \textbf{Sort strategy} &
+    One global sort of all $nk$ entries &
+    $k$ independent column sorts \\
+  \textbf{Number of gaps} &
+    $nk - 1$ &
+    $k(n-1) = nk - k$ \\
+  \textbf{MSV structure} &
+    Prefix sets of the global order; MSVs can mix entries from any column &
+    Prefix sets within each column; all entries in a given MSV share the same $i$-index \\
+  \textbf{Hash embedding dim.} &
+    $2(nk-1)+1 = 2nk-1$ &
+    $2k(n-1)+1 = 2nk-2k+1$ \\
+  \textbf{Anchor values} &
+    Global max and global min (2 values) &
+    Per-column minima ($k$ values) \\
+  \textbf{Total output size} &
+    $(2nk-1) + 2 = 2nk+1$ &
+    $(2nk-2k+1) + k = 2nk+1-k$ \\
+  \midrule
+  \textbf{Saving vs.\ Alg~1} & — & $k$ dimensions \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Why Algorithm 2 is Smaller}
+
+Algorithm~2 saves $k$ output dimensions.  The saving arises from two
+interacting changes.
+
+\begin{enumerate}
+  \item \textbf{Fewer gaps to embed ($k{-}1$ fewer).}
+        Sorting per-column gives $k(n-1)$ gaps; sorting globally gives $nk-1$
+        gaps.  The difference is $k{-}1$.  Each gap costs 2 hash dimensions
+        (since $N_{\text{hash}} = 2m+1$), so the hash embedding shrinks by
+        $2(k-1)$.
+
+  \item \textbf{More anchor values ($k{-}2$ more for $k > 2$).}
+        Algorithm~1 stores 2 anchors (global max and min).  Algorithm~2 stores
+        $k$ anchors (per-column minima), which is $k-2$ more for $k > 2$.
+        This partially offsets the hash savings.
+\end{enumerate}
+
+\noindent
+Net saving: $2(k-1) - (k-2) = k$.  This holds for all $k \ge 1$.
+
+\medskip
+\noindent
+The \emph{reason} Algorithm~2 needs $k{-}1$ fewer gaps is conceptual: in the
+global sort (Algorithm~1), the very last (smallest) entry has no gap below it
+within the chain; that ``missing'' gap is represented by the global minimum
+anchor.  In Algorithm~2, the same thing happens \emph{independently in each
+column}: the smallest entry of each column has no gap below it in that column,
+and each such ``missing'' gap is represented by one of the $k$ column-minimum
+anchors.  Algorithm~2 exploits the per-column structure to reduce the number of
+``missing'' gaps from one (global) to $k$ (one per column), which at first
+seems \emph{worse} — but the per-column sorting also prevents $k{-}1$
+cross-column comparisons from appearing in the gap list, yielding a net reduction
+of $k{-}1$ gaps and ultimately a saving of $k$ output dimensions.
+
+\subsection*{Neither Algorithm is Optimal}
+
+Both algorithms embed into $O(nk)$ dimensions, which matches the information
+content of the input (a multiset of $nk$ real values).  However, the exact
+constants differ; ideally one would embed into just $nk$ reals, and both
+algorithms use roughly twice that.  The factor-of-two overhead reflects the
+generic-position hashing scheme: each gap is embedded into a two-dimensional
+``direction'' plus a weight, rather than a single real.  Reducing this overhead
+is an open problem.
+
+\end{document}
