@@ -332,20 +332,39 @@ Apply $\alpha_s = (s+1)(\delta_{(s)}-\delta_{(s+1)})$:
   1,\; 2,\; 3,\; 0,\; 0,\; 6,\; 0,\; 8,\; 0.
 \]
 
-The cumulative Eji\_LinComb for each non-zero term (count matrix shown with
-rows = coordinates $i{=}0,1,2$; columns = vectors $j{=}0,1,2,3$):
+The cumulative Eji\_LinComb for each non-zero term.  Count matrix: rows =
+coordinates $i{=}0,1,2$; columns = vectors $j{=}0,1,2,3$.
+The last column shows $L_s/(s{+}1)$ — the normalised basis element, i.e.\ the
+average of the first $s{+}1$ prefix MSVs.  Terms of $\eji{j}{i}$ with
+coefficient~0 are omitted; terms are grouped by coordinate row~$i$.
 \begin{center}
 \small
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{cll}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{cl l p{6.6cm}}
 \toprule
-$s$ & $\alpha_s$ & $L_s$ (count matrix, index $s{+}1$) \\
+$s$ & $\alpha_s$ & $L_s$ (count matrix, idx $s{+}1$)
+    & Normalised basis element $L_s/(s{+}1)$ \\
 \midrule
-0 & 1 & $\begin{pmatrix}1&0&1&1\\0&0&0&0\\0&0&0&0\end{pmatrix}$, idx 1 \\[8pt]
-1 & 2 & $\begin{pmatrix}1&0&2&1\\0&0&0&0\\0&0&0&0\end{pmatrix}$, idx 2 \\[8pt]
-2 & 3 & $\begin{pmatrix}1&0&2&1\\0&1&1&1\\0&0&0&0\end{pmatrix}$, idx 3 \\[8pt]
-5 & 6 & $\begin{pmatrix}2&0&3&1\\0&1&3&2\\0&0&0&0\end{pmatrix}$, idx 6 \\[8pt]
-7 & 8 & $\begin{pmatrix}2&0&3&1\\0&1&3&2\\2&0&1&1\end{pmatrix}$, idx 8 \\
+0 & 1
+  & $\begin{pmatrix}1&0&1&1\\0&0&0&0\\0&0&0&0\end{pmatrix}$, idx 1
+  & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$ \\[8pt]
+1 & 2
+  & $\begin{pmatrix}1&0&2&1\\0&0&0&0\\0&0&0&0\end{pmatrix}$, idx 2
+  & $\tfrac{1}{2}(\eji{0}{0}+2\eji{2}{0}+\eji{3}{0})$ \\[8pt]
+2 & 3
+  & $\begin{pmatrix}1&0&2&1\\0&1&1&1\\0&0&0&0\end{pmatrix}$, idx 3
+  & $\tfrac{1}{3}(\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$\newline
+    $\phantom{\tfrac{1}{3}(}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1})$ \\[8pt]
+5 & 6
+  & $\begin{pmatrix}2&0&3&1\\0&1&3&2\\0&0&0&0\end{pmatrix}$, idx 6
+  & $\tfrac{1}{6}(2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
+    $\phantom{\tfrac{1}{6}(}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1})$ \\[8pt]
+7 & 8
+  & $\begin{pmatrix}2&0&3&1\\0&1&3&2\\2&0&1&1\end{pmatrix}$, idx 8
+  & $\tfrac{1}{8}(2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
+    $\phantom{\tfrac{1}{8}(}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
+    $\phantom{\tfrac{1}{8}(}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2})$ \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -393,26 +412,20 @@ all non-negative entries.
 
 \subsection*{Steps C--D: Global sort and Abel summation}
 
-Sort all $8$ entries of the balance globally descending:
-$9(\eji{2}{1}),\,8(\eji{2}{0}),\,7(\eji{3}{1}),\,5(\eji{1}{1}),\,
-4(\eji{0}{0}),\,2(\eji{0}{1}),\,2(\eji{3}{0}),\,-3+3=0(\eji{1}{0})$.
-
-Wait — for Algorithm 1, the balance after subtracting the global minimum $-3$
-from every entry is:
-\begin{center}
-$\begin{pmatrix}4{-}({-3})\\2{-}({-3})\end{pmatrix}
-=\begin{pmatrix}7\\5\end{pmatrix}$,\;
-$\begin{pmatrix}0\\8\end{pmatrix}$,\;
-$\begin{pmatrix}11\\12\end{pmatrix}$,\;
-$\begin{pmatrix}5\\10\end{pmatrix}$
-\end{center}
-
-Sorted globally descending: $12(\eji{2}{1}),\,11(\eji{2}{0}),\,10(\eji{3}{1}),\,
-8(\eji{1}{1}),\,7(\eji{0}{0}),\,5(\eji{0}{1}),\,5(\eji{3}{0}),\,0(\eji{1}{0})$.
-
-The 7 gaps are $1,1,2,1,2,0,5$, with prefix elements $V_r = \{e_0,\ldots,e_r\}$.
-After global re-sort by gap descending and second Abel summation:
-$\alpha_0=3, \alpha_2=3, \alpha_5=6$ (others zero).
+The balance after subtracting the global minimum $-3$ from every entry is:
+\[
+  \left\{\;\begin{pmatrix}7\\5\end{pmatrix},\;
+            \begin{pmatrix}0\\8\end{pmatrix},\;
+            \begin{pmatrix}11\\12\end{pmatrix},\;
+            \begin{pmatrix}5\\10\end{pmatrix}\;\right\}
+\]
+Sorted globally descending (value: label):
+\[
+  12(\eji{2}{1}),\;11(\eji{2}{0}),\;10(\eji{3}{1}),\;8(\eji{1}{1}),\;
+  7(\eji{0}{0}),\;5(\eji{0}{1}),\;5(\eji{3}{0}),\;0(\eji{1}{0}).
+\]
+The 7 gaps are $1,1,2,1,2,0,5$.  After global re-sort by gap descending and
+second Abel summation: $\alpha_0=3,\;\alpha_2=3,\;\alpha_5=6$ (others zero).
 
 $N_{\text{hash}} = 2(8{-}1){+}1 = 15$. Output:
 \[
@@ -420,8 +433,11 @@ $N_{\text{hash}} = 2(8{-}1){+}1 = 15$. Output:
   \bigl[\;3\,p_0 + 3\,p_2 + 6\,p_5,\;9,\;{-3}\;\bigr]
   \;\in\; \R^{17},
 \]
-numerically: $[\,7.07,\,6.91,\,2.78,\,3.50,\,1.01,\,5.51,\,4.07,\,4.90,\,10.02,
-\,9.51,\,5.13,\,2.97,\,8.04,\,5.34,\,7.41,\,9,\,-3\,]$.
+numerically (from the code's debug output):
+\[
+  [\,7.07,\;6.91,\;2.78,\;3.50,\;1.01,\;5.51,\;4.07,\;4.90,\;10.02,\;
+   9.51,\;5.13,\;2.97,\;8.04,\;5.34,\;7.41,\;9,\;{-3}\,].
+\]
 
 % ═════════════════════════════════════════════════════════════════════════════
 \section{Output Size and the Whitney Embedding Theorem}
