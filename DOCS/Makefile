@@ -6,7 +6,7 @@ PDFLATEX := pdflatex
 # new .tex sources are introduced.  (Third-party PDFs that are checked in
 # but not built from .tex sources — e.g. Davis-Boletin-... — are NOT
 # listed and are left untouched by this Makefile.)
-regenerate_pdfs: encoder.pdf parity_blindness_and_repS_concern.pdf phase3_vandermonde.pdf simplicial_complex_embedders.pdf
+regenerate_pdfs: encoder.pdf parity_blindness_and_repS_concern.pdf phase3_vandermonde.pdf simplicial_complex_embedders.pdf simplicial_complex_embedders_v2.pdf
 
 # ─── Generic .tex → .pdf rule ─────────────────────────────────────────────
 #
