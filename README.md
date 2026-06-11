@@ -1,4 +1,4 @@
-# Echinocoder
+~~# Echinocoder
 
 This is a library contains functions which are able to perform:
 
@@ -16,17 +16,25 @@ All these are (or should be) instances of [MultisetEmbedder](MultisetEmbedder.py
 
 ### Embedder summaries:
 
-| Method  | Order (leading) | Exact order (for $n>1$ and $k>1$) | Piecewise Linear | Infinitely Differentiable | Notes | Source |
-|---------|-----------------|---------------|------------------|---------------------------|-------|--------|
-| Simplex 1 | $O(nk)$         | $2nk+1$       | Yes              |  No   |       | [link](C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py) |
-| Simplex 2 | $O(nk)$         | $2nk+1-k$       | Yes              |  No   |       | [link](C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py) |
-| Dotting Conjecture | $O(nk\cdot \log n)$   | $n((k-1)(\lfloor{ \log_2 n }\rfloor+1)+1)$  | Yes   |   No   | Conjectured (but not yet proved!) to be an embedding. | [link](C0HomDeg1_conjectured_dotting_embedder_for_array_of_reals_as_multiset.py) |
-| Dotting Overkill | $O(nk\cdot nk)$ |          | Yes              |  No   | Is provably an embedding, but is probably wasteful of resources. | | 
-| Polynomial | $O(nk\cdot k)$    | $nk(k-1)$     | No               |  Yes  |       | [link](Cinf_numpy_polynomial_embedder_for_array_of_reals_as_multiset.py) |
-| Bursarial  | $O(nk\cdot n)$    | $n + (k-1) n (n+1)/2$  | No      |  Yes  |       | [link](Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset.py) |
-| Hybrid | $O(nk\cdot \sqrt{nk})$ | Minimum of Polynomial and Bursarial orders | No      |  Yes  | This method uses whichever of Polynomial or Bursarial has smallest order. | [link](Cinf_hybrid_embedder_for_array_of_reals_as_multiset.py) |
+| Method                | Order (leading) | Exact order (for $n>1$ and $k>1$) | Piecewise Linear | Infinitely Differentiable | Notes                                                                                                                                                                                                 | Source                                                                          |
+|-----------------------|----------------|-----------------------------------|------------------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| Simplex 1             | $O(nk)$        | $2nk+1$                           | Yes              |  No   |                                                                                                                                                                                                       | [link](C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py) |
+| Simplex 2             | $O(nk)$        | $2nk+1-k$                         | Yes              |  No   |                                                                                                                                                                                                       | [link](C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py) |
+| Bursarial             | $O(nk\cdot n)$   | $n + (k-1) n (n+1)/2$             | No      |  Yes  | Treats different dimensions very differntly (not isotropic!).  One could shave off a few reals with a bit of complex compression (see docstring) but this would not change the order of the encoding. | [link](Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset.py) |                                                                     | [link](Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset.py) | |
+| Egalitarian Bursarial | | $$\binom{m+n}{n} - 1$$            | No      |  Yes  | Does similar things to every dimension, rather than treating the top and bottom rows of the multiset in very special ways.                                                                            | [link](Cinf_sympy_evenBursar_embedder_for_array_of_reals_as_multiset.py) |                                                                     | [link](Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset.py) | |
 
 The orders (i.e. embedding sizes) quoted in the table above are for $n>1$ and $k>1$ only. For $n\le 1$ or $k\le 1$ each algorithm should fall back to an optimal embedding, i.e. one for which the exact order is $nk$.
+
+### Encoder summaries:
+
+| Method | Order (leading) | Exact order (for $n>1$ and $k>1$) | Piecewise Linear | Infinitely Differentiable | Notes                                                                                                                                                                                           | Source |
+|--------|-----------------|---------------|------------------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| Dotting Conjecture | $O(nk\cdot \log n)$   | $n((k-1)(\lfloor{ \log_2 n }\rfloor+1)+1)$  | Yes   |   No   | Conjectured (but not yet proved!) to be an embedding.                                                                                                                                           | [link](C0HomDeg1_conjectured_dotting_embedder_for_array_of_reals_as_multiset.py) |
+| Dotting Overkill | $O(nk\cdot nk)$ |          | Yes              |  No   | According to P K-H this is provably an embedding, but is probably wasteful of resources. Since proof has been lost it should be re-proved and written down before being trusted as an embedder. | | 
+| Polynomial | $O(nk\cdot k)$    | $nk(k-1)$     | No               |  Yes  |                                                                                                                                                                                                 | [link](Cinf_numpy_polynomial_embedder_for_array_of_reals_as_multiset.py) |
+| Hybrid | $O(nk\cdot \sqrt{nk})$ | Minimum of Polynomial and Bursarial orders | No      |  Yes  | This method uses whichever of Polynomial or Bursarial has smallest order.                                                                                                                       | [link](Cinf_hybrid_embedder_for_array_of_reals_as_multiset.py) |
+
+The orders (i.e. encoding sizes) quoted in the table above are for $n>1$ and $k>1$ only. For $n\le 1$ or $k\le 1$ each algorithm should fall back to an optimal embedding, i.e. one for which the exact order is $nk$.
 
 ### Further details:
 
