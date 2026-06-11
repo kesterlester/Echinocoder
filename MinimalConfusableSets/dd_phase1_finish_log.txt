@@ -1,0 +1,34 @@
+i=14 (M=5):   Generating candidate directions (max_norm=12)... 177712 candidates
+  Searching 700 random 14-tuples...  Searching 700 random 14-tuples... 70/700  Searching 700 random 14-tuples... 140/700  Searching 700 random 14-tuples... 210/700  Searching 700 random 14-tuples... 280/700  Searching 700 random 14-tuples... 350/700  Searching 700 random 14-tuples... 420/700  Searching 700 random 14-tuples... 490/700  Searching 700 random 14-tuples... 560/700  Searching 700 random 14-tuples... 630/700  Searching 700 random 14-tuples... 700/700
+✓ λ*=0.1407 → certified f ≥ 3  [711.1s, 177712 candidates]
+i=15 (M=5):   Generating candidate directions (max_norm=12)... 177712 candidates
+  Searching 700 random 15-tuples...  Searching 700 random 15-tuples... 70/700  Searching 700 random 15-tuples... 140/700  Searching 700 random 15-tuples... 210/700  Searching 700 random 15-tuples... 280/700  Searching 700 random 15-tuples... 350/700  Searching 700 random 15-tuples... 420/700  Searching 700 random 15-tuples... 490/700  Searching 700 random 15-tuples... 560/700  Searching 700 random 15-tuples... 630/700  Searching 700 random 15-tuples... 700/700
+✓ λ*=0.2244 → certified f ≥ 3  [734.8s, 177712 candidates]
+i=16 (M=6):   Generating candidate directions (max_norm=12)... 177712 candidates
+  Searching 800 random 16-tuples...  Searching 800 random 16-tuples... 80/800  Searching 800 random 16-tuples... 160/800  Searching 800 random 16-tuples... 240/800  Searching 800 random 16-tuples... 320/800  Searching 800 random 16-tuples... 400/800  Searching 800 random 16-tuples... 480/800  Searching 800 random 16-tuples... 560/800  Searching 800 random 16-tuples... 640/800  Searching 800 random 16-tuples... 720/800  Searching 800 random 16-tuples... 800/800
+✓ λ*=0.2416 → certified f ≥ 3  [858.4s, 177712 candidates]
+
+Complete results written to dd_phase1_results.csv
+
+==========================================================================================
+COMPLETE SUMMARY TABLE (i=1..16)
+==========================================================================================
+ i | M | Hyper_UB | Theory_LB |    Best_λ* |  Cert_LB | Status
+------------------------------------------------------------------------------------------
+ 1 | 1 |        1 |         1 |          — |        1 | ✓
+ 2 | 1 |        1 |         1 |          — |        1 | ✓
+ 3 | 1 |        1 |         1 |          — |        1 | ✓
+ 4 | 2 |        2 |         2 |          — |        2 | ✓
+ 5 | 2 |        2 |         2 |          — |        2 | ✓
+ 6 | 2 |        2 |         2 |          — |        2 | ✓
+ 7 | 3 |        4 |         3 |   0.000000 |        3 | ?
+ 8 | 3 |        4 |         3 |   0.018800 |        3 | ✓
+ 9 | 3 |        4 |         3 |   0.021900 |        3 | ✓
+10 | 4 |        8 |         3 |   0.057500 |        3 | ✓
+11 | 4 |        8 |         3 |   0.073700 |        3 | ✓
+12 | 4 |        8 |         3 |   0.123300 |        3 | ✓
+13 | 5 |       16 |         3 |   0.152500 |        3 | ✓
+14 | 5 |       16 |         3 |   0.140691 |        3 | ✓
+15 | 5 |       16 |         3 |   0.224430 |        3 | ✓
+16 | 6 |       32 |         3 |   0.241592 |        3 | ✓
+

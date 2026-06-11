@@ -1,0 +1,17 @@
+i,M,Hypercube_UB,Theory_LB,Best_Lambda*,Certified_LB,Method,Verified,Notes
+1,1,1,1,,1,theory_only,N/A,No search needed
+2,1,1,1,,1,theory_only,N/A,No search needed
+3,1,1,1,,1,theory_only,N/A,No search needed
+4,2,2,2,,2,theory_only,N/A,No search needed
+5,2,2,2,,2,theory_only,N/A,No search needed
+6,2,2,2,,2,theory_only,N/A,No search needed
+7,3,4,3,0.0,3,grid_search,False,tested 500 trials; lambda*≈0 inconclusive
+8,3,4,3,0.0188,3,grid_search,True,tested 500 trials
+9,3,4,3,0.0219,3,grid_search,True,tested 500 trials
+10,4,8,3,0.0575,3,grid_search,True,tested 600 trials
+11,4,8,3,0.0737,3,grid_search,True,tested 600 trials
+12,4,8,3,0.1233,3,grid_search,True,tested 600 trials
+13,5,16,3,0.1525,3,grid_search,True,tested 700 trials
+14,5,16,3,0.1406906628292137,3,grid_search,True,tested 700 trials
+15,5,16,3,0.22443026299022303,3,grid_search,True,tested 700 trials
+16,6,32,3,0.2415916357850848,3,grid_search,True,tested 800 trials
