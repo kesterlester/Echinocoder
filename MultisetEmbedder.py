@@ -13,7 +13,7 @@ class MultisetEmbedder:
     objects and retain knowledge of the number of repeats.  However, we are sometimes guity 
     of abbreviating "multiset" to just "set".
 
-    The set to be embed should be inputs as a 2D numpy array with shape (n,k).
+    The set to be embedded should be passed in as a 2D numpy array with shape (n,k).
     The order of the vectors within the numpy array can be arbitrary
     E.g. to embed a multiset containing the 2-vectors (2,2), (4,5) and (1,2) one could call
     
@@ -37,9 +37,9 @@ class MultisetEmbedder:
         (2) the (n,k) size of the data which was encoded
         (3) None or a meta-data packet describing how the data was encoded. 
 
-    In principle, a given embedder "Alice" can embed sets of different sizes n and or k.  
-    However, some embedders might wish to restrict themselves to certain fixed n or k at initiali-
-    sation (e.g. if an embedder were to need a significant amount of n and k dependent set-up 
+    In principle, a given embedder can embed sets of different sizes n and or k.
+    However, some embedders might wish to restrict themselves to certain fixed n or k at
+    initialisation (e.g. if an embedder were to need a significant amount of n and k dependent set-up
     cost that it wished to do once only).  Thus all embedders are expected to be able to tell 
     callers what sizes of input they can and cannot embed, and how long the possible embeddings 
     will be.  Derived classes do this by implementing the method
@@ -86,7 +86,7 @@ class MultisetEmbedder:
     def size_from_n_k(self, n: int, k: int) -> int:
         """
         This function returns the number of reals that the embedding would contain if a set containing 
-        n "k-vectors" were to be embedded. Derived classes implmenting this method should return -1 if 
+        n "k-vectors" were to be embedded. Derived classes implementing this method should return -1 if
         they are not able to embed sets for that n and k.
         """
         if n<0 or k<0:

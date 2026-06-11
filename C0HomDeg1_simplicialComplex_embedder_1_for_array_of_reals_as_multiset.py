@@ -73,7 +73,9 @@ class Embedder(MultisetEmbedder):
             """
     
         difference_data_with_MSVs = [
-            (delta, Maximal_Simplex_Vertex(set([eji for (_, eji) in difference_data[0:i + 1]]))) for i, (delta, _) in enumerate(difference_data)]
+            (delta, Maximal_Simplex_Vertex(set([eji for (_, eji) in difference_data[0:i + 1]])))
+            for i, (delta, _) in enumerate(difference_data)
+        ]
 
         if debug:
             print("difference data with MSVs:")
@@ -114,10 +116,14 @@ class Embedder(MultisetEmbedder):
     
     
         # The coordinates in the barycentric subdivided daughter simplex are differences of the current deltas,
-        # which are up-weighted by a linear factor to (1) preserve their sum so that (2) normalised barycentric coordinates transform into identically normalised barycentric coordinates, and so (3) this makes each component approximately identically distributed.
+        # which are up-weighted by a linear factor to (1) preserve their sum so that (2) normalised barycentric
+        # coordinates transform into identically normalised barycentric coordinates, and so (3) this makes each
+        # component approximately identically distributed.
         difference_data_in_subdivided_simplex = [ (  (i+1)*(deltas_in_current_order[i]-
                  (deltas_in_current_order[i+1] if i+1<expected_number_of_vertices else 0)),
-                            Eji_LinComb(n, k, msvs_in_current_order[:i+1])) for i in range(expected_number_of_vertices)]
+                            Eji_LinComb(n, k, msvs_in_current_order[:i+1]))
+                                                  for i in range(expected_number_of_vertices)
+                                                  ]
 
         if debug:
             print("difference data in Barycentrically subdivided simplex:")
@@ -154,7 +160,8 @@ class Embedder(MultisetEmbedder):
                                                                                [1, 5]], dtype=uint16)))
             """
     
-        canonical_difference_data = [(delta, msv.get_canonical_form()) for (delta, msv) in difference_data_in_subdivided_simplex]
+        canonical_difference_data = [(delta, msv.get_canonical_form())
+                                     for (delta, msv) in difference_data_in_subdivided_simplex]
         if debug:
             print("canonical difference data is:")
             _ = [print(bit) for bit in canonical_difference_data]
@@ -193,7 +200,8 @@ class Embedder(MultisetEmbedder):
         assert n*k - 1 == expected_number_of_vertices
         bigN = 2 * (n*k - 1) + 1 # Size of the space into which the simplices are embedded.
         # bigN does not count any min and max elements, which would be extra.
-        difference_point_pairs = [(delta, eji_lin_com.hash_to_point_in_unit_hypercube(bigN)) for (delta, eji_lin_com) in canonical_difference_data]
+        difference_point_pairs = [(delta, eji_lin_com.hash_to_point_in_unit_hypercube(bigN))
+                                  for (delta, eji_lin_com) in canonical_difference_data]
         if debug:
             print("difference point pairs are:")
             _ = [print(bit) for bit in difference_point_pairs]
@@ -235,12 +243,12 @@ class Embedder(MultisetEmbedder):
         # Create a vector to contain the embedding:
         length_of_embedding = self.size_from_n_k(n,k)
     
-        assert length_of_embedding == bigN + 2
+        assert length_of_embedding == bigN + 2  # +2 for max_element and min_element. TODO don't always need max_element!
         assert bigN == 2 * (n*k - 1) + 1
         assert length_of_embedding == 2 * (n*k - 1) + 1 + 2  # bigN + 2
         assert length_of_embedding == 2 * n * k + 1 # bigN + 2 expanded out.
     
-        embedding = np.zeros(length_of_embedding, dtype=np.float64) # +2 for max_element and min_element .... TODO don't always need max_element!
+        embedding = np.zeros(length_of_embedding, dtype=np.float64)
     
         # Populate first half of the embedding:
         embedding[:bigN] = first_half_of_embedding

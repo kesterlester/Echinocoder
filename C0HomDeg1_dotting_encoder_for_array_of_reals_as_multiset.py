@@ -42,7 +42,7 @@ class Encoder(MultisetEncoder):
             raise ValueError(f"This encoder is setup for k={self.k} so does not like data having k={k}")
 
         if debug:
-            print(f"About to muliply {self.matrix} by {data.T}")
+            print(f"About to multiply {self.matrix} by {data.T}")
 
         ##### HERE IS THE ACTUAL ENCODING:     ###########
         encoding = sort_each_np_array_row(self.matrix @ data.T).flatten()
