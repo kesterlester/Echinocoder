@@ -11,6 +11,14 @@ from tools import numpy_array_of_frac_to_str
 from tuple_ize import tuple_ize
 
 class MonoLinComb:
+    """A single term in a linear combination: one scalar coefficient
+    times one basis matrix.
+
+    Corresponds to a term such as α_s · L̂_(s) or δ_(s) · V_(s) in
+    the Abel-summation notation of the simplicial embedder.  The basis
+    vector is a k×n numpy array of the same shape as the input data.
+    """
+
     def __init__(self, coeff, basis_vec):
         self.coeff = coeff
         self.basis_vec = basis_vec
@@ -25,6 +33,15 @@ class MonoLinComb:
         return 1 # We are a mono (mono=1) lin comb after all.
 
 class LinComb:
+    """An ordered list of (coefficient, basis_matrix) terms.
+
+    Terms are stored in the order they were added and are never
+    auto-consolidated — two terms with the same basis vector remain
+    separate entries.  This is intentional: the Abel-summation step
+    relies on insertion order.  Call to_numpy_array() to evaluate the
+    weighted sum back to a single matrix.
+    """
+
     def __init__(self, initialiser=None):
         self.coeffs = []
         self.basis_vecs = []
@@ -32,6 +49,7 @@ class LinComb:
             self += initialiser
 
     def mlcs(self): # MLCS = Mono Lin CombinationS
+        """Yield each term as a MonoLinComb (MLCS = Mono Lin CombinationS)."""
         return (MonoLinComb(c,b) for c,b in zip(self.coeffs, self.basis_vecs))
 
     def __len__(self):
@@ -39,6 +57,12 @@ class LinComb:
         return len(self.coeffs)
 
     def to_numpy_array(self):
+        """Evaluate the linear combination and return the resulting matrix.
+
+        Computes sum(coeff_i * basis_vec_i) over all terms.  Useful as a
+        reconstruction check: for a correctly built LinComb this should
+        reproduce the original input array (before canonicalisation).
+        """
         ans = None
         first = True
         for c,b in zip(self.coeffs, self.basis_vecs):
@@ -50,6 +74,8 @@ class LinComb:
         return ans
 
     def __add__(self, stuff):
+        # Note: does not consolidate like terms — (3i+2j)+(5i) becomes (3i+2j+5i), not (8i+2j).
+        # Consolidation is the caller's responsibility if needed.
         return LinComb((self, stuff))
 
     def __iadd__(self, stuff):
@@ -75,6 +101,13 @@ class LinComb:
         raise ValueError("LinComb.__iadd__ only knows how to add LimCombs and MonoLinCombs and iterables containing those.")
 
     def is_consolidated(self):
+        """Return True if every basis vector in this combination is distinct.
+
+        A consolidated LinComb has no repeated basis vectors; each Eji
+        basis element appears at most once.  Used as a pre-condition check
+        in barycentric_subdivide, because that function's sort-and-difference
+        logic only makes sense on a deduplicated list.
+        """
         # Need to convert 2D numpy arrays to tup(tup()) and 1D numpy arrays to tup() so that they are hashable:
         
         #print(f"Being asked for consolidation state of {self.basis_vecs}")
@@ -101,6 +134,17 @@ class LinComb:
         return True
 
 def array_to_lin_comb(arr: np.array, fixed_axes=None, debug=False):
+        """Expand a numpy array into a LinComb in the standard Eji basis.
+
+        Each entry arr[i, j] becomes the term arr[i,j] · e^j_i, where e^j_i
+        is the indicator matrix that is 1 at position (i, j) and 0 elsewhere.
+        The result satisfies result.to_numpy_array() == arr.
+
+        If fixed_axes is supplied (a dict mapping axis index to a coordinate
+        value), only the entries along that coordinate slice are included.
+        Algorithm 2 uses this to process one coordinate row at a time, e.g.
+        fixed_axes={1: 0} extracts only the i=0 row contributions.
+        """
         lin_comb = LinComb()
         if fixed_axes is None:
             locations = np.ndenumerate(arr)
@@ -116,9 +160,25 @@ def array_to_lin_comb(arr: np.array, fixed_axes=None, debug=False):
         return lin_comb
 
 def barycentric_subdivide(lin_comb: LinComb, return_offset_separately=False, preserve_scale=True, debug=False, use_assertion_self_test=False):
-    """
-        * If preserve_scale is True (default) then the sum of the coeffiencients is preserved. Equivalently, the one
-          norm of each basis vector iw preserved at 1 if already at 1.
+    """Apply one Abel-summation (barycentric-subdivision) step to a LinComb.
+
+    Sorts terms by coefficient descending, then replaces them with
+    (gap, cumulative-prefix-sum) pairs.  In the document's notation this
+    maps the (δ_(s), V_(s)) representation to the (Δ_(s), L_(s)) one:
+
+        Δ_(s)  =  δ_(s) − δ_(s+1)      (consecutive gap differences)
+        L_(s)  =  V_(0) + … + V_(s)     (cumulative prefix sums)
+
+    If preserve_scale is True (default), prefix sums are normalised by
+    their count, yielding L̂_(s) = L_(s)/(s+1), and the coefficients
+    become α_s = (s+1)·Δ_(s).  This keeps every basis vector at
+    one-norm 1 when the inputs have one-norm 1.
+
+    If return_offset_separately is True, the minimum-coefficient term
+    (the "anchor": min_coeff · sum_of_all_basis_vecs) is returned as a
+    separate MonoLinComb rather than appended to the output LinComb.
+    This separates the permutation-invariant offset (the row-minimum
+    anchor) from the non-trivial difference terms.
     """
     
     if debug:
@@ -169,15 +229,38 @@ def barycentric_subdivide(lin_comb: LinComb, return_offset_separately=False, pre
 
     return ans
 
-def simplex_1_preprocess_steps(set_array : np.array, 
+def simplex_1_preprocess_steps(set_array : np.array,
                                preserve_scale_in_step_1=False,
                                preserve_scale_in_step_2=True,
                                canonicalise=False,
                                use_assertions=False,
                                debug=False):
+    """Algorithm 1 preprocessing: global Eji expansion and two Abel summations.
+
+    Implements the "flat" version of the simplicial embedder, treating the
+    entire k×n input matrix as one list of Eji entries:
+
+      Step 1 — Expand set_array into a LinComb in the Eji basis.
+      Step 2 — First Abel summation: extract the global entry-minimum as
+               the offset and compute first-difference (gap, prefix-sum)
+               pairs.  The offset encodes the fully symmetric part of M.
+      Step 3 — Second Abel summation: apply barycentric subdivision to
+               the merged first-difference list, producing the final
+               (α_s, L̂_(s)) coefficient/basis pairs.
+      Step 4 — (if canonicalise=True) Sort the columns of every basis
+               matrix lexicographically so that the encoding is
+               column-permutation invariant.
+
+    Returns (lin_comb, offset) where lin_comb holds the difference terms
+    and offset holds the symmetric anchor.  If canonicalise=False, returns
+    after Step 3 (useful for debugging without canonicalisation).
+
+    preserve_scale_in_step_1 / preserve_scale_in_step_2 control whether
+    each Abel summation normalises its prefix sums (see barycentric_subdivide).
+    """
 
     """
-    Step 1: 
+    Step 1:
 
     Turn the array (which represents a set) into a linear combination of coefficients and Eji basis elements.
     Conceptually this step is turning:
@@ -316,12 +399,37 @@ def simplex_1_preprocess_steps(set_array : np.array,
 
     return lin_comb_3_canonical, offset
 
-def simplex_2_preprocess_steps(set_array : np.array, 
+def simplex_2_preprocess_steps(set_array : np.array,
                                preserve_scale_in_step_1=False,
                                preserve_scale_in_step_2=True,
                                canonicalise=False,
                                use_assertions=False,
                                debug=False):
+    """Algorithm 2 preprocessing: per-row Abel summation then global merge.
+
+    Implements the "row-separated" version of the simplicial embedder.
+    The key difference from Algorithm 1 is that the first Abel summation
+    is applied independently to each coordinate row i, so the per-row
+    minima m_i become separate anchor scalars:
+
+      Step 1 — Decompose set_array into k per-row LinCombs, one for each
+               coordinate row, each restricted to its own Eji slice.
+      Step 2 — Apply a first Abel summation to each row separately,
+               extracting per-row offsets (the m_i anchors) and per-row
+               first-difference terms.  Merge all k per-row results into
+               one flat LinComb.
+      Step 3 — Second Abel summation on the merged list (same as
+               Algorithm 1 from this point on).
+      Step 4 — (if canonicalise=True) Lexicographic column sort.
+
+    Returns (lin_comb, offsets) where offsets is a LinComb of k anchor
+    terms (one per coordinate row).  Because each prefix element in
+    Algorithm 2 contains Ejis from exactly one row, the resulting basis
+    matrices have a cleaner structure than Algorithm 1.
+
+    preserve_scale_in_step_1 / preserve_scale_in_step_2 control whether
+    each Abel summation normalises its prefix sums (see barycentric_subdivide).
+    """
 
     if debug:
         print(f"simplex_2_preprocess_steps was asked to encode {set_array}")
