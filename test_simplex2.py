@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import numpy as np  # explicit; no longer leaked via star-import from the wrapper
 from C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset import *
 
 def test_simplex2():
