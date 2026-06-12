@@ -417,12 +417,9 @@ $s$ & $\delta_{(s)}$
     ${}+3\eji{0}{2}+2\eji{2}{2}+\eji{3}{2})$
    \\
 \midrule
-&
-  & $\sum_s \delta_{(s)}=20$
-  &
-  &
-  &
-  & $\sum_s \alpha_{(s)}=20$
+&\multicolumn{2}{p{3.5cm}|}{$\sum_s \delta_{(s)}=20$}
+  & \multicolumn{2}{p{3.5cm}|}{$\sum_s \Delta_{(s)}=5\ne 20$}
+  & \multicolumn{2}{p{3.5cm}|}{$\sum_s \alpha_{(s)}=20$}
   \\
      \midrule
 & \multicolumn{2}{p{3.5cm}|}{
@@ -494,19 +491,20 @@ $\left(\begin{smallmatrix}7&0&11&5\\0&3&7&5\\2&0&1&1\end{smallmatrix}\right)$
 (rows $=i=0,1,2$; columns $=j=0,1,2,3$), matching \texttt{balance} exactly.
 \end{tcolorbox}
 
-The cumulative Eji\_LinComb for each non-zero term.  Count matrix: rows =
-coordinates $i{=}0,1,2$; columns = vectors $j{=}0,1,2,3$.
-The last column shows $L_s/(s{+}1)$ — the normalised basis element, i.e.\ the
-average of the first $s{+}1$ prefix MSVs.  Terms of $\eji{j}{i}$ with
-coefficient~0 are omitted; terms are grouped by coordinate row~$i$.
+In many implementations the basis elements $L_{(s)}$ or ${\hat L}_{(s)}$ are stored as matrices.   For example, Eji\_LinComb
+structures \url{https://github.com/kesterlester/Echinocoder/blob/main/Eji_LinComb.py} like those shown
+below (only for each term without a zero coefficient) are used in
+\url{https://github.com/kesterlester/Echinocoder/blob/main/C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py}.
+In these the count matrix has rows representing
+coordinates $i{=}0,1,2$; and columns representing vectors $j{=}0,1,2,3$.
 \begin{center}
 \small
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{cl l p{6.6cm}}
 \toprule
-$s$ & $\alpha_s$ & $L_s$ (count matrix, idx $s{+}1$)
-    & Normalised basis element $L_s/(s{+}1)$ \\
+$s$ & $\alpha_s$ & Eji\_LinComb structure
+    &  ${\hat L}_{(s)}=L_{(s)}/(s{+}1)$ \\
 \midrule
 0 & 1
   & $\begin{pmatrix}1&0&1&1\\0&0&0&0\\0&0&0&0\end{pmatrix}$, idx 1
