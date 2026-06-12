@@ -325,16 +325,16 @@ Merge all $9 = k(n{-}1)$ pairs and sort by gap (i.e.~$\delta$) descending:
 \[
   5,\;4,\;3,\;2,\;2,\;2,\;1,\;1,\;0
 \]
-The table below assigns the rank index $s$, shows which prefix element
-$V_{(s)}$ each sorted gap is associated with (written as an Eji sum), and
-accumulates these into the cumulative LinComb $L_s = V_{(0)}+\cdots+V_{(s)}$.
+The table below assigns the rank index $s$, shows to which prefix element
+$V_{(s)}$ each sorted gap $\delta_{(s)}$ is associated, and
+accumulates these $V_{(s)}$ into $L_s = V_{(0)}+\cdots+V_{(s)}$.
 Terms within each $L_s$ expression are grouped by coordinate row $i$.
 
 \begin{center}
 \small
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{c|c l|c p{4cm}|c p{4cm}}
+\begin{tabular}{c|cp{3cm}|cp{3cm}|cp{3cm}}
 \toprule
     &
     &
@@ -416,6 +416,29 @@ $s$ & $\delta_{(s)}$
     ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
     ${}+3\eji{0}{2}+2\eji{2}{2}+\eji{3}{2})$
    \\
+\midrule
+&
+  & $\sum_s \delta_{(s)}=20$
+  &
+  &
+  &
+  & $\sum_s \alpha_{(s)}=20$
+  \\
+& \multicolumn{2}{|p{3.5cm}|}{
+   $\sum_s \delta_{(s)} V_{(s)}=$\newline
+   $7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0}$\newline
+    ${}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1}$\newline
+    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$}
+  &\multicolumn{2}{|p{3.5cm}|}{$
+  \sum_s \Delta_{(s)} L_{(s)}=$\newline
+  $7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0}$\newline
+    ${}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1}$\newline
+    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$}
+  & $20$
+  & $7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0}$\newline
+    ${}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1}$\newline
+    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$
+  \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -438,6 +461,29 @@ $\delta_{(5)}-\delta_{(6)}=2-1=1$, etc.), so the non-zero $\alpha_s$ values
 equal $s{+}1$.  This is a coincidence of the chosen data, not a general rule:
 $\alpha_s = (s{+}1)\times(\text{gap difference})$, and the gap difference can
 be any non-negative integer.
+\end{tcolorbox}
+
+\begin{tcolorbox}[notebox]
+\textbf{Verification: column sums and three-way equality.}
+The integer columns $\delta_{(s)}$ and $\alpha_s$ have the same total:
+\[
+  \sum_{s=0}^{8}\delta_{(s)} \;=\; 5+4+3+2+2+2+1+1+0 \;=\; 20
+  \;=\; 1+2+3+0+0+6+0+8+0 \;=\; \sum_{s=0}^{8}\alpha_s.
+\]
+The three weighted Eji sums are all equal and recover the
+\texttt{balance} matrix of Step~B (the $L_{(s)}$ and ${\hat L}_{(s)}$ totals-row
+entries show the value directly; $\sum_s\delta_{(s)}V_{(s)}$ is identical):
+\begin{align*}
+  \sum_s \delta_{(s)}\,V_{(s)}
+  \;=\; \sum_s \Delta_{(s)}\,L_{(s)}
+  \;=\; \sum_s \alpha_s\,{\hat L}_{(s)}
+  &= 7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0} \\
+  &\quad{}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1} \\
+  &\quad{}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2},
+\end{align*}
+i.e.\ coefficient matrix
+$\left(\begin{smallmatrix}7&0&11&5\\0&3&7&5\\2&0&1&1\end{smallmatrix}\right)$
+(rows $=i=0,1,2$; columns $=j=0,1,2,3$), matching \texttt{balance} exactly.
 \end{tcolorbox}
 
 The cumulative Eji\_LinComb for each non-zero term.  Count matrix: rows =
