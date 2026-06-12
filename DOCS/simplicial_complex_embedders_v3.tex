@@ -1,9 +1,16 @@
-% simplicial_complex_embedders_v2.tex
+% simplicial_complex_embedders_v3.tex
 %
 % A rewrite of v1 that presents intent first and algorithm second.
 % The algorithm steps are introduced as the natural implementation of
 % a geometric strategy, not as a sequence of operations to be explained
 % after the fact.
+%
+% v3 changes (vs v2): the Algorithm-2 worked-example tables are no longer
+% hand-coded.  They are generated from EncDec.py by
+% generate_simplex_example_tables.py and \input from DOCS/generated/.
+% To change the example multiset, edit M in that script and re-run
+% (make tables).  Steps C and D are also now presented as two instances
+% of the SAME Abel-summation operation, in matching table formats.
 
 \documentclass[11pt,a4paper]{article}
 
@@ -56,7 +63,7 @@
 
 % ─────────────────────────────────────────────────────────────────────────────
 \title{\textbf{Simplicial Complex Multiset Embedders}\\[0.4em]
-       \large Algorithms 1 and 2 — Strategy and Implementation (v2)}
+       \large Algorithms 1 and 2 — Strategy and Implementation (v3)}
 \date{\today}
 % ─────────────────────────────────────────────────────────────────────────────
 
@@ -322,187 +329,65 @@ See Appendix~\ref{app:code} for a full notation--code correspondence table.
 \label{sec:example-alg2}
 % ═════════════════════════════════════════════════════════════════════════════
 
-\[
-  M \;=\; \left\{\;
-    \begin{pmatrix}4\\2\\3\end{pmatrix},\;
-    \begin{pmatrix}-3\\5\\1\end{pmatrix},\;
-    \begin{pmatrix}8\\9\\2\end{pmatrix},\;
-    \begin{pmatrix}2\\7\\2\end{pmatrix}
-  \;\right\}
-  \quad (n=4 \text{ vectors in } \R^3)
-\]
+All tables and numeric displays in this section are generated directly from
+\encdecpy{} by \texttt{DOCS/generate\_simplex\_example\_tables.py} and
+\texttt{\textbackslash input} from \texttt{DOCS/generated/}.  To re-run the
+example with a different multiset, edit $M$ in that script and rebuild
+(\texttt{make tables}).
+
+\input{generated/sx2_input}
 
 \subsection*{Step B: Extract row minima}
 
-Row minima: $m_0 = -3$ (row~0), $m_1 = 2$ (row~1), $m_2 = 1$ (row~2).
+Row minima: \input{generated/sx2_minima}.
 These three scalars are stored as anchors.  After subtracting:
-\[
-  \text{balance} = \left\{\;
-    \begin{pmatrix}7\\0\\2\end{pmatrix},\;
-    \begin{pmatrix}0\\3\\0\end{pmatrix},\;
-    \begin{pmatrix}11\\7\\1\end{pmatrix},\;
-    \begin{pmatrix}5\\5\\1\end{pmatrix}
-  \;\right\}
-\]
+\input{generated/sx2_balance}
 (All non-negative.)  The debug check in the source code verifies that
 $\sum_s \alpha_s \cdot (L_s/(s+1)) + \text{broadcast}(m_i)$ recovers
 the original $M$ exactly.
 
-\subsection*{Step C: Per-row Abel summation}
+\subsection*{Step C: First Abel summation (once per row)}
 
 \noindent
-For each row, sort vectors descending and compute gaps:
+Each of the $k=3$ coordinate rows is now fed through the Abel-summation
+operation — the \emph{same} operation that Step~D will apply once more to the
+merged results, and the same operation that \encdecpy{} implements as
+\texttt{barycentric\_subdivide}.  Its input is a list of (coefficient, basis
+element) pairs; its output is a list of (gap, cumulative prefix) pairs plus
+one \emph{offset} term.  The three tables below (one per row) deliberately use
+the same layout as the large Step-D table: the left column pair is the input,
+the right column pair is the output.
 
-\begin{center}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{clll}
-\toprule
-Row $i$ & Sorted descent (value: vector $j$) & Gaps $\delta$ & Prefix elements $V^{(i)}_r$ \\
-\midrule
-0 & $11(j{=}2),\;7(j{=}0),\;5(j{=}3),\;0(j{=}1)$ & 4,\;2,\;5 &
-  $\{\eji{2}{0}\}$;\;$\{\eji{2}{0},\eji{0}{0}\}$;\;$\{\eji{2}{0},\eji{0}{0},\eji{3}{0}\}$ \\[2pt]
-1 & $7(j{=}2),\;5(j{=}3),\;3(j{=}1),\;0(j{=}0)$ & 2,\;2,\;3 &
-  $\{\eji{2}{1}\}$;\;$\{\eji{2}{1},\eji{3}{1}\}$;\;$\{\eji{2}{1},\eji{3}{1},\eji{1}{1}\}$ \\[2pt]
-2 & $2(j{=}0),\;1(j{=}2),\;1(j{=}3),\;0(j{=}1)$ & 1,\;0,\;1 &
-  $\{\eji{0}{2}\}$;\;$\{\eji{0}{2},\eji{2}{2}\}$;\;$\{\eji{0}{2},\eji{2}{2},\eji{3}{2}\}$ \\
-\bottomrule
-\end{tabular}
-\end{center}
+Each row's input is its raw values $x^{(i)}_{(r)}$ paired with single Ejis;
+sorting descending and differencing gives the gaps
+$\delta^{(i)}_r = x^{(i)}_{(r)} - x^{(i)}_{(r+1)}$ and cumulative prefixes
+$V^{(i)}_r$.  Note that the gaps are unchanged by the Step-B subtraction, and
+the offset term of each table — final value $\times$ all-ones row — is
+\emph{precisely} the row-minimum anchor $m_i$ of Step~B.  (In \encdecpy{},
+Step~B is not a separate pass: the anchors are simply the offset outputs of
+these three calls, requested via \texttt{return\_offset\_separately=True}.)
+
+\input{generated/sx2_stepC}
 
 \noindent
-At this stage in the code, each pair is stored as $(\delta,\,\texttt{MSV})$
-where the MSV is an individual prefix set — it is a valid basis element but
-not yet in its final cumulative form.
+Normalisation (\texttt{preserve\_scale}) is switched \emph{off} at this layer
+in the standard configuration, so no $\alpha$/$\hat{V}$ column pair appears;
+the \algtwobpy{} implementation also permits it to be switched on here, which
+would add one, exactly as in Step~D's table.
 
-\subsection*{Steps D: Merge, sort, and second Abel summation}
+\subsection*{Step D: Merge, re-sort, and the same Abel summation again}
 
-Merge all $9 = k(n{-}1)$ pairs and sort by gap (i.e.~$\delta$) descending:
-\[
-  5,\;4,\;3,\;2,\;2,\;2,\;1,\;1,\;0
-\]
-The table below shows to which basis element
-$V_{(s)}$ each sorted gap $\delta_{(s)}$ was associated, and
-accumulates these $V_{(s)}$ into $L_s = V_{(0)}+\cdots+V_{(s)}$.
-Terms within each $L_s$ expression are grouped by coordinate row $i$.
+The nine $(\delta^{(i)}_r, V^{(i)}_r)$ output pairs of Step~C now become the
+\emph{input} pairs $(\delta_{(s)}, V_{(s)})$ of a second pass through the very
+same operation.  Merge all $9 = k(n{-}1)$ pairs and sort by gap descending:
+\input{generated/sx2_merged_deltas}
+The table below has the same structure as Step~C's tables — input pair on the
+left, output pair(s) on the right — but this time with normalisation switched
+\emph{on}, which appends the $(\alpha_s, \hat{L}_{(s)})$ column pair to the
+unnormalised $(\Delta_{(s)}, L_{(s)})$ one.  Terms within each $L_s$
+expression are grouped by coordinate row $i$.
 
-\begin{center}
-\small
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.35}
-\begin{tabular}{c|cp{3cm}|cp{3cm}|cp{3cm}}
-\toprule
-    &
-    &
-    & $\delta_{(s)}-\delta_{(s+1)}$
-    & $L_{(s-1)}+V_{(s)}$
-    & $(s+1)\Delta_{(s)}$
-    & $L_{(s)}/(s+1)$\\
-\midrule
-$s$ & $\delta_{(s)}$
-    & $V_{(s)}$
-    & $\Delta_{(s)}$
-    & $L_{(s)}$
-    & $\alpha_s$
-    & ${\hat L}_{(s)}$ \\
-\midrule
-0 & 5 & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$ & 1
-  & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$
-  & 1
-  & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$
-  \\[3pt]
-1 & 4 & $\eji{2}{0}$ & 1
-  & $\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$
-  & 2
-  & $\tfrac 1 2 (\eji{0}{0}+2\eji{2}{0}+\eji{3}{0})$
- \\[3pt]
-2 & 3 & $\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$
-& 1
-  & $\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$
-    & 3
-  & $\tfrac 1 3 (\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1})$
-   \\[3pt]
-\rowcolor{gray!15}\cellcolor{white}3 & \textcolor{gray}{$2$} & \textcolor{gray}{$\eji{0}{0}+\eji{2}{0}$} & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$}
-    & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$\tfrac 1 4 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1})$}
-   \\[3pt]
-\rowcolor{gray!15}\cellcolor{white}4 & \textcolor{gray}{$2$} & \textcolor{gray}{$\eji{2}{1}$} & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+2\eji{2}{1}+\eji{3}{1}$}
-    & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$\tfrac 1 5 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+2\eji{2}{1}+\eji{3}{1})$}
-    \\[3pt]
-5 & \cellcolor{gray!15}\textcolor{gray}{$2$} & \cellcolor{gray!15}\textcolor{gray}{$\eji{2}{1}+\eji{3}{1}$} & 1
-  & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$
-    & 6
-  & $\tfrac 1 6 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1})$
-   \\[3pt]
-\rowcolor{gray!15}\cellcolor{white}6 & \textcolor{gray}{$1$} & \textcolor{gray}{$\eji{0}{2}$} & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+\eji{0}{2}$}
-    & \textcolor{gray}{$0$}
- & \textcolor{gray}{$\tfrac 1 7 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+\eji{0}{2})$}
-     \\[3pt]
-7 & \cellcolor{gray!15}\textcolor{gray}{$1$} & \cellcolor{gray!15}\textcolor{gray}{$\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$} & 1
-  & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$
-    & 8
-  & $\tfrac 1 8 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2})$
-    \\[3pt]
-8 & 0 & $\eji{0}{2}+\eji{2}{2}$ & 0
-  & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+3\eji{0}{2}+2\eji{2}{2}+\eji{3}{2}$
-    & 0
-  & $\tfrac 1 9 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+3\eji{0}{2}+2\eji{2}{2}+\eji{3}{2})$
-   \\
-\midrule
-&\multicolumn{2}{p{3.5cm}|}{$\sum_s \delta_{(s)}=20$}
-  & \multicolumn{2}{p{3.5cm}|}{$\sum_s \Delta_{(s)}=5\ne 20$}
-  & \multicolumn{2}{p{3.5cm}}{$\sum_s \alpha_{(s)}=20$}
-  \\
-     \midrule
-& \multicolumn{2}{p{3.5cm}|}{
-   $\sum_s \delta_{(s)} V_{(s)}=$}
-  &\multicolumn{2}{p{3.5cm}|}{$
-  \sum_s \Delta_{(s)} L_{(s)}=$}
-  &\multicolumn{2}{p{3.5cm}}{$
-  \sum_s \alpha_{(s)} {\hat L}_{(s)}=$}
-   \\
-&
-&
-   $7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0}$\newline
-    ${}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$
-  &
-  &
-  $7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0}$\newline
-    ${}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$
-  &
-  & $7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0}$\newline
-    ${}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$
-  \\
-\bottomrule
-\end{tabular}
-\end{center}
+\input{generated/sx2_stepD_main}
 
 %\noindent
 %Note how $L_s$ grows by exactly $V_{(s)}$ at each step: newly introduced Ejis
@@ -527,24 +412,11 @@ be any non-negative integer.
 \begin{tcolorbox}[notebox]
 \textbf{Verification: column sums and three-way equality.}
 The integer columns $\delta_{(s)}$ and $\alpha_s$ have the same total:
-\[
-  \sum_{s=0}^{8}\delta_{(s)} \;=\; 5+4+3+2+2+2+1+1+0 \;=\; 20
-  \;=\; 1+2+3+0+0+6+0+8+0 \;=\; \sum_{s=0}^{8}\alpha_s.
-\]
+\input{generated/sx2_sum_check}
 The three weighted Eji sums are all equal and recover the
 \texttt{balance} matrix of Step~B (the $L_{(s)}$ and ${\hat L}_{(s)}$ totals-row
 entries show the value directly; $\sum_s\delta_{(s)}V_{(s)}$ is identical):
-\begin{align*}
-  \sum_s \delta_{(s)}\,V_{(s)}
-  \;=\; \sum_s \Delta_{(s)}\,L_{(s)}
-  \;=\; \sum_s \alpha_s\,{\hat L}_{(s)}
-  &= 7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0} \\
-  &\quad{}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1} \\
-  &\quad{}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2},
-\end{align*}
-i.e.\ coefficient matrix
-$\left(\begin{smallmatrix}7&0&11&5\\0&3&7&5\\2&0&1&1\end{smallmatrix}\right)$
-(rows $=i=0,1,2$; columns $=j=0,1,2,3$), matching \texttt{balance} exactly.
+\input{generated/sx2_threeway}
 \end{tcolorbox}
 
 In many implementations the basis elements $L_{(s)}$ or ${\hat L}_{(s)}$ are stored as matrices.   For example, Eji\_LinComb
@@ -553,37 +425,7 @@ below (only for each term without a zero coefficient) are used in
 \url{https://github.com/kesterlester/Echinocoder/blob/main/C0HomDeg1_simplicialComplex_embedder_2a_for_array_of_reals_as_multiset.py}.
 In these the count matrix has rows representing
 coordinates $i{=}0,1,2$; and columns representing vectors $j{=}0,1,2,3$.
-\begin{center}
-\small
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{cl l p{6.6cm}}
-\toprule
-$s$ & $\alpha_s$ & Eji\_LinComb structure
-    &  ${\hat L}_{(s)}=L_{(s)}/(s{+}1)$ \\
-\midrule
-0 & 1
-  & $\begin{pmatrix}1&0&1&1\\0&0&0&0\\0&0&0&0\end{pmatrix}$, idx 1
-  & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$ \\[8pt]
-1 & 2
-  & $\begin{pmatrix}1&0&2&1\\0&0&0&0\\0&0&0&0\end{pmatrix}$, idx 2
-  & $\tfrac{1}{2}(\eji{0}{0}+2\eji{2}{0}+\eji{3}{0})$ \\[8pt]
-2 & 3
-  & $\begin{pmatrix}1&0&2&1\\0&1&1&1\\0&0&0&0\end{pmatrix}$, idx 3
-  & $\tfrac{1}{3}(\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$\newline
-    $\phantom{\tfrac{1}{3}(}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1})$ \\[8pt]
-5 & 6
-  & $\begin{pmatrix}2&0&3&1\\0&1&3&2\\0&0&0&0\end{pmatrix}$, idx 6
-  & $\tfrac{1}{6}(2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    $\phantom{\tfrac{1}{6}(}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1})$ \\[8pt]
-7 & 8
-  & $\begin{pmatrix}2&0&3&1\\0&1&3&2\\2&0&1&1\end{pmatrix}$, idx 8
-  & $\tfrac{1}{8}(2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    $\phantom{\tfrac{1}{8}(}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    $\phantom{\tfrac{1}{8}(}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2})$ \\
-\bottomrule
-\end{tabular}
-\end{center}
+\input{generated/sx2_count_matrices}
 
 \noindent
 (Terms with $\alpha_s=0$ contribute nothing and are omitted.)
@@ -603,123 +445,7 @@ are identical to those in the table above.  Critically the greyed cells all have
       having to use the outputs to both encode the coifficients (which change smoothly) and the basis vectors
       themselves (which change discontinuously at boundaries).
 
-\begin{center}
-\small
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.35}
-\begin{tabular}{c|cp{3cm}|cp{3cm}|cp{3cm}}
-\toprule
-    &
-    &
-    & $\delta_{(s)}-\delta_{(s+1)}$
-    & $L_{(s-1)}+V_{(s)}$
-    & $(s+1)\Delta_{(s)}$
-    & $L_{(s)}/(s+1)$\\
-\midrule
-$s$ & $\delta_{(s)}$
-    & $V_{(s)}$
-    & $\Delta_{(s)}$
-    & $L_{(s)}$
-    & $\alpha_s$
-    & ${\hat L}_{(s)}$ \\
-\midrule
-0 & 5 & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$ & 1
-  & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$
-  & 1
-  & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$
-  \\[3pt]
-1 & 4 & $\eji{2}{0}$ & 1
-  & $\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$
-  & 2
-  & $\tfrac 1 2 (\eji{0}{0}+2\eji{2}{0}+\eji{3}{0})$
- \\[3pt]
-2 & 3 & $\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$
-& 1
-  & $\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$
-    & 3
-  & $\tfrac 1 3 (\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1})$
-   \\[3pt]
-\rowcolor{gray!15}\cellcolor{white}3 & \textcolor{gray}{$2$} & \textcolor{gray}{$\eji{2}{1}+\eji{3}{1}$} & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+2\eji{2}{1}+2\eji{3}{1}$}
-    & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$\tfrac 1 4 (\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+2\eji{2}{1}+2\eji{3}{1})$}
-   \\[3pt]
-\rowcolor{gray!15}\cellcolor{white}4 & \textcolor{gray}{$2$} & \textcolor{gray}{$\eji{0}{0}+\eji{2}{0}$} & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+2\eji{2}{1}+2\eji{3}{1}$}
-    & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$\tfrac 1 5 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+2\eji{2}{1}+2\eji{3}{1})$}
-    \\[3pt]
-5 & \cellcolor{gray!15}\textcolor{gray}{$2$} & \cellcolor{gray!15}\textcolor{gray}{$\eji{2}{1}$} & 1
-  & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$
-    & 6
-  & $\tfrac 1 6 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1})$
-   \\[3pt]
-\rowcolor{gray!15}\cellcolor{white}6 & \textcolor{gray}{$1$} & \textcolor{gray}{$\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$} & \textcolor{gray}{$0$}
-  & \textcolor{gray}{$2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$}
-    & \textcolor{gray}{$0$}
- & \textcolor{gray}{$\tfrac 1 7 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+\eji{0}{2}+\eji{2}{2}+\eji{3}{2})$}
-     \\[3pt]
-7 & \cellcolor{gray!15}\textcolor{gray}{$1$} & \cellcolor{gray!15}\textcolor{gray}{$\eji{0}{2}$} & 1
-  & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$
-    & 8
-  & $\tfrac 1 8 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2})$
-    \\[3pt]
-8 & 0 & $\eji{0}{2}+\eji{2}{2}$ & 0
-  & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+3\eji{0}{2}+2\eji{2}{2}+\eji{3}{2}$
-    & 0
-  & $\tfrac 1 9 (2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+3\eji{0}{2}+2\eji{2}{2}+\eji{3}{2})$
-   \\
-\midrule
-&\multicolumn{2}{p{3.5cm}|}{$\sum_s \delta_{(s)}=20$}
-  & \multicolumn{2}{p{3.5cm}|}{$\sum_s \Delta_{(s)}=5\ne 20$}
-  & \multicolumn{2}{p{3.5cm}}{$\sum_s \alpha_{(s)}=20$}
-  \\
-     \midrule
-& \multicolumn{2}{p{3.5cm}|}{
-   $\sum_s \delta_{(s)} V_{(s)}=$}
-  &\multicolumn{2}{p{3.5cm}|}{$
-  \sum_s \Delta_{(s)} L_{(s)}=$}
-  &\multicolumn{2}{p{3.5cm}}{$
-  \sum_s \alpha_{(s)} {\hat L}_{(s)}=$}
-   \\
-&
-&
-   $7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0}$\newline
-    ${}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$
-  &
-  &
-  $7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0}$\newline
-    ${}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$
-  &
-  & $7\eji{0}{0}+11\eji{2}{0}+5\eji{3}{0}$\newline
-    ${}+3\eji{1}{1}+7\eji{2}{1}+5\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$
-  \\
-\bottomrule
-\end{tabular}
-\end{center}
+\input{generated/sx2_stepD_variant}
 
 \subsection*{Step E: Canonicalise}
 
@@ -732,12 +458,7 @@ After canonicalisation, $L_s$ becomes $\canon{L_s}$.
 Each $\canon{L_s}$ (along with its index) is hashed to a point $p_s \in
 [0,1]^{19}$ (since $N_{\text{hash}} = 2{\times}9{+}1 = 19$).
 The output is:
-\[
-  f(M) \;=\;
-  \bigl[\;\underbrace{-3,\;2,\;1}_{3\text{ row min.}},\;
-          1\,p_0 + 2\,p_1 + 3\,p_2 + 6\,p_5 + 8\,p_7\;\bigr]
-  \;\in\; \R^{22}.
-\]
+\input{generated/sx2_stepF}
 
 % ═════════════════════════════════════════════════════════════════════════════
 \section{Worked Example: Algorithm 1, $n=4$, $k=2$}

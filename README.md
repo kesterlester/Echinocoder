@@ -20,7 +20,7 @@ All these are (or should be) instances of [MultisetEmbedder](MultisetEmbedder.py
 | Method                | Order (leading) | Exact order (for $n>1$ and $k>1$) | Piecewise Linear | Infinitely Differentiable | Notes                                                                                                                                                                                                 | Source                                                                          |
 |-----------------------|----------------|-----------------------------------|------------------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
 | Simplex 1             | $O(nk)$        | $2nk+1$                           | Yes              |  No   |                                                                                                                                                                                                       | [link](C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py) |
-| Simplex 2             | $O(nk)$        | $2nk+1-k$                         | Yes              |  No   |                                                                                                                                                                                                       | [link](C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py) |
+| Simplex 2             | $O(nk)$        | $2nk+1-k$                         | Yes              |  No   | Two implementations: [2a](C0HomDeg1_simplicialComplex_embedder_2a_for_array_of_reals_as_multiset.py) (direct) and [2b](C0HomDeg1_simplicialComplex_embedder_2b_for_array_of_reals_as_multiset.py) (EncDec-backed); the [wrapper](C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py) selects between them. | [link](C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py) |
 | Bursarial             | $O(nk\cdot n)$   | $n + (k-1) n (n+1)/2$             | No      |  Yes  | Treats different dimensions very differntly (not isotropic!).  One could shave off a few reals with a bit of complex compression (see docstring) but this would not change the order of the encoding. | [link](Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset.py) |                                                                     | [link](Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset.py) | |
 | Egalitarian Bursarial | | $$\binom{m+n}{n} - 1$$            | No      |  Yes  | Does similar things to every dimension, rather than treating the top and bottom rows of the multiset in very special ways.                                                                            | [link](Cinf_sympy_evenBursar_embedder_for_array_of_reals_as_multiset.py) |                                                                     | [link](Cinf_sympy_bursar_embedder_for_array_of_reals_as_multiset.py) | |
 
@@ -41,7 +41,7 @@ The orders (i.e. encoding sizes) quoted in the table above are for $n>1$ and $k>
 
 ### Further details:
 
-* The [Simplicial Complex](https://en.wikipedia.org/wiki/Simplicial_complex) embedder works for any $n$ and $k$ and embeds into $2 n k+1$ reals.  The [simplical complex embedder sources](C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py) may be browsed.
+* The [Simplicial Complex](https://en.wikipedia.org/wiki/Simplicial_complex) embedder works for any $n$ and $k$.  Algorithm 1 embeds into $2nk+1$ reals ([source](C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py)); Algorithm 2 embeds into $2nk+1-k$ reals and has two interchangeable implementations — [2a](C0HomDeg1_simplicialComplex_embedder_2a_for_array_of_reals_as_multiset.py) (direct, the original) and [2b](C0HomDeg1_simplicialComplex_embedder_2b_for_array_of_reals_as_multiset.py) (backed by [EncDec.py](EncDec.py)) — selected by the [_2_ wrapper](C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py).  A parity test ([test_simplex2_ab_parity.py](test_simplex2_ab_parity.py)) verifies that both produce bit-identical embeddings under the default configuration.
 * The [conjectured dotting embedder](C0HomDeg1_conjectured_dotting_embedder_for_array_of_reals_as_multiset.py) is based on the [dotting encoder](C0HomDeg1_dotting_encoder_for_array_of_reals_as_multiset.py). It is CONJECTURED (but not proved) to be an embedder. It has order $O(n k \log n)$. 
 * The [polynomial encoder](Cinf_numpy_polynomial_encoder_for_array_of_reals_as_multiset.py)
 has order $O(n k^2)$ in general, but happens to be optimal (i.e. encodes into $nk$ reals) for $k=1$ or $k=2$.
@@ -75,12 +75,15 @@ In principle the method could be re-written to embed into just $2 n k + 1$ reals
 
 [example.py](example.py) is a simple example script showing how some of the embedders could be used. These examples use the old-style monolithic calculators listed in the table above.
 
-[nice_examples.sh](nice_examples.sh) is a short script which exercises [play_simplex_encoders_via_EncDec.py](play_simplex_encoders_via_EncDec.py) in a few different ways. It uses the new-style [EncDec.py](EncDec.py)-based calculators -- however they only extend to Simplex1 and Simplex 2. Currently the
-[nice_examples.sh](nice_examples.sh) script only does the pre-processing and canonicalisation stages that would precede the actual embedding. That is bbecause they are the important stages that are currently being studied.
+[nice_examples.sh](nice_examples.sh) is a short script which exercises [play_simplex_encoders_via_EncDec.py](play_simplex_encoders_via_EncDec.py) in a few different ways. It uses [EncDec.py](EncDec.py) directly, which covers Steps A–E (pre-processing and canonicalisation) but stops before Step F (hashing). For the full embedding pipeline including Step F, use [_2b_](C0HomDeg1_simplicialComplex_embedder_2b_for_array_of_reals_as_multiset.py) (or the [_2_ wrapper](C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py)) which wraps EncDec and adds Step F.
 
 ## Testing
 
-Various unit tests can be run with [pytest](https://docs.pytest.org).  pytest runs all functions begining test_ in files with names matching test_XXXX.py .   Note that running with "pytest -s" prevents pytest hiding stdout.
+Various unit tests can be run with [pytest](https://docs.pytest.org).  pytest runs all functions beginning `test_` in files with names matching `test_XXXX.py`.  Run with `pytest -s` to see stdout.
+
+Notable test files:
+* [test_simplex2.py](test_simplex2.py) — regression tests for the Simplex 2 embedder (via the `_2_` wrapper).
+* [test_simplex2_ab_parity.py](test_simplex2_ab_parity.py) — verifies that `_2a_` and `_2b_` produce identical embeddings under the default configuration, and that non-default `_2b_` configurations run without error and produce expected differences.
 
 ## References:
 
