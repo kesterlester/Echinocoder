@@ -35,6 +35,13 @@
                   arc=3pt, left=8pt, right=8pt, top=6pt, bottom=6pt},
 }
 
+% ── Source-file name macros (used in §3 and Appendix) ───────────────────────
+% \urldef uses \path so the names can break at underscores in typesetting.
+\urldef\algonepy\path{C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py}
+\urldef\algtwopy\path{C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py}
+\urldef\playpy\path{play_simplex_encoders_via_EncDec.py}
+\newcommand{\encdecpy}{\texttt{EncDec.py}}
+
 % ── Notation ─────────────────────────────────────────────────────────────────
 \newcommand{\eji}[2]{e^{#1}_{#2}}       % Eji: vector index raised, coord lowered
 \newcommand{\hash}[1]{h(#1)}            % hash to hypercube
@@ -220,12 +227,18 @@ many symmetric parts are peeled off, and what ``fully symmetric'' means.
 Factors out the $k$ per-row symmetric elements $\sum_j \eji{j}{i}$, one per
 coordinate.  Stores $k$ row minima as anchors.  Steps C--F operate on
 $m = k(n-1)$ gaps.
+Implemented as \texttt{Embedder.embed\_generic} in \algtwopy{} and as
+\texttt{simplex\_2\_preprocess\_steps} in \encdecpy{}; see
+Appendix~\ref{app:code}.
 
 \paragraph{Algorithm 1 (global).}
 Factors out only the \emph{single} fully-symmetric element $\sum_{i,j}
 \eji{j}{i}$ (treating every entry identically), with coefficient = global
 minimum.  The global maximum is also recorded (see note below).  Steps C--F
 then operate on a single globally-sorted list of $m = nk-1$ gaps.
+Implemented as \texttt{Embedder.embed\_generic} in \algonepy{} and as
+\texttt{simplex\_1\_preprocess\_steps} in \encdecpy{}; see
+Appendix~\ref{app:code}.
 
 The single global sort of Algorithm~1 means that prefix elements can contain
 Ejis from \emph{any} row, whereas in Algorithm~2 every prefix element contains
@@ -260,6 +273,33 @@ only the global minimum is needed as an anchor (it fixes the absolute scale;
 all relative gaps are encoded in the hash sum).  The global maximum is
 technically redundant.  It is included in Algorithm~1 for implementation
 simplicity; a TODO comment in the source code acknowledges this.
+\end{tcolorbox}
+
+\begin{tcolorbox}[keybox]
+\textbf{Source code.}
+Both algorithms exist in two independent implementations.
+
+\smallskip
+\noindent\textit{Original files} (on which this document is based):
+\begin{itemize}[nosep,leftmargin=1.5em,topsep=2pt]
+  \item \algtwopy{} — Algorithm~2; entry point \texttt{Embedder.embed\_generic}.
+  \item \algonepy{} — Algorithm~1; entry point \texttt{Embedder.embed\_generic}.
+\end{itemize}
+
+\smallskip
+\noindent\textit{Cleaner reimplementation}:
+\begin{itemize}[nosep,leftmargin=1.5em,topsep=2pt]
+  \item \encdecpy{} — \texttt{simplex\_2\_preprocess\_steps} (Algorithm~2) and
+    \texttt{simplex\_1\_preprocess\_steps} (Algorithm~1) cover Steps~A--E.
+    The docstrings use the same $\delta_{(s)}$, $V_{(s)}$, $\Delta_{(s)}$,
+    $L_{(s)}$, $\alpha_s$, $\hat{L}_{(s)}$ notation as this document.
+  \item \playpy{} — command-line driver for the above.
+\end{itemize}
+
+\smallskip
+\noindent Step~F (hashing, \texttt{Eji\_LinComb.hash\_to\_point\_in\_unit\_hypercube})
+is in the \texttt{C0HomDeg1} files but not yet in \encdecpy{}.
+A notation--code correspondence table is in Appendix~\ref{app:code}.
 \end{tcolorbox}
 
 % ═════════════════════════════════════════════════════════════════════════════
@@ -755,5 +795,115 @@ embedding, and the algorithms pay almost exactly that.
 Whether $2nk$ (or $2nk+1$, or $2nk+1-k$) is optimal for the specific
 manifold $\SP{n}{k}$, or whether the known structure of that space admits a
 tighter construction, remains open.
+
+% ═════════════════════════════════════════════════════════════════════════════
+\appendix
+\section{Source-code Correspondence}
+\label{app:code}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\subsection*{Files}
+
+\begin{tabular}{@{}p{8.5cm}p{6cm}@{}}
+\toprule
+\textbf{File} & \textbf{Role} \\
+\midrule
+\algtwopy & Algorithm~2 original; \texttt{Embedder.embed\_generic}; Steps~A--F \\[4pt]
+\algonepy & Algorithm~1 original; \texttt{Embedder.embed\_generic}; Steps~A--F \\[4pt]
+\encdecpy & Cleaner reimplementation; \texttt{simplex\_2\_preprocess\_steps} and
+            \texttt{simplex\_1\_preprocess\_steps}; Steps~A--E only \\[4pt]
+\playpy   & Command-line driver for \encdecpy \\
+\bottomrule
+\end{tabular}
+
+\subsection*{Notation--code correspondence (\encdecpy)}
+
+The central function is \texttt{barycentric\_subdivide(lin\_comb, \ldots)}, which
+performs one Abel-summation step.  Both algorithms call it twice: once to extract
+the symmetric anchor(s) and once to produce the final coefficient--basis pairs.
+The table below maps the document's symbols to the corresponding names in
+\encdecpy.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{p{3.4cm} p{6cm} p{4.8cm}}
+\toprule
+\textbf{Document symbol} & \textbf{\encdecpy{} name / expression} & \textbf{Notes} \\
+\midrule
+Input $M$ ($k{\times}n$) &
+  \texttt{set\_array} &
+  Rows $= $ coordinates $i$; columns $= $ vectors $j$ \\[3pt]
+
+$\eji{j}{i}$ (Eji basis matrix) &
+  \texttt{basis\_vec} inside \texttt{MonoLinComb} &
+  $k{\times}n$ indicator: 1 at $(i,j)$, 0 elsewhere \\[3pt]
+
+Step~A: $M = \sum_{j,i} X[j][i]\,\eji{j}{i}$ &
+  \texttt{array\_to\_lin\_comb(set\_array)} $\to$ \texttt{LinComb} &
+  Each \texttt{(coeff, basis\_vec)} term is one Eji \\[3pt]
+
+Anchors $m_i$ (Alg~2); global min (Alg~1) &
+  \texttt{offset} returned by \texttt{barycentric\_subdivide(\ldots,}
+  \texttt{return\_offset\_separately=True)} &
+  $k$ per-row offsets (Alg~2); one global offset (Alg~1) \\[3pt]
+
+$\delta_{(s)}$,\ $V_{(s)}$ &
+  \texttt{.coeffs[s]},\ \texttt{.basis\_vecs[s]} of
+  \texttt{lin\_comb\_1\_first\_diffs} &
+  After 1st \texttt{barycentric\_subdivide}; sorted descending \\[3pt]
+
+$\Delta_{(s)}$,\ $L_{(s)}$ &
+  \texttt{.coeffs[s]},\ \texttt{.basis\_vecs[s]} of
+  \texttt{lin\_comb\_2\_second\_diffs} &
+  2nd call with \texttt{preserve\_scale=False} \\[3pt]
+
+$\alpha_s$,\ $\hat{L}_{(s)}$ &
+  same &
+  2nd call with \texttt{preserve\_scale=True} (default);
+  \texttt{coeffs[s]} $=(s{+}1)\Delta_{(s)}$,
+  \texttt{basis\_vecs[s]} $=L_{(s)}/(s{+}1)$ \\[3pt]
+
+$\canon{L}_{(s)}$ (canonical) &
+  \texttt{tools.sort\_np\_array\_rows\_}\newline\texttt{lexicographically(basis\_vec)} &
+  Step~E; sorts columns of each basis matrix \\[3pt]
+
+Step~F hash &
+  \texttt{Eji\_LinComb.}\newline\texttt{hash\_to\_point\_in\_unit\_hypercube} &
+  In \texttt{Eji\_LinComb.py}; not yet in \encdecpy \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The \texttt{preserve\_scale} flag controls normalisation of prefix sums:
+\texttt{True} gives $\hat{L}_{(s)} = L_{(s)}/(s{+}1)$ with
+$\alpha_s = (s{+}1)\Delta_{(s)}$; \texttt{False} gives raw $L_{(s)}$ with
+$\Delta_{(s)}$.  The second \texttt{barycentric\_subdivide} call uses
+\texttt{preserve\_scale=True} by default, matching the $\alpha_s$/$\hat{L}_{(s)}$
+notation used throughout this document.
+
+\subsection*{Differences between the two implementations}
+
+\begin{sloppypar}
+\begin{itemize}[nosep]
+\item \textbf{Step~F missing from \encdecpy.}  The \texttt{C0HomDeg1} files
+  complete the embedding by hashing each canonical basis matrix to a point in
+  the unit hypercube via \texttt{Eji\_LinComb.}\allowbreak
+  \texttt{hash\_to\_point\_in\_unit\_hypercube},
+  then forming $\sum_s \alpha_s p_s$.  \encdecpy{} stops after Step~E.
+
+\item \textbf{Arithmetic.}  \encdecpy{} uses \texttt{fractions.Fraction} for
+  coefficients when \texttt{preserve\_scale=True}, giving exact rational
+  arithmetic.  The \texttt{C0HomDeg1} files use \texttt{numpy} integers
+  throughout.
+
+\item \textbf{Internal representation.}  The \texttt{C0HomDeg1} files use the
+  \texttt{Eji}, \texttt{Eji\_LinComb}, and \texttt{Maximal\_Simplex\_Vertex}
+  classes from their own modules.  \encdecpy{} uses plain \texttt{numpy} arrays
+  as basis vectors inside \texttt{MonoLinComb}/\texttt{LinComb}.
+\end{itemize}
+\end{sloppypar}
 
 \end{document}
