@@ -334,48 +334,48 @@ Terms within each $L_s$ expression are grouped by coordinate row $i$.
 \small
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{cc l cc p{6.6cm}}
+\begin{tabular}{c|c l|c p{6.6cm}|c}
 \toprule
     &
     &
     & $\delta_{(s)}-\delta_{(s+1)}$
-    & $(s+1)\Delta_{(s)}$
-    & $ L_{(s-1)}+V_{(s)}$  \\
+    & $L_{(s-1)}+V_{(s)}$
+    & $(s+1)\Delta_{(s)}$ \\
 \midrule
 $s$ & $\delta_{(s)}$
     & $V_{(s)}$
     & $\Delta_{(s)}$
-    & $\alpha_s$
-    & $L_{(s)}$ \\
+    & $L_{(s)}$
+    & $\alpha_s$ \\
 \midrule
-0 & 5 & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$ & 1 & 1
-  & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$ \\[3pt]
-1 & 4 & $\eji{2}{0}$ & 1 & 2
-  & $\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$ \\[3pt]
-2 & 3 & $\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$ & 1 & 3
+0 & 5 & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$ & 1
+  & $\eji{0}{0}+\eji{2}{0}+\eji{3}{0}$ & 1 \\[3pt]
+1 & 4 & $\eji{2}{0}$ & 1
+  & $\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$ & 2 \\[3pt]
+2 & 3 & $\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$ & 1
   & $\eji{0}{0}+2\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$ \\[3pt]
-3 & 2 & $\eji{0}{0}+\eji{2}{0}$ & 0 & 0
+    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$ & 3 \\[3pt]
+3 & 2 & $\eji{0}{0}+\eji{2}{0}$ & 0
   & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$ \\[3pt]
-4 & 2 & $\eji{2}{1}$ & 0 & 0
+    ${}+\eji{1}{1}+\eji{2}{1}+\eji{3}{1}$ & 0 \\[3pt]
+4 & 2 & $\eji{2}{1}$ & 0
   & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+2\eji{2}{1}+\eji{3}{1}$ \\[3pt]
-5 & 2 & $\eji{2}{1}+\eji{3}{1}$ & 1 & 6
+    ${}+\eji{1}{1}+2\eji{2}{1}+\eji{3}{1}$ & 0 \\[3pt]
+5 & 2 & $\eji{2}{1}+\eji{3}{1}$ & 1
   & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$ \\[3pt]
-6 & 1 & $\eji{0}{2}$ & 0 & 0
-  & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
-    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+\eji{0}{2}$ \\[3pt]
-7 & 1 & $\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$ & 1 & 8
+    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$ & 6 \\[3pt]
+6 & 1 & $\eji{0}{2}$ & 0
   & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
     ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$ \\[3pt]
-8 & 0 & $\eji{0}{2}+\eji{2}{2}$ & 0 & 0
+    ${}+\eji{0}{2}$ & 0 \\[3pt]
+7 & 1 & $\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$ & 1
   & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
     ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
-    ${}+3\eji{0}{2}+2\eji{2}{2}+\eji{3}{2}$ \\
+    ${}+2\eji{0}{2}+\eji{2}{2}+\eji{3}{2}$ & 8 \\[3pt]
+8 & 0 & $\eji{0}{2}+\eji{2}{2}$ & 0
+  & $2\eji{0}{0}+3\eji{2}{0}+\eji{3}{0}$\newline
+    ${}+\eji{1}{1}+3\eji{2}{1}+2\eji{3}{1}$\newline
+    ${}+3\eji{0}{2}+2\eji{2}{2}+\eji{3}{2}$ & 0 \\
 \bottomrule
 \end{tabular}
 \end{center}
