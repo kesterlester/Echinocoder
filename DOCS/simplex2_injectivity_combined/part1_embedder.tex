@@ -76,7 +76,8 @@ Let $\sigma_i(0),\ldots,\sigma_i(n-1)$ be this ordering.  The gaps
 $\delta^{(i)}_r = X[\sigma_i(r)][i] - X[\sigma_i(r+1)][i] \ge 0$ are the
 drops between consecutive ranks.
 
-By Abel summation (the discrete analogue of integration by parts), the balance
+By Abel summation (the discrete analogue of integration by parts; we also call
+this a \emph{barycentric subdivision}, or BSD), the balance
 at row $i$ becomes:
 \[
   \text{balance at row }i
@@ -106,7 +107,8 @@ weighted-difference coefficients:
 \[
   L_s \;=\; V_{(0)} + V_{(1)} + \cdots + V_{(s)},
 \]
-where $L_s$ is the \emph{Eji\_LinComb}: the $k\times n$ matrix whose $(i,j)$
+where $L_s$ is the \emph{Eji\_LinComb} (also called a \emph{snapshot}; see
+\S\ref{sec:bridge}): the $k\times n$ matrix whose $(i,j)$
 entry counts how many of the first $s+1$ prefix elements contain $\eji{j}{i}$.
 Its \emph{index} $s+1$ records how many prefix elements have been accumulated.
 
@@ -137,8 +139,8 @@ That each $L_s$ is canonicalised \emph{on its own}---a \emph{local} column
 sort that discards how the columns of one $L_s$ correspond to those of
 another---is what makes this step cheap and continuous; that it nonetheless
 cannot make two genuinely different multisets collide is the one substantive
-ingredient of injectivity, established in \S\ref{sec:bridge} and proved in the
-part that follows.
+ingredient of injectivity, stated and proved in \S\ref{sec:bridge}
+(\emph{Injectivity}).
 
 \subsection*{Step F — Encode in $\R^{2m+1}$ and assemble}
 

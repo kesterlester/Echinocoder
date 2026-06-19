@@ -1,0 +1,32 @@
+\section{Index of notation and terminology (injectivity proof)}
+\label{app:notation}
+
+A quick lookup for where each symbol or term is first defined.  ``p.'' is a page
+number, ``\S'' a (sub)section, and ``eq.'' a numbered equation.
+
+\renewcommand{\arraystretch}{1.25}
+\begin{description}\setlength{\itemsep}{1pt}
+\item[$s(n)$] repeat-free length-$(n{-}1)$ sequences from $[1,n]$ (leave one symbol out, order the rest) \dotfill p.~\pageref{def:sn}
+\item[$oh(\vec v)$] one-hot encoding of a sequence \dotfill p.~\pageref{def:oh}
+\item[$coh(\vec v)$] cumulative one-hot; $coh(\vec v)_m$ indicates the prefix $P_m(\vec v)$ \dotfill p.~\pageref{def:coh}
+\item[$mat(\vec x,j)$] put $\vec x$ in row $j$, zeros elsewhere \dotfill p.~\pageref{def:mat}
+\item[$U(\cdots)$] the set of $(n{-}1)k$ piece-matrices \dotfill p.~\pageref{def:U}
+\item[$\vec U(\cdots;p)$, $p$] an ordering of those pieces; $p$ names which ordering \dotfill p.~\pageref{def:ordering}
+\item[$C\vec U$] cumulative (running-sum) list \dotfill p.~\pageref{def:CU}
+\item[$\vec f$, $Null$, $FC\vec U$] filter, hidden entry, filtered list \dotfill p.~\pageref{def:FCU}
+\item[$clean$] delete the $Null$s and close the gaps \dotfill p.~\pageref{def:clean}
+\item[position recovery] position $=$ sum of the row maxima \dotfill eq.~\eqref{eq:recovery}
+\item[$colPerm(m,\sigma)$, $S_n$] permute columns by $\sigma$; $S_n$ all such $\sigma$ \dotfill p.~\pageref{def:colperm}
+\item[$canon$, $localSort$] per-matrix canonical column order \dotfill \S\ref{subsec:sorting}, eq.~\eqref{eq:canonprop}
+\item[$globalSort$] one common column permutation for all matrices \dotfill \S\ref{subsec:sorting}, eq.~\eqref{eq:globalprop}
+\item[$\vec v,\vec u$ (configuration)] a list of $k$ sequences \dotfill p.~\pageref{def:config}
+\item[slot $(j,m)$, $Q$, $A_j(Q)$] a (row,level) pair; a set of slots; its levels in row $j$ \dotfill p.~\pageref{def:slot}
+\item[$P_m(\vec w)$ (prefix set)] the first $m$ symbols of $\vec w$, unordered \dotfill p.~\pageref{def:prefix}
+\item[$(\vec w)_r$] the $r$-th entry of $\vec w$; ``column $(\vec w)_r$'' is its column \dotfill p.~\pageref{def:wr}
+\item[$S^{\vec v}(Q)$ (snapshot)] sum of the pieces whose slots lie in $Q$ \dotfill Def.~\ref{def:snapshot}
+\item[multiset] a collection with repeats counted but order ignored \dotfill p.~\pageref{def:multiset}
+\item[$M\sim M'$ (column-equivalent)] one is a column-shuffle of the other \dotfill p.~\pageref{def:colequiv}
+\item[$\Sigma(Q)$] relabellings aligning every prefix that $Q$ reveals \dotfill p.~\pageref{def:sigma}
+\item[$\mathcal R$, $Q^\ast$] the retained slot-sets (a chain); its richest member \dotfill p.~\pageref{def:retained}
+\end{description}
+

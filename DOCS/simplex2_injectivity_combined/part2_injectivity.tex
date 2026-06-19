@@ -1,4 +1,4 @@
-\section{Definitions}
+\subsection{Definitions}
 \label{sec:defs}
 Where $n$ and $k$ appear they may always be assumed to be integers  greater than or equal to 2.
 
@@ -218,7 +218,7 @@ clean\left( FC\vec U((3,1), (1,2); 3,(1,1,0,1)) \right)
 $$
 Note that $clean$ discards the knowledge of \emph{where} the $Null$s sat: it preserves the surviving matrices' order relative to one another, but not the absolute positions ($1,2,3,\ldots$) they originally occupied in the list.
 
-\subsection*{A useful observation: $C\vec U$ and $FC\vec U$ are really sets}
+\subsubsection*{A useful observation: $C\vec U$ and $FC\vec U$ are really sets}
 
 Each cumulative matrix quietly records its own position.  The largest entry in a
 row counts how many of that row's pieces have been added in so far, so summing the
@@ -237,7 +237,7 @@ nothing we ask of them depends on their stored order.  (The intermediate object
 $\vec U$ is different -- its plain one-hot matrices do not betray their positions --
 so for $\vec U$ the listed order is genuine.)
 
-\subsection{Placing columns into canonical orders -- (a.k.a.~column `sorting')}
+\subsubsection{Placing columns into canonical orders -- (a.k.a.~column `sorting')}
 \label{subsec:sorting}
 
 \phantomsection\label{def:colperm}Before describing the two sorting processes we need one piece of notation.  A
@@ -267,7 +267,8 @@ Global column sorting.
 \end{enumerate}
 
 \paragraph{Local column sorting.}
-Here each matrix is tidied \emph{on its own}.  We suppose we have some fixed rule
+Here each matrix is tidied \emph{on its own} (\emph{local canonicalisation}, the
+embedder's Step~E).  We suppose we have some fixed rule
 $canon(\cdot)$ that takes a matrix to a chosen ``standard'' column-ordering of it,
 and we apply it to each matrix independently:
 $$localSort(\vec L) = \left(
@@ -326,7 +327,7 @@ forced by local agreement.
 %  NEW SELF-CONTAINED SOLUTION  (Sections 2 onwards)
 %======================================================================
 
-\section{The problem we really want to solve}
+\subsection{The problem we really want to solve}
 \label{sec:problem}
 
 Everything in Section~\ref{sec:defs} was scaffolding.  Here is the question we actually
@@ -390,7 +391,7 @@ For every pair of configurations $\vec v,\vec u$, every filter $\vec f$, and all
 orderings $p,q$, the biconditional \eqref{eq:mainproblem} holds.
 \end{theorem}
 
-\subsection*{First simplification: the lists are secretly sets}
+\subsubsection*{First simplification: the lists are secretly sets}
 
 The statement \eqref{eq:mainproblem} looks forbidding because of the four wrappers
 ($globalSort$/$localSort$, $clean$, $FC\vec U$, and the orderings $p,q$).  The
@@ -466,13 +467,13 @@ The rest of the document does this.  The plan is:
 \end{itemize}
 
 
-\section{Snapshots}
+\subsection{Snapshots}
 \label{sec:snapshots}
 
 This section renames the objects of Section~\ref{sec:defs} in a way that makes the proof short.
 No new mathematics happens here; we are only choosing better bookkeeping.
 
-\subsection*{Slots and slot-sets}
+\subsubsection*{Slots and slot-sets}
 
 The raw ingredients of Section~\ref{sec:defs} -- the elements of the set
 $U(\vec v_1,\ldots,\vec v_k)$ -- are indexed by two numbers: a \emph{row}
@@ -488,7 +489,7 @@ A_j(Q)=\{\,m:(j,m)\in Q\,\}\subseteq[1,n-1].
 \]
 So $Q$ is completely described by its $k$ level-sets $A_1(Q),\ldots,A_k(Q)$.
 
-\subsection*{Prefix sets}
+\subsubsection*{Prefix sets}
 
 \phantomsection\label{def:prefix}For a sequence $\vec w\in s(n)$ and a level $m$, write
 \[
@@ -505,22 +506,22 @@ The cumulative one-hot vector $coh(\vec w)_m$ from Section~\ref{sec:defs} is pre
 in column $c$ exactly when $c\in P_m(\vec w)$.  For instance with $\vec w=(3,1)$ we
 have $P_1=\{3\}$, $P_2=\{3,1\}$, and the indicators $(0,0,1)$ and $(1,0,1)$.
 
-\subsection*{The snapshot matrix}
+\subsubsection*{The snapshot matrix}
 
 \begin{definition}\label{def:snapshot}
 For a configuration $\vec v=(\vec v_1,\ldots,\vec v_k)$ and a slot-set $Q$, the
-\emph{snapshot} $M^{\vec v}(Q)$ is the $k\times n$ matrix whose row $j$ is the sum
+\emph{snapshot} $S^{\vec v}(Q)$ is the $k\times n$ matrix whose row $j$ is the sum
 of the indicators of the prefixes named by $Q$:
 \[
-\bigl(M^{\vec v}(Q)\bigr)_{\text{row }j}
+\bigl(S^{\vec v}(Q)\bigr)_{\text{row }j}
 =\sum_{m\in A_j(Q)} coh(\vec v_j)_m .
 \]
 \end{definition}
 
 This is nothing more than ``add up the ingredients whose slots lie in $Q$''.  The
 link to Section~\ref{sec:defs} is immediate: if $Q_i$ denotes the set of the \emph{first $i$
-slots} in an ordering $p$, then $M^{\vec v}(Q_i)$ is exactly the $i$-th cumulative
-matrix of $C\vec U(\vec v;p)$.  The word ``snapshot'' is apt: $M^{\vec v}(Q_i)$ is
+slots} in an ordering $p$, then $S^{\vec v}(Q_i)$ is exactly the $i$-th cumulative
+matrix of $C\vec U(\vec v;p)$.  The word ``snapshot'' is apt: $S^{\vec v}(Q_i)$ is
 a frozen moment of the running total after $i$ steps.  But the definition makes
 sense for \emph{any} slot-set $Q$, prefix or not, and that extra generality costs
 nothing.
@@ -532,10 +533,10 @@ $Q=\{(1,1),(1,2),(2,2)\}$, so that $A_1(Q)=\{1,2\}$ and $A_2(Q)=\{2\}$.  Row $1$
 $coh(\vec v_1)_1+coh(\vec v_1)_2=(0,0,1)+(1,0,1)=(1,0,2)$, and row $2$ is
 $coh(\vec v_2)_2=(1,1,0)$.  Thus
 \[
-M^{\vec v}(Q)=\begin{bmatrix}1&0&2\\[1pt]1&1&0\end{bmatrix}.
+S^{\vec v}(Q)=\begin{bmatrix}1&0&2\\[1pt]1&1&0\end{bmatrix}.
 \]
 
-\subsection*{The values depend on $Q$ alone; the configuration only moves them around}
+\subsubsection*{The values depend on $Q$ alone; the configuration only moves them around}
 
 \phantomsection\label{def:wr}We first fix one small piece of notation.  For a sequence $\vec w\in s(n)$ write
 $(\vec w)_r$ for its $r$-th entry -- the symbol in position $r$ -- so that
@@ -547,7 +548,7 @@ Here is the observation that makes the whole problem tractable.  Look at row $j$
 a snapshot.  The prefixes are nested, so the entry in column $(\vec v_j)_r$ simply
 counts how many of the chosen levels reach that far:
 \[
-\bigl(M^{\vec v}(Q)\bigr)_{j,\,(\vec v_j)_r}
+\bigl(S^{\vec v}(Q)\bigr)_{j,\,(\vec v_j)_r}
 =\#\{\,m\in A_j(Q): m\ge r\,\},
 \]
 and the one column belonging to the omitted symbol gets a $0$ (recall that each
@@ -574,7 +575,7 @@ will tell us $Q$ (Section~\ref{sec:remember}); comparing the arrangements will t
 us when two configurations agree (Section~\ref{sec:align}).
 
 
-\section{A snapshot remembers how it was built}
+\subsection{A snapshot remembers how it was built}
 \label{sec:remember}
 
 We now prove that a snapshot matrix secretly carries a complete record of the
@@ -583,10 +584,10 @@ each row; here we read off the whole row.
 
 \begin{lemma}\label{lem:recover}
 Fix a row $j$ and let $A=A_j(Q)$.  From the multiset of entries in row $j$ of
-$M^{\vec v}(Q)$ one can recover the set $A$ completely, and the recovery does not
+$S^{\vec v}(Q)$ one can recover the set $A$ completely, and the recovery does not
 use the sequence $\vec v_j$.  Explicitly, for every integer $t\ge1$,
 \[
-\#\{\,c:\bigl(M^{\vec v}(Q)\bigr)_{j,c}\ge t\,\}
+\#\{\,c:\bigl(S^{\vec v}(Q)\bigr)_{j,c}\ge t\,\}
 =
 \bigl(\text{the $t$-th largest element of }A\bigr),
 \]
@@ -640,7 +641,7 @@ back $A$.
 Two corollaries do all the work later.
 
 \begin{corollary}[the whole slot-set is remembered]\label{cor:wholeQ}
-The entire slot-set $Q$ can be recovered from the matrix $M^{\vec v}(Q)$: apply
+The entire slot-set $Q$ can be recovered from the matrix $S^{\vec v}(Q)$: apply
 Lemma~\ref{lem:recover} to each row $j$ to get $A_j(Q)$, then
 $Q=\{(j,m):m\in A_j(Q)\}$.  In particular two snapshots built from
 \emph{different} slot-sets are different matrices, whatever the configurations.
@@ -667,15 +668,15 @@ $\vec u$-snapshot ever match (even after independent column sorting) they must h
 been built from one and the same slot-set.
 
 
-\section{When are two snapshots the same up to column order?}
+\subsection{When are two snapshots the same up to column order?}
 \label{sec:align}
 
-Fix a single slot-set $Q$ and compare the two snapshots $M^{\vec v}(Q)$ and
-$M^{\vec u}(Q)$ built from it.  By the previous section they have, row by row, the
+Fix a single slot-set $Q$ and compare the two snapshots $S^{\vec v}(Q)$ and
+$S^{\vec u}(Q)$ built from it.  By the previous section they have, row by row, the
 same multiset of values; they can differ only in \emph{which columns} hold those
 values.  When is one merely a column-rearrangement of the other?
 
-\subsection*{Vocabulary: permutations and column equivalence}
+\subsubsection*{Vocabulary: permutations and column equivalence}
 
 \phantomsection\label{def:colequiv}Recall from Section~\ref{sec:defs} that a \emph{permutation} $\sigma\in S_n$ relabels the columns
 $[1,n]$, and that $colPerm(M,\sigma)$ is the matrix got by sending the contents of
@@ -685,9 +686,9 @@ $colPerm(M,\sigma)=M'$ -- that is, if one is a column-rearrangement of the other
 This is exactly the relation that $canon$ detects: by \eqref{eq:canonprop},
 $canon(M)=canon(M')$ iff $M\sim M'$.
 
-\subsection*{Aligning the revealed prefixes}
+\subsubsection*{Aligning the revealed prefixes}
 
-Recall (Section~\ref{sec:snapshots}) that reading row $j$ of $M^{\vec v}(Q)$ at
+Recall (Section~\ref{sec:snapshots}) that reading row $j$ of $S^{\vec v}(Q)$ at
 ``height $\ge t$'' returns a prefix set $P_{a_t}(\vec v_j)$.  As $t$ ranges over
 $1,\ldots,|A_j(Q)|$ these are precisely the prefixes
 $\{P_m(\vec v_j):m\in A_j(Q)\}$.  So a snapshot is best thought of as a device that
@@ -702,20 +703,20 @@ the relabellings that carry every prefix revealed by $\vec v$ onto the matching
 prefix revealed by $\vec u$.  (Here $\sigma(S)$ means $\{\sigma(c):c\in S\}$.)
 
 \begin{lemma}[alignment]\label{lem:align}
-$M^{\vec v}(Q)\sim M^{\vec u}(Q)$ if and only if $\Sigma(Q)\neq\varnothing$.  More
+$S^{\vec v}(Q)\sim S^{\vec u}(Q)$ if and only if $\Sigma(Q)\neq\varnothing$.  More
 precisely, $\Sigma(Q)$ is \emph{exactly} the set of column permutations $\sigma$
-with $colPerm(M^{\vec v}(Q),\sigma)=M^{\vec u}(Q)$.
+with $colPerm(S^{\vec v}(Q),\sigma)=S^{\vec u}(Q)$.
 \end{lemma}
 
 \begin{proof}
 A matrix of non-negative integers is determined by its family of
 ``level sets'' $\{c:\text{entry}\ge t\}$ in each row (the set of columns whose entry
 clears height $t$, for each threshold $t=1,2,\ldots$).  In row $j$ of
-$M^{\vec v}(Q)$ that level set is the prefix $P_{a_t}(\vec v_j)$, with $a_t$ the
+$S^{\vec v}(Q)$ that level set is the prefix $P_{a_t}(\vec v_j)$, with $a_t$ the
 $t$-th largest element of $A_j(Q)$; and crucially $A_j(Q)$ is the \emph{same} on
 the $\vec u$-side, so the thresholds $a_t$ match.  Applying $colPerm(\cdot,\sigma)$
-sends each level set $S$ to $\sigma(S)$.  Hence $colPerm(M^{\vec v}(Q),\sigma)$
-equals $M^{\vec u}(Q)$ exactly when, in every row $j$ and at every threshold,
+sends each level set $S$ to $\sigma(S)$.  Hence $colPerm(S^{\vec v}(Q),\sigma)$
+equals $S^{\vec u}(Q)$ exactly when, in every row $j$ and at every threshold,
 $\sigma\bigl(P_{a_t}(\vec v_j)\bigr)=P_{a_t}(\vec u_j)$ -- that is, when
 $\sigma(P_m(\vec v_j))=P_m(\vec u_j)$ for all $j$ and all $m\in A_j(Q)$, which is the
 definition of $\sigma\in\Sigma(Q)$.
@@ -724,15 +725,15 @@ definition of $\sigma\in\Sigma(Q)$.
 \noindent\textit{Example (a relabelling, and a non-relabelling).}  Keep
 $n=3$, $k=2$, $\vec v=((3,1),(1,2))$ and $Q=\{(1,1),(1,2),(2,2)\}$, so
 \[
-M^{\vec v}(Q)=\begin{bmatrix}1&0&2\\1&1&0\end{bmatrix}.
+S^{\vec v}(Q)=\begin{bmatrix}1&0&2\\1&1&0\end{bmatrix}.
 \]
 Take $\vec u=((2,3),(3,1))$, obtained from $\vec v$ by the single relabelling
 $\sigma:1\mapsto3,\ 2\mapsto1,\ 3\mapsto2$ applied to every symbol.  Then
 \[
-M^{\vec u}(Q)=\begin{bmatrix}0&2&1\\1&0&1\end{bmatrix}
-=colPerm\!\left(M^{\vec v}(Q),\sigma\right),
+S^{\vec u}(Q)=\begin{bmatrix}0&2&1\\1&0&1\end{bmatrix}
+=colPerm\!\left(S^{\vec v}(Q),\sigma\right),
 \]
-so $M^{\vec v}(Q)\sim M^{\vec u}(Q)$ and indeed $\sigma\in\Sigma(Q)$: one
+so $S^{\vec v}(Q)\sim S^{\vec u}(Q)$ and indeed $\sigma\in\Sigma(Q)$: one
 relabelling reorders the columns of \emph{both} rows at once.  By contrast take
 $\vec w=((1,3),(2,1))$, which is \emph{not} a relabelling of $\vec v$.  Lining up
 the displayed prefixes would force, from row $1$ at level $1$, that
@@ -742,7 +743,7 @@ symbol $1$ would have to be the image of $3$ \emph{and} of one of $1,2$ at once,
 which no bijection allows.  Hence $\Sigma(Q)=\varnothing$ and the two snapshots are
 genuinely different no matter how their columns are shuffled.
 
-\subsection*{The richer the snapshot, the fewer alignments survive}
+\subsubsection*{The richer the snapshot, the fewer alignments survive}
 
 A snapshot built from more slots displays more prefixes, hence imposes more
 constraints on an aligning $\sigma$.  This monotonicity is the engine of the whole
@@ -760,12 +761,12 @@ $\sigma$ in $\Sigma(Q)$ already lies in $\Sigma(Q')$.
 \end{proof}
 
 
-\section{Putting it together}
+\subsection{Putting it together}
 \label{sec:solution}
 
 We can now prove Theorem~\ref{thm:main}.  Fix $\vec v,\vec u,\vec f,p,q$.
 
-\subsection*{The retained slot-sets}
+\subsubsection*{The retained slot-sets}
 
 \phantomsection\label{def:retained}Let $Q^p_i$ be the set of the first $i$ slots in ordering $p$.  These are
 \emph{nested}, $Q^p_1\subset Q^p_2\subset\cdots$, so they form what is called a
@@ -782,13 +783,13 @@ for the families of \emph{retained} slot-sets on the two sides.  Each is a chain
 By Corollary~\ref{cor:sets} the cleaned, sorted output of each side is just a
 \emph{set} of matrices, namely
 \[
-\{\,canon\,M^{\vec v}(Q):Q\in\mathcal R_{\vec v}\,\}
+\{\,canon\,S^{\vec v}(Q):Q\in\mathcal R_{\vec v}\,\}
 \quad\text{(local, $\vec v$ side)},
 \]
 and similarly for $\vec u$; for the global versions one common $\sigma$ is applied
 first.  We must compare these.
 
-\subsection*{Local equality, decoded}
+\subsubsection*{Local equality, decoded}
 
 \begin{lemma}\label{lem:localdecode}
 $localSort$ of the two sides agree if and only if
@@ -800,17 +801,17 @@ $localSort$ of the two sides agree if and only if
 \end{lemma}
 
 \begin{proof}
-$localSort$ agreement means the two sets $\{canon\,M^{\vec v}(Q):Q\in\mathcal
-R_{\vec v}\}$ and $\{canon\,M^{\vec u}(Q'):Q'\in\mathcal R_{\vec u}\}$ are equal.
-By Corollary~\ref{cor:survives}, each matrix $canon\,M^{\vec v}(Q)$ still reveals
+$localSort$ agreement means the two sets $\{canon\,S^{\vec v}(Q):Q\in\mathcal
+R_{\vec v}\}$ and $\{canon\,S^{\vec u}(Q'):Q'\in\mathcal R_{\vec u}\}$ are equal.
+By Corollary~\ref{cor:survives}, each matrix $canon\,S^{\vec v}(Q)$ still reveals
 the slot-set $Q$ that built it; likewise on the $\vec u$-side.  So a matrix common
 to both sets carries one slot-set, read the same way from either description: the
 $Q$ from the $\vec v$-side and the $Q'$ from the $\vec u$-side that produced it must
 be \emph{equal}.  Matching the two sets element by element therefore matches each
 $Q\in\mathcal R_{\vec v}$ with the \emph{same} $Q\in\mathcal R_{\vec u}$, forcing
 $\mathcal R_{\vec v}=\mathcal R_{\vec u}$, and for each such $Q$ the common matrix
-says $canon\,M^{\vec v}(Q)=canon\,M^{\vec u}(Q)$, i.e.\ $M^{\vec v}(Q)\sim
-M^{\vec u}(Q)$.  By Lemma~\ref{lem:align} this is $\Sigma(Q)\neq\varnothing$.  Every
+says $canon\,S^{\vec v}(Q)=canon\,S^{\vec u}(Q)$, i.e.\ $S^{\vec v}(Q)\sim
+S^{\vec u}(Q)$.  By Lemma~\ref{lem:align} this is $\Sigma(Q)\neq\varnothing$.  Every
 step is reversible, giving the converse.
 \end{proof}
 
@@ -819,7 +820,7 @@ into step: local agreement cannot hold unless $\mathcal R_{\vec v}=\mathcal
 R_{\vec u}$, i.e.\ at every retained position the two sides have gathered
 \emph{identical} slot-sets, even though they were free to use different orderings.
 
-\subsection*{Global equality, decoded}
+\subsubsection*{Global equality, decoded}
 
 \begin{lemma}\label{lem:globaldecode}
 $globalSort$ of the two sides agree if and only if
@@ -833,7 +834,7 @@ $globalSort$ of the two sides agree if and only if
 \begin{proof}
 ($\Leftarrow$) Suppose the families agree and some single $\sigma$ lies in every
 $\Sigma(Q)$, $Q\in\mathcal R$.  By Lemma~\ref{lem:align}, $\sigma$ turns each
-$M^{\vec v}(Q)$ into $M^{\vec u}(Q)$.  So the whole list of $\vec u$-snapshots is
+$S^{\vec v}(Q)$ into $S^{\vec u}(Q)$.  So the whole list of $\vec u$-snapshots is
 obtained from the whole list of $\vec v$-snapshots by that one common column
 permutation $\sigma$.  Two lists related by a single common column permutation are
 tidied to the \emph{same} thing by $globalSort$ -- that is exactly the freedom
@@ -848,11 +849,11 @@ $\vec v$-snapshot by this one $\sigma$.  A column permutation preserves every ro
 multiset, so by
 Corollary~\ref{cor:wholeQ} the paired snapshots share a slot-set; matching them up
 gives $\mathcal R_{\vec v}=\mathcal R_{\vec u}$, and the relation
-$colPerm(M^{\vec v}(Q),\sigma)=M^{\vec u}(Q)$ for every retained $Q$ says exactly
+$colPerm(S^{\vec v}(Q),\sigma)=S^{\vec u}(Q)$ for every retained $Q$ says exactly
 (Lemma~\ref{lem:align}) that this one $\sigma$ lies in $\bigcap_Q\Sigma(Q)$.
 \end{proof}
 
-\subsection*{The two conditions coincide}
+\subsubsection*{The two conditions coincide}
 
 Compare Lemmas~\ref{lem:localdecode} and~\ref{lem:globaldecode}.  Both demand
 $\mathcal R_{\vec v}=\mathcal R_{\vec u}=\mathcal R$; granting that, local agreement
@@ -888,7 +889,7 @@ equivalence is the displayed equality.  Since both notions of agreement also
 required the same clause $\mathcal R_{\vec v}=\mathcal R_{\vec u}$, they coincide.
 This proves Theorem~\ref{thm:main}. \qed
 
-\subsection*{The proof in one breath}
+\subsubsection*{The proof in one breath}
 
 Among the retained snapshots there is a richest one, $Q^\ast$.  It displays every
 prefix that any other retained snapshot displays, so the relabellings that align it
@@ -900,7 +901,7 @@ reason each: a snapshot remembers its own slot-set, so dropping the $Null$s
 (Corollary~\ref{cor:sets}) and using different orderings
 (Corollary~\ref{cor:wholeQ}) change nothing.
 
-\subsection*{A worked example}
+\subsubsection*{A worked example}
 
 Let us watch the whole machine run once, on an example rich enough to be
 interesting.  Take $n=4$ and $k=2$, with
@@ -940,12 +941,12 @@ column staying $0$) gives:
 \renewcommand{\arraystretch}{2.4}
 \begin{array}{c|c|c}
  & \vec v\ \text{side} & \vec u\ \text{side}\\\hline
-R_1 & M^{\vec v}(R_1)=\begin{bmatrix}0&0&1&0\\0&0&0&1\end{bmatrix}
-    & M^{\vec u}(R_1)=\begin{bmatrix}1&0&0&0\\0&0&1&0\end{bmatrix}\\
-R_2 & M^{\vec v}(R_2)=\begin{bmatrix}1&0&2&0\\0&1&0&2\end{bmatrix}
-    & M^{\vec u}(R_2)=\begin{bmatrix}2&1&0&0\\0&0&2&1\end{bmatrix}\\
-R_3 & M^{\vec v}(R_3)=\begin{bmatrix}2&0&3&1\\1&2&0&3\end{bmatrix}
-    & M^{\vec u}(R_3)=\begin{bmatrix}3&2&1&0\\0&1&3&2\end{bmatrix}
+R_1 & S^{\vec v}(R_1)=\begin{bmatrix}0&0&1&0\\0&0&0&1\end{bmatrix}
+    & S^{\vec u}(R_1)=\begin{bmatrix}1&0&0&0\\0&0&1&0\end{bmatrix}\\
+R_2 & S^{\vec v}(R_2)=\begin{bmatrix}1&0&2&0\\0&1&0&2\end{bmatrix}
+    & S^{\vec u}(R_2)=\begin{bmatrix}2&1&0&0\\0&0&2&1\end{bmatrix}\\
+R_3 & S^{\vec v}(R_3)=\begin{bmatrix}2&0&3&1\\1&2&0&3\end{bmatrix}
+    & S^{\vec u}(R_3)=\begin{bmatrix}3&2&1&0\\0&1&3&2\end{bmatrix}
 \end{array}
 \]
 (The rows now carry genuinely varied values: $0,1,2,3$ all appear.)
@@ -972,19 +973,19 @@ $\Sigma(R_3)=\{\sigma\}$, which is non-empty.  So the \emph{single} permutation
 $\sigma:1\mapsto2,2\mapsto4,3\mapsto1,4\mapsto3$ re-orders the columns of all three
 $\vec v$-snapshots into all three $\vec u$-snapshots simultaneously:
 \textbf{global agreement holds too}, exactly as the theorem predicts.  As a check,
-$colPerm(M^{\vec v}(R_3),\sigma)$ sends the entry in old column $3$ to new column
+$colPerm(S^{\vec v}(R_3),\sigma)$ sends the entry in old column $3$ to new column
 $1$, old $1$ to new $2$, old $4$ to new $3$ and old $2$ to new $4$, turning
 $\left[\begin{smallmatrix}2&0&3&1\\1&2&0&3\end{smallmatrix}\right]$ into
-$\left[\begin{smallmatrix}3&2&1&0\\0&1&3&2\end{smallmatrix}\right]=M^{\vec u}(R_3)$.
+$\left[\begin{smallmatrix}3&2&1&0\\0&1&3&2\end{smallmatrix}\right]=S^{\vec u}(R_3)$.
 
 \medskip\noindent\emph{What would break it.}
 Suppose the filter had instead kept position $1$.  There $p$ and $q$ disagree: the
 $\vec v$-side snapshot is built from $\{(1,1)\}$ but the $\vec u$-side from
 $\{(2,1)\}$,
 \[
-M^{\vec v}(\{(1,1)\})=\begin{bmatrix}0&0&1&0\\0&0&0&0\end{bmatrix},
+S^{\vec v}(\{(1,1)\})=\begin{bmatrix}0&0&1&0\\0&0&0&0\end{bmatrix},
 \qquad
-M^{\vec u}(\{(2,1)\})=\begin{bmatrix}0&0&0&0\\0&0&1&0\end{bmatrix}.
+S^{\vec u}(\{(2,1)\})=\begin{bmatrix}0&0&0&0\\0&0&1&0\end{bmatrix}.
 \]
 Their first rows already have different multisets ($\{1,0,0,0\}$ versus
 $\{0,0,0,0\}$), so no column shuffle can match them and local agreement fails at
@@ -994,7 +995,7 @@ be made to look alike.  Local agreement can therefore only hold where $p$ and $q
 have gathered the same pieces -- and there, as we saw, it drags global agreement
 along with it.
 
-\subsection*{A second worked example: tied columns, and why a broken tie never returns}
+\subsubsection*{A second worked example: tied columns, and why a broken tie never returns}
 
 The example above never produced two equal \emph{non-zero} columns, which rightly
 prompts the question: can a snapshot have genuinely tied non-zero columns -- and if
@@ -1063,7 +1064,7 @@ columns are tied only while \emph{no} row yet separates them; descending only ev
 heal.  That is monotonicity (Corollary~\ref{cor:mono}) made visible: $\Sigma$ can
 shed permutations as $Q$ grows, but it can never acquire one.
 
-\subsection*{Remarks}
+\subsubsection*{Remarks}
 
 \begin{enumerate}
 \item \textbf{Where each hypothesis is used.}  The no-repeats condition
@@ -1087,35 +1088,4 @@ whenever local agreement held the two orderings were found to be in step
 Lemma~\ref{lem:recover} was verified exhaustively for $2\le n\le 6$.
 \end{enumerate}
 
-
-\section*{Index of notation and terminology}
-
-A quick lookup for where each symbol or term is first defined.  ``p.'' is a page
-number, ``\S'' a (sub)section, and ``eq.'' a numbered equation.
-
-\renewcommand{\arraystretch}{1.25}
-\begin{description}\setlength{\itemsep}{1pt}
-\item[$s(n)$] repeat-free length-$(n{-}1)$ sequences from $[1,n]$ (leave one symbol out, order the rest) \dotfill p.~\pageref{def:sn}
-\item[$oh(\vec v)$] one-hot encoding of a sequence \dotfill p.~\pageref{def:oh}
-\item[$coh(\vec v)$] cumulative one-hot; $coh(\vec v)_m$ indicates the prefix $P_m(\vec v)$ \dotfill p.~\pageref{def:coh}
-\item[$mat(\vec x,j)$] put $\vec x$ in row $j$, zeros elsewhere \dotfill p.~\pageref{def:mat}
-\item[$U(\cdots)$] the set of $(n{-}1)k$ piece-matrices \dotfill p.~\pageref{def:U}
-\item[$\vec U(\cdots;p)$, $p$] an ordering of those pieces; $p$ names which ordering \dotfill p.~\pageref{def:ordering}
-\item[$C\vec U$] cumulative (running-sum) list \dotfill p.~\pageref{def:CU}
-\item[$\vec f$, $Null$, $FC\vec U$] filter, hidden entry, filtered list \dotfill p.~\pageref{def:FCU}
-\item[$clean$] delete the $Null$s and close the gaps \dotfill p.~\pageref{def:clean}
-\item[position recovery] position $=$ sum of the row maxima \dotfill eq.~\eqref{eq:recovery}
-\item[$colPerm(m,\sigma)$, $S_n$] permute columns by $\sigma$; $S_n$ all such $\sigma$ \dotfill p.~\pageref{def:colperm}
-\item[$canon$, $localSort$] per-matrix canonical column order \dotfill \S\ref{subsec:sorting}, eq.~\eqref{eq:canonprop}
-\item[$globalSort$] one common column permutation for all matrices \dotfill \S\ref{subsec:sorting}, eq.~\eqref{eq:globalprop}
-\item[$\vec v,\vec u$ (configuration)] a list of $k$ sequences \dotfill p.~\pageref{def:config}
-\item[slot $(j,m)$, $Q$, $A_j(Q)$] a (row,level) pair; a set of slots; its levels in row $j$ \dotfill p.~\pageref{def:slot}
-\item[$P_m(\vec w)$ (prefix set)] the first $m$ symbols of $\vec w$, unordered \dotfill p.~\pageref{def:prefix}
-\item[$(\vec w)_r$] the $r$-th entry of $\vec w$; ``column $(\vec w)_r$'' is its column \dotfill p.~\pageref{def:wr}
-\item[$M^{\vec v}(Q)$ (snapshot)] sum of the pieces whose slots lie in $Q$ \dotfill Def.~\ref{def:snapshot}
-\item[multiset] a collection with repeats counted but order ignored \dotfill p.~\pageref{def:multiset}
-\item[$M\sim M'$ (column-equivalent)] one is a column-shuffle of the other \dotfill p.~\pageref{def:colequiv}
-\item[$\Sigma(Q)$] relabellings aligning every prefix that $Q$ reveals \dotfill p.~\pageref{def:sigma}
-\item[$\mathcal R$, $Q^\ast$] the retained slot-sets (a chain); its richest member \dotfill p.~\pageref{def:retained}
-\end{description}
 
