@@ -1,0 +1,116 @@
+\section{Source-code Correspondence}
+\label{app:code}
+% ═════════════════════════════════════════════════════════════════════════════
+
+\subsection*{Files}
+
+\begin{tabular}{@{}p{8.5cm}p{6cm}@{}}
+\toprule
+\textbf{File} & \textbf{Role} \\
+\midrule
+\algtwoapy & Algorithm~2 direct; \texttt{Embedder.embed\_generic}; Steps~A--F.
+             Original file on which this document is based. \\[4pt]
+\algtwobpy & Algorithm~2 EncDec-backed; \texttt{Embedder.embed\_generic}; Steps~A--F.
+             Delegates Steps~A--E to \encdecpy{}; adds Step~F directly.
+             Default config is bit-identical to \algtwoapy. \\[4pt]
+\algtwopy  & Wrapper selecting between \algtwoapy{} and \algtwobpy{}.
+             All other repository code imports \texttt{Embedder} from this file. \\[4pt]
+\algonepy  & Algorithm~1 direct; \texttt{Embedder.embed\_generic}; Steps~A--F \\[4pt]
+\encdecpy  & \texttt{simplex\_2\_preprocess\_steps} and
+             \texttt{simplex\_1\_preprocess\_steps}; Steps~A--E only \\[4pt]
+\playpy    & Command-line driver for \encdecpy \\
+\bottomrule
+\end{tabular}
+
+\subsection*{Notation--code correspondence (\encdecpy)}
+
+The central function is \texttt{barycentric\_subdivide(lin\_comb, \ldots)}, which
+performs one Abel-summation step.  Both algorithms call it twice: once to extract
+the symmetric anchor(s) and once to produce the final coefficient--basis pairs.
+The table below maps the document's symbols to the corresponding names in
+\encdecpy.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{p{3.4cm} p{6cm} p{4.8cm}}
+\toprule
+\textbf{Document symbol} & \textbf{\encdecpy{} name / expression} & \textbf{Notes} \\
+\midrule
+Input $M$ ($k{\times}n$) &
+  \texttt{set\_array} &
+  Rows $= $ coordinates $i$; columns $= $ vectors $j$ \\[3pt]
+
+$\eji{j}{i}$ (Eji basis matrix) &
+  \texttt{basis\_vec} inside \texttt{MonoLinComb} &
+  $k{\times}n$ indicator: 1 at $(i,j)$, 0 elsewhere \\[3pt]
+
+Step~A: $M = \sum_{j,i} X[j][i]\,\eji{j}{i}$ &
+  \texttt{array\_to\_lin\_comb(set\_array)} $\to$ \texttt{LinComb} &
+  Each \texttt{(coeff, basis\_vec)} term is one Eji \\[3pt]
+
+Anchors $m_i$ (Alg~2); global min (Alg~1) &
+  \texttt{offset} returned by \texttt{barycentric\_subdivide(\ldots,}
+  \texttt{return\_offset\_separately=True)} &
+  $k$ per-row offsets (Alg~2); one global offset (Alg~1) \\[3pt]
+
+$\delta_{(s)}$,\ $V_{(s)}$ &
+  \texttt{.coeffs[s]},\ \texttt{.basis\_vecs[s]} of
+  \texttt{lin\_comb\_1\_first\_diffs} &
+  After 1st \texttt{barycentric\_subdivide}; sorted descending \\[3pt]
+
+$\Delta_{(s)}$,\ $L_{(s)}$ &
+  \texttt{.coeffs[s]},\ \texttt{.basis\_vecs[s]} of
+  \texttt{lin\_comb\_2\_second\_diffs} &
+  2nd call with \texttt{preserve\_scale=False} \\[3pt]
+
+$\alpha_s$,\ $\hat{L}_{(s)}$ &
+  same &
+  2nd call with \texttt{preserve\_scale=True} (default);
+  \texttt{coeffs[s]} $=(s{+}1)\Delta_{(s)}$,
+  \texttt{basis\_vecs[s]} $=L_{(s)}/(s{+}1)$ \\[3pt]
+
+$\canon{L}_{(s)}$ (canonical) &
+  \texttt{tools.sort\_np\_array\_rows\_}\newline\texttt{lexicographically(basis\_vec)} &
+  Step~E; sorts columns of each basis matrix \\[3pt]
+
+Step~F hash &
+  \texttt{Eji\_LinComb.}\newline\texttt{hash\_to\_point\_in\_unit\_hypercube} &
+  In \texttt{Eji\_LinComb.py}; not yet in \encdecpy \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The \texttt{preserve\_scale} flag controls normalisation of prefix sums:
+\texttt{True} gives $\hat{L}_{(s)} = L_{(s)}/(s{+}1)$ with
+$\alpha_s = (s{+}1)\Delta_{(s)}$; \texttt{False} gives raw $L_{(s)}$ with
+$\Delta_{(s)}$.  The second \texttt{barycentric\_subdivide} call uses
+\texttt{preserve\_scale=True} by default, matching the $\alpha_s$/$\hat{L}_{(s)}$
+notation used throughout this document.
+
+\subsection*{Differences between the two implementations}
+
+\begin{sloppypar}
+\begin{itemize}[nosep]
+\item \textbf{Step~F coverage.}  \encdecpy{} covers only Steps~A--E.
+  The \texttt{C0HomDeg1} files complete the embedding by hashing each canonical
+  basis matrix to a point in the unit hypercube via
+  \texttt{Eji\_LinComb.}\allowbreak\texttt{hash\_to\_point\_in\_unit\_hypercube}
+  and forming $\sum_s \alpha_s p_s$.  In \algtwobpy{}, Step~F is implemented
+  directly in \texttt{\_hash\_basis\_vec\_to\_point}, which reconstructs the
+  integer count matrix from \encdecpy{}'s Fraction-valued basis vectors and then
+  applies the same MD5$\to$seed$\to$RNG hash as \texttt{Eji\_LinComb}.
+
+\item \textbf{Arithmetic.}  \encdecpy{} uses \texttt{fractions.Fraction} for
+  coefficients when \texttt{preserve\_scale=True}, giving exact rational
+  arithmetic.  The \texttt{C0HomDeg1} files use \texttt{numpy} integers
+  throughout.
+
+\item \textbf{Internal representation.}  The \texttt{C0HomDeg1} files use the
+  \texttt{Eji}, \texttt{Eji\_LinComb}, and \texttt{Maximal\_Simplex\_Vertex}
+  classes from their own modules.  \encdecpy{} uses plain \texttt{numpy} arrays
+  as basis vectors inside \texttt{MonoLinComb}/\texttt{LinComb}.
+\end{itemize}
+\end{sloppypar}

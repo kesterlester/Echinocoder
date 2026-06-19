@@ -1,0 +1,108 @@
+% master.tex
+% ============================================================================
+% Combined writeup: the simplex-2 multiset embedder (Part I) together with a
+% proof that its core canonicalisation step is injective (the bridge in
+% \S\ref{sec:bridge}, proved in the part that follows it).
+%
+% Sources are kept as separate \input files so each crafted body stays intact;
+% this file holds only the merged preamble, the title, and the running order:
+%
+%   part1_embedder.tex     -- body of simplicial_complex_embedders_v3.tex
+%   bridge.tex             -- NEW connective material (dictionary + theorem in
+%                             embedder language + the filter/ambiguity story)
+%   part2_injectivity.tex  -- body of 2026-Injectivity-Simplex-Method/main.tex
+%   appendix_code.tex      -- the embedder's Source-code Correspondence appendix
+%
+% The preamble below is the UNION of the two originals' preambles, de-duplicated.
+% Comments from both originals are preserved (here and in the part files).
+% The worked-example tables are \input via the 'generated' symlink, which points
+% at DOCS/generated/ so 'make tables' in DOCS/ keeps them in lock-step.
+%
+% Build:  make           (see Makefile)
+% ============================================================================
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{amsthm}          % (from the injectivity proof) theorem environments
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{graphicx}        % (from the injectivity proof)
+\usepackage{tikz}            % (from the injectivity proof) bar-height picture
+\usepackage{hyperref}
+\usepackage[most]{tcolorbox}
+
+% ── Theorem environments (from the injectivity proof) ───────────────────────
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+% ── Colours (from the embedder writeup) ─────────────────────────────────────
+\definecolor{alg1col}{HTML}{1a5276}
+\definecolor{alg2col}{HTML}{1e8449}
+\definecolor{boxbg}{HTML}{f4f6f7}
+\definecolor{notebg}{HTML}{fef9e7}
+\definecolor{keybg}{HTML}{eaf4fb}
+\definecolor{warnbg}{HTML}{fdfefe}
+
+\tcbset{
+  defbox/.style ={colback=boxbg,  colframe=gray!50,   boxrule=0.4pt,
+                  arc=2pt, left=6pt, right=6pt, top=4pt, bottom=4pt},
+  notebox/.style={colback=notebg, colframe=orange!60, boxrule=0.4pt,
+                  arc=2pt, left=6pt, right=6pt, top=4pt, bottom=4pt},
+  keybox/.style ={colback=keybg,  colframe=blue!45,   boxrule=0.7pt,
+                  arc=3pt, left=8pt, right=8pt, top=6pt, bottom=6pt},
+}
+
+% ── Source-file name macros (used in §Two Algorithms and the Appendix) ──────
+% \urldef uses \path so the names can break at underscores in typesetting.
+\urldef\algonepy\path{C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py}
+% Algorithm 2 exists in three files: _2a_ (direct), _2b_ (EncDec-backed), _2_ (wrapper).
+\urldef\algtwoapy\path{C0HomDeg1_simplicialComplex_embedder_2a_for_array_of_reals_as_multiset.py}
+\urldef\algtwobpy\path{C0HomDeg1_simplicialComplex_embedder_2b_for_array_of_reals_as_multiset.py}
+\urldef\algtwopy\path{C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py}
+\urldef\playpy\path{play_simplex_encoders_via_EncDec.py}
+\newcommand{\encdecpy}{\texttt{EncDec.py}}
+
+% ── Notation (from the embedder writeup) ────────────────────────────────────
+\newcommand{\eji}[2]{e^{#1}_{#2}}       % Eji: vector index raised, coord lowered
+\newcommand{\hash}[1]{h(#1)}            % hash to hypercube
+\newcommand{\canon}[1]{\widetilde{#1}}  % canonical form
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\SP}[2]{SP^{#1}(\R^{#2})}  % symmetric product
+
+\hypersetup{colorlinks=true, linkcolor=alg1col, urlcolor=alg1col}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\title{\textbf{The Simplex-2 Multiset Embedder and a Proof of Its Injectivity}\\[0.4em]
+       \large Strategy, Implementation, and the Injectivity of Local Canonicalisation}
+\date{\today}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{document}
+\maketitle
+\tableofcontents
+\bigskip
+
+% ── Part I: the embedder (body of simplicial_complex_embedders_v3) ───────────
+\input{part1_embedder}
+
+% ── The bridge: NEW material tying Part I to the proof ───────────────────────
+\input{bridge}
+
+% ── The injectivity proof (body of 2026-Injectivity-Simplex-Method/main) ─────
+\input{part2_injectivity}
+
+% ── Appendices ───────────────────────────────────────────────────────────────
+\appendix
+\input{appendix_code}
+
+\end{document}

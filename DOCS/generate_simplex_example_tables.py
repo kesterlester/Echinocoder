@@ -17,6 +17,9 @@ Fragments are written to DOCS/generated/ and \\input by the .tex source:
   sx2_threeway.tex         the three-way lin-comb equality for the same box
   sx2_count_matrices.tex   the Eji_LinComb count-matrix table
   sx2_stepF.tex            the final assembled-output display
+  sx2_alpha_example.tex    one worked alpha_s = (s+1)(gap difference) instance
+  sx2_tie_groups.tex       sentence describing the tie groups and how the
+                           variant ordering permutes them
 
 Greying convention (matches the hand-drawn v2 tables): a cell is greyed iff
 its value depends on the tie-break order, determined by comparing the default
@@ -44,7 +47,8 @@ OUT_DIR = Path(__file__).resolve().parent / "generated"
 M = np.asarray([[4, 2, 3],
                 [-3, 5, 1],
                 [8, 9, 2],
-                [2, 7, 2]])
+                [2, 7, 2]]) # Has bad coincidence
+M = np.asarray([[4,2,3],[-3,-5,1],[8,9,2],[2,-3,-7]]) # Hopefully lacks coincidence
 
 
 # ── Eji-sum rendering ─────────────────────────────────────────────────────────
@@ -443,6 +447,53 @@ def main():
           rf"  \bigl[\;\underbrace{{{minima_str}}}_{{{k}\text{{ row min.}}}},\;" + "\n"
           rf"          {alpha_terms}\;\bigr]" + "\n"
           rf"  \;\in\; \R^{{{out_dim}}}." + "\n\\]\n")
+
+    # One worked alpha_s instance (for the note box that replaced the v2
+    # "coincidence" box).  Prefer an s whose gap difference exceeds 1 so the
+    # (s+1) factor and the gap difference are separately visible.
+    candidates = [r for r in rows_default if r["Delta"] >= 2] or \
+                 [r for r in rows_default if r["Delta"] >= 1]
+    r = candidates[0]
+    s = r["s"]
+    nxt = rows_default[s + 1]["delta"] if s + 1 < m else 0
+    write("sx2_alpha_example.tex",
+          "\\[\n"
+          rf"  \alpha_{{{s}}} \;=\; ({s}{{+}}1)\bigl(\delta_{{({s})}}-\delta_{{({s + 1})}}\bigr)"
+          rf" \;=\; {s + 1}\times({r['delta']}-{nxt}) \;=\; {r['alpha']}." + "\n\\]\n")
+
+    # Sentence describing the tie groups and how the variant ordering permutes
+    # them (continues a sentence in the .tex source, so starts lower-case and
+    # ends with a full stop).
+    groups = []
+    start = 0
+    deltas = [r["delta"] for r in rows_default]
+    while start < m:
+        end = start
+        while end + 1 < m and deltas[end + 1] == deltas[start]:
+            end += 1
+        if end > start:
+            groups.append((deltas[start], start, end))
+        start = end + 1
+    if not groups:
+        print("WARNING: no tied gaps — the variant table is identical to the "
+              "main one and the tie-breaking discussion is vacuous for this M.")
+        write("sx2_tie_groups.tex",
+              "this example has no tied gaps, so the ordering is unique and "
+              "the table below is identical to the one above.%\n")
+    else:
+        def describe(g):
+            val, a, b = g
+            ss = ",".join(str(x) for x in range(a, b + 1))
+            return rf"$\delta={val}$ (at $s\in\{{{ss}\}}$)"
+        listed = ", ".join(describe(g) for g in groups[:-1])
+        if len(groups) > 1:
+            listed += " and " + describe(groups[-1])
+        else:
+            listed = describe(groups[0])
+        write("sx2_tie_groups.tex",
+              "within each group of equal gaps, the gap--basis-element "
+              "assignment is rotated one place (for a two-element group, a "
+              f"swap).  The tied groups here are {listed}.%\n")
 
     print(f"Wrote {len(list(OUT_DIR.glob('sx2_*.tex')))} fragments to {OUT_DIR}")
 

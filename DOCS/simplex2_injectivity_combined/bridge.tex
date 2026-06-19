@@ -1,0 +1,188 @@
+% bridge.tex
+% ============================================================================
+% NEW connective material -- the only wholly new prose in the combined
+% document.  It joins Part I (the embedder, body of
+% simplicial_complex_embedders_v3) to the injectivity proof that follows
+% (body of 2026-Injectivity-Simplex-Method/main.tex).
+%
+% PENDING UNIFICATION (see the reconciliation list handed back with this draft):
+% this section currently bridges the TWO ORIGINAL, NOT-YET-UNIFIED notations.
+% Most conspicuously, Part I writes the coordinate (row) index as i and the
+% vector (column) index as j, whereas the proof writes the coordinate (row)
+% index as j and treats columns as symbols/positions.  The dictionary table
+% and the boxed caveat below make the correspondence explicit; once a single
+% convention is agreed they can be slimmed right down.  No crafted sentence in
+% Part I or the proof has been reworded for notation yet.
+% ============================================================================
+
+\section{Injectivity: why local canonicalisation loses nothing}
+\label{sec:bridge}
+
+Section~\ref{sec:goals} asked for four properties.  Steps~A--F deliver
+multiset-invariance, $C^0$ continuity and degree-1 homogeneity by construction,
+and the discussion around Step~D made the continuity mechanism explicit (the
+``greyed cells'': basis vectors that are ambiguous at a tie are precisely the
+ones whose coefficient is zero there).  \emph{Injectivity} was the one
+desideratum left on a heuristic footing.  This section discharges it---all but
+one elementary step---and the remainder of the document supplies the proof.
+
+\subsection*{What injectivity reduces to}
+
+The output (Step~F) is assembled from the multiset of pairs
+$\bigl(\alpha_s,\ \canon{L_s}\bigr)$ together with the $k$ anchors $m_i$.  Grant
+for the moment the Step~F cone mechanism: that $\sum_s\alpha_s\,\hash{\canon{L_s}}$
+recovers, generically, the multiset of (coefficient, basis-vector) pairs that
+built it---the ``generically disjoint $m$-cones in $\R^{2m+1}$'' argument of
+Step~F, which we take here as elementary.  End-to-end injectivity then rests on
+a single combinatorial question:
+
+\begin{quote}
+Do the \emph{locally} canonicalised basis vectors $\{\canon{L_s}\}$---each
+$L_s$ column-sorted \emph{on its own} in Step~E---still determine the input
+multiset $M$ up to the one global relabelling of its $n$ columns that
+``multiset'' allows?
+\end{quote}
+
+The worry is real and invisible to numerical search.  Step~E sorts the columns
+of each $L_s$ independently, throwing away which column of one $L_s$ corresponds
+to which column of another.  A priori, two genuinely different multisets might
+produce families $\{L_s\}$ that match \emph{matrix-by-matrix} after independent
+sorting, yet are \emph{not} related by any single, common column permutation.
+Such a collision would break injectivity, and---being a coincidence among
+sorted integer matrices---would live on a measure-zero set that random probing
+never hits.
+
+\subsection*{The theorem, in the embedder's language}
+
+The proof that forms the rest of this document rules that out.  Restated in the
+notation of Part~I:
+
+\begin{tcolorbox}[keybox]
+\textbf{Local canonicalisation is injective-safe.}
+If, for two inputs, every locally canonicalised basis vector $\canon{L_s}$ on
+one side equals one on the other (Step~E agreement), then a \emph{single}
+column permutation $\sigma$ carries the whole family $\{L_s\}$ of one input onto
+that of the other (\emph{global} agreement).  This is
+Theorem~\ref{thm:main}; the operative direction is
+\[
+\text{local (per-matrix) agreement}\ \Longrightarrow\ \text{one global }\sigma.
+\]
+A single common $\sigma$ on the $n$ columns is exactly one relabelling of the
+$n$ vectors---i.e.\ the two inputs are the \emph{same multiset}.  So Step~E
+cannot merge distinct multisets.
+\end{tcolorbox}
+
+\noindent
+The surprise is that the \emph{weaker}, each-matrix-separately notion of
+agreement that Step~E actually tests already \emph{forces} the stronger,
+all-at-once one.  That implication---local $\Rightarrow$ global---is precisely
+the direction injectivity needs, and it is the hard direction of
+Theorem~\ref{thm:main} (the easy converse, global $\Rightarrow$ local, is not
+what we are after).
+
+\subsection*{Dictionary}
+
+The proof is written self-containedly in combinatorial language; every object
+in it is one the embedder manufactures.  The correspondence is exact:
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}p{6.1cm}p{5.0cm}p{3.6cm}@{}}
+\toprule
+\textbf{Proof object (the part below)} & \textbf{Embedder object (Part~I)} & \textbf{What it is} \\
+\midrule
+$\vec v_j\in s(n)$, leave-one-out order of $n$ symbols
+  & descending sort order of row~$i$; left-out symbol $=$ that row's $\argmin$
+  & per-row rank order \\
+$coh(\vec v_j)_m$, indicator of prefix $P_m$
+  & $V^{(i)}_{r}$, the top-$(r{+}1)$ set (output of Step~C, 1st BSD)
+  & nested prefix indicator \\
+$U(\vec v_1,\dots,\vec v_k)$, the $(n{-}1)k$ pieces
+  & the $m=k(n{-}1)$ prefix basis elements pre-merge
+  & the piece-set \\
+ordering $p$ of $\vec U$
+  & the gap-descending sort of Step~D
+  & merge order \\
+$C\vec U$, cumulative; $M^{\vec v}(Q)$, snapshot
+  & $L_s=V_{(0)}+\dots+V_{(s)}$, the Eji\_LinComb count matrix (Step~D, 2nd BSD)
+  & cumulative basis matrix \\
+position $=\sum_r\max_c(\cdot)_{rc}$
+  & the stored index $s{+}1$ of $L_s$
+  & step count \\
+filter $\vec f$ then $clean$
+  & dropping the $\alpha_s=0$ terms
+  & which snapshots survive \\
+$canon$ / $localSort$ (Step~E analogue)
+  & Step~E: sort each count matrix's columns on its own
+  & local canonicalisation \\
+$globalSort$
+  & (not in the algorithm) one common $\sigma$ for all $L_s$
+  & multiset-faithful sort \\
+$\Sigma(Q)$
+  & column relabellings aligning the prefixes a snapshot reveals
+  & alignment set \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{tcolorbox}[notebox]
+\textbf{One notation seam, not yet sewn.}  Part~I indexes the coordinate (row)
+by $i$ and the vector (column) by $j$; the proof below indexes the coordinate
+(row) by $j$ and treats the columns as the $n$ \emph{symbols}/positions.  So the
+symbol $j$ means a \emph{row} in the proof and a \emph{column} in Part~I---read
+the dictionary, not the letters, until the two conventions are unified.
+\end{tcolorbox}
+
+\subsection*{Why the proof carries a filter, two orderings and a ``clean''}
+
+These three apparent complications in the statement of Theorem~\ref{thm:main}
+are not decoration: each models exactly one feature of how the embedder behaves
+at ties, and discharging them is what the proof spends its effort on.
+
+\emph{The filter.}  The cone sum sees only nonzero-coefficient terms, so a pair
+with $\alpha_s=0$ is not dropped by choice---it is \emph{invisible}.  Which $s$
+survive is data-dependent (any pattern can occur, since
+$\alpha_s=(s{+}1)(\delta_{(s)}-\delta_{(s+1)})$ vanishes wherever two merged
+gaps coincide), so the safety statement must hold for \emph{every} filter
+$\vec f$.  Moreover $\alpha_s=0$ holds exactly when $L_s$ sits inside a run of
+equal gaps---exactly when $L_s$ is a \emph{tie-break-dependent} partial sum, the
+ambiguous basis vector of the ``greyed cells''.  Hidden $\iff$ zero coefficient
+$\iff$ ambiguous: the very vectors continuity \emph{forces} us to hide are the
+ones whose value we could not have pinned down anyway, and the survivors are the
+run-boundary sums, which are tie-break-invariant.  The theorem's job is to
+prove this forced, data-dependent hiding is nonetheless lossless.
+
+\emph{Two orderings $p,q$.}  Two nearby inputs straddling a tie break it in
+opposite ways---different orderings of a run's pieces.  The proof allows
+$p\neq q$ and shows local agreement \emph{forces them back into step}, so the
+arbitrary tie-break costs nothing.
+
+\emph{The $clean$.}  The cone sum is both order-blind and zero-blind, so hidden
+positions leave no trace: the survivors arrive as a bare set with holes.  The
+position-recovery lemma (Lemma~\ref{lem:recover}; row-maxima sum $=$ index)
+lets each survivor re-announce where it sat, refilling the holes---which is why
+$clean$ may be undone and the families compared as plain sets.
+
+\begin{tcolorbox}[notebox]
+\textbf{Scope.}  This closes the \emph{discrete} half of injectivity: the
+identities of the surviving basis vectors, and that local canonicalisation
+recovers them faithfully up to one global relabelling.  The remaining half---
+that the Step~F cone sum recovers the (coefficient, basis-vector) pairs in the
+first place---is the elementary generically-disjoint-cones argument flagged
+above, and is not re-treated here.
+\end{tcolorbox}
+
+\subsection*{Reading on}
+
+The remainder of this document makes good on Theorem~\ref{thm:main}.  It
+rebuilds the construction in self-contained combinatorial language
+(Section~\ref{sec:defs}), isolates the precise question
+(\S\ref{sec:problem}), and proves the local-equals-global equivalence from
+first principles, the whole turning on a single idea---\emph{a snapshot
+remembers how it was built}---read once shallowly (to neutralise $clean$) and
+once fully (to neutralise $p\neq q$), with monotonicity then upgrading
+``each snapshot is alignable'' to ``one $\sigma$ aligns them all''
+(\S\ref{sec:solution}).  A reader who accepts the dictionary above may skim from
+\S\ref{sec:problem} and rejoin at the worked examples that close the proof.
