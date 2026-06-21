@@ -18,8 +18,7 @@
 
 The input is an unordered multiset $M = \{\mathbf{v}_0,\ldots,\mathbf{v}_{n-1}\}$
 of $n$ vectors in $\R^k$.  Concretely we represent $M$ as a $k\times n$ matrix
-whose columns are the vectors (column $j$ = vector $\mathbf{v}_j$, row $i$ =
-coordinate $i$).  Column order is arbitrary.
+whose columns are the vectors $\mathbf{v}_j$.  Column order is arbitrary.
 
 We want a map $f$ from such multisets to some $\R^N$ that is:
 \begin{itemize}[nosep]
@@ -49,7 +48,7 @@ Let $X[j][i]$ denote the entry in column $j$, row $i$.  Then
 \[
   M \;=\; \sum_{j,i} X[j][i]\;\eji{j}{i},
 \]
-where $\eji{j}{i}$ is the $k\times n$ matrix that is 1 at $(i,j)$ and 0
+There is no harm in viewing the $\eji{j}{i}$ as totally abstract/opaque basis vectors with no physical intepretation, but sometimes it can be helpful to view $\eji{j}{i}$ concretely as the $k\times n$ matrix that is 1 at $(i,j)$ and 0
 elsewhere.  This is the expansion of $M$ in the \emph{standard Eji basis}.
 
 \subsection*{Step B — Peel off the fully symmetric parts}
