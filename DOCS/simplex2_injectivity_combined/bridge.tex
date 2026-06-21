@@ -5,14 +5,12 @@
 % simplicial_complex_embedders_v3) to the injectivity proof that follows
 % (body of 2026-Injectivity-Simplex-Method/main.tex).
 %
-% PENDING UNIFICATION (see the reconciliation list handed back with this draft):
-% this section currently bridges the TWO ORIGINAL, NOT-YET-UNIFIED notations.
-% Most conspicuously, Part I writes the coordinate (row) index as i and the
-% vector (column) index as j, whereas the proof writes the coordinate (row)
-% index as j and treats columns as symbols/positions.  The dictionary table
-% and the boxed caveat below make the correspondence explicit; once a single
-% convention is agreed they can be slimmed right down.  No crafted sentence in
-% Part I or the proof has been reworded for notation yet.
+% The dictionary table below maps the proof's notation onto the embedder's.
+% (An earlier note here flagged an i/j axis "seam" between the two halves; it
+% has been removed deliberately.  The i/j index difference is harmless --
+% indices may be relabelled freely provided they agree on each side of an
+% equation -- and the Part I text has been adjusted so nothing hinges on a
+% physical reading of the row/column indices.)
 % ============================================================================
 
 \section{Injectivity: why local canonicalisation loses nothing}
@@ -126,14 +124,6 @@ $\Sigma(Q)$
 \bottomrule
 \end{tabular}
 \end{center}
-
-\begin{tcolorbox}[notebox]
-\textbf{One notation seam, not yet sewn.}  Part~I indexes the coordinate (row)
-by $i$ and the vector (column) by $j$; the proof below indexes the coordinate
-(row) by $j$ and treats the columns as the $n$ \emph{symbols}/positions.  So the
-symbol $j$ means a \emph{row} in the proof and a \emph{column} in Part~I---read
-the dictionary, not the letters, until the two conventions are unified.
-\end{tcolorbox}
 
 \subsection*{Why the proof carries a filter, two orderings and a ``clean''}
 
