@@ -68,10 +68,10 @@ $\R^N$ in a way that (i)~ignores the order, (ii)~loses no information, and
 (iii)~varies continuously as the vectors move.  These three demands pull
 against one another, and the naive fix (sorting) fails the third.  We describe a
 method that meets all three.  Its engine is a classical piece of geometry ---
-the \emph{barycentric subdivision} of a simplex --- applied \emph{twice}.  The
-first two demands will be almost immediate.  The real work, and the heart of
-this note, is the second demand, \emph{injectivity}: that distinct multisets
-really do land on distinct points.  We give a geometric proof, and explain why a
+the \emph{barycentric subdivision} of a simplex --- applied \emph{twice}.
+Order-invariance and continuity will be almost immediate.  The real work, and the
+heart of this note, is the remaining demand, \emph{injectivity}: that distinct
+multisets really do land on distinct points.  We give a geometric proof, and explain why a
 \emph{single} subdivision is provably not enough.
 \end{abstract}
 
@@ -272,8 +272,9 @@ point among the cells is a \emph{continuous} substitute for sorting.
 Let $p=\sum_i\alpha_i\bvec e_i$ be a point of $\Delta$, and let $\sigma$ be an
 ordering that sorts its weights into non-increasing order,
 $\alpha_{\sigma(1)}\ge\alpha_{\sigma(2)}\ge\cdots\ge\alpha_{\sigma(n)}$. Then $p$
-lies in the cell $C_\sigma$, and its barycentric coordinates there are the
-\emph{gaps}
+lies in the cell $C_\sigma$, and its barycentric coordinates there are, up to the
+factor $r$, the \emph{gaps} $\alpha_{\sigma(r)}-\alpha_{\sigma(r+1)}$ between
+consecutive sorted weights:
 \begin{equation}\label{eq:gaps}
    \beta_r \;=\; r\,\bigl(\alpha_{\sigma(r)}-\alpha_{\sigma(r+1)}\bigr)\ \ge 0,
    \qquad (\alpha_{\sigma(n+1)}:=0),
@@ -281,8 +282,8 @@ lies in the cell $C_\sigma$, and its barycentric coordinates there are the
 so that $p=\sum_{r=1}^n \beta_r\,\bvec f^\sigma_r$ with $\beta_r\ge0$ and
 $\sum_r\beta_r=1$. If the sorting order is \emph{strict} the cell is unique; if
 two weights are tied, $\alpha_{\sigma(r)}=\alpha_{\sigma(r+1)}$, then the
-corresponding gap $\beta_r$ is \emph{zero}, and $p$ lies on a wall shared by the
-two cells that differ only by swapping those two ranks.
+corresponding gap, and so $\beta_r$, is \emph{zero}, and $p$ lies on a wall
+shared by the two cells that differ only by swapping those two ranks.
 \end{proposition}
 
 \begin{proof}[Why this is true]
@@ -774,8 +775,10 @@ size gives a nested chain of piece-sets
 \[
    \{P_{(1)}\}\subset\{P_{(1)},P_{(2)}\}\subset\cdots,
 \]
-each step naming the next piece in \emph{gap order}. Thus the entire gap-ordering
-of the pieces is recovered, as $(\text{row},\text{size})$ names. Moreover the
+each step naming the next piece in \emph{gap order} --- or, where several gaps
+coincide, the next \emph{block} of equal-gap pieces, whose internal order is
+immaterial. Thus the gap-ordering of the pieces is recovered (up to that
+immaterial shuffling within tied blocks), as $(\text{row},\text{size})$ names. Moreover the
 gaps themselves come back: since $\alpha_s=\delta_{(s)}-\delta_{(s+1)}$ we have
 $\delta_{(s)}=\sum_{t\ge s}\alpha_t$, so each piece's gap is known. With the
 anchors $m_i$, the sorted values of every row are now determined --- as numbers
@@ -947,18 +950,23 @@ Invariance and continuity were essentially free (Proposition~\ref{prop:easy}).
 The content was injectivity, and there the story is geometric and sharp:
 
 \begin{itemize}[leftmargin=*]
-\item One subdivision canonicalises \emph{row-local} objects, which quotients by
-      the too-large product group $\Sn^{\,k}$ and collides distinct multisets
-      (Example~\ref{ex:collision}).
-\item The second subdivision builds \emph{cross-row} matrices; a single such
-      matrix can be tidied only by the \emph{diagonal} $\Sn$ a multiset truly
-      allows, and --- because each cumulative matrix \emph{remembers its pieces}
-      (Lemma~\ref{lem:recover}) and a piece is named label-freely by its
-      $(\text{row},\text{size})$ --- the single richest matrix pins the whole
-      column alignment (Theorem~\ref{thm:inj}).
-\item Two subdivisions are therefore necessary and sufficient: one for each
-      level of sorting, the second indispensable precisely because $k\ge2$ rows
-      share their columns.
+\item A \emph{single} subdivision canonicalises objects that do not remember
+      enough. Taken per row it quotients by the too-large product group
+      $\Sn^{\,k}$ and collides distinct multisets (Example~\ref{ex:collision});
+      taken as one cross-row sort it cumulates disjoint cells, so its matrices
+      stay flat $0/1$ and record the column alignment only lossily
+      (\S\ref{sec:whytwo}).
+\item The decisive feature is integer counts above~$1$ --- a staircase --- which
+      arise only when one cumulates \emph{overlapping} pieces. So the first
+      subdivision builds the overlap (nested per-row prefixes) and the second
+      cumulates it into cross-row matrices that \emph{remember their pieces}
+      (Lemma~\ref{lem:recover}), each piece named label-freely by its
+      $(\text{row},\text{size})$. The single richest such matrix then pins the
+      whole column alignment with one common permutation --- the \emph{diagonal}
+      $\Sn$ a multiset allows (Theorem~\ref{thm:inj}).
+\item Two subdivisions are thus necessary and sufficient: one to lay out the
+      overlapping skeleton, one to cumulate it into recoverable form --- the
+      second indispensable precisely because $k\ge2$ rows share their columns.
 \end{itemize}
 
 \noindent
