@@ -239,7 +239,7 @@ the cells $C_\sigma$ tile $\Delta$ without overlap (Figure~\ref{fig:sd}).
   \coordinate (m12) at ($(e1)!0.5!(e2)$);
   \coordinate (m13) at ($(e1)!0.5!(e3)$);
   \coordinate (m23) at ($(e2)!0.5!(e3)$);
-  \coordinate (g)   at ($(e1)!0.3333!(m23)$);
+  \coordinate (g)   at (barycentric cs:e1=1,e2=1,e3=1); % true centroid (2/3 down each median)
   % outer triangle
   \draw[thick] (e1)--(e2)--(e3)--cycle;
   % medians (the subdivision)
@@ -253,7 +253,7 @@ the cells $C_\sigma$ tile $\Delta$ without overlap (Figure~\ref{fig:sd}).
         e3/above/{$\bvec e_3$}}{\fill (\p) circle (1.3pt); \node[\pos] at (\p) {\lab};}
   \foreach \p/\pos/\lab in {m12/below/{$\bvec f_2$}, m13/left/{}, m23/right/{},
         g/above right/{$\bvec g=\bvec f_3$}}{\fill[blue!55!black] (\p) circle (1.1pt); \node[\pos,scale=0.85] at (\p) {\lab};}
-  \node[scale=0.8] at (1.15,0.45) {$C_{(1,2,3)}$};
+  \node[scale=0.8] at (1.13,0.30) {$C_{(1,2,3)}$}; % centre of the (corrected) 1/6 cell e1-f2-g
 \end{tikzpicture}
 \caption{Barycentric subdivision of a triangle ($n=3$): the three medians cut it
 into $3!=6$ cells, one per ordering of the vertices. The shaded cell
