@@ -417,9 +417,25 @@ fall short.
 Each row of $M$ is a list of $n$ numbers, so Section~\ref{sec:numbers} applies to
 it verbatim. Sorting row $i$ and decomposing as in \eqref{eq:numdecomp} writes
 that row as a sum of gaps times prefixes. The novelty is purely in the
-bookkeeping of \emph{which columns} a prefix contains. Record a prefix as a
-$k\times n$ matrix --- a \emph{piece} --- that is the indicator row in its own
-row and zero elsewhere.
+bookkeeping of \emph{which columns} a prefix contains, so we name these objects
+once and for all --- they are the raw material of everything that follows.
+
+\begin{definition}[piece]\label{def:piece}
+Fix a row $i$ and a level $r\in\{1,\dots,n-1\}$. Sorting row $i$ singles out its
+\emph{top-$r$ prefix}: the set of the $r$ columns carrying that row's largest $r$
+entries. The associated \emph{piece} is the $k\times n$ matrix $P$ that holds the
+$0/1$ indicator of this prefix in row $i$ and is zero in every other row. We say
+$P$ \emph{sits in row $i$} and has \emph{size $r$}, and we attach to it the
+\emph{gap} $\delta^{(i)}_r\ge0$ of \eqref{eq:numdecomp}. There are exactly
+$m=k(n-1)$ pieces --- $(n-1)$ per row --- and, because the prefixes within a row
+are nested, a piece is pinned down by its $(\textit{row},\textit{size})$ alone.
+\end{definition}
+
+\noindent
+A piece is thus one rung of a single row's prefix ladder, lifted into a
+$k\times n$ matrix so that pieces from \emph{different} rows inhabit a common
+space and can be added. From here on, pieces (and sums of them) are the only
+objects we manipulate.
 
 \begin{example}\label{ex:firstsd}
 Let $n=2$, $k=2$ and
@@ -570,6 +586,46 @@ applications differ only in what they are applied to: \emph{within each row}
 first, then \emph{across the pooled pieces}.
 \end{remark}
 
+\begin{example}[the second subdivision, worked]\label{ex:secondsd}
+Take $n=3$, $k=2$ and
+\[
+   M=\begin{bmatrix}6&1&2\\4&10&1\end{bmatrix}.
+\]
+Both row minima equal $1$, so the anchors are $m_1=m_2=1$; subtracting them
+leaves the balance $\left[\begin{smallmatrix}5&0&1\\3&9&0\end{smallmatrix}\right]$.
+The first subdivision (Definition~\ref{def:piece}) produces four pieces, shown
+here with their gaps:
+\[
+ \underbrace{\left[\begin{smallmatrix}1&0&0\\0&0&0\end{smallmatrix}\right]}
+   _{\text{row 1, size 1; gap }4}\qquad
+ \underbrace{\left[\begin{smallmatrix}1&0&1\\0&0&0\end{smallmatrix}\right]}
+   _{\text{row 1, size 2; gap }1}\qquad
+ \underbrace{\left[\begin{smallmatrix}0&0&0\\0&1&0\end{smallmatrix}\right]}
+   _{\text{row 2, size 1; gap }6}\qquad
+ \underbrace{\left[\begin{smallmatrix}0&0&0\\1&1&0\end{smallmatrix}\right]}
+   _{\text{row 2, size 2; gap }3}
+\]
+Pooling and sorting by gap ($6\ge4\ge3\ge1$) orders the pieces as
+$P_{(1)},\dots,P_{(4)}$, and the running sums \eqref{eq:Ls} are the cumulative
+matrices
+\[
+ \underbrace{\left[\begin{smallmatrix}0&0&0\\0&1&0\end{smallmatrix}\right]}
+   _{L_1,\ \alpha_1=2}\qquad
+ \underbrace{\left[\begin{smallmatrix}1&0&0\\0&1&0\end{smallmatrix}\right]}
+   _{L_2,\ \alpha_2=1}\qquad
+ \underbrace{\left[\begin{smallmatrix}1&0&0\\1&2&0\end{smallmatrix}\right]}
+   _{L_3,\ \alpha_3=2}\qquad
+ \underbrace{\left[\begin{smallmatrix}2&0&1\\1&2&0\end{smallmatrix}\right]}
+   _{L_4,\ \alpha_4=1}
+\]
+with weights $\alpha_s=\delta_{(s)}-\delta_{(s+1)}$ read off
+$\delta=(6,4,3,1)$. As a check, $\sum_s\alpha_s L_s$ rebuilds the balance ---
+e.g.\ its $(2,2)$ entry is $2{\cdot}1+1{\cdot}1+2{\cdot}2+1{\cdot}2=9$. Two
+features to note for later: $L_s$ grows by exactly one piece at each step, and
+the richest matrix $L_4$ has carried integer counts up to~$2$ --- the
+``staircase'' that Section~\ref{sec:inj} will read back to recover everything.
+\end{example}
+
 \subsection{Canonicalise, and assemble the output}
 
 Finally make the result blind to the column labelling. Canonicalise each
@@ -586,12 +642,14 @@ $\Sn$. The output of the method is the collection
 of $\R^N$; but \eqref{eq:output} already holds all the information, so we argue
 about it directly.
 
-\subsection{Invariance and continuity are immediate}
+\subsection{Invariance, continuity and homogeneity are immediate}
 
-As promised, two of the three properties cost almost nothing.
+As promised, the easy properties cost almost nothing.
 
-\begin{proposition}[(P1) and (P3)]\label{prop:easy}
-The map \eqref{eq:output} is permutation-invariant and continuous.
+\begin{proposition}[(P1), (P3) and homogeneity]\label{prop:easy}
+The map \eqref{eq:output} is permutation-invariant, continuous, and positively
+homogeneous of degree~$1$: $f(\lambda M)=\lambda f(M)$ for every $\lambda>0$.
+The last point settles Remark~\ref{rmk:homog}.
 \end{proposition}
 
 \begin{proof}
@@ -610,6 +668,18 @@ cumulative matrix $L_s$ whose existence depends on breaking such a tie is
 therefore weighted by $\alpha_s=0$ and is dropped, so the (discontinuous) choice
 of how to break the tie never reaches the output. Hence $f$ is continuous. (The
 anchors $m_i$ are continuous as minima.)
+
+\emph{Homogeneity.} Scaling $M\mapsto\lambda M$ with $\lambda>0$ multiplies every
+entry, hence every row minimum ($m_i\mapsto\lambda m_i$) and every gap
+($\delta\mapsto\lambda\delta$, so $\alpha_s\mapsto\lambda\alpha_s$), by
+$\lambda$ --- but it changes no \emph{order}. So the sort orders, the pieces, and
+the cumulative matrices $L_s$, being purely combinatorial, are untouched; each
+$\bary L_s$ is identical, while every coordinate $\alpha_s$ and anchor $m_i$
+scales by $\lambda$. Thus the whole output \eqref{eq:output}, and its hash
+\eqref{eq:hash}, scales by $\lambda$. This is exactly why it paid to work
+throughout with \emph{cones and rays} rather than normalising: the combinatorial
+skeleton (which cells, which pieces) is scale-free, and only the coordinates
+carry the scale.
 \end{proof}
 
 \noindent
@@ -747,22 +817,55 @@ Section~\ref{sec:rows}: there we tried to align using row-local data and failed;
 here one cross-row matrix succeeds.
 \end{tcolorbox}
 
-\subsection{Why two subdivisions, and not one or three}
+\subsection{Why two subdivisions --- and why one, of either kind, is not enough}
 \label{sec:whytwo}
 
-We can now say precisely why the count is two.
+We can now see sharply why the count is two. The pivot is that the recovery of
+Lemma~\ref{lem:recover} needs cumulative matrices with integer entries
+\emph{greater than~$1$} --- a genuine staircase --- and a staircase forms only
+when the matrices one sums together \emph{overlap}. There are two tempting
+single-subdivision shortcuts, and each founders on this.
 
-\emph{Not one.} A single subdivision produces only row-local pieces. Forgetting
-their labels independently is the product quotient $\Sn^{\,k}$, strictly coarser
-than the diagonal $\Sn$ a multiset allows, and Example~\ref{ex:collision}
-exhibited two distinct multisets it identifies. One subdivision is provably
-insufficient.
+\emph{One subdivision, row-local.} Canonicalising the row-local pieces on their
+own quotients by the product group $\Sn^{\,k}$ --- a private permutation per row
+--- which is strictly coarser than the diagonal $\Sn$ a multiset allows.
+Example~\ref{ex:collision} exhibited two distinct multisets it identifies.
 
-\emph{Two suffice.} The second subdivision pools the pieces and forms cumulative
-matrices that span all rows. A single such matrix can be canonicalised only by
-one common permutation --- the diagonal $\Sn$ --- and (Theorem~\ref{thm:inj}) the
-richest one carries the entire column alignment. The over-identification is
-repaired.
+\emph{One subdivision, cross-row.} One might instead sort all $nk$ entries at
+once and take running sums: a single \emph{cross-row} subdivision. This
+\emph{does} cumulate, and its matrices \emph{do} span the rows, so it records
+genuine alignment (enough, for instance, to separate the $A,B$ of
+Example~\ref{ex:collision}). But it cumulates \emph{single cells}, which never
+overlap, so every running sum stays a flat $0/1$ indicator and no staircase ever
+forms. Run the $M$ of Example~\ref{ex:secondsd} this way; the surviving
+cumulative matrices are
+\[
+ \left[\begin{smallmatrix}0&0&0\\0&1&0\end{smallmatrix}\right],\quad
+ \left[\begin{smallmatrix}1&0&0\\0&1&0\end{smallmatrix}\right],\quad
+ \left[\begin{smallmatrix}1&0&0\\1&1&0\end{smallmatrix}\right],\quad
+ \left[\begin{smallmatrix}1&0&1\\1&1&0\end{smallmatrix}\right]
+ \qquad(\text{gaps }4,2,2,1),
+\]
+every entry $0$ or $1$. The richest,
+$\left[\begin{smallmatrix}1&0&1\\1&1&0\end{smallmatrix}\right]$, records only
+\emph{which} cells are large, as a multiset of columns; contrast the two-stage
+$L_4=\left[\begin{smallmatrix}2&0&1\\1&2&0\end{smallmatrix}\right]$ of
+Example~\ref{ex:secondsd}, whose $2$'s encode the within-row order. A lone
+cross-row subdivision thus records alignment, but \emph{lossily}: its richest
+prefix is near all-ones, hence content-free, so no single matrix pins a
+consistent column labelling, and canonicalising the flat prefixes loses what is
+left. (Distinct multisets that it fails to separate can indeed be exhibited.)
+
+\emph{Two suffice: build overlap, then cumulate it.} The cure is to make the
+summands overlap \emph{before} cumulating. That is exactly what the first
+(per-row) subdivision does: it replaces single cells by nested prefixes
+$\text{top-}1\subset\text{top-}2\subset\cdots$, which overlap heavily. The second
+subdivision then cumulates \emph{those}, so shared columns accrue counts above
+$1$ and the staircase appears. Now Lemma~\ref{lem:recover} bites: the richest
+$L^\ast$ climbs to counts $n-1$ and (Theorem~\ref{thm:inj}) pins the whole
+column alignment in that one matrix. (Whether the \emph{first} sort is per-row or
+global is only a matter of tidiness --- a global sort followed by a cumulation
+also works; what is indispensable is the second, cumulating, subdivision.)
 
 \emph{Not three.} After the second subdivision the data is already injective and
 continuous; there is no third sorting ambiguity left to launder, so a further
