@@ -871,6 +871,50 @@ $(v_1v_2v_3v_4)\mapsto(c_2c_4c_1c_3)$ --- that is, up to $\sim$, as the theorem
 promises.
 \end{example}
 
+\begin{example}[a column tie, and a dropped cumulative matrix]\label{ex:tie}
+Example~\ref{ex:recon} had distinct gaps, so every $\alpha_s>0$ and every $L_s$
+was stored. A tie changes that, and it is worth seeing how the algorithm copes.
+Take $n=3$, $k=2$,
+\[
+   M=\begin{bmatrix}5&2&8\\[1pt]4&4&1\end{bmatrix},
+   \qquad
+   \{\mathbf v_1,\mathbf v_2,\mathbf v_3\}=\{(5,4),(2,4),(8,1)\},
+\]
+in which $\mathbf v_1$ and $\mathbf v_2$ \emph{tie in row $2$} (both $4$) yet
+differ in row $1$. Anchors $m_1=2,\ m_2=1$; balance
+$\left[\begin{smallmatrix}3&0&6\\3&3&0\end{smallmatrix}\right]$. The first
+subdivision gives
+\[
+\renewcommand{\arraystretch}{1.2}
+\begin{array}{c|l}
+\text{row }1:\ v_2{>}v_1{>}v_3 & \{v_2\}\,(5),\ \ \{v_2v_1\}\,(2)\\
+\text{row }2:\ v_1\approx v_2{>}v_3 & \{v_1\,\text{or}\,v_2\}\,(0),\ \ \{v_1v_2\}\,(3)
+\end{array}
+\]
+The row-$2$ top-$1$ prefix is \emph{ambiguous} --- which of the tied
+$v_1,v_2$? --- and carries gap~$0$. Pooling and sorting, $\delta=(5,4,2,0)$, so
+\[
+   \alpha=(1,\,2,\,2,\,\mathbf 0):
+\]
+the last weight vanishes, and the cumulative matrix that would have rested on the
+ambiguous piece is \emph{never stored}. The richest stored matrix is
+\[
+   L^\ast=\begin{bmatrix}1&2&0\\[1pt]1&1&0\end{bmatrix}.
+\]
+Decoding it: row $1$ reads $(1,2,0)$, giving the clean order $v_2{>}v_1{>}v_3$;
+row $2$ reads $(1,1,0)$ --- $v_1$ and $v_2$ sit at the \emph{same} threshold
+level, with nothing above to separate them, so the output reports
+``$v_1,v_2$ are the top two of row $2$, tied'' and leaves their row-$2$ order
+\emph{undetermined}. That is exactly right: they are equal there. Yet nothing is
+lost --- the columns stay distinct in $L^\ast$ (their row-$1$ entries are $1$ and
+$2$), so row~$1$ keeps $v_1,v_2$ apart and the multiset is recovered in full.
+\emph{The algorithm declines to record only what it cannot define, and the tie
+costs it nothing.} (Had $v_1,v_2$ been equal in \emph{every} row --- a genuinely
+repeated vector --- every piece separating them would carry gap~$0$ and drop,
+and the canonical form would simply carry two identical columns: the repeat,
+recorded faithfully.)
+\end{example}
+
 \subsection{Why two subdivisions?}
 \label{sec:whytwo}
 
