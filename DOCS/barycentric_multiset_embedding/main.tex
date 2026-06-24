@@ -820,6 +820,57 @@ Section~\ref{sec:rows}: there we tried to align using row-local data and failed;
 here one cross-row matrix succeeds.
 \end{tcolorbox}
 
+\begin{example}[the theorem at work: $n=4$, $k=3$]\label{ex:recon}
+Take four vectors in $\R^3$, the columns of
+\[
+   M=\begin{bmatrix} 8 & 23 & 2 & 12\\[1pt] 10 & 1 & 19 & 8\\[1pt] 3 & 4 & 7 & 15\end{bmatrix}.
+\]
+The row minima are the anchors $m_1=2,\ m_2=1,\ m_3=3$; subtracting them leaves the
+balance $\left[\begin{smallmatrix}6&21&0&10\\9&0&18&7\\0&1&4&12\end{smallmatrix}\right]$.
+Sorting each row (first subdivision) gives its order, three prefixes, and gaps
+(columns named $v_1,\dots,v_4$):
+\[
+\renewcommand{\arraystretch}{1.2}
+\begin{array}{c|l}
+\text{row, descending order} & \text{prefixes (gap)}\\\hline
+1:\ v_2{>}v_4{>}v_1{>}v_3 & \{v_2\}\,(11),\ \ \{v_2v_4\}\,(4),\ \ \{v_2v_4v_1\}\,(6)\\
+2:\ v_3{>}v_1{>}v_4{>}v_2 & \{v_3\}\,(9),\ \ \ \{v_3v_1\}\,(2),\ \ \{v_3v_1v_4\}\,(7)\\
+3:\ v_4{>}v_3{>}v_2{>}v_1 & \{v_4\}\,(8),\ \ \ \{v_4v_3\}\,(3),\ \ \{v_4v_3v_2\}\,(1)
+\end{array}
+\]
+The three orders are genuinely different, so the alignment is non-trivial.
+Pooling the nine gaps and sorting, $\delta=(11,9,8,7,6,4,3,2,1)$, gives weights
+$\alpha_s=\delta_{(s)}-\delta_{(s+1)}=(2,1,1,1,2,1,1,1,1)$, and the running sums
+culminate in the richest cumulative matrix
+\[
+   L^\ast \;=\; \begin{bmatrix}1&3&0&2\\[1pt]2&0&3&1\\[1pt]0&1&2&3\end{bmatrix},
+   \qquad \bigl(L^\ast\bigr)_{i,c}=\#\{\text{row-}i\text{ prefixes containing column }c\}.
+\]
+
+\smallskip\noindent\emph{Now reconstruct, given only the output.} Canonicalising
+$L^\ast$ (sort its columns) yields
+$\widehat{L^\ast}=\left[\begin{smallmatrix}0&1&2&3\\3&2&1&0\\2&0&3&1\end{smallmatrix}\right]$,
+whose columns we can only call $c_1,\dots,c_4$. Threshold each row
+(Lemma~\ref{lem:recover}):
+\[
+\begin{array}{lll}
+\text{row }1=(0,1,2,3): & \{c_4\}\subset\{c_3,c_4\}\subset\{c_2,c_3,c_4\} & \Rightarrow\ c_4{>}c_3{>}c_2{>}c_1,\\
+\text{row }2=(3,2,1,0): & \{c_1\}\subset\{c_1,c_2\}\subset\{c_1,c_2,c_3\} & \Rightarrow\ c_1{>}c_2{>}c_3{>}c_4,\\
+\text{row }3=(2,0,3,1): & \{c_3\}\subset\{c_1,c_3\}\subset\{c_1,c_3,c_4\} & \Rightarrow\ c_3{>}c_1{>}c_4{>}c_2.
+\end{array}
+\]
+That \emph{one} matrix has handed back all three orders at once, consistently
+labelled --- the whole alignment, with no cross-row guesswork. Step~1 is now
+routine: the weights rebuild the gaps,
+$\delta_{(s)}=\sum_{t\ge s}\alpha_t=(11,9,8,7,6,4,3,2,1)$, the
+$(\text{row},\text{size})$ names pin each gap to its rung, cumulating gives the
+sorted balance values $(21,10,6,0)$, $(18,9,7,0)$, $(12,4,1,0)$, and adding the
+anchors restores the rows. Pouring these values into the columns in the recovered
+orders reproduces $M$ \emph{exactly}, up to the relabelling
+$(v_1v_2v_3v_4)\mapsto(c_2c_4c_1c_3)$ --- that is, up to $\sim$, as the theorem
+promises.
+\end{example}
+
 \subsection{Why two subdivisions?}
 \label{sec:whytwo}
 
