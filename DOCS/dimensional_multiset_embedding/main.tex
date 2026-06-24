@@ -1,0 +1,717 @@
+% main.tex
+% ============================================================================
+% A self-contained, example-led account of a method for encoding a multiset of
+% n vectors in R^k WHOSE ENTRIES CARRY PHYSICAL UNITS, in a way that is
+% injective, permutation-invariant, continuous, and -- the new demand --
+% NEVER compares or adds two quantities of different units. The engine is
+% "encode by factorise" (a characteristic polynomial), made unit-honest by
+% carrying each entry's dimension on accessory variables, one per BASE unit.
+%
+% Audience: a strong 1st/2nd-year Cambridge NatSci undergraduate. Every term is
+% defined in place; worked examples accompany each construction and are chosen
+% rich enough to show the machinery actually turning.
+%
+% Companion to barycentric_multiset_embedding/main.tex but fully standalone.
+%
+% Built incrementally. Compile: pdflatex main; pdflatex main.
+% ============================================================================
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage[most]{tcolorbox}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,urlcolor=blue!55!black}
+
+% ── theorem-like environments ───────────────────────────────────────────────
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{example}[definition]{Example}
+\newtheorem{remark}[definition]{Remark}
+\theoremstyle{plain}
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{lemma}[definition]{Lemma}
+\newtheorem{corollary}[definition]{Corollary}
+
+% ── a soft box for worked examples / intuition ──────────────────────────────
+\tcbset{
+  ideabox/.style={colback=blue!4,colframe=blue!40,boxrule=0.5pt,arc=2pt,
+                  left=6pt,right=6pt,top=4pt,bottom=4pt},
+}
+
+% ── notation ─────────────────────────────────────────────────────────────────
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Sn}{S_n}
+\newcommand{\bvec}[1]{\mathbf{#1}}
+\newcommand{\units}[1]{[\,#1\,]}   % units-of
+
+\title{\bfseries Encoding multisets of vectors that carry units\\[2pt]
+       \large A unit-honest method by factorisation}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+We are given $n$ vectors with \emph{no preferred order} --- a \emph{multiset} ---
+whose entries are physical quantities carrying \emph{units} (a mass, a length, a
+density, \ldots). We want to summarise the multiset by a single tuple of numbers
+that (i)~ignores the order of the vectors, (ii)~loses no information, (iii)~varies
+continuously, and --- the demand special to this note --- (iv)~is built without
+ever \emph{comparing or adding two quantities of different units}, since such an
+operation is physically meaningless and changes wildly when one switches metres
+for feet. We describe a method that meets all four. Its engine is ``encode by
+factorise'': turn each vector into a polynomial, the whole multiset into a single
+\emph{product} of such polynomials, and recover the multiset by factorising it
+back. The unit-honesty is bought cheaply, by carrying each entry's dimension on
+its own bookkeeping variable --- \emph{one variable per base unit}
+(mass, length, time), not one per derived unit. The consequence is the headline:
+the size of the encoding is governed by the small, fixed number of \emph{base}
+units, not by however many exotic derived units (force, energy, density,
+$\ldots$) happen to appear.
+\end{abstract}
+
+\tableofcontents
+\bigskip
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{The problem}
+\label{sec:problem}
+% ════════════════════════════════════════════════════════════════════════════
+
+\subsection{Multisets of vectors, and what we usually ask of an encoding}
+
+A \emph{multiset} is a collection in which repeats are allowed and counted, but
+order is ignored: $\{3,3,5\}$ and $\{5,3,3\}$ are the same multiset, while
+$\{3,5\}$ and $\{3,3,5\}$ differ. We are interested in multisets of $n$ vectors,
+each with $k$ entries; we write a vector as a column $\bvec v=(v_1,\dots,v_k)$ and
+a whole multiset as
+\[
+   \{\bvec v^1,\bvec v^2,\dots,\bvec v^n\},
+   \qquad \bvec v^j=(v^j_1,\dots,v^j_k).
+\]
+(Superscripts name the vectors; subscripts name the entries within a vector.) An
+\emph{encoding} is a map $f$ sending the multiset to a fixed-length tuple of
+numbers $f\in\R^N$. The three properties usually demanded are:
+\begin{enumerate}[label=\textbf{(P\arabic*)},leftmargin=*]
+\item \textbf{Permutation-invariance:} reordering the $n$ vectors does not change
+      $f$ (it depends on the multiset, not on how we listed it).
+\item \textbf{Injectivity:} different multisets give different $f$ --- no
+      information is lost. A map with (P1) and (P2) is an \emph{embedding}.
+\item \textbf{Continuity:} nudging the entries a little moves $f$ a little.
+\end{enumerate}
+
+\subsection{The new ingredient: the entries carry units}
+
+So far the entries were just numbers. But in physics each entry is a
+\emph{dimensional quantity} --- it carries a \emph{unit}. The first entry of every
+vector might be a mass, the second a length, the third a density. Crucially, the
+units of \emph{different} entries may be \emph{incommensurable}: a mass and a
+length cannot be compared or added, and ``is this mass bigger than that length?''
+is not a question with an answer.
+
+\begin{definition}[units, base and derived]\label{def:units}
+A small fixed set of \emph{base units} is chosen once --- in mechanics the usual
+choice is mass $M$, length $L$, time $T$, so there are $B=3$ of them. Every other
+unit is a \emph{derived unit}: a product of integer powers of the base units. We
+record a derived unit by its \emph{exponent vector} $\bvec d\in\Z^{B}$. For
+example, with base order $(M,L,T)$,
+\[
+   \text{velocity }L/T \leftrightarrow (0,1,-1),\quad
+   \text{force }ML/T^2 \leftrightarrow (1,1,-2),\quad
+   \text{density }M/L^3\leftrightarrow(1,-3,0).
+\]
+We write $\units{q}$ for ``the units of the quantity $q$''. Two quantities are
+\emph{commensurable} when $\units{\cdot}$ agree (same exponent vector) and
+\emph{incommensurable} otherwise.
+\end{definition}
+
+\noindent
+The number of \emph{base} units $B$ is small and fixed (three, for mechanics).
+The number of \emph{derived} units that might appear is unlimited: from $M,L,T$
+alone one can build $L^2$, $L/T$, $L/T^2$, $ML$, $M/L^3$, $\ldots$, endlessly.
+This gap --- few base units, unboundedly many derived ones --- is the whole point
+of the construction to come.
+
+\subsection{The demand, and why the obvious methods fail it}
+
+To (P1)--(P3) we add a fourth, physical, requirement:
+\begin{enumerate}[label=\textbf{(P\arabic*)},leftmargin=*,start=4]
+\item \textbf{Unit-honesty:} every operation used to build $f$ is dimensionally
+      legal --- we only ever \emph{add} or \emph{compare} quantities of the
+      \emph{same} unit, and combine different units only by \emph{multiplying}
+      (which is always legal: units just multiply too).
+\end{enumerate}
+
+\begin{remark}[why honesty is not optional]\label{rmk:whyhonest}
+Suppose an encoder sorts all the entries of all the vectors into one long list by
+size. Sorting compares entries pairwise; as soon as it compares a mass against a
+length it has asked a meaningless question, and --- worse --- the answer flips if
+we re-express lengths in feet instead of metres. The output then jumps around
+under a mere change of units, in a wild, discontinuous way. Any method whose
+\emph{decisions} (orderings, which-bucket-it-lands-in) depend on comparing
+incommensurable quantities is, in this sense, not measuring the physics; it is
+measuring our arbitrary choice of units. (P4) rules this out.
+\end{remark}
+
+\begin{tcolorbox}[ideabox]
+\textbf{What is and isn't allowed.} Picture each quantity as carrying a coloured
+tag (its unit). \emph{Adding} or \emph{comparing} is only allowed between
+same-coloured tags. \emph{Multiplying} is always allowed --- the product just
+gets a new colour (the product of the tags). Unit-honesty means: build the
+encoding using same-colour additions and free multiplications only, never a
+mixed-colour addition or comparison.
+\end{tcolorbox}
+
+\subsection{The plan}
+
+\begin{itemize}[leftmargin=*]
+\item Section~\ref{sec:factorise} introduces the engine in the unit-free case:
+      \emph{encode by factorise}. A single vector becomes a polynomial; a multiset
+      becomes a product of polynomials; the multiset is read back by factorising.
+      This already gives (P1)--(P3), robustly.
+\item Section~\ref{sec:sin} puts the units back and locates exactly where the
+      naive version sins against (P4) --- and what it would cost to atone clumsily.
+\item Section~\ref{sec:homog} gives the fix: carry each entry's dimension on
+      accessory variables, \emph{one per base unit}. This restores (P4) at a price
+      set by the number of \emph{base} units.
+\item Section~\ref{sec:cost} works out that price and shows, with a worked check,
+      that dimensionally uniform data costs no more than unit-free data.
+\end{itemize}
+
+\noindent
+Throughout, (P1), (P3), (P4) will be easy to see as we go; the one genuinely
+substantial fact is (P2), injectivity, and it rests on a single clean idea ---
+\emph{a product of distinct linear factors can be factorised in only one way}.
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{The engine: encode by factorise}
+\label{sec:factorise}
+% ════════════════════════════════════════════════════════════════════════════
+
+We first ignore units entirely and build an encoding with properties
+(P1)--(P3). The idea is short: turn the multiset into a single polynomial whose
+\emph{factors} are the vectors, and read the vectors back by factorising.
+
+\subsection{One vector becomes a polynomial}
+
+Introduce a formal \emph{bookkeeping variable} $t$ --- a symbol we do arithmetic
+with but never assign a value to. Encode a vector $\bvec v=(v_1,\dots,v_k)$ as the
+polynomial that uses its entries as coefficients:
+\begin{equation}\label{eq:pv}
+   p_{\bvec v}(t)\;=\;v_1+v_2\,t+v_3\,t^2+\cdots+v_k\,t^{\,k-1}.
+\end{equation}
+This loses nothing: the entries \emph{are} the coefficients, so $\bvec v$ and
+$p_{\bvec v}$ carry exactly the same information --- read the coefficients off and
+you have the vector back. (A polynomial is determined by its coefficients, and
+vice versa.)
+
+\subsection{The multiset becomes a product}
+
+Introduce a second bookkeeping variable $w$, and encode the whole multiset as the
+product
+\begin{equation}\label{eq:F}
+   F(w,t)\;=\;\prod_{j=1}^{n}\bigl(w-p_{\bvec v^j}(t)\bigr).
+\end{equation}
+Multiplied out, $F$ is an ordinary polynomial in the two variables $w$ and $t$;
+\textbf{its list of coefficients is our encoding $f$}. Two of our properties are
+already visible:
+\begin{itemize}[leftmargin=*]
+\item \textbf{(P1) Permutation-invariance.} A product does not care about the order
+      of its factors, so reordering the vectors $\bvec v^j$ leaves $F$ --- and
+      hence every coefficient --- unchanged.
+\item \textbf{(P3) Continuity.} Each coefficient of $F$ is built from the $v^j_i$
+      by additions and multiplications only (no division, no sorting), so it is a
+      polynomial in the entries, hence continuous --- indeed smooth.
+\end{itemize}
+
+\subsection{Reading it back: factorisation}
+
+Everything rests on recovering the multiset from the coefficients of $F$. Here is
+the key fact, stated plainly.
+
+\begin{tcolorbox}[ideabox]
+\textbf{A polynomial factorises in only one way.} Just as a whole number splits
+into primes in only one way ($12=2\cdot2\cdot3$ and nothing else), a polynomial in
+$w$ splits into linear factors $(w-r)$ in only one way: the $r$'s are its roots,
+and they are what they are. So from $F$ we can recover the multiset of factors
+$\{\,w-p_{\bvec v^j}(t)\,\}$, hence the multiset of polynomials
+$\{p_{\bvec v^j}(t)\}$, hence (reading coefficients) the multiset of vectors. The
+order is lost in the product --- which is exactly (P1) --- but the multiset is not.
+\end{tcolorbox}
+
+\begin{theorem}[injectivity]\label{thm:inj}
+The encoding $f$ (the coefficients of $F$) determines the multiset
+$\{\bvec v^1,\dots,\bvec v^n\}$ completely. Hence (with (P1), (P3) above) $f$ is a
+continuous, permutation-invariant embedding.
+\end{theorem}
+
+\begin{proof}
+Knowing all coefficients of $F$ means knowing the polynomial $F(w,t)$. View it as
+a polynomial in $w$ whose coefficients happen to be polynomials in $t$. Such a
+polynomial factors uniquely into monic linear pieces $w-q(t)$; comparing with
+\eqref{eq:F}, the multiset of pieces is exactly $\{w-p_{\bvec v^j}(t)\}$, so the
+multiset $\{p_{\bvec v^j}(t)\}$ is determined. Each $p_{\bvec v^j}$ determines
+$\bvec v^j$ by reading off coefficients \eqref{eq:pv}. So the whole multiset is
+recovered. This holds for \emph{every} input, with no exceptions: if two vectors
+are equal the product simply has a repeated factor, and the repeat is faithfully
+recorded.
+\end{proof}
+
+\begin{remark}[robust, always valid]\label{rmk:robust}
+Notice what did \emph{not} happen: no division (so nothing can blow up), no
+sorting (so no kinks), no genericity assumption (it works for \emph{all} inputs,
+including coincidences). This robustness will survive into the unit-honest version.
+\end{remark}
+
+\subsection{A worked example}
+
+\begin{example}[encode and recover]\label{ex:basic}
+Take $n=2$ vectors in $k=2$ dimensions,
+\[
+   \bvec v^1=(3,5),\qquad \bvec v^2=(2,1),
+\]
+so $p_1(t)=3+5t$ and $p_2(t)=2+t$. Multiply out \eqref{eq:F}:
+\[
+   F(w,t)=\bigl(w-(3+5t)\bigr)\bigl(w-(2+t)\bigr)
+         =w^2-(5+6t)\,w+(6+13t+5t^2).
+\]
+The encoding is the coefficient list
+\[
+   f=\bigl(\underbrace{1}_{w^2},\ \underbrace{-5,\,-6}_{w^1:\,t^0,t^1},\
+            \underbrace{6,\,13,\,5}_{w^0:\,t^0,t^1,t^2}\bigr).
+\]
+\emph{Now recover, pretending we were only handed $f$.} Reassemble
+$F=w^2-(5+6t)w+(6+13t+5t^2)$ and solve for $w$ (the quadratic formula, with $t$
+carried along):
+\[
+   w=\frac{(5+6t)\pm\sqrt{(5+6t)^2-4(6+13t+5t^2)}}{2}
+    =\frac{(5+6t)\pm\sqrt{1+8t+16t^2}}{2}
+    =\frac{(5+6t)\pm(1+4t)}{2},
+\]
+because $1+8t+16t^2=(1+4t)^2$. The two roots are
+\[
+   w=3+5t\quad\text{and}\quad w=2+t,
+\]
+i.e.\ exactly $p_1(t)$ and $p_2(t)$. Reading their coefficients returns the
+multiset $\{(3,5),(2,1)\}$ --- and note we recovered it as a \emph{set}: nothing in
+$f$ remembers which vector we called ``first''. (Had we started from the relabelled
+list $\{(2,1),(3,5)\}$ we would have multiplied the same two factors in the other
+order and obtained the identical $F$.)
+\end{example}
+
+\noindent
+For larger $n$ the polynomial in $w$ has degree $n$ and one factorises a degree-$n$
+polynomial instead of a quadratic, but the principle is identical: the coefficients
+are the encoding, and unique factorisation hands the multiset back.
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Putting the units back: where the engine sins}
+\label{sec:sin}
+% ════════════════════════════════════════════════════════════════════════════
+
+The engine of Section~\ref{sec:factorise} is clean, robust, and cheap. But it was
+built for plain numbers, and the moment the entries carry units it quietly breaks
+rule (P4).
+
+\subsection{The hidden illegal addition}
+
+Look again at the per-vector polynomial \eqref{eq:pv}:
+\[
+   p_{\bvec v}(t)=v_1+v_2\,t+v_3\,t^2+\cdots .
+\]
+For this \emph{sum} to mean anything, all its terms must share a unit:
+$\units{v_1}=\units{v_2\,t}=\units{v_3\,t^2}=\cdots$. The first equality forces
+$\units{t}=\units{v_1}/\units{v_2}$; feeding that into the second forces
+$\units{v_3}=\units{v_2}^2/\units{v_1}$; the next forces
+$\units{v_4}=\units{v_2}^3/\units{v_1}^2$; and so on. In words, the construction is
+only legal if the units of the entries form a rigid \emph{geometric progression}
+--- which real data has no reason to do. Generically, $p_{\bvec v}$ adds a mass to a
+length, and \textbf{that is the sin.}
+
+\begin{example}[the sin, and the metre/foot wildness]\label{ex:sin}
+Let each vector be $(\text{mass},\text{length})$, e.g.\ $\bvec v=(2\,\mathrm{kg},\,
+3\,\mathrm{m})$. Then $p_{\bvec v}(t)=2\,\mathrm{kg}+3\,\mathrm{m}\cdot t$ adds a
+mass to a length times $t$. This is meaningful only if $t$ secretly carries the
+units $\mathrm{kg}/\mathrm{m}$ --- a contrived choice --- and even then, a vector
+with a \emph{third} entry of some unrelated unit (a time, say) could not be
+rescued by the same $t$. Worse, the coefficient ``$2+3t$'' mixes the two numbers
+$2$ and $3$, whose \emph{ratio} is an accident of our units: in feet the length
+$3\,\mathrm{m}$ becomes $9.84\,\mathrm{ft}$, so the same physical vector now reads
+$2+9.84\,t$, and every downstream coefficient of $F$ shifts in a way that has
+nothing to do with the physics. The encoding is reporting our choice of ruler.
+\end{example}
+
+\subsection{The clumsy cure, and why it is too expensive}
+
+There is an obvious repair: never put two different units into the same sum. Give
+each \emph{distinct unit} its own bookkeeping variable, so that every addition is
+between like and like. For $\bvec v=(\text{mass},\text{length})$ one would write
+something like $z_M^{\,?}\cdots$ with one variable $z_M$ ``carrying mass'' and
+another $z_L$ ``carrying length'', keeping the two entries on separate variables
+and only ever multiplying across them. This \emph{is} unit-honest. The trouble is
+the bookkeeping cost:
+
+\begin{tcolorbox}[ideabox]
+\textbf{One variable per unit is unaffordable.} If we spend one accessory variable
+on each distinct unit that appears, the number of variables grows with the number
+of distinct \emph{derived} units in the data --- and those are unbounded:
+$L^2,\,L/T,\,L/T^2,\,ML,\,M/L^3,\dots$. A dataset mixing forces, energies,
+densities and velocities could need a dozen variables, each inflating the size of
+the encoding. We would be paying for the \emph{zoo of derived units}, when the
+physics is built from only $B=3$ base ones.
+\end{tcolorbox}
+
+\noindent
+So we are caught between a cheap-but-dishonest encoder (Section~\ref{sec:factorise},
+one variable $t$, but it adds incommensurables) and an honest-but-bloated one (one
+variable per derived unit). The next section escapes the dilemma by spending
+variables on \emph{base} units only --- of which there are just $B$ --- and letting
+\emph{powers} of them name every derived unit that arises.
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{The fix: carry dimensions on base variables}
+\label{sec:homog}
+% ════════════════════════════════════════════════════════════════════════════
+
+\subsection{Base accessory variables, and the homogenising monomial}
+
+Introduce one bookkeeping variable per \emph{base} unit:
+$\boldsymbol\xi=(\xi_1,\dots,\xi_B)$, where $\xi_b$ is declared to carry base unit
+$b$ (so $\xi_1$ ``is a mass'', $\xi_2$ ``is a length'', $\xi_3$ ``is a time''). For
+a unit with exponent vector $\bvec d=(d_1,\dots,d_B)$ write the monomial
+\[
+   \boldsymbol\xi^{\bvec d}\;=\;\xi_1^{d_1}\,\xi_2^{d_2}\cdots\xi_B^{d_B},
+   \qquad\text{which carries exactly the unit }\units{\boldsymbol\xi^{\bvec d}}
+   =\prod_b(\text{base }b)^{d_b}.
+\]
+The key move is one line. Entry $v_i$ of a vector has some fixed unit, with
+exponent vector $\bvec d_i$. Then $\boldsymbol\xi^{\bvec d_i}$ has the \emph{same}
+unit as $v_i$, so the ratio
+\begin{equation}\label{eq:dimless}
+   v_i\,\boldsymbol\xi^{-\bvec d_i}\qquad\text{is \emph{dimensionless}:}\qquad
+   \units{v_i\,\boldsymbol\xi^{-\bvec d_i}}=\units{v_i}\big/\units{v_i}=1 .
+\end{equation}
+We have ``paid off'' the dimension of $v_i$ using powers of the base variables.
+Since only $B$ base variables are ever used, a derived unit no matter how exotic
+($M L^2/T^2$, $M/L^3$, $\ldots$) is just \emph{some power-pattern} of the same $B$
+variables --- never a new variable.
+
+\subsection{The unit-honest per-vector encoder}
+
+Now repeat the engine of Section~\ref{sec:factorise}, but homogenise every entry
+first. Keep the tag variable $t$ to tell entries apart, and define
+\begin{equation}\label{eq:Psi}
+   \Psi(t,\boldsymbol\xi;\bvec v)\;=\;\sum_{i=1}^{k}
+        v_i\;t^{\,i-1}\;\boldsymbol\xi^{-\bvec d_i}.
+\end{equation}
+Every term is dimensionless by \eqref{eq:dimless}, so this is a sum of like with
+like: \textbf{no illegal addition anywhere} --- (P4) holds. The two ``carrier''
+factors do two different jobs:
+\begin{itemize}[leftmargin=*]
+\item $\boldsymbol\xi^{-\bvec d_i}$ \emph{pays the dimensional debt} of $v_i$ and, as
+      a bonus, routes entries of different units onto different
+      $\boldsymbol\xi$-monomials;
+\item $t^{\,i-1}$ \emph{tags} the entries, so that even two entries of the
+      \emph{same} unit (which share a $\boldsymbol\xi$-monomial) land on different
+      $t$-powers and stay distinguishable.
+\end{itemize}
+Together they make the $k$ ``addresses'' $t^{\,i-1}\boldsymbol\xi^{-\bvec d_i}$ all
+distinct, so the coefficient sitting at address $i$ is exactly $v_i$: \emph{$\Psi$
+loses nothing}, just as $p_{\bvec v}$ did, but now legally.
+
+\subsection{The multiset encoder}
+
+Form the product over the vectors, against a fresh dimensionless variable $w$:
+\begin{equation}\label{eq:Phi}
+   \Phi(w,t,\boldsymbol\xi)\;=\;\prod_{j=1}^{n}
+        \bigl(w-\Psi(t,\boldsymbol\xi;\bvec v^j)\bigr).
+\end{equation}
+(Subtracting the dimensionless $\Psi$ from the dimensionless $w$ is legal.) The
+encoding $f$ is, as before, the list of coefficients of $\Phi$ --- now a polynomial
+in the $B+2$ variables $w,t,\xi_1,\dots,\xi_B$. Recovery is the same two-step
+factorisation: factor $\Phi$ in $w$ to get the multiset $\{\Psi^j\}$; read each
+$\Psi^j$ off its distinct addresses to get $\bvec v^j$. We collect the guarantees
+in Section~\ref{sec:why}; first, a worked example.
+
+\subsection{A worked example with real units}
+
+\begin{example}[mass and two lengths]\label{ex:homog}
+Let each vector hold a mass and two lengths, e.g.\ a particle's mass and its
+$(x,y)$ position. The base units in play are $M$ and $L$ (so here $B=2$; order
+$(M,L)$), and the entries have exponent vectors
+\[
+   \bvec d_1=(1,0)\ [\text{mass}],\qquad
+   \bvec d_2=(0,1)\ [\text{length}],\qquad
+   \bvec d_3=(0,1)\ [\text{length}].
+\]
+Take the two-vector multiset
+\[
+   \bvec v^1=(\,2,\,3,\,5\,),\qquad \bvec v^2=(\,4,\,1,\,6\,)
+\]
+(masses $2,4$; positions $(3,5),(1,6)$). Homogenise each entry by
+\eqref{eq:Psi}, using $\boldsymbol\xi^{-\bvec d_1}=\xi_M^{-1}$ and
+$\boldsymbol\xi^{-\bvec d_2}=\boldsymbol\xi^{-\bvec d_3}=\xi_L^{-1}$:
+\[
+   \Psi^1=\underbrace{2\,\xi_M^{-1}}_{t^0}
+          +\underbrace{3\,t\,\xi_L^{-1}}_{t^1}
+          +\underbrace{5\,t^2\,\xi_L^{-1}}_{t^2}
+        =\frac{2}{\xi_M}+\frac{3t+5t^2}{\xi_L},
+   \qquad
+   \Psi^2=\frac{4}{\xi_M}+\frac{t+6t^2}{\xi_L}.
+\]
+Check the honesty: in $\Psi^1$ the mass term $2/\xi_M$ has unit $M/M=1$, and the
+length terms $3t/\xi_L,\,5t^2/\xi_L$ have unit $L/L=1$ --- all three dimensionless,
+so adding them is legal. Note how the two lengths share the $\xi_L$ ``channel'' but
+are kept apart by $t$ versus $t^2$, while the mass sits on its own $\xi_M$ channel.
+
+The multiset encoding is the coefficient list of
+$\Phi=(w-\Psi^1)(w-\Psi^2)
+      =w^2-(\Psi^1+\Psi^2)\,w+\Psi^1\Psi^2$, where
+\[
+   \Psi^1+\Psi^2=\frac{6}{\xi_M}+\frac{4t+11t^2}{\xi_L},
+\]
+and $\Psi^1\Psi^2$ expands into terms on the monomials
+$\xi_M^{-2},\ \xi_M^{-1}\xi_L^{-1},\ \xi_L^{-2}$ (times powers of $t$). For
+instance the $\xi_M^{-1}\xi_L^{-1}$ part of $\Psi^1\Psi^2$ is
+\[
+   2(t+6t^2)+4(3t+5t^2)=14t+32t^2 ,
+\]
+and the $\xi_M^{-2}$ part is $2\cdot4=8$. Every coefficient is a plain number
+(with a definite unit attached, namely the inverse of its $\boldsymbol\xi$-monomial)
+obtained \emph{without a single illegal addition}.
+
+\emph{Recovery} runs as in Example~\ref{ex:basic}: factor $\Phi$ in $w$ (it is a
+quadratic in $w$ whose two roots, carried along in $t,\boldsymbol\xi$, are
+$\Psi^1$ and $\Psi^2$); then in each root read the coefficient of $\xi_M^{-1}$
+(the mass), of $t\,\xi_L^{-1}$ and of $t^2\xi_L^{-1}$ (the two lengths). Out come
+$\{(2,3,5),(4,1,6)\}$, as a multiset.
+\end{example}
+
+\begin{remark}[the metre/foot wildness is gone]\label{rmk:covariant}
+Re-run Example~\ref{ex:sin}'s worry. Switch lengths from metres to feet: every
+length number scales by $\lambda=3.28$, but $\xi_L$ ``is a length'' and scales the
+same way, so each ratio $v_i\xi_L^{-1}$ is \emph{unchanged}. The construction is
+blind to the choice of ruler. More precisely, a coefficient of $\Phi$ that sits on
+the monomial $\boldsymbol\xi^{\bvec m}$ carries the definite unit
+$\boldsymbol\xi^{\bvec m}$, and when you change units it simply rescales by that
+one honest factor --- never the wild reshuffle of Example~\ref{ex:sin}. (You cannot
+make the output a pure number with no units attached; that would need an arbitrary
+external scale, which is exactly what we refuse. What you get instead is an output
+whose every component is correctly \emph{labelled} with its own unit.)
+\end{remark}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Why it works}
+\label{sec:why}
+% ════════════════════════════════════════════════════════════════════════════
+
+All four properties now fall out, and the same robustness as the unit-free engine
+comes with them.
+
+\begin{theorem}[the homogenised encoder is a unit-honest embedding]\label{thm:main}
+The coefficient list of $\Phi$ in \eqref{eq:Phi} is a map of multisets that is
+permutation-invariant \textup{(P1)}, injective \textup{(P2)}, continuous
+\textup{(P3)} and unit-honest \textup{(P4)}; and it is defined, and injective, for
+\emph{every} input, with no genericity assumption.
+\end{theorem}
+
+\begin{proof}
+\emph{(P1)} $\Phi$ is a product over the vectors, so reordering them leaves it
+unchanged.
+
+\emph{(P3)} Each coefficient of $\Phi$ is built from the entries $v^j_i$ by
+additions and multiplications only --- the $\boldsymbol\xi$- and $t$-powers are
+fixed bookkeeping --- so it is a polynomial in the entries, hence continuous.
+
+\emph{(P4)} Every $\Psi^j$ is a sum of dimensionless terms \eqref{eq:dimless}, and
+$\Phi$ subtracts and multiplies dimensionless quantities; the only place units meet
+is inside the monomials $\boldsymbol\xi^{\bvec m}$, where they \emph{multiply}.
+There is no addition or comparison of unlike units anywhere.
+
+\emph{(P2), and always-valid.} Knowing the coefficients is knowing $\Phi$ as a
+polynomial in $w$ (with coefficients that are Laurent polynomials in
+$t,\boldsymbol\xi$). It factors uniquely into monic linear pieces $w-\Psi$, so the
+multiset $\{\Psi^j\}$ is recovered. Within each $\Psi^j=\sum_i v^j_i\,
+t^{\,i-1}\boldsymbol\xi^{-\bvec d_i}$ the addresses $t^{\,i-1}\boldsymbol\xi^{-\bvec
+d_i}$ are distinct (distinct $t$-powers), so the coefficient at address $i$ is
+exactly $v^j_i$. Thus every $\bvec v^j$ is recovered, and the whole multiset with
+it. No step divides or assumes genericity: equal vectors give a repeated factor,
+recorded faithfully.
+\end{proof}
+
+\begin{remark}[do we even need $t$?]\label{rmk:needt}
+The tag $t$ only earns its keep when two entries of one vector share a unit (then
+they share a $\boldsymbol\xi$-monomial and $t$ is what separates them --- the two
+lengths of Example~\ref{ex:homog}). If \emph{every} entry has a distinct unit, the
+$\boldsymbol\xi$-monomials already separate them and one may drop $t$ entirely.
+This small economy matters for the count, next.
+\end{remark}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{What it costs}
+\label{sec:cost}
+% ════════════════════════════════════════════════════════════════════════════
+
+The encoding is the coefficient list of $\Phi$, so its size is the number of
+distinct monomials $w^a\,t^b\,\xi_1^{c_1}\cdots\xi_B^{c_B}$ that appear. Two things
+are already clear and reassuring:
+\begin{itemize}[leftmargin=*]
+\item \textbf{The number of variables is $B+2$} ($w$, $t$, and the $B$ base
+      variables) --- fixed, and \emph{independent of how many derived units appear}.
+      The zoo of derived units of Section~\ref{sec:sin} has been tamed: each is a
+      power-pattern of the same $B$ variables.
+\item The degrees are modest: $\le n$ in $w$, $\le n(k-1)$ in $t$, and $\le nA_b$
+      in each $\xi_b$, where $A_b$ is the spread of base-$b$ exponents across the
+      entries (how far apart the powers of base unit $b$ run).
+\end{itemize}
+
+\subsection{Counting honestly: not every box is filled}
+
+One might fear the worst case ``degree in each variable multiplied together'',
+i.e.\ $n\cdot n(k-1)\cdot\prod_b nA_b=O(n^{B+2})$. But that badly overcounts,
+because the exponents are \emph{not free to vary independently}. The
+$\boldsymbol\xi$-power of any term of $\Phi$ is fixed by \emph{which} entries went
+into it, which also fixes the $w$- and $t$-powers; the three move together, not in
+an independent grid. The honest count is the number of lattice points actually
+swept out --- which grows like $n^{\,d}$, where $d$ is the number of
+\emph{independent directions} the exponents can move:
+\begin{equation}\label{eq:dim}
+   d\;=\;\underbrace{1}_{w}\;+\;\underbrace{s}_{\text{tag }t}
+        \;+\;\underbrace{\rho}_{\text{base units}},
+   \qquad
+   \begin{aligned}
+   s&=1\ \text{if some unit is shared by $\ge2$ entries, else }0,\\
+   \rho&=\text{number of \emph{independent} units present }\le B.
+   \end{aligned}
+\end{equation}
+Here $\rho$ --- the \emph{rank} of the units actually appearing --- is the genuine
+``how many independent unit-directions'' count, and it can be far below both $B$
+and the number of distinct derived units. So
+\[
+   \#\text{coefficients}\;=\;O\!\bigl(n^{\,d}\cdot C\bigr),\qquad d=1+s+\rho\le B+2,
+\]
+with $C$ a constant absorbing the small extents ($k$, the spreads $A_b$).
+\textbf{The cost is governed by $\rho\le B$, the number of base units, not by the
+proliferation of derived ones.}
+
+\subsection{Sanity check: uniform units cost nothing extra}
+
+The formula \eqref{eq:dim} makes a prediction worth checking by hand: if every
+entry carries the \emph{same} unit, the dimensions should be ``free'' and the cost
+should drop to that of the unit-free engine, $O(n^2k)$. They do.
+
+\begin{example}[a multiset of positions]\label{ex:positions}
+Let each vector be a position $\bvec v=(x,y,z)$, all three entries lengths
+($k=3$, all unit $L$, so $B$-in-play $=1$ and the rank is $\rho=0$ --- there is only
+\emph{one} unit-direction). Every $\boldsymbol\xi^{-\bvec d_i}$ is the same monomial
+$\xi_L^{-1}$, so it factors out of $\Psi$ as a single prefactor:
+\[
+   \Psi(t,\xi_L;\bvec v)=\xi_L^{-1}\bigl(x+y\,t+z\,t^2\bigr)
+       =\xi_L^{-1}\,p_{\bvec v}(t).
+\]
+Then
+\[
+   \Phi=\prod_{j=1}^n\bigl(w-\xi_L^{-1}p_{\bvec v^j}(t)\bigr)
+       =\sum_{i=0}^n(-1)^i\,\xi_L^{-i}\,e_i\!\bigl(p_{\bvec v^1},\dots,p_{\bvec v^n}\bigr)\,
+        w^{\,n-i},
+\]
+where $e_i$ is the sum of all products of $i$ of the $p_{\bvec v^j}$. Look at the
+$\xi_L$-powers: the coefficient of $w^{\,n-i}$ \emph{always} carries $\xi_L^{-i}$.
+The power of $\xi_L$ is welded to the power of $w$; it is not a free direction at
+all. So the genuinely distinct monomials are just $w^{\,n-i}t^{\,q}$ (the $\xi_L$
+tagging along), and counting them,
+\[
+   \#\text{coefficients}=\sum_{i=0}^{n}\bigl(\deg_t e_i+1\bigr)
+   =\sum_{i=0}^n\bigl(i(k-1)+1\bigr)=O(n^2k),
+\]
+exactly the unit-free cost. This is $d=1(w)+1(t)+0(\rho)=2$ in \eqref{eq:dim}: the
+$\boldsymbol\xi$ contributes nothing because there is only one unit to carry, and
+its bookkeeping rides along on $w$ for free.
+\end{example}
+
+\subsection{The dial}
+
+So the price of unit-honesty is set by a single number --- $\rho$, how many
+\emph{independent} units the data actually mixes (at most $B$):
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lll}
+\hline
+\textbf{data} & $d=1+s+\rho$ & \textbf{cost} \\
+\hline
+all one unit (e.g.\ positions) & $2$ & $O(n^2k)$ --- as cheap as unit-free \\
+$\rho$ independent units, none shared & $1+\rho$ & $O(n^{1+\rho})$ \\
+$\rho$ independent units, some shared & $2+\rho$ & $O(n^{2+\rho})$ \\
+worst case (full rank $\rho=B$, sharing) & $B+2$ & $O(n^{B+2})$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent
+The point of the whole construction is the middle of that table read against
+Section~\ref{sec:sin}: a dataset mixing a dozen \emph{derived} units
+(velocities, forces, energies, densities, \ldots) built from $B=3$ base ones costs
+$O(n^{\le5})$, not the unbounded growth a variable-per-derived-unit scheme would
+suffer. The exotic units are free riders on three base variables.
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Summary}
+\label{sec:summary}
+% ════════════════════════════════════════════════════════════════════════════
+
+We wanted to encode a multiset of $n$ vectors whose entries carry physical units,
+keeping the usual virtues --- permutation-invariance, injectivity, continuity ---
+while never adding or comparing two quantities of different units. The method:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Encode by factorise} (Section~\ref{sec:factorise}). Turn each vector
+      into a polynomial $p_{\bvec v}(t)$, the multiset into the single product
+      $F=\prod_j(w-p_{\bvec v^j})$, and recover it by unique factorisation. This is
+      automatically invariant, continuous and injective, with no division and no
+      genericity.
+\item \textbf{Homogenise on base variables} (Section~\ref{sec:homog}). The naive
+      $p_{\bvec v}$ secretly adds incommensurable entries (Section~\ref{sec:sin}).
+      Cure it by attaching to each entry the monomial $\boldsymbol\xi^{-\bvec d_i}$
+      in $B$ base-unit variables, making every term dimensionless:
+      $\Psi=\sum_i v_i\,t^{i-1}\boldsymbol\xi^{-\bvec d_i}$,
+      $\Phi=\prod_j(w-\Psi^j)$. Now every operation is unit-legal, and a change of
+      units merely rescales each output by its own honest factor.
+\item \textbf{Pay only for base units} (Section~\ref{sec:cost}). The encoding uses
+      $B+2$ variables regardless of how many derived units appear, and its size is
+      $O(n^{\,1+s+\rho})$ with $\rho\le B$ the number of independent units present
+      --- dropping to the unit-free $O(n^2k)$ when the data is dimensionally
+      uniform.
+\end{enumerate}
+
+\noindent
+The single idea underneath is worth restating: \emph{a derived unit is just a
+power-pattern of the base units, so $B$ accessory variables can name them all.}
+That is what converts the unbounded zoo of derived dimensions into a fixed,
+small overhead --- and lets a method that would otherwise grow with the
+imagination of the unit-system grow instead only with the three pillars
+$M$, $L$, $T$ that the physics is actually built from.
+
+\begin{remark}[relation to comparison-based encoders]\label{rmk:relation}
+A different family of encoders (sorting- or subdivision-based) can reach a smaller
+output, of size $O(nk)$, but only by \emph{comparing} entries by magnitude --- and
+across different units that comparison is exactly the illegal operation (P4)
+forbids. The trade is real: comparison buys a smaller code at the cost of
+unit-honesty; the factorise-and-homogenise method here buys unit-honesty at the
+cost of a larger, but still polynomial, code whose exponent is set by the number of
+base units. One pays in magnitude-comparisons, the other in $n^{\rho}$; which is
+the better bargain depends on whether the units are genuinely incommensurable.
+\end{remark}
+
+\end{document}
