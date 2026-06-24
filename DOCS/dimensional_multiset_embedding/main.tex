@@ -714,4 +714,78 @@ base units. One pays in magnitude-comparisons, the other in $n^{\rho}$; which is
 the better bargain depends on whether the units are genuinely incommensurable.
 \end{remark}
 
+% ════════════════════════════════════════════════════════════════════════════
+\appendix
+\section{Implementation}
+\label{app:impl}
+% ════════════════════════════════════════════════════════════════════════════
+
+The method of this note is implemented, and tested, in the \texttt{Echinocoder}
+repository (run under its \texttt{venv}). The class is
+\texttt{UnitAwareBursarialEncoder} (also exposed as \texttt{Embedder}, the
+repository's standard name) in
+\begin{center}
+\url{https://github.com/kesterlester/Echinocoder/blob/main/Cinf_sympy_unitAwareBursar_embedder_for_array_of_reals_as_multiset.py}
+\end{center}
+It is a \texttt{MultisetEmbedder} and uses \texttt{sympy} for the polynomial
+algebra. It is the unit-aware sibling of the repository's existing (dimensionless)
+Bursarial encoders --- the ``not-fair'' \texttt{Cinf\_sympy\_bursar\_\dots} of
+Section~\ref{sec:factorise} and the ``fair'' \texttt{Cinf\_sympy\_evenBursar\_\dots}.
+
+\subsection*{What corresponds to what}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{5.6cm}p{9.0cm}@{}}
+\hline
+\textbf{This note} & \textbf{Code} \\
+\hline
+the units, $\bvec d_i$ (one per entry) &
+  \texttt{dimensions}, the list of $k$ integer exponent vectors passed to the
+  constructor; this fixes $k$ and $B$ \\
+homogenised per-vector $\Psi$ \eqref{eq:Psi} &
+  \texttt{\_psi}; the per-entry address $t^{i-1}\boldsymbol\xi^{-\bvec d_i}$ is
+  \texttt{\_address} \\
+multiset polynomial $\Phi$ \eqref{eq:Phi} &
+  \texttt{\_phi\_poly}, an expanded \texttt{sympy.Poly} in the gens
+  $w,t,\xi_0,\dots,\xi_{B-1}$ \\
+the encoding $f$ (coefficients of $\Phi$) &
+  \texttt{embed\_generic}; the coefficients are read over a fixed support
+  (\texttt{\_canonical\_support}) \\
+the encoding size $O(n^{1+s+\rho})$ &
+  \texttt{size\_from\_n\_k}; returns $-1$ for any $k$ other than the one fixed at
+  construction \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{Three implementation remarks}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Non-negative exponents.} The code uses $\boldsymbol\xi^{\,\bvec D-\bvec
+  d_i}$ in place of $\boldsymbol\xi^{-\bvec d_i}$, where $\bvec D$ is the
+  entry-wise maximum of the $\bvec d_i$. As noted in the body, this is one legal
+  multiplication by the fixed monomial $\boldsymbol\xi^{\bvec D}$: it gives every
+  term the common unit $\text{base}^{\bvec D}$ instead of being dimensionless, so the
+  additions remain honest, and it keeps all $\xi$-exponents $\ge0$ so ordinary
+  (non-Laurent) polynomials suffice. Injectivity, invariance and continuity are
+  untouched.
+\item \textbf{Fixed support, so the size is predictable.} The output is the
+  coefficient of each monomial in a \emph{data-independent} support --- the
+  monomials $\Phi$ carries for generic data, computed once from a symbolic template
+  and cached, with the trivial leading $w^n$ term (always $1$) dropped. Coefficients
+  that happen to vanish for particular data are still emitted (as $0$). This is why
+  the embedding length always equals \texttt{size\_from\_n\_k} exactly, as the
+  framework asserts.
+\item \textbf{What the test checks.} The accompanying test confirms, on worked
+  inputs: permutation-invariance; injectivity (distinct multisets give distinct
+  codes, relabelled ones give identical codes, repeated-vector inputs encode
+  cleanly); the size matches \texttt{size\_from\_n\_k} and the latter returns $-1$
+  for the wrong $k$; the dimensional-covariance law --- each coefficient rescales by
+  $\lambda^{(n-a)D_b-m_b}$ under a change of base unit $b$ by $\lambda$
+  (Section~\ref{sec:homog}); derived units with negative exponents (velocity,
+  energy) work; and the all-positions case collapses to the unit-free Bursar size
+  $n+(k-1)n(n+1)/2$, confirming the $\rho=0$ prediction of Section~\ref{sec:cost}.
+\end{itemize}
+
 \end{document}
