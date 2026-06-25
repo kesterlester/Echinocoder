@@ -587,23 +587,31 @@ an independent grid. The honest count is the number of lattice points actually
 swept out --- which grows like $n^{\,d}$, where $d$ is the number of
 \emph{independent directions} the exponents can move:
 \begin{equation}\label{eq:dim}
-   d\;=\;\underbrace{1}_{w}\;+\;\underbrace{s}_{\text{tag }t}
-        \;+\;\underbrace{\rho}_{\text{base units}},
-   \qquad
-   \begin{aligned}
-   s&=1\ \text{if some unit is shared by $\ge2$ entries, else }0,\\
-   \rho&=\text{number of \emph{independent} units present }\le B.
-   \end{aligned}
+   d\;=\;1+\operatorname{rank}(R),
 \end{equation}
-Here $\rho$ --- the \emph{rank} of the units actually appearing --- is the genuine
-``how many independent unit-directions'' count, and it can be far below both $B$
-and the number of distinct derived units. So
+where $R$ is a small table of plain numbers, built as follows. Pick component $0$
+as a reference. Then for each \emph{other} component $c=1,\dots,k-1$ write one row
+of $R$: the index $c$ itself, followed by the $B$ differences
+$\bvec d_c-\bvec d_0$ between that component's unit-exponents and component $0$'s. So
+$R$ has $k-1$ rows and $1+B$ columns, and $\operatorname{rank}(R)$ is its
+\emph{ordinary matrix rank} --- the number of linearly independent rows (equivalently,
+of columns). Then
 \[
-   \#\text{coefficients}\;=\;O\!\bigl(n^{\,d}\cdot C\bigr),\qquad d=1+s+\rho\le B+2,
+   \#\text{coefficients}\;=\;O\!\bigl(n^{\,d}\cdot C\bigr),\qquad 2\le d\le B+2,
 \]
-with $C$ a constant absorbing the small extents ($k$, the spreads $A_b$).
-\textbf{The cost is governed by $\rho\le B$, the number of base units, not by the
-proliferation of derived ones.}
+with $C$ a constant absorbing the small extents ($k$, and the exponent spreads).
+
+It pays to see what each column of $R$ contributes. The first column --- the
+indices $1,2,\dots,k-1$ --- is never all zero, so it always supplies one independent
+direction; that is the unavoidable ``$+1$'' which, with the $w$ of \eqref{eq:Phi},
+gives the base cost $n^2$. The other $B$ columns are the \emph{unit-difference}
+columns, and they raise the rank only when the units \emph{actually vary}.
+\textbf{If every entry carries one common unit, those columns are identically zero}
+and add nothing: $\operatorname{rank}(R)=1$ and $d=2$. A derived unit, however exotic,
+costs extra only insofar as it makes these $B$ columns span a new direction --- and
+there are only $B$ of them. \textbf{So the cost is set by how the units \emph{vary}
+across the $B$ base axes (capped at $B$), never by the sheer number of distinct
+derived units on display.}
 
 \subsection{Sanity check: uniform units cost nothing extra}
 
@@ -613,8 +621,10 @@ should drop to that of the unit-free engine, $O(n^2k)$. They do.
 
 \begin{example}[a multiset of positions]\label{ex:positions}
 Let each vector be a position $\bvec v=(x,y,z)$, all three entries lengths
-($k=3$, all unit $L$, so $B$-in-play $=1$ and the rank is $\rho=0$ --- there is only
-\emph{one} unit-direction). Every $\boldsymbol\xi^{-\bvec d_i}$ is the same monomial
+($k=3$, all unit $L$). Because the units are identical, the unit-difference columns
+of the table $R$ are entirely zero, leaving $\operatorname{rank}(R)=1$, so
+\eqref{eq:dim} predicts $d=2$. We confirm it by direct count. Every
+$\boldsymbol\xi^{-\bvec d_i}$ is the same monomial
 $\xi_L^{-1}$, so it factors out of $\Psi$ as a single prefactor:
 \[
    \Psi(t,\xi_L;\bvec v)=\xi_L^{-1}\bigl(x+y\,t+z\,t^2\bigr)
@@ -635,36 +645,39 @@ tagging along), and counting them,
    \#\text{coefficients}=\sum_{i=0}^{n}\bigl(\deg_t e_i+1\bigr)
    =\sum_{i=0}^n\bigl(i(k-1)+1\bigr)=O(n^2k),
 \]
-exactly the unit-free cost. This is $d=1(w)+1(t)+0(\rho)=2$ in \eqref{eq:dim}: the
-$\boldsymbol\xi$ contributes nothing because there is only one unit to carry, and
-its bookkeeping rides along on $w$ for free.
+exactly the unit-free cost --- the $d=2$ that $\operatorname{rank}(R)=1$ predicted.
+The $\boldsymbol\xi$ contributes no independent direction: with one common unit the
+unit-difference columns of $R$ vanish, and the lone $\xi_L$ rides along on $w$ for
+free.
 \end{example}
 
 \subsection{The dial}
 
-So the price of unit-honesty is set by a single number --- $\rho$, how many
-\emph{independent} units the data actually mixes (at most $B$):
+So the whole price is one matrix rank. A few cases, with $R$ built and its rank
+read straight off:
 
 \begin{center}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{lll}
+\begin{tabular}{lccl}
 \hline
-\textbf{data} & $d=1+s+\rho$ & \textbf{cost} \\
+\textbf{data} & $\operatorname{rank}(R)$ & $d$ & \textbf{cost} \\
 \hline
-all one unit (e.g.\ positions) & $2$ & $O(n^2k)$ --- as cheap as unit-free \\
-$\rho$ independent units, none shared & $1+\rho$ & $O(n^{1+\rho})$ \\
-$\rho$ independent units, some shared & $2+\rho$ & $O(n^{2+\rho})$ \\
-worst case (full rank $\rho=B$, sharing) & $B+2$ & $O(n^{B+2})$ \\
+all one unit (e.g.\ positions, any $k$) & $1$ & $2$ & $O(n^2k)$ --- as cheap as unit-free \\
+any $k=2$ (so $R$ has just one row) & $1$ & $2$ & $O(n^2k)$ \\
+$(\text{mass},\text{length},\text{length})$, $k=3$ & $2$ & $3$ & $O(n^3k)$ \\
+units spanning all $B$ axes, one shared & $B{+}1$ & $B{+}2$ & $O(n^{B+2})$ \\
 \hline
 \end{tabular}
 \end{center}
 
 \noindent
-The point of the whole construction is the middle of that table read against
-Section~\ref{sec:sin}: a dataset mixing a dozen \emph{derived} units
-(velocities, forces, energies, densities, \ldots) built from $B=3$ base ones costs
-$O(n^{\le5})$, not the unbounded growth a variable-per-derived-unit scheme would
-suffer. The exotic units are free riders on three base variables.
+(The third row is the running example of Section~\ref{sec:homog}: its two lengths
+share a unit, so the index column is independent of the single
+mass-versus-length difference, giving $\operatorname{rank}(R)=2$.) The point of the
+construction is the cap: a dataset mixing a dozen \emph{derived} units (velocities,
+forces, energies, densities, \ldots) built from $B=3$ base ones still has
+$\operatorname{rank}(R)\le B+1=4$, so $d\le5$ and the cost is $O(n^{\le5})$ --- no
+matter how many derived units appear. They are free riders on the three base axes.
 
 % ════════════════════════════════════════════════════════════════════════════
 \section{Summary}
@@ -690,9 +703,9 @@ while never adding or comparing two quantities of different units. The method:
       units merely rescales each output by its own honest factor.
 \item \textbf{Pay only for base units} (Section~\ref{sec:cost}). The encoding uses
       $B+2$ variables regardless of how many derived units appear, and its size is
-      $O(n^{\,1+s+\rho})$ with $\rho\le B$ the number of independent units present
-      --- dropping to the unit-free $O(n^2k)$ when the data is dimensionally
-      uniform.
+      $O(n^{\,d})$ with $d=1+\operatorname{rank}(R)\le B+2$ --- the rank measuring how
+      the units \emph{vary} across the $B$ base axes, and dropping to the unit-free
+      $O(n^2k)$ ($d=2$) whenever the entries are dimensionally uniform.
 \end{enumerate}
 
 \noindent
@@ -709,9 +722,10 @@ output, of size $O(nk)$, but only by \emph{comparing} entries by magnitude --- a
 across different units that comparison is exactly the illegal operation (P4)
 forbids. The trade is real: comparison buys a smaller code at the cost of
 unit-honesty; the factorise-and-homogenise method here buys unit-honesty at the
-cost of a larger, but still polynomial, code whose exponent is set by the number of
-base units. One pays in magnitude-comparisons, the other in $n^{\rho}$; which is
-the better bargain depends on whether the units are genuinely incommensurable.
+cost of a larger, but still polynomial, code whose exponent is set by how the units
+vary across the $B$ base axes. One pays in magnitude-comparisons, the other in the
+extra powers of $n$ counted by $\operatorname{rank}(R)$; which is the better bargain
+depends on whether the units are genuinely incommensurable.
 \end{remark}
 
 % ════════════════════════════════════════════════════════════════════════════
@@ -752,7 +766,7 @@ multiset polynomial $\Phi$ \eqref{eq:Phi} &
 the encoding $f$ (coefficients of $\Phi$) &
   \texttt{embed\_generic}; the coefficients are read over a fixed support
   (\texttt{\_canonical\_support}) \\
-the encoding size $O(n^{1+s+\rho})$ &
+the encoding size $O(n^{\,1+\operatorname{rank}(R)})$ &
   \texttt{size\_from\_n\_k}; returns $-1$ for any $k$ other than the one fixed at
   construction \\
 \hline
@@ -785,7 +799,8 @@ the encoding size $O(n^{1+s+\rho})$ &
   $\lambda^{(n-a)D_b-m_b}$ under a change of base unit $b$ by $\lambda$
   (Section~\ref{sec:homog}); derived units with negative exponents (velocity,
   energy) work; and the all-positions case collapses to the unit-free Bursar size
-  $n+(k-1)n(n+1)/2$, confirming the $\rho=0$ prediction of Section~\ref{sec:cost}.
+  $n+(k-1)n(n+1)/2$, confirming the $d=2$ (i.e.\ $\operatorname{rank}(R)=1$)
+  prediction of Section~\ref{sec:cost}.
 \end{itemize}
 
 \end{document}
