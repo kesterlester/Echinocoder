@@ -110,16 +110,14 @@ and two matrices represent the same multiset exactly when one is obtained from
 the other by such a column permutation. We write $M\sim M'$ in that case.
 
 \begin{example}\label{ex:samemultiset}
-With $n=3$, $k=2$,
+With $n=5$, $k=2$,
 \[
-  M=\begin{bmatrix}4&1&4\\0&2&5\end{bmatrix}
+  M=\begin{bmatrix}4&1&4&2&2\\0&2&5&9&9\end{bmatrix}
   \quad\text{and}\quad
-  M'=\begin{bmatrix}1&4&4\\2&5&0\end{bmatrix}
+  M'=\begin{bmatrix}1&4&4&2&2\\2&5&0&9&9\end{bmatrix}
 \]
-represent the same multiset $\bigl\{\,(4,0),(1,2),(4,5)\,\bigr\}$: $M'$ is $M$
-with its columns cyclically shifted.  Note that the two columns $(4,0)$ and
-$(4,5)$ \emph{share their first entry} but are different vectors; multisets
-happily contain such near-collisions, and our method must keep them apart.
+represent the same multiset $\bigl\{\,(4,0),(1,2),(4,5),(2,9),(2,9)\,\bigr\}$ as $M'$ is $M$
+with the first three columns cyclically shifted.  We may therefore write $M'\sim  M$.  Note that two columns of the matrix $M$ happen to be identical, both being $(2,9)$.  Multisets (unlike sets) can contain such repeated elements, although it is also fine if they do no have repeats.
 \end{example}
 
 \subsection{What we want to build}
