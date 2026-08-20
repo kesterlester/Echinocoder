@@ -68,7 +68,9 @@ $\R^N$ in a way that (i)~ignores the order, (ii)~loses no information, and
 (iii)~varies continuously as the vectors move.  These three demands pull
 against one another, and the naive fix (sorting) fails the third.  We describe a
 method that meets all three.  Its engine is a classical piece of geometry ---
-the \emph{barycentric subdivision} of a simplex --- applied \emph{twice}.
+the \emph{barycentric subdivision}, which we set up for a \emph{simplicial
+cone} rather than for the simplex where it is usually met --- applied
+\emph{twice}.
 Order-invariance and continuity will be almost immediate.  The real work, and the
 heart of this note, is the remaining demand, \emph{injectivity}: that distinct
 multisets really do land on distinct points.  We give a geometric proof, and explain why a
@@ -153,9 +155,10 @@ them into the opposite arrangement. So sorting buys (P1)+(P2) at the cost of
 \begin{remark}[a harmless normalisation]\label{rmk:homog}
 It is convenient, and costs nothing, to also ask for \emph{positive
 homogeneity}: $f(\lambda M)=\lambda f(M)$ for scalars $\lambda>0$. Geometrically
-this lets us think in terms of \emph{cones} and \emph{rays} rather than fussing
-over overall scale, and the construction below provides it automatically. The
-reader may ignore it on a first pass.
+this lets us think in terms of \emph{simplicial cones} and \emph{rays} rather
+than fussing over overall scale, and it is the reason we shall never impose a
+sum-to-one normalisation anywhere in what follows. The construction below
+provides homogeneity automatically. The reader may ignore it on a first pass.
 \end{remark}
 
 \subsection{The plan, and where the difficulty lies}
@@ -165,9 +168,9 @@ The method has the following shape, and the rest of the document fills it in.
 \item We first treat the easy case $k=1$ --- a multiset of $n$ \emph{numbers}
       --- because it already contains the central geometric idea in its
       simplest form (Section~\ref{sec:numbers}).
-\item That idea is the \emph{barycentric subdivision} of a simplex, which we
-      define from scratch and which turns the discontinuous ``sort'' into a
-      continuous gadget.
+\item That idea is the \emph{barycentric subdivision} of a simplicial cone,
+      which we define from scratch and which turns the discontinuous ``sort''
+      into a continuous gadget.
 \item For genuine vectors ($k\ge 2$) the rows interact, and we shall see that
       applying the idea once \emph{per row} is \emph{not enough} for injectivity
       --- a concrete pair of multisets collides. This failure, and its cure by a
@@ -191,44 +194,91 @@ Before any multisets, we recall the one piece of geometry the whole method runs
 on. It is elementary and classical; we set it up carefully because everything
 later is an echo of it.
 
-\subsection{The simplex and barycentric coordinates}
+\subsection{Simplicial cones and their coordinates}
+\label{sec:simplicialcone}
 
-Fix $n$ points $\bvec e_1,\dots,\bvec e_n$ in general position (no three on a
-line, etc.). Their \emph{simplex}, $\Delta$,  is the convex region with those points at its corners:
+Fix $d$ linearly independent vectors $\bvec g_1,\dots,\bvec g_d$ in a real
+vector space. The set of all their \emph{non-negative} combinations,
 \[
-   \Delta \;=\; \Bigl\{\ \textstyle\sum_{i=1}^n \alpha_i\,\bvec e_i\ :\
-        \alpha_i\ge 0,\ \textstyle\sum_i\alpha_i=1\ \Bigr\}.
+   C \;=\; \Bigl\{\ \textstyle\sum_{i=1}^d c_i\,\bvec g_i\ :\ c_i\ge 0\ \Bigr\},
 \]
-For $n=3$ this is a (filled) triangle; for $n=4$ a tetrahedron. The numbers
-$(\alpha_1,\dots,\alpha_n)$ are the \emph{barycentric coordinates} of the point
-$\sum_i\alpha_i\bvec e_i$. The defining fact of a simplex is that
-\emph{barycentric coordinates are unique}: each point of $\Delta$ is
-$\sum_i\alpha_i\bvec e_i$ for exactly one choice of weights $\alpha_i\ge0$
-summing to~$1$. A weight $\alpha_i$ is zero exactly when the point lies on the
-face opposite $\bvec e_i$.
+is called a \emph{simplicial cone} with \emph{generators} $\bvec g_1,\dots,
+\bvec g_d$, and the numbers $(c_1,\dots,c_d)$ are the \emph{coordinates} of the
+point $\sum_i c_i\bvec g_i$. Note that no normalisation is imposed: the $c_i$
+are not required to sum to $1$, or to anything else.
 
-The \emph{barycentre} of a set of vertices is their average. The barycentre of
-the whole simplex is $\bvec g=\tfrac1n(\bvec e_1+\dots+\bvec e_n)$ (all weights
-equal); the barycentre of an edge $\bvec e_i\bvec e_j$ is its midpoint
-$\tfrac12(\bvec e_i+\bvec e_j)$, and so on.
+The defining fact of a simplicial cone --- and the only property of one that we
+shall ever use --- is that \emph{coordinates are unique}: because the $\bvec
+g_i$ are linearly independent, each point of $C$ is $\sum_i c_i\bvec g_i$ for
+exactly one choice of $c_i\ge0$. A coordinate $c_i$ is zero exactly when the
+point lies on the face of $C$ spanned by the other generators.
 
-\subsection{Subdividing the simplex}
+The word ``cone'' is unfortunate, since the most common mathematical cone is axisymmetric and
+two-lobed while a simplicial cone is neither; we therefore keep the qualifier
+``simplicial'' throughout, as a standing reminder that the object is the
+straight-sided, single-lobed, $d$-dimensional wedge just defined.
 
-\emph{Barycentric subdivision} cuts $\Delta$ into smaller simplices using these
-barycentres. The recipe, for our purposes, is cleanest stated through
-\emph{orderings}. Given an ordering $\sigma$ of the vertices --- say
-$\bvec e_{\sigma(1)},\bvec e_{\sigma(2)},\dots,\bvec e_{\sigma(n)}$ --- form the
-running barycentres of its \emph{prefixes}:
+The example to keep in mind is the \emph{positive orthant}
+$\{\,x\in\R^n:x_i\ge0\,\}$, whose generators are the standard basis vectors
+$\bvec e_1,\dots,\bvec e_n$ and whose coordinates are simply the entries $x_i$.
+We nonetheless state everything for a general $C$, because the whole method
+turns on applying it a second time to a \emph{different}, less obvious, choice
+of generators (Section~\ref{sec:second}).
+
+\subsection{Subdividing the simplicial cone}
+
+The subdivision cuts $C$ into smaller simplicial cones. The recipe is cleanest
+stated through \emph{orderings}. Given an ordering $\sigma$ of the generators
+--- say $\bvec g_{\sigma(1)},\bvec g_{\sigma(2)},\dots,\bvec g_{\sigma(d)}$ ---
+form the running \emph{prefix sums}
 \begin{equation}\label{eq:facebary}
-   \bvec f^{\sigma}_r \;=\; \frac1r\bigl(\bvec e_{\sigma(1)}+\bvec e_{\sigma(2)}
-            +\cdots+\bvec e_{\sigma(r)}\bigr),
-   \qquad r=1,2,\dots,n .
+   \bvec u^{\sigma}_r \;=\; \bvec g_{\sigma(1)}+\bvec g_{\sigma(2)}
+            +\cdots+\bvec g_{\sigma(r)},
+   \qquad r=1,2,\dots,d .
 \end{equation}
-So $\bvec f^\sigma_1=\bvec e_{\sigma(1)}$ is a vertex, $\bvec f^\sigma_2$ is an
-edge-midpoint, \dots, and $\bvec f^\sigma_n=\bvec g$ is the centre of the whole
-simplex (the same point for every $\sigma$). These $n$ points span a small
-sub-simplex, $C_\sigma$. As $\sigma$ ranges over all $n!$ orderings,
-the sub-simplices $C_\sigma$ tile $\Delta$ without overlap except on their measure-zero boundaries (Figure~\ref{fig:sd}).
+So $\bvec u^\sigma_1=\bvec g_{\sigma(1)}$ is a generator, and $\bvec u^\sigma_d
+=\bvec g_1+\cdots+\bvec g_d$ is the \emph{diagonal} of $C$ --- the same point
+for every $\sigma$. The change of basis from $(\bvec g_{\sigma(r)})_r$ to
+$(\bvec u^\sigma_r)_r$ is triangular with $1$s down the diagonal, so the $\bvec
+u^\sigma_r$ are again linearly independent and generate a simplicial cone
+$C_\sigma\subseteq C$. As $\sigma$ ranges over all $d!$ orderings, these tile
+$C$ without overlap except on their measure-zero boundaries
+(Figure~\ref{fig:sd}).
+
+Since we need to refer to the $C_\sigma$ frequently, and since ``sub-simplicial-cone'' is a
+mouthful, we refer to them for short as \emph{chambers}.
+
+\begin{definition}[chamber]\label{def:chamber}
+A \emph{chamber} of the simplicial cone $C$ is one of the $d!$ simplicial cones
+$C_\sigma$ generated by the prefix sums \eqref{eq:facebary} of an ordering
+$\sigma$ of the generators of $C$. Nothing is intended by the word beyond that
+abbreviation.
+\end{definition}
+
+\begin{remark}[where the name ``barycentric'' comes from]\label{rmk:whybary}
+Rescaling a generator does not change the simplicial cone it generates, so the
+chambers are unaltered if each $\bvec u^\sigma_r$ is replaced by $\tfrac1r\bvec
+u^\sigma_r$. Do that with $\bvec g_i=\bvec e_i$, and slice $C$ by the hyperplane
+$\sum_i c_i=1$. The slice is the \emph{simplex} $\Delta$ with vertices $\bvec
+e_1,\dots,\bvec e_n$ --- a filled triangle for $n=3$, a tetrahedron for $n=4$
+--- the ray through $\bvec u^\sigma_r$ meets it at the \emph{barycentre} (the
+average)
+\[
+   \bvec f^\sigma_r \;=\; \tfrac1r\bigl(\bvec e_{\sigma(1)}+\cdots
+                            +\bvec e_{\sigma(r)}\bigr)
+\]
+of the first $r$ vertices, and the chambers slice to the $n!$ sub-simplices of
+the classical \emph{barycentric subdivision} of $\Delta$
+(Figure~\ref{fig:sd}). That is where this construction is usually met, and
+where it gets its name.
+
+We shall nevertheless work in the simplicial cone, with the un-normalised
+prefix sums $\bvec u^\sigma_r$, throughout. Two reasons: every coordinate we
+meet then stays an \emph{integer}, which the central argument of
+Section~\ref{sec:whytwo} needs, and the whole construction is thereby
+scale-free, which is exactly the homogeneity of Remark~\ref{rmk:homog}. The
+simplex will play no further part.
+\end{remark}
 
 \begin{figure}[h]
 \centering
@@ -252,60 +302,67 @@ the sub-simplices $C_\sigma$ tile $\Delta$ without overlap except on their measu
   \foreach \p/\pos/\lab in {e1/below left/{$\bvec e_1$}, e2/below right/{$\bvec e_2$},
         e3/above/{$\bvec e_3$}}{\fill (\p) circle (1.3pt); \node[\pos] at (\p) {\lab};}
   \foreach \p/\pos/\lab in {m12/below/{$\bvec f_2$}, m13/left/{}, m23/right/{},
-        g/above right/{$\bvec g=\bvec f_3$}}{\fill[blue!55!black] (\p) circle (1.1pt); \node[\pos,scale=0.85] at (\p) {\lab};}
+        g/above right/{$\bvec f_3$}}{\fill[blue!55!black] (\p) circle (1.1pt); \node[\pos,scale=0.85] at (\p) {\lab};}
   \node[scale=0.8] at (2.27,0.33) {$C_{(2,1,3)}$}; % want this lable to be seem to be in the middled of the e2-f2-g cell.
 \end{tikzpicture}
-\caption{Barycentric subdivision of a triangle ($n=3$): the three medians cut it
-into $3!=6$ sub-simplices, one per ordering of the vertices. The shaded sub-simplex
-$C_{(2,1,3)}$ has vertices $\bvec f_2=\bvec e_1$, $\bvec f_2=\tfrac12(\bvec
-e_1{+}\bvec e_2)$ and $\bvec f_3=\bvec g=\tfrac13(\bvec e_1{+}\bvec e_2{+}\bvec
-e_3)$. The centre $\bvec g$ is shared by all six sub-simplices.}
+\caption{A cross-section of the subdivided simplicial cone, in the classical
+picture of Remark~\ref{rmk:whybary}: slicing the positive orthant of $\R^3$
+gives the triangle on $\bvec e_1,\bvec e_2,\bvec e_3$, and the six chambers
+slice to the $3!=6$ sub-simplices cut out by the three medians, one per
+ordering of the generators. The shaded chamber $C_{(2,1,3)}$ has vertices
+$\bvec f_1=\bvec e_2$, $\bvec f_2=\tfrac12(\bvec e_1{+}\bvec e_2)$ and $\bvec
+f_3=\tfrac13(\bvec e_1{+}\bvec e_2{+}\bvec e_3)$. The centre $\bvec f_3$ is
+shared by all six.}
 \label{fig:sd}
 \end{figure}
 
 \subsection{The one fact we shall use again and again}
 
 Here is the property that makes the subdivision useful. It says that locating a
-point among the sub-simplices is a \emph{continuous} substitute for sorting.
+point among the chambers is a \emph{continuous} substitute for sorting.
 
-\begin{proposition}[unique sub-simplex, unique coordinates in that sub-simplex]\label{prop:cell}
-Let $p=\sum_i\alpha_i\bvec e_i$ be a point of $\Delta$, and let $\sigma$ be an
-ordering that sorts its weights into non-increasing order,
-$\alpha_{\sigma(1)}\ge\alpha_{\sigma(2)}\ge\cdots\ge\alpha_{\sigma(n)}$. Then $p$
-lies in the sub-simplex $C_\sigma$, and the barycentric coordinates of the point in that sub-simplex are, up to the
-factor $r$, the \emph{gaps} $\alpha_{\sigma(r)}-\alpha_{\sigma(r+1)}$ between
-consecutive sorted weights:
+\begin{proposition}[unique chamber, unique coordinates in that chamber]\label{prop:cell}
+Let $x=\sum_i c_i\bvec g_i$ be a point of the simplicial cone $C$, and let
+$\sigma$ be an ordering that sorts its coordinates into non-increasing order,
+$c_{\sigma(1)}\ge c_{\sigma(2)}\ge\cdots\ge c_{\sigma(d)}$. Then $x$ lies in the
+chamber $C_\sigma$, and its coordinates in that chamber are the \emph{gaps}
+between consecutive sorted coordinates:
 \begin{equation}\label{eq:gaps}
-   \beta_r \;=\; r\,\bigl(\alpha_{\sigma(r)}-\alpha_{\sigma(r+1)}\bigr)\ \ge 0,
-   \qquad (\alpha_{\sigma(n+1)}:=0),
+   \delta_r \;=\; c_{\sigma(r)}-c_{\sigma(r+1)}\ \ge 0,
+   \qquad (c_{\sigma(d+1)}:=0),
 \end{equation}
-so that $p=\sum_{r=1}^n \beta_r\,\bvec f^\sigma_r$ with $\beta_r\ge0$ and
-$\sum_r\beta_r=1$. If the sorting order is \emph{strict} the sub-simplex is unique; if
-two weights are tied, $\alpha_{\sigma(r)}=\alpha_{\sigma(r+1)}$, then the
-corresponding gap, and so $\beta_r$, is \emph{zero}, and $p$ lies on a wall
-shared by the two sub-simplices that differ only by swapping those two ranks.
+so that $x=\sum_{r=1}^d \delta_r\,\bvec u^\sigma_r$ with $\delta_r\ge0$. If the
+sorting order is \emph{strict} the chamber is unique; if two coordinates are
+tied, $c_{\sigma(r)}=c_{\sigma(r+1)}$, then the corresponding gap, and so
+$\delta_r$, is \emph{zero}, and $x$ lies on a wall shared by the two chambers
+that differ only by swapping those two ranks.
 \end{proposition}
 
 \begin{proof}[Why this is true]
-That \eqref{eq:gaps} reproduces $p$ is the discrete ``summation by parts''
-identity $\sum_i\alpha_i\bvec e_i=\sum_r r(\alpha_{\sigma(r)}-\alpha_{\sigma(r+1)})
-\bvec f^\sigma_r$, which one checks by expanding $\bvec f^\sigma_r$ from
-\eqref{eq:facebary} and collecting the coefficient of each $\bvec e_{\sigma(r)}$
-(it telescopes back to $\alpha_{\sigma(r)}$). The gaps are $\ge0$ precisely
-because the weights were sorted, which is what places $p$ in $C_\sigma$; and a
-tie makes a gap vanish, putting $p$ on the boundary face where that barycentre
-drops out. Uniqueness of the $\beta_r$ is uniqueness of barycentric coordinates
-in the sub-simplex.
+That \eqref{eq:gaps} reproduces $x$ is the discrete ``summation by parts''
+identity: substituting \eqref{eq:facebary} and exchanging the order of
+summation,
+\[
+  \sum_{r=1}^{d} \delta_r\,\bvec u^\sigma_r
+  \;=\; \sum_{s=1}^{d}\bvec g_{\sigma(s)}\!\!\sum_{r\ge s}
+        \bigl(c_{\sigma(r)}-c_{\sigma(r+1)}\bigr)
+  \;=\; \sum_{s=1}^{d} c_{\sigma(s)}\,\bvec g_{\sigma(s)} \;=\; x,
+\]
+the inner sum telescoping back to $c_{\sigma(s)}$. The gaps are $\ge0$
+precisely because the coordinates were sorted, which is what places $x$ in
+$C_\sigma$; and a tie makes a gap vanish, putting $x$ on the boundary face
+where that prefix sum drops out. Uniqueness of the $\delta_r$ is uniqueness of
+coordinates in the simplicial cone $C_\sigma$.
 \end{proof}
 
 \begin{tcolorbox}[ideabox]
-\textbf{The point of Proposition~\ref{prop:cell}.} ``Which sub-simplex?'' is decided by
-the \emph{order} of the weights --- a discrete, sorting-like datum. But the
-\emph{coordinates} $\beta_r$ vary continuously, and exactly when the order is
-ambiguous (a tie) the ambiguous coordinate is $0$, so the point sits cleanly on
-a shared wall and nothing jumps. This is how a subdivision launders the
-discontinuity out of sorting: \emph{the place where the sub-simplex-label is ambiguous
-is exactly the place where it does not matter.}
+\textbf{The point of Proposition~\ref{prop:cell}.} ``Which chamber?'' is decided by
+the \emph{order} of the coordinates --- a discrete, sorting-like datum. But the
+\emph{coordinates in that chamber}, the $\delta_r$, vary continuously, and
+exactly when the order is ambiguous (a tie) the ambiguous coordinate is $0$, so
+the point sits cleanly on a shared wall and nothing jumps. This is how a
+subdivision launders the discontinuity out of sorting: \emph{the place where
+the chamber-label is ambiguous is exactly the place where it does not matter.}
 \end{tcolorbox}
 
 % ════════════════════════════════════════════════════════════════════════════
@@ -318,35 +375,67 @@ the data is a multiset of $n$ reals $x_1,\dots,x_n$, written as the single row
 $M=[\,x_1\ \cdots\ x_n\,]$. This already contains the heart of the idea, and
 solving it cleanly tells us precisely what will be \emph{missing} when $k\ge2$.
 
-\subsection{The same picture, in a cone}
+\subsection{Applying the Proposition to a row}
 
-Proposition~\ref{prop:cell} was about a simplex (weights summing to $1$). The
-identical statement holds, even more simply, in the positive ``orthant''
-$\{\,x\in\R^n:x_i\ge0\,\}$ if we drop the sum-to-one condition. Sort the entries
-of $x$ into non-increasing order, $x_{(1)}\ge x_{(2)}\ge\cdots\ge x_{(n)}\ge0$,
-and form the \emph{prefix vectors}
+Take Proposition~\ref{prop:cell} with $d=n$ and $\bvec g_i=\bvec e_i$, so that
+$C$ is the positive orthant $\{\,x\in\R^n:x_i\ge0\,\}$ and the coordinates of a
+point are simply its entries. Sorting them into non-increasing order,
+$x_{(1)}\ge x_{(2)}\ge\cdots\ge x_{(n)}\ge0$, the prefix sums
+\eqref{eq:facebary} become the \emph{prefix vectors}
 \[
    \bvec u_r \;=\; \bvec e_{(1)}+\bvec e_{(2)}+\cdots+\bvec e_{(r)}
    \qquad(\text{the indicator of the top-$r$ positions}),
 \]
 where $\bvec e_{(s)}$ is the standard basis vector for the position holding the
-$s$-th largest entry. Then summation by parts gives, just as in
-\eqref{eq:gaps},
+$s$-th largest entry, and \eqref{eq:gaps} reads
 \begin{equation}\label{eq:numdecomp}
    x \;=\; \sum_{r=1}^{n}\ \delta_r\,\bvec u_r,
    \qquad
-   \delta_r=x_{(r)}-x_{(r+1)}\ \ge 0,\quad (x_{(n+1)}:=0).
+   \delta_r=x_{(r)}-x_{(r+1)},\quad (x_{(n+1)}:=0).
 \end{equation}
 The coefficients $\delta_r$ are the \emph{gaps} between consecutive sorted
-values; $\delta_n=x_{(n)}$ is the smallest entry, attached to the all-ones
-vector $\bvec u_n=\bvec e_1+\cdots+\bvec e_n$. (Geometrically the $\bvec u_r$ are
-just the face-barycentres $\bvec f_r$ of \eqref{eq:facebary} un-normalised by the
-factor $1/r$; nothing has changed but the bookkeeping of scale.)
+values; the last prefix vector $\bvec u_n=\bvec e_1+\cdots+\bvec e_n$ is the
+all-ones vector, the diagonal of the orthant, and is the same whatever the
+sorted order.
+
+\subsection{Rows that are not non-negative: the anchor}
+\label{sec:anchor}
+
+Nothing so far permits a negative entry, yet a multiset of reals may perfectly
+well contain one. The general case costs a single line, and it is worth
+spending that line here rather than later, because it introduces a quantity we
+shall carry all the way to the end.
+
+Write $\mu=\min_i x_i$ for the smallest entry of the row and call it the row's
+\emph{anchor}. The shifted row $x-\mu\,\bvec u_n$ has smallest entry $0$, so it
+\emph{does} lie in the positive orthant and the Proposition applies to it
+unchanged. A uniform shift moves every entry equally and so disturbs no
+comparison between entries: $x$ and $x-\mu\,\bvec u_n$ sort in the same order,
+share the same prefix vectors $\bvec u_r$, and have the same gaps
+$\delta_1,\dots,\delta_{n-1}$. Adding $\mu\,\bvec u_n$ back afterwards
+therefore costs nothing, because $\bvec u_n$ is in any case the one prefix
+vector that does not depend on the sorted order.
+So \eqref{eq:numdecomp} holds verbatim for a row of \emph{arbitrary} reals,
+with
+\[
+   \delta_1,\dots,\delta_{n-1}\ \ge\ 0
+   \qquad\text{and}\qquad
+   \delta_n \;=\; x_{(n)} \;=\; \mu \quad\text{of either sign}.
+\]
+The single coordinate allowed to go negative is the one attached to the
+direction $\bvec u_n$ that every reordering of the entries fixes --- which is
+exactly why it does no harm. The anchor is a bare number, unchanged by any
+permutation; we shall record it directly and set it aside. Everything that
+knows about \emph{order} lives in the shifted row
+\[
+   x-\mu\,\bvec u_n \;=\; \sum_{r=1}^{n-1}\delta_r\,\bvec u_r ,
+\]
+which we call the \emph{balance} of the row.
 
 \begin{example}\label{ex:numbers}
 For $x=(2,9,2,6)$, sorting gives $9\ge6\ge2\ge2$, so the gaps are
 $\delta_1=9{-}6=3$, $\delta_2=6{-}2=4$, $\delta_3=2{-}2=0$, $\delta_4=2$. The
-prefixes are as follows.  $\vec u_1=\vec e_2$ as the largest value in $x$, the 9,  was in location 2.  $\vec u_2=\vec u_1 + \vec e_4 = \vec e_2+\vec e_4$ as the next largest value in $x$, the 6, was in location 4. The value of $\vec u_3$ is ambiguous. It could be either $\vec u_2+\vec e_1$ or $\vec u_2 + \vec e_3$ since there is a tie for the third largest value in $x$ between two twos -- one in position 1 and one in position 3. Finally $\vec u_4=\vec e_1+\vec e_2+\vec e_3 +\vec e_4$,  unambiguously, as the largest four items are distributed across all four locations.  The linear combination in \eqref{eq:numdecomp} allows $x$ to be reconstructed completely (including order) from the gaps ($\delta_i$) and the prefixes ($\vec u_i$).  The apparent inability to define $\vec u_3$ is not a problem because the tie that leads to the ambiguity also leads to $\delta_3=0$, meaning that $\vec u_3$ is thereby `turned off' in the linear combination in \eqref{eq:numdecomp}. This feature, the fact that the prefix elements change there identity at (and only at) the very points where they become irrelevant, which are the same points at which a sort-order would change, is key to our retaining continuity in the embedding in more complex cases ($k>1$) considered later.
+prefixes are as follows.  $\vec u_1=\vec e_2$ as the largest value in $x$, the 9,  was in location 2.  $\vec u_2=\vec u_1 + \vec e_4 = \vec e_2+\vec e_4$ as the next largest value in $x$, the 6, was in location 4. The value of $\vec u_3$ is ambiguous. It could be either $\vec u_2+\vec e_1$ or $\vec u_2 + \vec e_3$ since there is a tie for the third largest value in $x$ between two twos -- one in position 1 and one in position 3. Finally $\vec u_4=\vec e_1+\vec e_2+\vec e_3 +\vec e_4$,  unambiguously, as the largest four items are distributed across all four locations, and $\delta_4=2$ is this row's anchor in the sense of Section~\ref{sec:anchor}.  The linear combination in \eqref{eq:numdecomp} allows $x$ to be reconstructed completely (including order) from the gaps ($\delta_i$) and the prefixes ($\vec u_i$).  The apparent inability to define $\vec u_3$ is not a problem because the tie that leads to the ambiguity also leads to $\delta_3=0$, meaning that $\vec u_3$ is thereby `turned off' in the linear combination in \eqref{eq:numdecomp}. This feature, the fact that the prefix elements change there identity at (and only at) the very points where they become irrelevant, which are the same points at which a sort-order would change, is key to our retaining continuity in the embedding in more complex cases ($k>1$) considered later.
 \end{example}
 
 \subsection{Reading off the invariant, and why all three properties hold}
@@ -544,26 +633,34 @@ next.
 
 After the first subdivision (one per row) we hold a bag of $m=k(n-1)$
 \emph{(gap, piece)} pairs --- $(n-1)$ proper prefixes from each of the $k$ rows.
-(The $k$ all-ones, size-$n$ prefixes are fully symmetric: a column permutation
-fixes each of them. They carry no alignment information, so we set them aside as
-$k$ \emph{anchors}, namely the $k$ row minima $m_1,\dots,m_k$, which are
-plainly permutation-invariant numbers; we record them directly and forget them
-for now.)
+(The $k$ all-ones, size-$n$ prefixes are the anchors of
+Section~\ref{sec:anchor}, one per row: they are the row minima
+$m_1,\dots,m_k$, they are fixed by every column permutation, and so they carry
+no alignment information. As promised there, we record them directly and set
+them aside. What is left is the \emph{balance} of $M$, row by row.)
 
-Crucially, this bag is \emph{itself} a point in a cone --- the cone spanned by
-the $m$ pieces, with the gaps as coordinates:
+Crucially, this bag is \emph{itself} a point of a simplicial cone. The $m$
+pieces are linearly independent: pieces in different rows occupy disjoint rows
+of the $k\times n$ matrix, and within one row the nested prefix indicators
+$\text{top-}1\subset\text{top-}2\subset\cdots\subset\text{top-}(n-1)$ are
+triangular, hence independent. So the pieces \emph{generate} a simplicial cone,
+and by uniqueness of coordinates the gaps are precisely the coordinates of the
+balance in it:
 \[
    (\text{balance of }M)\;=\;\sum_{\text{pieces }P}\ \delta_P\, P .
 \]
-So we may apply the \emph{very same} barycentric subdivision a second time, now
-to this $m$-piece cone, with the pieces playing the role the standard basis
-vectors $\bvec e_i$ played before.
+Proposition~\ref{prop:cell} therefore applies a second time, word for word,
+with $d=m$ and with the pieces $P$ in the role of the generators $\bvec g_i$.
+This is the only reason the Proposition was stated for a general simplicial
+cone rather than for the orthant: here the generators are overlapping $0/1$
+matrices, not basis vectors, and it is exactly that overlap that will do the
+work.
 
 \subsection{The second subdivision}
 
 Sort the $m$ pieces into non-increasing gap order, $\delta_{(1)}\ge\delta_{(2)}
-\ge\cdots\ge\delta_{(m)}$, and (Proposition~\ref{prop:cell}, in the cone form
-\eqref{eq:numdecomp}, applied to the pieces) form the running sums
+\ge\cdots\ge\delta_{(m)}$, and (Proposition~\ref{prop:cell}, applied to the
+pieces) form the running sums
 \begin{equation}\label{eq:Ls}
    L_s \;=\; P_{(1)}+P_{(2)}+\cdots+P_{(s)},
    \qquad
@@ -578,7 +675,7 @@ populates several rows at once. We call $L_s$ a \emph{cumulative matrix}.
 
 \begin{remark}
 This is genuinely the same operation as the first subdivision --- ``sort, then
-take running barycentres'' --- but now the things being sorted are whole pieces,
+take running prefix sums'' --- but now the things being sorted are whole pieces,
 not numbers within a row, and the running sums knit the rows together. The two
 applications differ only in what they are applied to: \emph{within each row}
 first, then \emph{across the pooled pieces}.
@@ -675,9 +772,9 @@ the cumulative matrices $L_s$, being purely combinatorial, are untouched; each
 $\bary L_s$ is identical, while every coordinate $\alpha_s$ and anchor $m_i$
 scales by $\lambda$. Thus the whole output \eqref{eq:output}, and its hash
 \eqref{eq:hash}, scales by $\lambda$. This is exactly why it paid to work
-throughout with \emph{cones and rays} rather than normalising: the combinatorial
-skeleton (which sub-simplixes, which pieces) is scale-free, and only the coordinates
-carry the scale.
+throughout with \emph{simplicial cones and rays} rather than normalising: the
+combinatorial skeleton (which chambers, which pieces) is scale-free, and only
+the coordinates carry the scale.
 \end{proof}
 
 \noindent
@@ -915,19 +1012,27 @@ recorded faithfully.)
 \subsection{Why two subdivisions?}
 \label{sec:whytwo}
 
-We can now see why this sort of embedding needs two subdivisions.  The pivot is that the recovery of
-Lemma~\ref{lem:recover} needs cumulative matrices with integer entries
+We can now see why this sort of embedding needs two subdivisions. It helps to
+notice first that every scheme in sight --- the method and both of the
+shortcuts below --- is the \emph{same} Proposition~\ref{prop:cell}: sort the
+coordinates, take running prefix sums of the generators. They differ only in
+\emph{which generators} are being cumulated. So ``why two subdivisions?'' is
+really the question ``which generators?'', and it has a one-line answer:
+\emph{the generators must overlap one another}. The pivot is that the recovery
+of Lemma~\ref{lem:recover} needs cumulative matrices with integer entries
 \emph{greater than~$1$} --- a genuine staircase --- and a staircase forms only
-when the matrices one sums together \emph{overlap}. There are two tempting
+when the matrices one sums together overlap. There are two tempting
 single-subdivision shortcuts, and each founders on this.
 
-\emph{One subdivision, row-local.} Canonicalising the row-local pieces on their
-own quotients by the product group $\Sn^{\,k}$ --- a private permutation per row
---- which is strictly coarser than the diagonal $\Sn$ a multiset allows.
+\emph{One subdivision, row-local} (generators: the standard basis, separately
+within each row). Canonicalising the row-local pieces on their own quotients by
+the product group $\Sn^{\,k}$ --- a private permutation per row --- which is
+strictly coarser than the diagonal $\Sn$ a multiset allows.
 Example~\ref{ex:collision} exhibited two distinct multisets it identifies.
 
-\emph{One subdivision, cross-row.} One might instead sort all $nk$ entries at
-once and take running sums: a single \emph{cross-row} subdivision. This
+\emph{One subdivision, cross-row} (generators: the $nk$ matrix units, one per
+cell). One might instead sort all $nk$ entries at once and take running sums: a
+single \emph{cross-row} subdivision. This
 \emph{does} cumulate, and its matrices \emph{do} span the rows, so it records
 genuine alignment (enough, for instance, to separate the $A,B$ of
 Example~\ref{ex:collision}). But it cumulates \emph{single cells}, which never
@@ -951,8 +1056,8 @@ prefix is near all-ones, hence content-free, so no single matrix pins a
 consistent column labelling, and canonicalising the flat prefixes loses what is
 left. (Distinct multisets that it fails to separate can indeed be exhibited.)
 
-\emph{Two suffice: build overlap, then cumulate it.} The cure is to make the
-summands overlap \emph{before} cumulating. That is exactly what the first
+\emph{Two suffice: build overlap, then cumulate it} (generators: the pieces).
+The cure is to make the summands overlap \emph{before} cumulating. That is exactly what the first
 (per-row) subdivision does: it replaces single cells by nested prefixes
 $\text{top-}1\subset\text{top-}2\subset\cdots$, which overlap heavily. The second
 subdivision then cumulates \emph{those}, so shared columns accrue counts above
@@ -997,7 +1102,8 @@ leaving the sum does so with weight $\alpha_s\to0$). Invariance is inherited fro
 
 \begin{proposition}[hashing is generically injective]\label{prop:hash}
 There are at most $m=k(n-1)$ pairs in any output, so each $\sum_s\alpha_s
-h(\bary L_s)$ lies in the cone spanned by at most $m$ of the hashed points. If
+h(\bary L_s)$ lies in the simplicial cone spanned by at most $m$ of the hashed
+points. If
 the points $h(C)$ are in general position in $\R^{D}$ with $D=2m+1$, then no two
 \emph{different} such weighted sums coincide: the sum determines both which
 matrices $\bary L_s$ occur and with what weights $\alpha_s$. Hence
@@ -1008,7 +1114,8 @@ Theorem~\ref{thm:inj} applies.
 \noindent
 The dimension count is the familiar one: an $m$-term non-negative combination
 carries $m$ ``which-vertex'' choices and $m$ continuous weights, and two such
-$m$-dimensional cones sit disjointly in general position once $D>2m$, i.e.\
+$m$-dimensional simplicial cones sit disjointly in general position once
+$D>2m$, i.e.\
 $D=2m+1$. We do not dwell on it: unlike the injectivity of
 Section~\ref{sec:inj}, it is a standard general-position fact and contains none
 of the difficulty special to multisets. (One can make ``general position''
@@ -1027,8 +1134,8 @@ permutation-invariance, injectivity and continuity at once. The method:
 \begin{enumerate}[leftmargin=*]
 \item \textbf{First subdivision (within each row).} Sort each row and re-express
       it through gaps and nested prefixes (Section~\ref{sec:numbers}). This is
-      the barycentric subdivision of a simplex (Section~\ref{sec:bary}), and it
-      makes the within-row sorting continuous.
+      the barycentric subdivision of a simplicial cone (Section~\ref{sec:bary}),
+      and it makes the within-row sorting continuous.
 \item \textbf{Second subdivision (across the pooled pieces).} Pool the prefixes
       from all rows, sort them by gap, and form cumulative cross-row matrices
       $L_s$ with weights $\alpha_s$ (Section~\ref{sec:second}). The same
@@ -1063,10 +1170,11 @@ The content was injectivity, and there the story is geometric and sharp:
 
 \noindent
 The elegance the geometry buys is that ``injectivity'' becomes a sentence about
-simplices: \emph{a point lies in a unique cell of a subdivided simplex, with
-unique coordinates there, and identifying cells by the symmetry of their
-vertices is exactly the multiset symmetry --- provided the subdivision is fine
-enough that one common relabelling, not a private one per row, does the
-identifying.} Making it ``fine enough'' is the second barycentric subdivision.
+simplicial cones: \emph{a point lies in a unique chamber of a subdivided
+simplicial cone, with unique coordinates there, and identifying chambers by the
+symmetry of their generators is exactly the multiset symmetry --- provided the
+subdivision is fine enough that one common relabelling, not a private one per
+row, does the identifying.} Making it ``fine enough'' is the second barycentric
+subdivision.
 
 \end{document}
