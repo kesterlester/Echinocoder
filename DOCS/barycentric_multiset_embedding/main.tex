@@ -273,11 +273,21 @@ the classical \emph{barycentric subdivision} of $\Delta$
 where it gets its name.
 
 We shall nevertheless work in the simplicial cone, with the un-normalised
-prefix sums $\bvec u^\sigma_r$, throughout. Two reasons: every coordinate we
-meet then stays an \emph{integer}, which the central argument of
-Section~\ref{sec:whytwo} needs, and the whole construction is thereby
-scale-free, which is exactly the homogeneity of Remark~\ref{rmk:homog}. The
-simplex will play no further part.
+prefix sums $\bvec u^\sigma_r$, throughout. Two reasons. The first is a piece
+of bookkeeping that later turns out to matter: a prefix sum takes each
+generator with coefficient $1$ rather than $1/r$, so whenever the generators
+themselves have integer entries --- as the $0/1$ pieces of
+Section~\ref{sec:rows} will --- every \emph{vector} this construction builds
+from them again has integer entries, and those integers can be read as
+\emph{counts}. That is precisely what Lemma~\ref{lem:recover} does, and the
+argument of Section~\ref{sec:whytwo} turns on it. Had we kept the $1/r$, those
+same vectors would carry sums of unit fractions instead, and the
+threshold-at-$t=1,2,3,\dots$ reading of that lemma would simply not apply. (The \emph{coordinates} are a separate matter, and are not integers: they
+are gaps between the real numbers we started from, and stay real throughout.
+The distinction is worth holding on to --- in this construction the vectors are
+combinatorial and the coordinates carry all the arithmetic.) The second reason
+is that the whole construction is thereby scale-free, which is exactly the
+homogeneity of Remark~\ref{rmk:homog}. The simplex will play no further part.
 \end{remark}
 
 \begin{figure}[h]
