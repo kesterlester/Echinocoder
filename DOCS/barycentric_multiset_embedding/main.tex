@@ -199,31 +199,28 @@ later is an echo of it.
 
 Fix $d$ linearly independent vectors $\bvec g_1,\dots,\bvec g_d$ in a real
 vector space. The set of all their \emph{non-negative} combinations,
-\[
+\begin{align}\label{eq:simplicialconedefined}
    C \;=\; \Bigl\{\ \textstyle\sum_{i=1}^d c_i\,\bvec g_i\ :\ c_i\ge 0\ \Bigr\},
-\]
-is called a \emph{simplicial cone} with \emph{generators} $\bvec g_1,\dots,
+\end{align}
+is called a \emph{simplicial cone}%
+\footnote{Most commonly the word ``cone'' describes the two-lobed axisymmetric geometrical objects which have been studied since ancient times. As the simplicial cones we encounter in this document are neither two-lobed nor circular in cross section, we keep the qualifier ``simplicial'' throughout as a standing reminder that the object is the straight-sided, single-lobed, $d$-dimensional wedge just defined.}
+with \emph{generators} $\bvec g_1,\dots,
 \bvec g_d$, and the numbers $(c_1,\dots,c_d)$ are the \emph{coordinates} of the
-point $\sum_i c_i\bvec g_i$. Note that no normalisation is imposed: the $c_i$
-are not required to sum to $1$, or to anything else.
+point $\sum_i c_i\bvec g_i$.
 
-The defining fact of a simplicial cone --- and the only property of one that we
-shall ever use --- is that \emph{coordinates are unique}: because the $\bvec
-g_i$ are linearly independent, each point of $C$ is $\sum_i c_i\bvec g_i$ for
+
+The coordinates $c_i$ of a point within a simplicial point are \emph{unique} because the $\bvec
+g_i$ are linearly independent; each point of $C$ is $\sum_i c_i\bvec g_i$ for
 exactly one choice of $c_i\ge0$. A coordinate $c_i$ is zero exactly when the
 point lies on the face of $C$ spanned by the other generators.
 
-The word ``cone'' is unfortunate, since the most common mathematical cone is axisymmetric and
-two-lobed while a simplicial cone is neither; we therefore keep the qualifier
-``simplicial'' throughout, as a standing reminder that the object is the
-straight-sided, single-lobed, $d$-dimensional wedge just defined.
 
-The example to keep in mind is the \emph{positive orthant}
+One of the simplest symplicial cones we will use is the \emph{positive orthant}
 $\{\,x\in\R^n:x_i\ge0\,\}$, whose generators are the standard basis vectors
-$\bvec e_1,\dots,\bvec e_n$ and whose coordinates are simply the entries $x_i$.
-We nonetheless state everything for a general $C$, because the whole method
-turns on applying it a second time to a \emph{different}, less obvious, choice
-of generators (Section~\ref{sec:second}).
+$\bvec e_1,\dots,\bvec e_n$.  In two dimensions ($n=2$) the positive orthant would more usually be called `the first quadrant of the plane'.  We will encounter other simplicial cones more complex generator choices (Section~\ref{sec:second}).
+
+Note that the $c_i$ in \eqref{eq:simplicialconedefined}
+ are not required to sum to a constant. However, if they \textit{were} so further constrained in that way (a way that would amount to intersecting them with a plane) then the resulting shape would be termed a \emph{simplex}.
 
 \subsection{Subdividing the simplicial cone}
 
@@ -445,7 +442,7 @@ which we call the \emph{balance} of the row.
 \begin{example}\label{ex:numbers}
 For $x=(2,9,2,6)$, sorting gives $9\ge6\ge2\ge2$, so the gaps are
 $\delta_1=9{-}6=3$, $\delta_2=6{-}2=4$, $\delta_3=2{-}2=0$, $\delta_4=2$. The
-prefixes are as follows.  $\vec u_1=\vec e_2$ as the largest value in $x$, the 9,  was in location 2.  $\vec u_2=\vec u_1 + \vec e_4 = \vec e_2+\vec e_4$ as the next largest value in $x$, the 6, was in location 4. The value of $\vec u_3$ is ambiguous. It could be either $\vec u_2+\vec e_1$ or $\vec u_2 + \vec e_3$ since there is a tie for the third largest value in $x$ between two twos -- one in position 1 and one in position 3. Finally $\vec u_4=\vec e_1+\vec e_2+\vec e_3 +\vec e_4$,  unambiguously, as the largest four items are distributed across all four locations, and $\delta_4=2$ is this row's anchor in the sense of Section~\ref{sec:anchor}.  The linear combination in \eqref{eq:numdecomp} allows $x$ to be reconstructed completely (including order) from the gaps ($\delta_i$) and the prefixes ($\vec u_i$).  The apparent inability to define $\vec u_3$ is not a problem because the tie that leads to the ambiguity also leads to $\delta_3=0$, meaning that $\vec u_3$ is thereby `turned off' in the linear combination in \eqref{eq:numdecomp}. This feature, the fact that the prefix elements change there identity at (and only at) the very points where they become irrelevant, which are the same points at which a sort-order would change, is key to our retaining continuity in the embedding in more complex cases ($k>1$) considered later.
+prefixes are as follows.  $\vec u_1=\vec e_2=(0,1,0,0)$ as the largest value in $x$, the 9,  was in location 2.  $\vec u_2=\vec u_1 + \vec e_4 = (0,1,0,1)$ as the next largest value in $x$, the 6, was in location 4. The value of $\vec u_3$ is ambiguous. It could be either $\vec u_2+\vec e_1=(1,1,0,1)$ or $\vec u_2 + \vec e_3=(0,1,1,1)$ since there is a tie for the third largest value in $x$ between two twos -- one in position 1 and one in position 3. Finally $\vec u_4=\vec e_1+\vec e_2+\vec e_3 +\vec e_4=(1,1,11)$,  unambiguously, as the largest four items are distributed across all four locations, and $\delta_4=2$ is this row's anchor in the sense of Section~\ref{sec:anchor}.  The linear combination in \eqref{eq:numdecomp} allows $x$ to be reconstructed completely (including order) from the gaps ($\delta_i$) and the prefixes ($\vec u_i$).  The apparent inability to define $\vec u_3$ is not a problem because the tie that leads to the ambiguity also leads to $\delta_3=0$, meaning that $\vec u_3$ is thereby `turned off' in the linear combination in \eqref{eq:numdecomp}. This feature, the fact that the prefix elements change there identity at (and only at) the very points where they become irrelevant, which are the same points at which a sort-order would change, is key to our retaining continuity in the embedding in more complex cases ($k>1$) considered later.
 \end{example}
 
 \subsection{Reading off the invariant, and why all three properties hold}
@@ -1076,10 +1073,6 @@ $L^\ast$ climbs to counts $n-1$ and (Theorem~\ref{thm:inj}) pins the whole
 column alignment in that one matrix. (Whether the \emph{first} sort is per-row or
 global is only a matter of tidiness --- a global sort followed by a cumulation
 also works; what is indispensable is the second, cumulating, subdivision.)
-
-\emph{Not three.} After the second subdivision the data is already injective and
-continuous; there is no third sorting ambiguity left to launder, so a further
-subdivision would buy nothing.
 
 \emph{A sanity check.} For $k=1$ there are no distinct rows to entangle: the
 pieces all sit in the one row, ``size'' alone names them, and the second
