@@ -5,9 +5,10 @@ once; evaluation then only does tensor arithmetic.
 from __future__ import annotations
 
 from .bursar import bursar_output_labels, bursar_size
+from .involution import choose_involution, packed_forms, packing_from_signed_involution
 from .meta import EmbeddingMeta
 from .module import InvariantEmbedding
-from .reductions import LinearRelation, choose_c_max, exact_expansion, find_linear_relations
+from .reductions import LinearRelation, choose_c_max, exact_expansion_forms, find_linear_relations
 from .slots import build_slots, iter_group_elements, signed_permutation_table
 from .spec import EmbeddingOptions, GroupSpec
 
@@ -46,17 +47,32 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
     if e_dropped:
         slots = tuple(s for s in slots if s.kind == "d")
         enumeration_spec = GroupSpec(group_spec.species, parity=False)
-
     N, m = enumeration_spec.order, len(slots)
-    D_base = bursar_size(N, m)
-    if D_base > options.max_outputs:
-        raise ValueError(f"the Bursarial embedding for a multiset of {N} vectors of length m = {m} has {D_base} "
-                         f"coefficients, more than max_outputs = {options.max_outputs}. The Bursarial stage is only "
-                         f"feasible for small groups.")
+
+    # Guard before enumerating G: the packed embedding is at least half the size of the unpacked one.
+    D_unpacked = bursar_size(N, m)
+    estimate = D_unpacked if options.embedder == "bursar" else bursar_size(N, (m + 1) // 2)
+    if estimate > options.max_outputs:
+        raise ValueError(f"the Bursarial embedding for a multiset of {N} vectors of length m = {m} has about "
+                         f"{estimate} coefficients, more than max_outputs = {options.max_outputs}. The Bursarial "
+                         f"stage is only feasible for small groups.")
 
     elements = tuple(iter_group_elements(enumeration_spec))
     assert len(elements) == N and elements[0].is_identity()
     index, sign = signed_permutation_table(slots, elements)
+
+    # Layer 2: plain Bursarial, or involution packing (Level 0, real coefficients of a complex Bursarial embedding).
+    packing, involution = None, None
+    if options.embedder == "bursar_involution":
+        involution = choose_involution(index, sign)
+        if involution is None:
+            raise ValueError("embedder='bursar_involution' needs an element of G acting on w as a non-trivial "
+                             "involution, and there is none")
+        packing = packing_from_signed_involution(index[involution], sign[involution])
+    width = m if packing is None else packing.r
+    D_base = bursar_size(N, width)
+    if D_base > options.max_outputs:
+        raise ValueError(f"the embedding has {D_base} coefficients, more than max_outputs = {options.max_outputs}")
 
     # Safe reduction (Level 1): drop outputs that are exact linear combinations of kept ones, for c <= c_max.
     relations: list[LinearRelation] = []
@@ -64,24 +80,28 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
     if safe:
         c_max = options.linear_reduction_max_c
         if c_max is None:
-            c_max = choose_c_max(N, m, options.linear_reduction_budget)
+            c_max = choose_c_max(N, m, options.linear_reduction_budget, width)
         c_max = min(c_max, N)
         offsets = {}
-        position = 0
-        for c, j in bursar_output_labels(N, m):
+        for position, (c, _) in enumerate(bursar_output_labels(N, width)):
             offsets.setdefault(c, position)
-            position += 1
-        for c, (_, coeffs) in enumerate(exact_expansion(index, sign, m, c_max), start=1):
-            _, local_relations = find_linear_relations(coeffs)
+        if packing is None:
+            forms = [[[(index[g][jp], (sign[g][jp], 0))] for jp in range(m)] for g in range(N)]
+        else:
+            forms = packed_forms(index, sign, packing)
+        for c, (_, re, im) in enumerate(exact_expansion_forms(forms, m, c_max), start=1):
+            if im.any():
+                raise AssertionError(f"involution packing produced a non-zero imaginary part at c = {c}")
+            _, local_relations = find_linear_relations(re)
             off = offsets[c]
             relations.extend(LinearRelation(off + r.dropped, tuple((off + t, f) for t, f in r.terms))
                              for r in local_relations)
     dropped = {r.dropped for r in relations}
     kept = [i for i in range(D_base) if i not in dropped]
 
-    module = InvariantEmbedding(group_spec.n, k, slots, index, sign, options.dtype, keep=kept)
+    module = InvariantEmbedding(group_spec.n, k, slots, index, sign, options.dtype, keep=kept, packing=packing)
     meta = EmbeddingMeta(group_spec=group_spec, k=k, options=options, slots=slots, elements=elements,
                          index=index, sign=sign, kept=kept, relations=tuple(relations), e_dropped=e_dropped,
-                         linear_reduction_max_c=c_max)
+                         linear_reduction_max_c=c_max, packing=packing, involution=involution)
     assert module.output_shape.item() == meta.D == len(kept)
     return module, meta

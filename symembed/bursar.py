@@ -62,3 +62,37 @@ def bursar_coefficients(gw: Tensor) -> Tensor:
         E = E + F.pad(product, (0, L - (Lg + m - 1), 1, N - g - 1))
     flat_index = torch.tensor([c * L + j for c, j in bursar_output_labels(N, m)], device=gw.device)
     return E.reshape(B, (N + 1) * L)[:, flat_index]
+
+
+def bursar_coefficients_complex(gw_re: Tensor, gw_im: Tensor) -> tuple[Tensor, Tensor]:
+    """
+    The Bursarial coefficients of N complex polynomials q_g(x) = sum_j (gw_re + i gw_im)[g, j] x^j, computed with
+    real tensor operations (so autograd works without complex support).
+
+    Parameters
+    ----------
+    gw_re, gw_im
+        Tensors of shape (B, N, r): real and imaginary parts of the coefficients, ascending powers of x.
+
+    Returns
+    -------
+    (Tensor, Tensor)
+        Real and imaginary parts, each of shape (B, D) with D = bursar_size(N, r), ordered as in
+        ``bursar_output_labels``. When the multiset {q_g} is closed under complex conjugation the imaginary parts
+        vanish identically.
+    """
+    B, N, r = gw_re.shape
+    L = N * (r - 1) + 1
+    E_re = F.pad(torch.ones(B, 1, 1, dtype=gw_re.dtype, device=gw_re.device), (0, L - 1, 0, N))
+    E_im = torch.zeros_like(E_re)
+    for g in range(N):
+        Lg = g * (r - 1) + 1
+        a, b = E_re[:, :g + 1, :Lg], E_im[:, :g + 1, :Lg]
+        q_re, q_im = gw_re[:, g, :], gw_im[:, g, :]
+        prod_re = _poly_mul_rows(a, q_re) - _poly_mul_rows(b, q_im)
+        prod_im = _poly_mul_rows(a, q_im) + _poly_mul_rows(b, q_re)
+        pad = (0, L - (Lg + r - 1), 1, N - g - 1)
+        E_re = E_re + F.pad(prod_re, pad)
+        E_im = E_im + F.pad(prod_im, pad)
+    flat_index = torch.tensor([c * L + j for c, j in bursar_output_labels(N, r)], device=gw_re.device)
+    return E_re.reshape(B, (N + 1) * L)[:, flat_index], E_im.reshape(B, (N + 1) * L)[:, flat_index]

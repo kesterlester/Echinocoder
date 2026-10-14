@@ -25,6 +25,19 @@ Two levels are implemented (certification levels are defined in Section 4.3):
     compression, never injectivity. Every relation is recorded in `meta` and can be replayed with
     `meta.reconstruct_base`.
 
+- **`embedder="bursar_involution"`**: involution packing (Section 3.3), which is Level 0.
+  - An element `g0` of `G` acting on `w` as an involution, chosen with the smallest `|trace|`, packs `w` into
+    `(m + |tr|)/2` complex coordinates on which `g0` acts as complex conjugation.
+  - The multiset of packed vectors is then closed under conjugation, so the complex Bursarial polynomial has real
+    coefficients, and only those are output. That roughly halves the size: for example 11 → 5, 174 → 90, and
+    138060 → 79980 for `S(5)`, `k = 4`.
+  - It combines with `reductions="safe"`.
+  - The core, `involution.packing_from_matrix`, is generic in the involution `T`, so it applies to any multiset
+    known to be invariant under a fixed linear involution.
+  - On the simple cases, full polynomial closure leaves the same number of outputs for the packed and plain
+    embeddings: packing halves the raw count for free, but does not change what survives that reduction (see
+    `docs/explorations/polynomial_closure.txt`).
+
 `homogenise`, `root_normalise`, the complex field and Level 2 reductions are not implemented.
 
 Exact linear dependencies are rare, so the safe reductions remove very little. For `n = 5`, `k = 4`, `G = S(5)`:
@@ -55,6 +68,10 @@ Y = embed(X)                                       # (..., meta.D), differentiab
 meta.to_json()            # machine-readable description (slots, group, signed permutations, outputs, certification)
 meta.latex()              # LaTeX tables (needs amsmath + longtable)
 meta.expanded_output(21)  # small cases: output 21 expanded in the d's and e's (sympy)
+
+# Involution packing (about half the outputs, still Level 0), optionally with the safe reductions:
+embed2, meta2 = build_invariant_embedding(2, spec, EmbeddingOptions(embedder="bursar_involution", reductions="safe"))
+meta2.packed_coordinates()   # [(real part, imaginary part), ...] of each packed coordinate, in the d's and e's
 ```
 
 - `embed` is a `torch.nn.Module` following IWPC's `Encoding` conventions: `input_shape` and `output_shape` are integer
@@ -73,14 +90,19 @@ out in full into `docs/explorations/`, for inspection by eye:
 
 The cases are S(2) on (a, b), S(3) on (a, b, c) and S(2) x S(1) on (a, b, p), each with k = 2 and with k = 1.
 
+`python -m symembed.explore.polynomial_closure` writes `docs/explorations/polynomial_closure.txt`. For each case and
+for both embedders it keeps only the outputs that are not exact polynomials in those already kept, both formally in
+`w` and as functions of `L` (where the Gram and Plücker relations hold). Every identity is verified exactly.
+
 ## Layout
 
 | file | contents |
 |---|---|
 | `spec.py` | `GroupSpec`, `EmbeddingOptions` |
 | `slots.py` | slots of `w`, orbit grouping, group elements, signed-permutation table (pure Python, independent of symatom) |
-| `bursar.py` | Bursarial coefficients from `{g·w}` in torch |
-| `reductions.py` | exact expansion of low-`c` outputs, exact linear-dependency search (Level 1) |
+| `bursar.py` | Bursarial coefficients from `{g·w}` in torch, real and complex |
+| `involution.py` | involution packing: generic packing for any linear involution, slot-form packing, choice of `g0` |
+| `reductions.py` | exact (Gaussian-integer) expansion of low-`c` outputs, exact linear-dependency search (Level 1) |
 | `module.py` | `InvariantEmbedding` (the evaluator) and its flattened variant |
 | `meta.py` | `EmbeddingMeta`: JSON, LaTeX, symbolic expansion, possible degrees in `L` |
 | `build.py` | `build_invariant_embedding` |
@@ -104,6 +126,9 @@ The tests cover:
 - the exact expansion against sympy, and the linear algebra on synthetic cases, including a relation too large to
   reconstruct, which must be kept;
 - the safe reductions, by replaying the dropped outputs and comparing them numerically and symbolically;
+- involution packing: that `g0` acts as conjugation on the packed coordinates, for every involution and for a generic
+  non-permutation involution; that the imaginary parts vanish, symbolically and numerically; the output counts;
+  invariance; and the safe reductions applied on top;
 - comparison against full symbolic expansion;
 - a cross-check against the legacy Bursarial embedder;
 - invariance under permutations, rotations, and reflections (when `P` is in `G`);

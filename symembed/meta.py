@@ -34,6 +34,13 @@ CERTIFICATION_E_DROPPED = (
     "so the multiset is taken over the permutation part of G only."
 )
 
+CERTIFICATION_INVOLUTION = (
+    "Involution packing (Level 0): g0 acts on the packed coordinates as complex conjugation, and g -> g0 g permutes "
+    "the group, so the multiset of packed polynomials is closed under conjugation and B has real coefficients. The "
+    "complex Bursarial embedding is injective on multisets of complex vectors (unique factorisation in C[x][y]) and "
+    "the packing is a bijection, so the real coefficients determine MS."
+)
+
 CERTIFICATION_LEVEL_1_LINEAR = (
     "Level 1 (explicit identity): each dropped output is an exact rational linear combination of kept outputs, as "
     "polynomials in w, verified in exact integer arithmetic. Injectivity is inherited from the Level 0 embedding."
@@ -49,6 +56,11 @@ def _latex_text(text: str) -> str:
     return re.sub(r"[\\_{}^&%#$]", lambda match: _LATEX_ESCAPES[match.group()], text)
 
 
+def _latex_form(text: str) -> str:
+    """A packed-coordinate form like 'd_aa + d_bb' as LaTeX: d_aa -> d_{aa}, '*' removed."""
+    return re.sub(r"([de])_([A-Za-z0-9,]+)", r"\1_{\2}", text).replace("*", "")
+
+
 def _echinocoder_commit() -> str | None:
     try:
         result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=Path(__file__).parent,
@@ -58,26 +70,31 @@ def _echinocoder_commit() -> str | None:
         return None
 
 
-def possible_L_degrees(slots: tuple, k: int, N: int) -> list[list[int]]:
+def possible_L_degrees(slots: tuple, k: int, N: int, position_kinds: list | None = None) -> list[list[int]]:
     """
     For each Bursarial output E_{c,j}, the L-degrees of the monomials that can appear in it (before any cancellation).
 
-    A monomial of E_{c,j} is a product of c slot values whose slot indices sum to j. Each d has L-degree 2 and each e
-    has L-degree k, so the degree is 2c + (k-2)t where t counts the e factors. We track which (j, t) are reachable.
+    A monomial of E_{c,j} is a product of c values, one from each of c distinct q_g, whose powers of x sum to j. Each
+    d has L-degree 2 and each e has L-degree k, so the degree is 2c + (k-2)t where t counts the e factors. We track
+    which (j, t) are reachable. By default position j of q_g holds a single slot (``slots[j]``); ``position_kinds``
+    (a set of "d"/"e" per position) covers packed coordinates, which may combine slots of both kinds.
     """
-    m = len(slots)
-    is_e = [s.kind == "e" for s in slots]
+    if position_kinds is None:
+        position_kinds = [{s.kind} for s in slots]
+    m = len(position_kinds)
     L = N * (m - 1) + 1
     reach = np.zeros((L, N + 1), dtype=bool)        # reach[j, t] for the current c
-    for s in range(m):
-        reach[s, int(is_e[s])] = True
+    for s, kinds in enumerate(position_kinds):
+        for kind in kinds:
+            reach[s, int(kind == "e")] = True
     result = []
     for c in range(1, N + 1):
         if c > 1:
             new = np.zeros_like(reach)
-            for s in range(m):
-                shift_t = int(is_e[s])
-                new[s:, shift_t:] |= reach[:L - s, :N + 1 - shift_t]
+            for s, kinds in enumerate(position_kinds):
+                for kind in kinds:
+                    shift_t = int(kind == "e")
+                    new[s:, shift_t:] |= reach[:L - s, :N + 1 - shift_t]
             reach = new
         for j in range(c * (m - 1) + 1):
             ts = np.nonzero(reach[j])[0]
@@ -108,6 +125,8 @@ class EmbeddingMeta:
     relations: tuple = ()                    # LinearRelation per dropped base output, indices are base indices
     e_dropped: bool = False
     linear_reduction_max_c: int = 0
+    packing: object = None                   # involution.Packing when embedder == "bursar_involution"
+    involution: int | None = None            # index in ``elements`` of the involution g0 used for the packing
     echinocoder_commit: str | None = field(default_factory=_echinocoder_commit)
     _expanded_base: list | None = field(default=None, repr=False)
 
@@ -127,9 +146,25 @@ class EmbeddingMeta:
         return len(self.elements)
 
     @property
+    def width(self) -> int:
+        """Number of coefficients of each q_g: m, or the number of packed coordinates."""
+        return self.m if self.packing is None else self.packing.r
+
+    def position_kinds(self) -> list:
+        """For each position of q_g, the kinds ("d", "e") of the slots it involves."""
+        if self.packing is None:
+            return [{s.kind} for s in self.slots]
+        return [{self.slots[t].kind for t in range(self.m) if p[t] or q[t]}
+                for p, q in zip(self.packing.plus, self.packing.minus)]
+
+    def packed_coordinates(self) -> list[tuple[str, str]]:
+        """Each packed coordinate as (real part, imaginary part) in the slot names; empty if not packed."""
+        return [] if self.packing is None else self.packing.describe(self.slot_names())
+
+    @property
     def base_output_labels(self) -> list[tuple[int, int]]:
         """(c, j) for each base output: base output i is E_{c,j}."""
-        return bursar_output_labels(self.N, self.m)
+        return bursar_output_labels(self.N, self.width)
 
     @property
     def kept_base_indices(self) -> list[int]:
@@ -162,6 +197,8 @@ class EmbeddingMeta:
         if self.relations:
             parts.append(CERTIFICATION_LEVEL_1_LINEAR)
         parts.append(CERTIFICATION_LEVEL_0_BURSAR)
+        if self.packing is not None:
+            parts.append(CERTIFICATION_INVOLUTION)
         if self.e_dropped:
             parts.append(CERTIFICATION_E_DROPPED)
         return " ".join(parts)
@@ -220,7 +257,7 @@ class EmbeddingMeta:
     # ----- machine readable ------------------------------------------------------------------------------------
 
     def to_dict(self) -> dict:
-        degrees = possible_L_degrees(self.slots, self.k, self.N)
+        degrees = possible_L_degrees(self.slots, self.k, self.N, self.position_kinds())
         return {
             "symembed_version": SYMEMBED_VERSION,
             "echinocoder_commit": self.echinocoder_commit,
@@ -244,8 +281,16 @@ class EmbeddingMeta:
                                for g in self.elements],
             "signed_permutation": {"index": self.index, "sign": self.sign,
                                    "meaning": "(g.w)[s] = sign[g][s] * w[index[g][s]]"},
+            "packing": None if self.packing is None else {
+                "involution": self.elements[self.involution].cycle_notation(self.labels),
+                "trace": sum(self.sign[self.involution][s] for s in range(self.m)
+                             if self.index[self.involution][s] == s),
+                "coordinates": [{"re": re_, "im": im_} for re_, im_ in self.packed_coordinates()],
+                "meaning": "z_j = re_j(g.w) + i im_j(g.w); q_g(x) = sum_j z_j x^j; outputs are real parts",
+            },
             "definitions": {
-                "q_g(x)": "sum_{j=0}^{m-1} (g.w)_j x^j",
+                "q_g(x)": ("sum_{j=0}^{m-1} (g.w)_j x^j" if self.packing is None
+                           else "sum_j z_j(g.w) x^j, with z_j the packed coordinates"),
                 "B(x,y)": "prod_{g} (y + q_g(x)) = sum_{c=0}^{N} y^(N-c) E_c(x), product over the group elements",
                 "E_c(x)": "sum_j E_{c,j} x^j",
             },
@@ -276,12 +321,32 @@ class EmbeddingMeta:
         import sympy
         x = sympy.Symbol("x")
         w = self.slot_symbols()
-        E = [sympy.Poly(1, x, domain=sympy.ZZ.poly_ring(*w))]
+        domain = sympy.ZZ.poly_ring(*w)
+
+        def poly(expr):
+            return sympy.Poly(expr, x, domain=domain)
+
+        # Complex polynomials as (real part, imaginary part).
+        E = [(poly(1), poly(0))]
         for g in range(self.N):
-            q = sympy.Poly(sum(self.sign[g][j] * w[self.index[g][j]] * x ** j for j in range(self.m)), x,
-                           domain=E[0].domain)
-            E = [E[0]] + [E[c] + q * E[c - 1] for c in range(1, len(E))] + [q * E[-1]]
-        self._expanded_base = [E[c].coeff_monomial(x ** j) for c, j in self.base_output_labels]
+            gw = [self.sign[g][s] * w[self.index[g][s]] for s in range(self.m)]
+            if self.packing is None:
+                q = (poly(sum(gw[j] * x ** j for j in range(self.m))), poly(0))
+            else:
+                q = (poly(sum(sum(c * v for c, v in zip(row, gw)) * x ** j
+                              for j, row in enumerate(self.packing.plus))),
+                     poly(sum(sum(c * v for c, v in zip(row, gw)) * x ** j
+                              for j, row in enumerate(self.packing.minus))))
+
+            def times(a, b):
+                return (a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0])
+
+            E = ([E[0]] + [(E[c][0] + times(q, E[c - 1])[0], E[c][1] + times(q, E[c - 1])[1])
+                           for c in range(1, len(E))] + [times(q, E[-1])])
+        for c, j in self.base_output_labels:
+            if E[c][1].coeff_monomial(x ** j) != 0:
+                raise AssertionError(f"E_{{{c},{j}}} has a non-zero imaginary part")
+        self._expanded_base = [E[c][0].coeff_monomial(x ** j) for c, j in self.base_output_labels]
         return self._expanded_base
 
     def expanded_outputs(self, max_group_order: int = 24) -> list:
@@ -323,6 +388,16 @@ class EmbeddingMeta:
                      "B(x,y) = \\prod_{g} \\bigl(y + q_g(x)\\bigr) = \\sum_{c=0}^{N} y^{N-c} E_c(x), "
                      "\\qquad E_c(x) = \\sum_j E_{c,j}\\, x^j. \\]\n")
 
+        if self.packing is not None:
+            rows = [f"{j} & ${_latex_form(re_)}$ & ${_latex_form(im_)}$ \\\\"
+                    for j, (re_, im_) in enumerate(self.packed_coordinates())]
+            g0 = self.elements[self.involution].cycle_notation(L)
+            parts.append(f"Involution packing with $g_0 = {g0}$: each $q_g$ has packed coefficients "
+                         "$z_j(g\\cdot w) = \\mathrm{Re}_j + i\\,\\mathrm{Im}_j$, on which $g_0$ acts as complex "
+                         "conjugation, so the outputs (real parts) are the whole of $B$.\n")
+            parts.append("\\begin{longtable}{rll}\n$j$ & real part & imaginary part \\\\ \\hline\n"
+                         + "\n".join(rows) + "\n\\end{longtable}\n")
+
         def signed(g, j):
             s = self.slots[self.index[g][j]].latex(L)
             return ("-" if self.sign[g][j] < 0 else "") + s
@@ -336,7 +411,7 @@ class EmbeddingMeta:
         parts.append("\\begin{longtable}{ll}\n$g$ & $g\\cdot w$ (coefficients of $q_g$) \\\\ \\hline\n"
                      + "\n".join(rows) + "\n\\end{longtable}\n")
 
-        degrees = possible_L_degrees(self.slots, self.k, self.N)
+        degrees = possible_L_degrees(self.slots, self.k, self.N, self.position_kinds())
         expanded_exprs = self.expanded_outputs() if expanded else None
         rows = []
         for i, (b, (c, j)) in enumerate(list(zip(self.kept_base_indices, self.output_labels))[:max_rows]):

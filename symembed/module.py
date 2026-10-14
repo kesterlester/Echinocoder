@@ -13,7 +13,7 @@ import numpy as np
 import torch
 from torch import nn, Tensor
 
-from .bursar import bursar_coefficients, bursar_size
+from .bursar import bursar_coefficients, bursar_coefficients_complex, bursar_size
 from .slots import Slot
 
 
@@ -29,11 +29,12 @@ class InvariantEmbedding(nn.Module):
     """
 
     def __init__(self, n: int, k: int, slots: tuple, index: list, sign: list, dtype: torch.dtype,
-                 keep: list | None = None):
+                 keep: list | None = None, packing=None):
         super().__init__()
         N, m = len(index), len(slots)
+        width = m if packing is None else packing.r          # length of each polynomial q_g
         if keep is None:
-            keep = list(range(bursar_size(N, m)))
+            keep = list(range(bursar_size(N, width)))
         self.n, self.k, self.N, self.m = n, k, N, m
 
         # Raw quantities are computed as [all d_ij for i <= j (row-major)] + [all e for k-subsets (lexicographic)];
@@ -53,7 +54,11 @@ class InvariantEmbedding(nn.Module):
         self.register_buffer("g_index", torch.tensor(index, dtype=torch.int64))
         self.register_buffer("g_sign", torch.tensor(sign, dtype=dtype))
         self.register_buffer("keep", torch.tensor(keep, dtype=torch.int64))
-        self.keeps_all = len(keep) == bursar_size(N, m)
+        self.keeps_all = len(keep) == bursar_size(N, width)
+        self.packed = packing is not None
+        if self.packed:
+            self.register_buffer("pack_plus", torch.tensor(packing.plus, dtype=dtype).reshape(packing.r, m))
+            self.register_buffer("pack_minus", torch.tensor(packing.minus, dtype=dtype).reshape(packing.r, m))
 
     @property
     def is_vector_input(self) -> bool:
@@ -94,7 +99,11 @@ class InvariantEmbedding(nn.Module):
         batch_shape = x.shape[:-2]
         w = self.w(x).reshape(-1, self.m)
         gw = w[:, self.g_index] * self.g_sign                                # (B, N, m)
-        out = bursar_coefficients(gw)
+        if self.packed:
+            # Involution packing: the coefficients are real, so only the real parts are output.
+            out, _ = bursar_coefficients_complex(gw @ self.pack_plus.T, gw @ self.pack_minus.T)
+        else:
+            out = bursar_coefficients(gw)
         if not self.keeps_all:
             out = out[:, self.keep]
         return out.reshape(*batch_shape, out.shape[-1])

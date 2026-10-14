@@ -328,6 +328,105 @@ block ($E_2 = q_1 q_\sigma$, 17 coefficients $E_{2,0}, \ldots, E_{2,16}$) contai
 \]
 This is where the information about $e_{ab}$ lost from $E_1$ reappears.
 
+\subsection{Involution packing}\label{sec:involution}
+
+The Bursarial embedding can be made roughly half the size, while staying
+injective by construction (Level~0), whenever the multiset is invariant under a
+fixed linear involution. For $\MS$ this is always the case if $G$ contains an
+element acting on $w$ as a non-trivial involution.
+
+\paragraph{The general mechanism.}
+Let $T$ be a real $m \times m$ matrix with $T^2 = I$, and let $M$ be a multiset
+of vectors in $\mathbb{R}^m$ that is invariant under $T$ as a multiset, that
+is, $\{T v : v \in M\} = M$. Choose integer bases
+$f_1, \ldots, f_{m_+}$ and $h_1, \ldots, h_{m_-}$ of linear functionals with
+$f_a \circ T = f_a$ and $h_b \circ T = -h_b$. Here $m_\pm$ are the dimensions of
+the $\pm 1$ eigenspaces, $m_+ + m_- = m$, and $m_+ - m_- = \operatorname{tr} T$.
+Pad the shorter list with zero functionals to a common length
+$r = \max(m_+, m_-) = (m + |\operatorname{tr} T|)/2$, and pack each vector as
+\[
+  \phi(v) = \bigl( f_1(v) + i\,h_1(v),\ \ldots,\ f_r(v) + i\,h_r(v) \bigr) \in \mathbb{C}^r .
+\]
+Then $\phi$ is injective, and $\phi(Tv) = \overline{\phi(v)}$, entry by entry. With
+$q_v(x) = \sum_j \phi(v)_j\, x^j$, the complex Bursarial polynomial
+\[
+  B(x, y) = \prod_{v \in M} \bigl( y + q_v(x) \bigr)
+\]
+therefore satisfies
+\[
+  \overline{B} = \prod_{v \in M} \bigl( y + q_{Tv}(x) \bigr) = B ,
+\]
+because $v \mapsto Tv$ permutes $M$. So every coefficient of $B$ is real.
+$\mathbb{C}[x][y]$ is a unique factorisation domain and each factor is monic in
+$y$, so $B$ determines the multiset $\{q_v\}$, hence $\{\phi(v)\}$, hence $M$.
+The real coefficients of $B$ are therefore an injective embedding of $M$ with
+\[
+  D = |M| + (r - 1)\,\frac{|M|(|M| + 1)}{2}
+\]
+outputs, instead of $|M| + (m - 1)|M|(|M| + 1)/2$.
+
+\paragraph{Application to $\MS$.}
+Let $g_0 \in G$ act on $w$ as a non-trivial involution, and take $T$ to be that
+action. Because $g \mapsto g_0 g$ permutes $G$,
+\[
+  T(g \cdot w) = (g_0 g) \cdot w ,
+\]
+so $\MS$ is invariant under $T$ and the mechanism applies. The members of
+$\MS$ pair up as $(g \cdot w,\ g_0 g \cdot w)$. Note that $g_0$ multiplies on the
+\emph{left}. Pairing $g \cdot w$ with $g g_0 \cdot w$ instead would relate the
+two by $g g_0 g^{-1}$, which depends on $g$ and is not a single fixed $T$. When
+$T$ is a signed permutation, $(Tw)_s = \sigma_s\, w_{\pi(s)}$, integer
+functionals can be read off slot by slot:
+\begin{itemize}
+  \item a fixed slot ($\pi(s) = s$) gives $w_s$, in the $+1$ part if
+    $\sigma_s = +1$ and in the $-1$ part otherwise;
+  \item a swapped pair ($\pi(s) = t \ne s$) gives $w_s + \sigma_s w_t$ in the
+    $+1$ part and $w_s - \sigma_s w_t$ in the $-1$ part.
+\end{itemize}
+The best $g_0$ is the one with smallest $|\operatorname{tr} T|$. The special case
+$g_0 = p$ (parity) packs every $d$ with an $e$. The case of $g_0$ swapping the
+two members of a zipped pair is symcoder's $z \mapsto i\bar z$ compression.
+
+\paragraph{Example.}
+For $S(2)$ acting on $(a, b)$ with $k = 2$, take $g_0 = (ab)$, which has trace~0.
+Then
+\[
+  z_1 = (d_{aa} + d_{bb}) + i\,(d_{aa} - d_{bb}), \qquad
+  z_2 = d_{ab} + i\,e_{ab} = \bar z_a z_b ,
+\]
+and the 5 outputs are
+\[
+  2(d_{aa} + d_{bb}),\quad 2 d_{ab},\quad 2(d_{aa}^2 + d_{bb}^2),\quad
+  2\bigl(d_{ab}(d_{aa} + d_{bb}) + e_{ab}(d_{aa} - d_{bb})\bigr),\quad
+  d_{ab}^2 + e_{ab}^2 .
+\]
+The unpacked embedding has 11.
+
+\paragraph{Sizes.}
+The table gives output counts before any reduction.
+\begin{center}
+\begin{tabular}{lrrrr}
+  case & $g_0$ & $\operatorname{tr}$ & plain & packed \\ \hline
+  $S(2)$, $k=2$                 & $(ab)$        & $0$  & 11     & 5 \\
+  $S(3)$, $k=2$                 & $(bc)$        & $+1$ & 174    & 90 \\
+  $S(2)\times S(1)$, $k=2$      & $(ab)$        & $+1$ & 26     & 14 \\
+  $S(5)$, $k=4$                 & $(de)$        & $+4$ & 138060 & 79980 \\
+  $S(3)\times S(2)$, $k=3$      & $(bc)(pq)$    & $+1$ & 1884   & 948 \\
+  $S(5)\times P$, $k=4$         & $(bc)(de)p$   & $+2$ & 549720 & 289440
+\end{tabular}
+\end{center}
+
+\paragraph{Limits.}
+The saving is at most a factor of about~2. Using two commuting involutions
+would need an algebra with two independent conjugations. Bicomplex numbers have
+zero divisors, which breaks unique factorisation, and quaternions do not
+commute, so the product depends on the order of its factors. On the simple cases
+of Section~\ref{sec:exploration}, full polynomial closure (in $L$) leaves exactly
+as many outputs from the packed embedding as from the plain one. The packing
+does not change what survives that (expensive) reduction. What it gives is the
+factor of~2 for free, with no reduction work, and it does better than the plain
+embedding followed by the linear (safe) reductions.
+
 \section{Layer 3: removing redundancy}
 
 There is no obviously best method for removing the redundancy in $\Phi$.
@@ -588,9 +687,10 @@ and \texttt{lightning}). \texttt{embed\_fn} is therefore a
 \subsection{Options (initial list)}
 
 \begin{itemize}
-  \item \texttt{embedder}: which multiset embedding to use (layer 2).
-    Initially only \texttt{"bursar"}, but chosen from a registry so that others
-    can be added.
+  \item \texttt{embedder}: which multiset embedding to use (layer 2), chosen
+    from a registry so that others can be added. Currently
+    \texttt{"bursar"} (Section~3.1) and \texttt{"bursar\_involution"} (involution
+    packing, Section~\ref{sec:involution}), both Level~0.
   \item \texttt{reductions}: which reductions to apply, as an ordered list or
     a level. Early versions may support only \texttt{none}. Next would come
     the safe reductions of Section~4 (zero, duplicate, scalar multiple, linear
@@ -750,7 +850,8 @@ compared with them.
     hold automatically. Identities are found modulo four primes, reconstructed
     by the Chinese remainder theorem, and verified exactly. Every kept set is
     therefore a Level~1 certified separating set: each Bursarial output is an
-    explicit polynomial in it.
+    explicit polynomial in it. Each case is run for both the plain and the
+    involution-packed embedding.
 \end{itemize}
 
 \subsection{Observations}
@@ -834,6 +935,27 @@ The table gives the number of outputs in each case (all without parity).
     \end{itemize}
 \end{enumerate}
 
+\paragraph{Involution packing under reduction.}
+The counts below run from outputs before reduction, to those kept by the
+polynomial closure in $w$, to those kept by the polynomial closure in $L$.
+
+\begin{center}
+\begin{tabular}{lll}
+  case & plain & involution-packed \\ \hline
+  $S(2)$, $k=2$             & $11 \to 5 \to 4$    & $5 \to 5 \to 4$ \\
+  $S(3)$, $k=2$             & $174 \to 32 \to 13$ & $90 \to 58 \to 13$ \\
+  $S(2)\times S(1)$, $k=2$  & $26 \to 15 \to 11$  & $14 \to 12 \to 11$ \\
+  $S(2)$, $k=1$             & $14 \to 6 \to 2$    & $8 \to 6 \to 2$ \\
+  $S(3)$, $k=1$             & $174 \to 21 \to 5$  & $111 \to 24 \to 5$ \\
+  $S(2)\times S(1)$, $k=1$  & $26 \to 12 \to 3$   & $17 \to 11 \to 3$
+\end{tabular}
+\end{center}
+
+After full closure in $L$ the two agree in every case. Formally in $w$ the
+packed embedding is sometimes worse (58 against 32 for $S(3)$, $k=2$). Packing
+halves the raw count at no cost, but leaves unchanged what survives the
+polynomial closure, which is itself only feasible for small cases.
+
 \subsection{Possible lines of enquiry (unordered, not exhaustive)}
 
 \begin{itemize}
@@ -879,8 +1001,11 @@ The table gives the number of outputs in each case (all without parity).
         $174 \to 90$ for $S(3)$, $k=2$; $26 \to 14$ for $S(2)\times S(1)$,
         $k=2$; $138060 \to 79980$ for $S(5)$, $k=4$; $1884 \to 948$ for
         $S(3)\times S(2)$, $k=3$.
-      \item It has been checked numerically, but not yet for what survives
-        reduction.
+      \item Now implemented (Section~\ref{sec:involution}, embedder
+        \texttt{bursar\_involution}). What survives full polynomial closure is
+        unchanged on the simple cases (see above). Open questions: whether
+        packing changes what survives other reductions, and whether the factor
+        of~2 can be exceeded.
       \item Going beyond a factor of~2 with two commuting involutions would
         need an algebra with two independent conjugations. Bicomplex numbers
         have zero divisors, which breaks unique factorisation, and quaternions

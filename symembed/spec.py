@@ -73,7 +73,7 @@ class GroupSpec:
 
 
 _SUPPORTED = {
-    "embedder": ("bursar",),
+    "embedder": ("bursar", "bursar_involution"),
     "reductions": ("none", "safe"),
     "field": ("real",),
 }
@@ -87,7 +87,10 @@ class EmbeddingOptions:
     Parameters
     ----------
     embedder
-        The multiset embedding used in layer 2. Only ``"bursar"`` exists so far.
+        The multiset embedding used in layer 2. ``"bursar"``: the Bursarial embedding of {g.w}.
+        ``"bursar_involution"``: involution packing (notes, Section 3.3). An involution g0 in G (the one with the
+        smallest |trace| on w) is used to pack w into complex coordinates on which g0 acts as conjugation, so that
+        the complex Bursarial polynomial has real coefficients; roughly halves the number of outputs. Level 0.
     reductions
         ``"none"``: the unpruned baseline (Level 0). ``"safe"``: the reductions that need no judgement (Level 0/1):
         omit the determinants when parity is in G, and drop outputs that are exact linear combinations of kept

@@ -27,16 +27,20 @@ def monomials(m: int, c: int) -> list[tuple]:
     return list(combinations_with_replacement(range(m), c))
 
 
-def expansion_cost(m: int, c: int) -> int:
-    """Number of integer coefficients in the exact expansion of E_c: (#monomials) x (#powers of x)."""
-    return comb(m + c - 1, c) * (c * (m - 1) + 1)
+def expansion_cost(m: int, c: int, width: int | None = None) -> int:
+    """
+    Number of integer coefficients in the exact expansion of E_c: (#monomials of degree c in the m slots) x
+    (#powers of x, which is c(width-1)+1 where width is the length of each q_g, m by default).
+    """
+    width = m if width is None else width
+    return comb(m + c - 1, c) * (c * (width - 1) + 1)
 
 
-def choose_c_max(N: int, m: int, budget: int) -> int:
+def choose_c_max(N: int, m: int, budget: int, width: int | None = None) -> int:
     """The largest c_max <= N whose exact expansions E_1..E_{c_max} fit within the budget."""
     total, c_max = 0, 0
     for c in range(1, N + 1):
-        total += expansion_cost(m, c)
+        total += expansion_cost(m, c, width)
         if total > budget:
             break
         c_max = c
@@ -45,32 +49,54 @@ def choose_c_max(N: int, m: int, budget: int) -> int:
 
 def exact_expansion(index: list, sign: list, m: int, c_max: int) -> list:
     """
-    The exact expansion of E_1..E_{c_max} as integer polynomials in w.
+    The exact expansion of E_1..E_{c_max} as integer polynomials in w, for q_g(x) = sum_j' sign*w_index x^j'.
 
     Returns a list, for c = 1..c_max, of (monos, coeffs), where ``coeffs[j, t]`` is the coefficient of monomial
-    ``monos[t]`` in E_{c,j}. Uses the recurrence E_c += q_g * E_{c-1} over g, with q_g(x) = sum_j' sign*w_index x^j'.
+    ``monos[t]`` in E_{c,j}.
     """
-    N = len(index)
-    # |coefficient| <= C(N, c) m^c; use exact Python ints if that might overflow int64.
-    big = any(comb(N, c) * m ** c >= _INT64_SAFE for c in range(1, c_max + 1))
+    forms = [[[(index[g][jp], (sign[g][jp], 0))] for jp in range(m)] for g in range(len(index))]
+    return [(monos, re) for monos, re, _ in exact_expansion_forms(forms, m, c_max)]
+
+
+def exact_expansion_forms(forms: list, m: int, c_max: int) -> list:
+    """
+    The exact expansion of E_1..E_{c_max} as Gaussian-integer polynomials in the m slots of w, for polynomials
+    q_g(x) = sum_jp (sum over (s, (a, b)) in forms[g][jp] of (a + i b) w_s) x^jp.
+
+    Returns a list, for c = 1..c_max, of (monos, real coeffs, imaginary coeffs), each coefficient array of shape
+    (number of powers of x, number of monomials). Uses E_c += q_g * E_{c-1} over g.
+    """
+    N = len(forms)
+    r = len(forms[0]) if forms else 0
+    max_abs = max((abs(a) + abs(b) for row in forms for terms in row for _, (a, b) in terms), default=1)
+    width = max((len(terms) for row in forms for terms in row), default=1)
+    # |coefficient| <= C(N, c) (width * max_abs)^c; use exact Python ints if that might overflow int64.
+    big = any(comb(N, c) * (width * max_abs) ** c >= _INT64_SAFE for c in range(1, c_max + 1))
     dtype = object if big else np.int64
 
     monos = [monomials(m, c) for c in range(c_max + 1)]
     where = [{mono: t for t, mono in enumerate(ms)} for ms in monos]
-    # times[c][t, s] = index (in degree c) of monos[c-1][t] * w_s
     times = [None] + [np.array([[where[c][tuple(sorted(mono + (s,)))] for s in range(m)] for mono in monos[c - 1]],
                                dtype=np.int64).reshape(len(monos[c - 1]), m)
                       for c in range(1, c_max + 1)]
-    E = [np.ones((1, 1), dtype=dtype)] + [np.zeros((len(monos[c]), c * (m - 1) + 1), dtype=dtype)
-                                          for c in range(1, c_max + 1)]
+    re = [np.ones((1, 1), dtype=dtype)] + [np.zeros((len(monos[c]), c * (r - 1) + 1), dtype=dtype)
+                                           for c in range(1, c_max + 1)]
+    im = [np.zeros((1, 1), dtype=dtype)] + [np.zeros((len(monos[c]), c * (r - 1) + 1), dtype=dtype)
+                                            for c in range(1, c_max + 1)]
     for g in range(N):
         for c in range(min(g + 1, c_max), 0, -1):          # downwards, so E[c-1] is still the old value
-            prev = E[c - 1]
-            Lp = prev.shape[1]
-            for jp in range(m):
-                s, sgn = index[g][jp], sign[g][jp]
-                E[c][times[c][:, s], jp:jp + Lp] += sgn * prev
-    return [(monos[c], E[c].T.copy()) for c in range(1, c_max + 1)]
+            prev_re, prev_im = re[c - 1], im[c - 1]
+            Lp = prev_re.shape[1]
+            for jp in range(r):
+                for s, (a, b) in forms[g][jp]:
+                    rows = times[c][:, s]
+                    if a:
+                        re[c][rows, jp:jp + Lp] += a * prev_re
+                        im[c][rows, jp:jp + Lp] += a * prev_im
+                    if b:
+                        re[c][rows, jp:jp + Lp] -= b * prev_im
+                        im[c][rows, jp:jp + Lp] += b * prev_re
+    return [(monos[c], re[c].T.copy(), im[c].T.copy()) for c in range(1, c_max + 1)]
 
 
 def _rational_reconstruct(a: int, p: int = PRIME) -> Fraction | None:
