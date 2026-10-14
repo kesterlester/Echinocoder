@@ -3,7 +3,7 @@
 #
 #        [[3,2],[4,1],[-2,1]]
 #
-# when the above represents the size n=3 multiset of m=2-vectors:
+# when the above represents the size n=3 multiset of k=2-vectors:
 #
 #        {{ [3,2],[4,1],[-2,1] }}
 #
@@ -15,7 +15,7 @@
 #
 #          ORDER(n, k) == n + (k-1)*n*(n+1)/2  
 #
-# where n is the number of vectors in the set, and m is the dimension of each of those vectors. 
+# where n is the number of vectors in the set, and k is the dimension of each of those vectors. 
 # This order has leading term 
 #
 #                k*n*n/2.
@@ -65,8 +65,8 @@ def embed_without_flattening(data):
     if n==0:
         return []
 
-    m = len(data[0])
-    if m==0:
+    k = len(data[0])
+    if k==0:
         return []
 
     polys = [ Poly(vector, abc.x)+Poly(abc.y) for vector in data ]
@@ -79,14 +79,14 @@ def embed_without_flattening(data):
     # # extract coeffs from product slowly:
     # for c in range(1,n+1):
     #      yPower = n-c
-    #      for xPower in range(c*(m-1)+1):
+    #      for xPower in range(c*(k-1)+1):
     #          coeff = product.coeff_monomial((abc.x)**xPower * (abc.y)**yPower) # This could be made faster by using coeff_monomial((xPower,yPower)) or coeff_monomial((yPower,xPower)) however I have not figured out how to guarantee which order will work reliably.
     #          print(coeff)
 
     # extract coeffs from product fast:
     coeffs = [ [
              product.coeff_monomial((abc.x)**xPower * (abc.y)**(n-c) ) # n-c==yPower.  This line could be made faster by using coeff_monomial((xPower,yPower)) or coeff_monomial((yPower,xPower)) however I have not figured out how to guarantee which order will work reliably.
-               for xPower in range(c*(m-1)+1) ]
+               for xPower in range(c*(k-1)+1) ]
                for c in range(1,n+1) ]
 
     #print("Coeffs",coeffs)
@@ -129,12 +129,12 @@ class Embedder(MultisetEmbedder):
         n = len(data)
         assert n>1
     
-        m = len(data[0])
-        assert m>1
+        k = len(data[0])
+        assert k>1
     
         flattened_coeffs = [ a for b in embed_without_flattening(data) for a in b ]
     
-        EXPECTED_ORDER = self.size_from_n_k(n,m)
+        EXPECTED_ORDER = self.size_from_n_k(n,k)
         ACTUAL_ORDER = len(flattened_coeffs)
         assert EXPECTED_ORDER == ACTUAL_ORDER
         if EXPECTED_ORDER != ACTUAL_ORDER:
