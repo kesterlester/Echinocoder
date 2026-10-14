@@ -417,15 +417,173 @@ The table gives output counts before any reduction.
 \end{center}
 
 \paragraph{Limits.}
-The saving is at most a factor of about~2. Using two commuting involutions
-would need an algebra with two independent conjugations. Bicomplex numbers have
-zero divisors, which breaks unique factorisation, and quaternions do not
-commute, so the product depends on the order of its factors. On the simple cases
-of Section~\ref{sec:exploration}, full polynomial closure (in $L$) leaves exactly
-as many outputs from the packed embedding as from the plain one. The packing
-does not change what survives that (expensive) reduction. What it gives is the
-factor of~2 for free, with no reduction work, and it does better than the plain
-embedding followed by the linear (safe) reductions.
+Complex conjugation is the only non-trivial symmetry of $\mathbb{C}$ over
+$\mathbb{R}$, so conjugation alone saves at most a factor of about~2. (Using
+two commuting involutions in the same way would need an algebra with two
+independent conjugations. Bicomplex numbers have zero divisors, which breaks
+unique factorisation, and quaternions do not commute, so the product depends on
+the order of its factors.) This is \emph{not} a limit on exploiting the group,
+however. Section~\ref{sec:graded} gets much larger factors by also letting a
+group element act on the variable~$x$.
+
+On the simple cases of Section~\ref{sec:exploration}, full polynomial closure
+(in $L$) leaves exactly as many outputs from the packed embedding as from the
+plain one. The packing does not change what survives that (expensive)
+reduction. What it gives is the saving for free, with no reduction work, and it
+does better than the plain embedding followed by the linear (safe) reductions.
+
+\subsection{Graded packing}\label{sec:graded}
+
+Involution packing let one group element act on the \emph{coefficients} of
+$B$, as complex conjugation. Graded packing also lets a group element act on the
+\emph{variable} $x$. That kills most coefficients outright, and the saving grows
+with the order of the element.
+
+\paragraph{A warm-up: even polynomials.}
+Suppose a linear map $T$ permutes the members of a multiset $M$, and acts on
+each vector by flipping the sign of its odd-numbered entries:
+$(Tv)_j = (-1)^j v_j$. Then
+\[
+  q_{Tv}(x) = \sum_j (-1)^j v_j x^j = q_v(-x),
+\]
+and so
+\[
+  B(-x, y) = \prod_{v \in M} \bigl( y + q_v(-x) \bigr)
+           = \prod_{v \in M} \bigl( y + q_{Tv}(x) \bigr) = B(x, y),
+\]
+because $v \mapsto Tv$ only reorders the factors. So $B$ is an even function of
+$x$, and every coefficient of an odd power of $x$ is zero for every input.
+Those coefficients never need to be stored. This is the same factor of~2 as
+involution packing, obtained with real numbers by putting the $+1$ coordinates
+of $T$ at even positions and the $-1$ coordinates at odd positions.
+
+\paragraph{Roots of unity.}
+Now replace $-1$ by $\zeta = e^{2\pi i/r}$. If a symmetry $h$ of $M$
+multiplies the coordinate at position $j$ by $\zeta^j$, then
+$q_{hv}(x) = q_v(\zeta x)$, so $B(\zeta x, y) = B(x, y)$. Comparing the
+coefficients of $y^{|M|-c} x^j$ on both sides gives
+$E_{c,j} = \zeta^j E_{c,j}$, and $\zeta^j \ne 1$ unless $r$ divides $j$.
+Hence
+\[
+  E_{c,j} = 0 \quad \text{unless } r \mid j ,
+\]
+so only about one coefficient in $r$ survives.
+
+\paragraph{Finding such coordinates.}
+For $\MS$, take any $h \in G$, and let $r$ be the order of its action on $w$.
+Since $h^r = 1$, every eigenvalue of that action is an $r$-th root of unity
+$\zeta^k$. Call $k \in \{0, \ldots, r-1\}$ the \emph{weight}. Use
+eigen-coordinates: linear functionals $p$ with $p(h \cdot v) = \zeta^k p(v)$.
+They are real when $\zeta^k = \pm 1$, and complex otherwise. Put each coordinate
+of weight $k$ at a position $j \equiv k \pmod r$, and leave unused positions
+empty (zero). A complex eigen-coordinate of weight $k$ and its conjugate
+(weight $-k$) carry the same information, so only one of each pair is kept. It
+can go at residue $k$ or at residue $r-k$, whichever keeps the residues
+balanced. Balance matters, because the length of $q$ is set by the busiest
+residue.
+
+\paragraph{Making the coefficients real.}
+The surviving coefficients are complex in general, and would cost two reals
+each. But suppose $G$ also contains an involution $s$ with $s h s = h^{-1}$.
+Then $h$ and $s$ generate a dihedral group, like the rotations ($h$) and
+reflections ($s$) of a regular $r$-gon. The coordinates can then be chosen so
+that also
+\[
+  p(s \cdot v) = \overline{p(v)} .
+\]
+(Both $s$ and complex conjugation map the weight-$k$ space to the weight-$(-k)$
+space. Their composite is a ``real structure'' on each weight space, and
+coordinates fixed by it have exactly this property.) For the real weight
+spaces ($k = 0$, and $k = r/2$ if $r$ is even) this just means pairing an
+$s$-even coordinate with an $s$-odd one as (even)${}+i\,$(odd), as in involution
+packing. Then $\overline{B} = B$, as in Section~\ref{sec:involution}, and every
+surviving coefficient is real.
+
+\paragraph{Invariants, and the scalar mode.}
+Coordinates fixed by every element of $G$, such as $d_{aa} + d_{bb}$, are equal
+for every member of $\MS$. They can be output directly and left out of the
+packing. Occasionally $h$ then multiplies \emph{every} remaining coordinate by
+the same factor $\zeta^\rho$. In that case the coordinates are placed
+consecutively and the grading moves to $y$: from $q_{hv} = \zeta^\rho q_v$ it
+follows that $E_c = \zeta^{\rho c} E_c$, so whole blocks $E_c$ vanish unless $r$
+divides $\rho c$.
+
+\paragraph{Why this is Level 0.}
+The packing (together with any invariants output directly) is an injective
+linear map from $w$. The complex Bursarial embedding is injective on multisets
+of complex vectors, by unique factorisation in $\mathbb{C}[x][y]$. The omitted
+coefficients are zero for every input, so they carry no information, and when
+$s$ is used the imaginary parts of the kept coefficients are zero too.
+Everything is exact. In practice the code tries one $h$ from each conjugacy
+class, every suitable $s$ (or none), and with or without taking the invariants
+out, and keeps whichever choice gives the fewest outputs. The choice $h = e$
+recovers involution packing.
+
+\paragraph{Example: $S(2)$, $(a, b)$, $k = 2$.}
+Here $w = (d_{aa}, d_{bb}, d_{ab}, e_{ab})$. The invariants $d_{aa} + d_{bb}$ and
+$d_{ab}$ are output directly. The swap $h = (ab)$ multiplies both remaining
+coordinates, $d_{aa} - d_{bb}$ and $e_{ab}$, by $-1$, so this is the scalar mode
+with $r = 2$. Packing them as $z = (d_{aa} - d_{bb}) + i\, e_{ab}$, the multiset is
+$\{z, -z\}$ and $B = (y + z)(y - z) = y^2 - z^2$. So $E_1 = 0$, and the only
+coefficient is $-z^2$. It is complex, because no element of $G$ acts on $z$ as
+conjugation. The four outputs are
+\[
+  d_{aa} + d_{bb}, \qquad d_{ab}, \qquad
+  \mathrm{Re}\, z^2 = (d_{aa} - d_{bb})^2 - e_{ab}^2, \qquad
+  \mathrm{Im}\, z^2 = 2\, e_{ab} (d_{aa} - d_{bb}) .
+\]
+This is the hand-made zip of Section~\ref{sec:exploration}, and it equals the
+count left by the full polynomial closure. The plain embedding has 11 outputs.
+
+\paragraph{Example: $S(3)$, $(a, b, c)$, $k = 2$.}
+Take $h = (abc)$ ($r = 3$) and $s = (bc)$. The 9 slots of $w$ give three
+weight-0 coordinates and three complex coordinates of weight $\pm 1$.
+\begin{itemize}
+  \item The weight-0 coordinates are $\sum d_{ii}$ and $\sum_{i<j} d_{ij}$,
+    which are $s$-even, and one combination of the $e$'s, which is $s$-odd.
+    Paired, they become 2 complex coordinates, placed at positions 0 and 3.
+  \item The three complex coordinates are split between residues 1 and 2, at
+    positions 1, 4 and 2.
+\end{itemize}
+So each $q$ has length $W = 5$, and $E_c$ has degree $4c$. Keeping only powers
+divisible by 3 leaves $\lfloor 4c/3 \rfloor + 1$ real coefficients for each
+$c = 1, \ldots, 6$, that is $2 + 3 + 5 + 6 + 7 + 9 = 32$, against 174 for the
+plain embedding.
+
+\paragraph{Sizes.}
+The table gives output counts before any reduction.
+\begin{center}
+\begin{tabular}{llrrrr}
+  case & $(h, s)$ & plain & involution & graded & factor \\ \hline
+  $S(2)$, $k=2$            & $(ab)$, scalar          & 11     & 5     & 4     & 2.8 \\
+  $S(2)\times S(1)$, $k=2$ & $(ab)$, scalar          & 26     & 14    & 11    & 2.4 \\
+  $S(3)$, $k=2$            & $(abc)$, $(bc)$         & 174    & 90    & 32    & 5.4 \\
+  $S(4)$, $k=2$            & $(bcd)$, $(cd)$         & 4524   &       & 718   & 6.3 \\
+  $S(4)$, $k=3$            & $(abcd)$, $(bd)$        & 3924   &       & 470   & 8.3 \\
+  $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 209   & 9.0 \\
+  $S(5)$, $k=4$            & $(abcde)$, $(be)(cd)$   & 138060 & 79980 & 13142 & 10.5
+\end{tabular}
+\end{center}
+
+\paragraph{Limits.}
+\begin{itemize}
+  \item \emph{The factor is bounded by the dihedral subgroup used.} The saving
+    is roughly $|\langle h, s\rangle| = 2r$, and $r$ is at most the largest
+    order of an element of $G$ (6 for $S(5)$, 30 for $S(10)$). That is tiny
+    compared with $|G| = n!$. This is a large constant factor for moderate
+    $n$, not a change in the $|G|^2$ growth of any Bursarial construction.
+  \item \emph{Unbalanced weights cost some of the gain.} When the weights are
+    unevenly spread over the residues, the busiest residue sets the length of
+    $q$ (for example, $D_4$ gives $5.9\times$ rather than~8 for $S(4)$,
+    $k = 2$).
+  \item \emph{Exactness of further reductions.} The packing coefficients lie
+    in $\mathbb{Q}(\zeta_r)$, so the exact (integer) Level~1 search of
+    Section~4 does not yet apply on top of graded packing.
+  \item \emph{No further gain from substitutions.} Scaling $x$, scaling $y$,
+    reversing $x \mapsto 1/x$, and conjugation appear to be the only
+    substitutions compatible with $\prod (y + q)$. So beyond about $2r$
+    (perhaps $4r$), this route offers nothing more.
+\end{itemize}
 
 \section{Layer 3: removing redundancy}
 
@@ -689,8 +847,10 @@ and \texttt{lightning}). \texttt{embed\_fn} is therefore a
 \begin{itemize}
   \item \texttt{embedder}: which multiset embedding to use (layer 2), chosen
     from a registry so that others can be added. Currently
-    \texttt{"bursar"} (Section~3.1) and \texttt{"bursar\_involution"} (involution
-    packing, Section~\ref{sec:involution}), both Level~0.
+    \texttt{"bursar"} (Section~3.1), \texttt{"bursar\_involution"} (involution
+    packing, Section~\ref{sec:involution}) and \texttt{"bursar\_graded"} (graded
+    packing, Section~\ref{sec:graded}), all Level~0. Graded packing subsumes
+    involution packing, which is kept as the simpler illustration.
   \item \texttt{reductions}: which reductions to apply, as an ordered list or
     a level. Early versions may support only \texttt{none}. Next would come
     the safe reductions of Section~4 (zero, duplicate, scalar multiple, linear
@@ -959,6 +1119,17 @@ polynomial closure, which is itself only feasible for small cases.
 \subsection{Possible lines of enquiry (unordered, not exhaustive)}
 
 \begin{itemize}
+  \item The order of quotienting. The orbit $\MS$ has $|G| = n!$ members only
+    because rotations are removed first (via the $d$'s and $e$'s) and the
+    permutations afterwards. Removing the permutations first, by embedding the
+    multiset of the $n$ raw vectors, costs only about $k n^2/2$ outputs. But
+    the result is then covariant, not invariant, under rotations, and the
+    difficulty moves into rotation invariants of it. For $k = 2$ these are
+    phases: the $c$-th elementary symmetric function of the $z_i$ has weight
+    $c$. That route would need Level~2 arguments for degenerate inputs. The
+    point-cloud literature has completeness theorems (for example
+    simplex-wise distance distributions, and $(d-1)$-WL tests for
+    $d$-dimensional clouds) that might supply them.
   \item Extending the safe reductions from linear to polynomial identities
     (Level~1). On the cases above this alone takes, for example, 26 down to
     11.
@@ -1003,9 +1174,17 @@ polynomial closure, which is itself only feasible for small cases.
         $S(3)\times S(2)$, $k=3$.
       \item Now implemented (Section~\ref{sec:involution}, embedder
         \texttt{bursar\_involution}). What survives full polynomial closure is
-        unchanged on the simple cases (see above). Open questions: whether
-        packing changes what survives other reductions, and whether the factor
-        of~2 can be exceeded.
+        unchanged on the simple cases (see above). The factor of~2 has since
+        been exceeded by graded packing (Section~\ref{sec:graded}).
+    \end{itemize}
+  \item Graded packing (Section~\ref{sec:graded}, embedder
+    \texttt{bursar\_graded}): a dihedral subgroup acting on $x$ by roots of
+    unity and on the coefficients by conjugation. It gives $5$--$10\times$ on
+    the cases tried ($S(5)$, $k = 4$: $138060 \to 13142$). Open questions:
+    \begin{itemize}
+      \item what survives polynomial closure;
+      \item exact Level~1 reductions over $\mathbb{Q}(\zeta_r)$;
+      \item whether other structures of $G$ can be exploited in the same way.
       \item Going beyond a factor of~2 with two commuting involutions would
         need an algebra with two independent conjugations. Bicomplex numbers
         have zero divisors, which breaks unique factorisation, and quaternions

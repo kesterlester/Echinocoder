@@ -38,6 +38,21 @@ Two levels are implemented (certification levels are defined in Section 4.3):
     embeddings: packing halves the raw count for free, but does not change what survives that reduction (see
     `docs/explorations/polynomial_closure.txt`).
 
+- **`embedder="bursar_graded"`**: graded packing (Section 3.4), which is Level 0 and subsumes involution packing.
+  - It uses a dihedral subgroup `<h, s>` of `G`, where `s h s = h^-1`. Each packed coordinate placed at power
+    `x^j` is multiplied by `exp(2 pi i j / r)` under `h`. So `B(zeta x, y) = B(x, y)`, and every coefficient
+    `E_{c,j}` whose `j` is not a multiple of `r` vanishes identically. `s` acts as complex conjugation, so the
+    remaining coefficients are real.
+  - `G`-invariant coordinates can be output directly. If `h` then multiplies every remaining coordinate by one
+    scalar, the grading is by `c` instead (scalar mode).
+  - The `(h, s)` with the fewest outputs is found automatically, trying one `h` per conjugacy class.
+  - Typical sizes: 11 → 4 for `S(2)`, `k = 2` (your zip); 174 → 32 for `S(3)`, `k = 2`; 138060 → 13142 for
+    `S(5)`, `k = 4`.
+  - The packing involves `exp(2 pi i / r)`, so the exact Level 1 search is not yet available on top of it, and
+    `meta` shows packed coordinates with numerical coefficients. Their exact definition is a projection of slot
+    functionals onto weight spaces.
+  - `bursar_involution` is kept as the simpler special case (`h` the identity).
+
 `homogenise`, `root_normalise`, the complex field and Level 2 reductions are not implemented.
 
 Exact linear dependencies are rare, so the safe reductions remove very little. For `n = 5`, `k = 4`, `G = S(5)`:
@@ -102,6 +117,7 @@ for both embedders it keeps only the outputs that are not exact polynomials in t
 | `slots.py` | slots of `w`, orbit grouping, group elements, signed-permutation table (pure Python, independent of symatom) |
 | `bursar.py` | Bursarial coefficients from `{g·w}` in torch, real and complex |
 | `involution.py` | involution packing: generic packing for any linear involution, slot-form packing, choice of `g0` |
+| `graded.py` | graded packing: weight-space packing for a dihedral `<h, s>`, search, evaluator, metadata |
 | `reductions.py` | exact (Gaussian-integer) expansion of low-`c` outputs, exact linear-dependency search (Level 1) |
 | `module.py` | `InvariantEmbedding` (the evaluator) and its flattened variant |
 | `meta.py` | `EmbeddingMeta`: JSON, LaTeX, symbolic expansion, possible degrees in `L` |
@@ -129,6 +145,8 @@ The tests cover:
 - involution packing: that `g0` acts as conjugation on the packed coordinates, for every involution and for a generic
   non-permutation involution; that the imaginary parts vanish, symbolically and numerically; the output counts;
   invariance; and the safe reductions applied on top;
+- graded packing: that every candidate packing grades correctly, is real and is injective; that the omitted
+  coefficients vanish; the output counts; invariance; `gradcheck`; that `h` = identity reproduces involution packing;
 - comparison against full symbolic expansion;
 - a cross-check against the legacy Bursarial embedder;
 - invariance under permutations, rotations, and reflections (when `P` is in `G`);
