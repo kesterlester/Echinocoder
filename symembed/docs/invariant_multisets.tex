@@ -458,6 +458,24 @@ decreasing strength.
     \emph{uncertified}.
 \end{description}
 
+\subsection{Composing reductions}\label{sec:composition}
+
+Certified reductions (Levels 0--2) compose. Each step leaves a set of outputs
+that is still injective on $\MS$, so whatever a step discards remains
+determined, in principle, by what it keeps. The order in which reductions are
+applied therefore cannot affect correctness. It can only affect what later
+reductions are able to find: an early, suboptimal reduction may make a better
+one harder to discover, but it never breaks injectivity. Uncertified
+(Level~3) candidates carry no such guarantee, and do not compose safely.
+
+Because every step is recorded with its certificate, different orders can be
+tried from scratch and compared, at least for small cases.
+
+Some reductions prune outputs of a fixed embedding (for example, the safe
+reductions). Others replace the layer~2 embedding itself by another that is
+injective by construction (for example, involution packing, below). Later
+reductions then act on the new outputs, and the chain stays certified.
+
 \subsection{A pitfall: pairwise zips do not determine a table}\label{sec:pairwise}
 
 A tempting way to exploit structure is to embed each row of the multiset
@@ -841,6 +859,33 @@ The table gives the number of outputs in each case (all without parity).
     depend on the pairing (the order of the slots). A factor of~2 would need an
     element of $G$ acting on the packed vector as complex conjugation, and
     without parity no permutation other than the identity does so.
+  \item Involution packing, which generalises the $z \mapsto i\bar z$ trick and
+    does not need parity. Choose any involution $g_0 \in G$. It splits $w$
+    into a $+1$ part and a $-1$ part. A slot pair $(s, t)$ swapped by $g_0$
+    contributes $w_s + w_t$ and $w_s - w_t$, with the signs adjusted as
+    required, and a fixed slot contributes to the part given by its sign. Pack
+    the $+1$ coordinates as real parts and the $-1$ coordinates as imaginary
+    parts, padding with zeros if the counts differ. Then $g_0$ acts on every
+    packed vector as complex conjugation. The multiset of packed vectors is
+    therefore closed under conjugation, so $\prod_g (y + q_g(x))$ has real
+    coefficients, and only those need storing.
+    \begin{itemize}
+      \item This is Level~0: the complex Bursarial embedding is injective by
+        unique factorisation, and the packing is a bijection.
+      \item The number of packed slots is
+        $m'' = (m + |\operatorname{tr} g_0|)/2$, so the involution with
+        smallest $|\operatorname{tr}|$ is best.
+      \item Raw counts fall to roughly half: $11 \to 5$ for $S(2)$, $k=2$;
+        $174 \to 90$ for $S(3)$, $k=2$; $26 \to 14$ for $S(2)\times S(1)$,
+        $k=2$; $138060 \to 79980$ for $S(5)$, $k=4$; $1884 \to 948$ for
+        $S(3)\times S(2)$, $k=3$.
+      \item It has been checked numerically, but not yet for what survives
+        reduction.
+      \item Going beyond a factor of~2 with two commuting involutions would
+        need an algebra with two independent conjugations. Bicomplex numbers
+        have zero divisors, which breaks unique factorisation, and quaternions
+        do not commute, so the product depends on the order of its factors.
+    \end{itemize}
 \end{itemize}
 
 \end{document}
