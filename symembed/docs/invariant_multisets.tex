@@ -707,4 +707,129 @@ or option on the main builder, so that they cannot be picked up by accident.
 Their \texttt{meta} states that they are uncertified (Level~3), and lists the
 evidence collected.
 
+\section{Exploration log}\label{sec:exploration}
+
+This section records what has been observed by running the code on very simple
+cases. It also lists lines of enquiry those observations suggest. The lines of
+enquiry are \emph{not} a plan. They are unordered, none is singled out as the
+next thing to investigate, and other ideas are expected to be added and
+compared with them.
+
+\subsection{Tools and outputs}
+
+\begin{itemize}
+  \item \path{symembed/explore/simple_cases.py} writes each case out in full
+    (\path{docs/explorations/simple_cases.pdf}, with every expansion in
+    \path{simple_cases_full.txt}). It shows the slots of $w$, the action of
+    $G$, every $E_{c,j}$ expanded in the $d$'s and $e$'s, and the effect of the
+    safe reductions.
+  \item The polynomial-closure tool, \path{symembed/explore/polynomial_closure.py}
+    (report: \path{docs/explorations/polynomial_closure.txt}), visits outputs
+    in order of $c$, then $j$. It keeps an output unless it is an exact
+    polynomial in outputs already kept, and then retries each kept output
+    against the others (``backward pruning''). Membership is tested either
+    formally in $w$ or as functions of $L$, where the Gram and Plücker relations
+    hold automatically. Identities are found modulo four primes, reconstructed
+    by the Chinese remainder theorem, and verified exactly. Every kept set is
+    therefore a Level~1 certified separating set: each Bursarial output is an
+    explicit polynomial in it.
+\end{itemize}
+
+\subsection{Observations}
+
+The table gives the number of outputs in each case (all without parity).
+
+\begin{center}
+\begin{tabular}{lrrrrr}
+  case & Bursarial & linear & poly.\ in $w$ & poly.\ in $L$ & quot.\ dim. \\ \hline
+  $S(2)$, $(a,b)$, $k=1$             & 14  &     & 6  & 2  & 2 \\
+  $S(3)$, $(a,b,c)$, $k=1$           & 174 &     & 21 & 5  & 3 \\
+  $S(2)\times S(1)$, $(a,b,p)$, $k=1$ & 26  &     & 12 & 3  & 3 \\
+  $S(2)$, $(a,b)$, $k=2$             & 11  & 8   & 5  & 4  & 3 \\
+  $S(3)$, $(a,b,c)$, $k=2$           & 174 & 155 & 32 & 13 & 5 \\
+  $S(2)\times S(1)$, $(a,b,p)$, $k=2$ & 26  & 22  & 15 & 11 & 5
+\end{tabular}
+\end{center}
+
+\begin{enumerate}
+  \item \emph{Polynomial identities do much more than linear ones}, and allowing
+    the Gram and Plücker relations (working in $L$ rather than formally in $w$)
+    does much more again.
+  \item \emph{Low $c$ suffices for generation.} For $S(3)$ every kept output has
+    $c \le 4$ ($k = 2$) or $c \le 3$ ($k = 1$), although the Bursarial
+    embedding goes up to $c = |G| = 6$. All higher-$c$ outputs are polynomials
+    in lower ones.
+  \item \emph{For $k = 1$} (the classical symmetric-polynomial setting), the
+    count reaches the quotient dimension for $S(2)$ and $S(2) \times S(1)$.
+    For $S(3)$ it stops at~5. The search can only keep actual Bursarial outputs,
+    and it is greedy, so this says nothing about how small a set could be.
+  \item \emph{Polynomial closure gives generating sets, not minimal separating
+    sets.} For $k = 2$ the counts stay well above the quotient dimension (11
+    against 5, and 13 against 5).
+  \item \emph{$S(2)$, $k = 2$, as a zip.} Here
+    \[
+      \MS = \{(d_{aa}, d_{bb}, d_{ab}, e_{ab}),\ (d_{bb}, d_{aa}, d_{ab}, -e_{ab})\}.
+    \]
+    Store the invariant $d_{ab}$ as it is, and zip $u + iv$ with
+    $(u, v) = (d_{aa}, e_{ab})$ in one member and $(d_{bb}, -e_{ab})$ in the
+    other. This gives
+    $d_{aa} + d_{bb}$ (the imaginary part vanishes) and
+    $(d_{aa} d_{bb} + e_{ab}^2) + i\, e_{ab}(d_{bb} - d_{aa})$: 4 reals in all.
+    These coincide with the 4 kept by the polynomial closure, up to a
+    polynomial change of variables. One of the identities needs the Gram
+    relation $e_{ab}^2 = d_{aa}d_{bb} - d_{ab}^2$. The quotient dimension is
+    3. For fixed $d_{aa} + d_{bb}$ and $d_{ab}$, the remaining freedom is a
+    closed loop, so any 3-output scheme would have to mix coordinates
+    nonlinearly.
+  \item \emph{Complex structure for $k = 2$.} Identify each $v_i$ with a complex
+    number $z_i$. Then
+    \[
+      \bar z_i z_j = d_{ij} + i\, e_{ij},
+    \]
+    so the $d$'s and $e$'s are the real and imaginary parts of products that
+    are invariant under rotation.
+  \item \emph{Reference covariants reach the quotient dimension generically.}
+    \begin{itemize}
+      \item For $S(2) \times S(1)$, $(a, b, p)$, $k = 2$: put
+        $\alpha = \bar p a = d_{ap} + i e_{ap}$ and
+        $\beta = \bar p b = d_{bp} + i e_{bp}$. When $p \ne 0$ the orbit is
+        determined by $|p|^2 = d_{pp}$ and the unordered pair
+        $\{\alpha, \beta\}$, and so by $d_{pp}$, $\alpha + \beta$ and
+        $\alpha\beta$. That is 5 reals, equal to the quotient dimension, each
+        of degree~2 in $w$.
+        \begin{itemize}
+          \item When $p = 0$, $\alpha = \beta = 0$ carries nothing. Adding the 4
+            outputs of $S(2)$, $k = 2$ for $(a, b)$ covers that stratum, and
+            $d_{pp}$ shows which case applies. That gives 9 outputs that
+            separate every input, by a short decoder argument (Level~2c),
+            against 11 from the polynomial closure.
+        \end{itemize}
+      \item For $S(3)$, $(a, b, c)$, $k = 2$: the sum $s = \sum_i z_i$ gives
+        $\alpha_j = \bar s z_j = \sum_i (d_{ij} + i e_{ij})$. The elementary
+        symmetric polynomials of the $\alpha_j$ give $1 + 2 + 2 = 5$ reals,
+        equal to the quotient dimension, but only where $s \ne 0$. The stratum
+        $s = 0$ needs something else.
+      \item In both examples, each degenerate stratum on which the reference
+        vanishes costs extra outputs. This is consistent with the expectation
+        that sets separating every input are larger than sets separating only
+        generic inputs.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Possible lines of enquiry (unordered, not exhaustive)}
+
+\begin{itemize}
+  \item Extending the safe reductions from linear to polynomial identities
+    (Level~1). On the cases above this alone takes, for example, 26 down to
+    11.
+  \item Reference covariants, for $k = 2$ via the complex structure, with the
+    degenerate strata handled by further covariants or by recursion to smaller
+    cases. Open questions: whether there is an analogue for $k \ge 3$, which
+    has no complex structure, and how the number of strata grows.
+  \item Understanding why low $c$ suffices for generation, and whether there is
+    a useful bound on the $c$ needed in terms of the structure of $G$.
+  \item Further simple cases for comparison: parity, $k = 3$, and two
+    non-trivial species.
+\end{itemize}
+
 \end{document}
