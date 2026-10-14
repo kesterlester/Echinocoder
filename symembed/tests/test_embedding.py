@@ -164,7 +164,7 @@ def test_gradients(gen):
 
 
 def test_unsupported_options():
-    for kwargs in ({"embedder": "other"}, {"reductions": "safe"}, {"homogenise": True},
+    for kwargs in ({"embedder": "other"}, {"reductions": "aggressive"}, {"homogenise": True},
                    {"root_normalise": True}, {"field": "complex"}):
         with pytest.raises(NotImplementedError):
             EmbeddingOptions(**kwargs)
@@ -181,7 +181,7 @@ def test_meta_serialises(gen):
     _, meta = build_invariant_embedding(2, EXAMPLE_P)
     d = json.loads(meta.to_json())
     assert d["D"] == meta.D == 4 + 8 * 10
-    assert d["group_order"] == 4
+    assert d["multiset_size"] == 4
     assert d["certification"].startswith("Level 0")
     assert [s["name"] for s in d["slots"]][:3] == ["d_aa", "d_bb", "d_pp"]
     assert d["outputs"][0]["name"] == "E_{1,0}"

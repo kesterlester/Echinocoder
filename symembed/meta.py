@@ -16,15 +16,27 @@ from pathlib import Path
 import numpy as np
 
 from .bursar import bursar_output_labels
+from .reductions import LinearRelation
 from .slots import GroupElement, Slot, slot_orbits
 from .spec import EmbeddingOptions, GroupSpec
 
 SYMEMBED_VERSION = "0.1.0"
 
 CERTIFICATION_LEVEL_0_BURSAR = (
-    "Level 0 (by construction): unpruned Bursarial embedding. The polynomial B(x, y) = prod_g (y + q_g(x)) "
+    "Level 0 (by construction): Bursarial embedding. The polynomial B(x, y) = prod_g (y + q_g(x)) "
     "determines the multiset {q_g} by unique factorisation in F[x][y], hence determines MS. MS determines L up to "
     "G and rotations (up to G and O(k) if parity is in G)."
+)
+
+CERTIFICATION_E_DROPPED = (
+    "Determinants omitted because parity is in G (Level 0 for the smaller w): over the reals the Gram matrix "
+    "determines L up to O(k), which is all that is required when parity is in G. Parity then acts trivially on w, "
+    "so the multiset is taken over the permutation part of G only."
+)
+
+CERTIFICATION_LEVEL_1_LINEAR = (
+    "Level 1 (explicit identity): each dropped output is an exact rational linear combination of kept outputs, as "
+    "polynomials in w, verified in exact integer arithmetic. Injectivity is inherited from the Level 0 embedding."
 )
 
 
@@ -78,8 +90,12 @@ class EmbeddingMeta:
     """
     Everything needed to document, audit and rebuild an embedding.
 
-    Use ``to_dict``/``to_json`` for machine-readable output, ``latex`` for a human-readable description, and
-    ``expanded_output`` to see an output fully expanded in the d's and e's (small cases only).
+    The embedding is the Bursarial embedding of {g.w} (the *base* outputs E_{c,j}), of which the subset ``kept`` is
+    output, in that order. Dropped base outputs are recorded in ``relations`` as exact linear combinations of kept ones.
+
+    Use ``to_dict``/``to_json`` for machine-readable output, ``latex`` for a human-readable description,
+    ``expanded_output`` to see an output fully expanded in the d's and e's (small cases only), and
+    ``reconstruct_base`` to recompute every base output from the kept ones.
     """
     group_spec: GroupSpec
     k: int
@@ -88,11 +104,14 @@ class EmbeddingMeta:
     elements: tuple
     index: list
     sign: list
-    certification: str = CERTIFICATION_LEVEL_0_BURSAR
+    kept: list | None = None                 # base indices of the outputs, in output order; None means all
+    relations: tuple = ()                    # LinearRelation per dropped base output, indices are base indices
+    e_dropped: bool = False
+    linear_reduction_max_c: int = 0
     echinocoder_commit: str | None = field(default_factory=_echinocoder_commit)
-    _expanded: list | None = field(default=None, repr=False)
+    _expanded_base: list | None = field(default=None, repr=False)
 
-    # ----- sizes -----------------------------------------------------------------------------------------------
+    # ----- sizes and naming ------------------------------------------------------------------------------------
 
     @property
     def n(self) -> int:
@@ -104,17 +123,27 @@ class EmbeddingMeta:
 
     @property
     def N(self) -> int:
-        """|G|, the number of members of the multiset MS."""
+        """The number of members of the multiset (|G|, or |G|/2 if parity acts trivially on w)."""
         return len(self.elements)
+
+    @property
+    def base_output_labels(self) -> list[tuple[int, int]]:
+        """(c, j) for each base output: base output i is E_{c,j}."""
+        return bursar_output_labels(self.N, self.m)
+
+    @property
+    def kept_base_indices(self) -> list[int]:
+        return list(range(len(self.base_output_labels))) if self.kept is None else list(self.kept)
 
     @property
     def output_labels(self) -> list[tuple[int, int]]:
         """(c, j) for each output: output i is E_{c,j}."""
-        return bursar_output_labels(self.N, self.m)
+        base = self.base_output_labels
+        return [base[i] for i in self.kept_base_indices]
 
     @property
     def D(self) -> int:
-        return len(self.output_labels)
+        return len(self.kept_base_indices)
 
     @property
     def labels(self) -> tuple:
@@ -122,6 +151,71 @@ class EmbeddingMeta:
 
     def slot_names(self) -> list[str]:
         return [s.name(self.labels) for s in self.slots]
+
+    def base_name(self, i: int) -> str:
+        c, j = self.base_output_labels[i]
+        return f"E_{{{c},{j}}}"
+
+    @property
+    def certification(self) -> str:
+        parts = []
+        if self.relations:
+            parts.append(CERTIFICATION_LEVEL_1_LINEAR)
+        parts.append(CERTIFICATION_LEVEL_0_BURSAR)
+        if self.e_dropped:
+            parts.append(CERTIFICATION_E_DROPPED)
+        return " ".join(parts)
+
+    @property
+    def certification_level(self) -> int:
+        return 1 if self.relations else 0
+
+    # ----- reductions ------------------------------------------------------------------------------------------
+
+    def relation_summary(self, relation: LinearRelation) -> str:
+        """Plain text, e.g. ``E_{1,1} = E_{1,0}``."""
+        lhs = self.base_name(relation.dropped)
+        if not relation.terms:
+            return f"{lhs} = 0"
+        pieces = []
+        for t, frac in relation.terms:
+            coefficient = "" if frac == 1 else ("-" if frac == -1 else f"{frac} ")
+            pieces.append(f"{coefficient}{self.base_name(t)}")
+        return f"{lhs} = " + " + ".join(pieces).replace("+ -", "- ")
+
+    def reductions_log(self) -> list[dict]:
+        log = []
+        if self.e_dropped:
+            log.append({"type": "omit_determinants_with_parity", "level": 0, "reason": CERTIFICATION_E_DROPPED})
+        if self.options.reductions == "safe":
+            log.append({"type": "linear_scope", "level": 1,
+                        "reason": f"exact linear dependencies checked for c <= {self.linear_reduction_max_c}; "
+                                  f"outputs with larger c are all kept"})
+        for rel in self.relations:
+            log.append({"type": "linear", "level": 1, "dropped": self.base_name(rel.dropped),
+                        "dropped_base_index": rel.dropped,
+                        "terms": [{"base_index": t, "name": self.base_name(t), "coefficient": str(frac)}
+                                  for t, frac in rel.terms],
+                        "summary": self.relation_summary(rel),
+                        "verified": "exact (integer arithmetic)"})
+        return log
+
+    def reconstruct_base(self, Y):
+        """
+        All base outputs E_{c,j}, recomputed from the kept outputs ``Y`` (shape (..., D)) using the recorded
+        relations. Works for torch tensors and NumPy arrays.
+        """
+        base_D = len(self.base_output_labels)
+        columns = [None] * base_D
+        for out, b in enumerate(self.kept_base_indices):
+            columns[b] = Y[..., out]
+        for rel in sorted(self.relations, key=lambda r: r.dropped):
+            value = 0 * Y[..., 0]
+            for t, frac in rel.terms:
+                value = value + columns[t] * (frac.numerator / frac.denominator)
+            columns[rel.dropped] = value
+        stack = __import__("torch").stack if hasattr(Y, "detach") else np.stack
+        return stack(columns, -1)
 
     # ----- machine readable ------------------------------------------------------------------------------------
 
@@ -135,10 +229,12 @@ class EmbeddingMeta:
             "options": self.options.to_dict(),
             "n": self.n,
             "m": self.m,
-            "group_order": self.N,
+            "multiset_size": self.N,
             "D": self.D,
+            "base_D": len(self.base_output_labels),
+            "certification_level": self.certification_level,
             "certification": self.certification,
-            "reductions": [],
+            "reductions": self.reductions_log(),
             "slots": [{"name": s.name(self.labels), "kind": s.kind,
                        "labels": [self.labels[i] for i in s.positions], "L_degree": s.L_degree(self.k)}
                       for s in self.slots],
@@ -150,12 +246,12 @@ class EmbeddingMeta:
                                    "meaning": "(g.w)[s] = sign[g][s] * w[index[g][s]]"},
             "definitions": {
                 "q_g(x)": "sum_{j=0}^{m-1} (g.w)_j x^j",
-                "B(x,y)": "prod_{g in G} (y + q_g(x)) = sum_{c=0}^{|G|} y^(|G|-c) E_c(x)",
+                "B(x,y)": "prod_{g} (y + q_g(x)) = sum_{c=0}^{N} y^(N-c) E_c(x), product over the group elements",
                 "E_c(x)": "sum_j E_{c,j} x^j",
             },
-            "outputs": [{"index": i, "name": f"E_{{{c},{j}}}", "c": c, "j": j, "w_degree": c,
-                         "possible_L_degrees": degrees[i]}
-                        for i, (c, j) in enumerate(self.output_labels)],
+            "outputs": [{"index": i, "name": self.base_name(b), "base_index": b, "c": c, "j": j, "w_degree": c,
+                         "possible_L_degrees": degrees[b]}
+                        for i, (b, (c, j)) in enumerate(zip(self.kept_base_indices, self.output_labels))],
         }
 
     def to_json(self, **kwargs) -> str:
@@ -167,15 +263,15 @@ class EmbeddingMeta:
         import sympy
         return [sympy.Symbol(s.name(self.labels)) for s in self.slots]
 
-    def expanded_outputs(self, max_group_order: int = 24) -> list:
+    def expanded_base_outputs(self, max_group_order: int = 24) -> list:
         """
-        Every output fully expanded as a polynomial in the d's and e's (sympy expressions). Feasible only for small
-        |G|; raises ValueError if |G| > max_group_order.
+        Every base output fully expanded as a polynomial in the d's and e's (sympy expressions). Feasible only for
+        small groups; raises ValueError if the multiset has more than max_group_order members.
         """
-        if self._expanded is not None:
-            return self._expanded
+        if self._expanded_base is not None:
+            return self._expanded_base
         if self.N > max_group_order:
-            raise ValueError(f"|G| = {self.N} exceeds max_group_order = {max_group_order}; full expansion "
+            raise ValueError(f"multiset size {self.N} exceeds max_group_order = {max_group_order}; full expansion "
                              f"is likely infeasible. Raise max_group_order to force it.")
         import sympy
         x = sympy.Symbol("x")
@@ -185,8 +281,13 @@ class EmbeddingMeta:
             q = sympy.Poly(sum(self.sign[g][j] * w[self.index[g][j]] * x ** j for j in range(self.m)), x,
                            domain=E[0].domain)
             E = [E[0]] + [E[c] + q * E[c - 1] for c in range(1, len(E))] + [q * E[-1]]
-        self._expanded = [E[c].coeff_monomial(x ** j) for c, j in self.output_labels]
-        return self._expanded
+        self._expanded_base = [E[c].coeff_monomial(x ** j) for c, j in self.base_output_labels]
+        return self._expanded_base
+
+    def expanded_outputs(self, max_group_order: int = 24) -> list:
+        """Every (kept) output fully expanded in the d's and e's. Small cases only."""
+        base = self.expanded_base_outputs(max_group_order)
+        return [base[b] for b in self.kept_base_indices]
 
     def expanded_output(self, i: int, max_group_order: int = 24):
         return self.expanded_outputs(max_group_order)[i]
@@ -196,8 +297,8 @@ class EmbeddingMeta:
     def latex(self, max_rows: int = 200, expanded: bool = False) -> str:
         """
         A LaTeX fragment (needs amsmath and longtable) describing the embedding: slots of w, the q_g, the
-        definitions, and a table of outputs. Tables longer than ``max_rows`` are truncated, with a note. With
-        ``expanded=True`` (small cases only) each output is also shown expanded in the d's and e's.
+        definitions, a table of outputs and a table of reductions. Tables longer than ``max_rows`` are truncated,
+        with a note. With ``expanded=True`` (small cases only) each output is also shown expanded in the d's and e's.
         """
         import sympy
         L = self.labels
@@ -206,7 +307,8 @@ class EmbeddingMeta:
         if self.group_spec.parity:
             spec += " \\times P"
         parts.append(f"\\noindent Embedding of $n = {self.n}$ vectors in $k = {self.k}$ dimensions, "
-                     f"$G = {spec}$, $|G| = {self.N}$, $m = {self.m}$, $D = {self.D}$ outputs. "
+                     f"$G = {spec}$, multiset size $N = {self.N}$, $m = {self.m}$, $D = {self.D}$ outputs "
+                     f"(of {len(self.base_output_labels)} Bursarial coefficients). "
                      f"Certification: {_latex_text(self.certification)}\n")
 
         orbits = slot_orbits(self.group_spec, self.slots)
@@ -218,7 +320,7 @@ class EmbeddingMeta:
                      + "\n".join(rows) + "\n\\end{longtable}\n")
 
         parts.append("\\[ q_g(x) = \\sum_{j=0}^{m-1} (g\\cdot w)_j\\, x^j, \\qquad "
-                     "B(x,y) = \\prod_{g\\in G} \\bigl(y + q_g(x)\\bigr) = \\sum_{c=0}^{|G|} y^{|G|-c} E_c(x), "
+                     "B(x,y) = \\prod_{g} \\bigl(y + q_g(x)\\bigr) = \\sum_{c=0}^{N} y^{N-c} E_c(x), "
                      "\\qquad E_c(x) = \\sum_j E_{c,j}\\, x^j. \\]\n")
 
         def signed(g, j):
@@ -237,8 +339,8 @@ class EmbeddingMeta:
         degrees = possible_L_degrees(self.slots, self.k, self.N)
         expanded_exprs = self.expanded_outputs() if expanded else None
         rows = []
-        for i, (c, j) in enumerate(self.output_labels[:max_rows]):
-            deg = ", ".join(str(d) for d in degrees[i]) if degrees[i] else "--"
+        for i, (b, (c, j)) in enumerate(list(zip(self.kept_base_indices, self.output_labels))[:max_rows]):
+            deg = ", ".join(str(d) for d in degrees[b]) if degrees[b] else "--"
             row = f"{i} & $E_{{{c},{j}}}$ & {c} & {deg}"
             if expanded:
                 row += f" & ${sympy.latex(expanded_exprs[i])}$"
@@ -252,4 +354,15 @@ class EmbeddingMeta:
             colspec += "l"
         parts.append(f"\\begin{{longtable}}{{{colspec}}}\n{header} \\\\ \\hline\n"
                      + "\n".join(rows) + "\n\\end{longtable}\n")
+
+        if self.relations:
+            rows = []
+            for rel in self.relations[:max_rows]:
+                rhs = self.relation_summary(rel).split(" = ", 1)[1]
+                rhs = re.sub(r"(\d+)/(\d+) ", r"\\tfrac{\1}{\2}\\,", rhs)
+                rows.append(f"${self.base_name(rel.dropped)}$ & $= {rhs}$ \\\\")
+            if len(self.relations) > max_rows:
+                rows.append(f"\\multicolumn{{2}}{{l}}{{\\dots\\ {len(self.relations) - max_rows} more}} \\\\")
+            parts.append("\\begin{longtable}{ll}\ndropped & exact identity (Level 1) \\\\ \\hline\n"
+                         + "\n".join(rows) + "\n\\end{longtable}\n")
         return "\n".join(parts)

@@ -21,32 +21,39 @@ class InvariantEmbedding(nn.Module):
     """
     Embeds n vectors in k dimensions, invariant under the group G and under rotations, and separating orbits.
 
-    Pipeline: X -> w (the dots and determinants, in slot order) -> {g.w : g in G} -> Bursarial coefficients.
-    The signed-permutation table of G is fixed at build time, so evaluation enumerates nothing.
+    Pipeline: X -> w (the dots and determinants, in slot order) -> {g.w : g in G} -> Bursarial coefficients
+    -> the kept subset. The signed-permutation table of G and the kept subset are fixed at build time, so evaluation
+    enumerates nothing.
 
     Build instances with ``symembed.build_invariant_embedding`` rather than directly.
     """
 
-    def __init__(self, n: int, k: int, slots: tuple, index: list, sign: list, dtype: torch.dtype):
+    def __init__(self, n: int, k: int, slots: tuple, index: list, sign: list, dtype: torch.dtype,
+                 keep: list | None = None):
         super().__init__()
         N, m = len(index), len(slots)
+        if keep is None:
+            keep = list(range(bursar_size(N, m)))
         self.n, self.k, self.N, self.m = n, k, N, m
 
         # Raw quantities are computed as [all d_ij for i <= j (row-major)] + [all e for k-subsets (lexicographic)];
         # slot_source maps each slot to its position in that raw list.
         d_pairs = [(i, j) for i in range(n) for j in range(i, n)]
-        e_subsets = list(combinations(range(n), k))
+        # Determinants are computed only if w has any (they are omitted, for example, when parity is in G).
+        e_subsets = list(combinations(range(n), k)) if any(s.kind == "e" for s in slots) else []
         raw_position = {Slot("d", p): r for r, p in enumerate(d_pairs)}
         raw_position.update({Slot("e", c): len(d_pairs) + r for r, c in enumerate(e_subsets)})
 
         self.register_buffer("input_shape", torch.tensor([n, k], dtype=torch.int64))
-        self.register_buffer("output_shape", torch.tensor([bursar_size(N, m)], dtype=torch.int64))
+        self.register_buffer("output_shape", torch.tensor([len(keep)], dtype=torch.int64))
         self.register_buffer("d_rows", torch.tensor([p[0] for p in d_pairs], dtype=torch.int64))
         self.register_buffer("d_cols", torch.tensor([p[1] for p in d_pairs], dtype=torch.int64))
         self.register_buffer("e_subsets", torch.tensor(e_subsets, dtype=torch.int64).reshape(len(e_subsets), k))
         self.register_buffer("slot_source", torch.tensor([raw_position[s] for s in slots], dtype=torch.int64))
         self.register_buffer("g_index", torch.tensor(index, dtype=torch.int64))
         self.register_buffer("g_sign", torch.tensor(sign, dtype=dtype))
+        self.register_buffer("keep", torch.tensor(keep, dtype=torch.int64))
+        self.keeps_all = len(keep) == bursar_size(N, m)
 
     @property
     def is_vector_input(self) -> bool:
@@ -88,6 +95,8 @@ class InvariantEmbedding(nn.Module):
         w = self.w(x).reshape(-1, self.m)
         gw = w[:, self.g_index] * self.g_sign                                # (B, N, m)
         out = bursar_coefficients(gw)
+        if not self.keeps_all:
+            out = out[:, self.keep]
         return out.reshape(*batch_shape, out.shape[-1])
 
     def flattened(self) -> "FlattenedInvariantEmbedding":

@@ -10,19 +10,35 @@ rotations, and that separate orbits on **every** input.
 
 ## Status
 
-Only the **unpruned Bursarial baseline** is implemented (certification Level 0, Section 4.3).
+Two levels are implemented (certification levels are defined in Section 4.3):
 
-- Layer 1 (Section 1): `w` holds all the dots `d` and determinants `e`, and `G` acts on it by signed permutations.
-- Layer 2 (Section 3): the Bursarial embedding of the multiset `{g·w}`.
-- Layer 3 (reductions): not implemented, so `reductions="none"` is the only option.
-- `homogenise` and `root_normalise` are not implemented either.
+- **`reductions="none"`**: the unpruned Bursarial baseline (Level 0).
+  - Layer 1 (Section 1): `w` holds all the dots `d` and determinants `e`, and `G` acts on it by signed permutations.
+  - Layer 2 (Section 3): the Bursarial embedding of the multiset `{g·w}`.
+- **`reductions="safe"`**: the reductions that need no judgement (Section 4.2).
+  - With parity in `G`, the determinants are omitted (Level 0 for the smaller `w`). The multiset is then taken over
+    the permutation part of `G`, since parity acts trivially on the `d`'s.
+  - Outputs that are exact rational linear combinations of kept outputs, as polynomials in `w`, are dropped
+    (Level 1). The `E_{c,j}` are expanded exactly, as integer polynomials, for `c <= linear_reduction_max_c`. This is
+    chosen automatically from a work budget, because the number of monomials grows fast. Candidate relations are
+    found modulo a prime and then verified exactly. Anything not verified is kept, so a failure can only cost
+    compression, never injectivity. Every relation is recorded in `meta` and can be replayed with
+    `meta.reconstruct_base`.
 
-The baseline is a reference against which reductions can be validated, not something to train on. Its outputs have
-degree up to `|G|` in `w`, and they overflow easily. For `n = 5`, `k = 4`, `G = S(5)` (`D = 138060`) and unit-scale
-Gaussian inputs:
+`homogenise`, `root_normalise`, the complex field and Level 2 reductions are not implemented.
 
-- the largest outputs reach about `1e191` in float64;
-- float32 gives `inf`/`nan`.
+Exact linear dependencies are rare, so the safe reductions remove very little. For `n = 5`, `k = 4`, `G = S(5)`:
+
+| | Bursarial outputs | after safe reductions | dropped |
+|---|---|---|---|
+| without `P` | 138060 | 137979 | 81 (checked for `c <= 4`) |
+| with `P` (determinants omitted) | 101760 | 101701 | 59 (checked for `c <= 5`, none found at `c = 5`) |
+
+Almost all the redundancy is therefore nonlinear, and needs Level 2.
+
+The unreduced outputs are a reference to validate reductions against, not something to train on. Their degree in `w`
+goes up to the multiset size, and they overflow easily. At `n = 5`, `k = 4`, unit-scale Gaussian inputs give
+outputs up to about `1e191` in float64, and `inf`/`nan` in float32.
 
 ## Use
 
@@ -52,6 +68,7 @@ meta.expanded_output(21)  # small cases: output 21 expanded in the d's and e's (
 | `spec.py` | `GroupSpec`, `EmbeddingOptions` |
 | `slots.py` | slots of `w`, orbit grouping, group elements, signed-permutation table (pure Python, independent of symatom) |
 | `bursar.py` | Bursarial coefficients from `{g·w}` in torch |
+| `reductions.py` | exact expansion of low-`c` outputs, exact linear-dependency search (Level 1) |
 | `module.py` | `InvariantEmbedding` (the evaluator) and its flattened variant |
 | `meta.py` | `EmbeddingMeta`: JSON, LaTeX, symbolic expansion, possible degrees in `L` |
 | `build.py` | `build_invariant_embedding` |
@@ -71,6 +88,9 @@ meta.expanded_output(21)  # small cases: output 21 expanded in the d's and e's (
 
 The tests cover:
 - the worked example of the notes, symbol for symbol;
+- the exact expansion against sympy, and the linear algebra on synthetic cases, including a relation too large to
+  reconstruct, which must be kept;
+- the safe reductions, by replaying the dropped outputs and comparing them numerically and symbolically;
 - comparison against full symbolic expansion;
 - a cross-check against the legacy Bursarial embedder;
 - invariance under permutations, rotations, and reflections (when `P` is in `G`);

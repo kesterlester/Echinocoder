@@ -74,7 +74,7 @@ class GroupSpec:
 
 _SUPPORTED = {
     "embedder": ("bursar",),
-    "reductions": ("none",),
+    "reductions": ("none", "safe"),
     "field": ("real",),
 }
 
@@ -89,7 +89,9 @@ class EmbeddingOptions:
     embedder
         The multiset embedding used in layer 2. Only ``"bursar"`` exists so far.
     reductions
-        Which redundancy reductions to apply. Only ``"none"`` exists so far (the unpruned baseline).
+        ``"none"``: the unpruned baseline (Level 0). ``"safe"``: the reductions that need no judgement (Level 0/1):
+        omit the determinants when parity is in G, and drop outputs that are exact linear combinations of kept
+        outputs (checked for c <= ``linear_reduction_max_c``).
     homogenise
         Split outputs into parts homogeneous in L. Not implemented yet.
     root_normalise
@@ -99,8 +101,14 @@ class EmbeddingOptions:
     dtype
         Floating-point type used by the evaluator. The build itself is exact.
     max_outputs
-        Refuse to build an embedding with more outputs than this. A guard against accidentally requesting an
-        unpruned embedding that could never be evaluated.
+        Refuse to build an embedding whose unpruned Bursarial stage has more outputs than this. A guard against
+        accidentally requesting an embedding that could never be evaluated.
+    linear_reduction_max_c
+        With ``reductions="safe"``: the largest c for which the E_{c,j} are expanded exactly and checked for linear
+        dependencies. ``None`` chooses it automatically from ``linear_reduction_budget``.
+    linear_reduction_budget
+        With ``reductions="safe"`` and ``linear_reduction_max_c=None``: the maximum number of integer coefficients
+        in the exact expansions.
     """
     embedder: str = "bursar"
     reductions: str = "none"
@@ -109,6 +117,8 @@ class EmbeddingOptions:
     field: str = "real"
     dtype: torch.dtype = torch.float32
     max_outputs: int = 10_000_000
+    linear_reduction_max_c: int | None = None
+    linear_reduction_budget: int = 2_000_000
 
     def __post_init__(self):
         for name, allowed in _SUPPORTED.items():
@@ -119,6 +129,8 @@ class EmbeddingOptions:
             raise NotImplementedError("homogenise=True is not implemented yet")
         if self.root_normalise:
             raise NotImplementedError("root_normalise=True is not implemented yet")
+        if self.linear_reduction_max_c is not None and self.linear_reduction_max_c < 0:
+            raise ValueError(f"linear_reduction_max_c must be non-negative, got {self.linear_reduction_max_c}")
         if self.dtype not in (torch.float32, torch.float64):
             raise ValueError(f"dtype must be torch.float32 or torch.float64, got {self.dtype!r}")
 
