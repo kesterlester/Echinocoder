@@ -458,6 +458,38 @@ decreasing strength.
     \emph{uncertified}.
 \end{description}
 
+\subsection{A pitfall: pairwise zips do not determine a table}\label{sec:pairwise}
+
+A tempting way to exploit structure is to embed each row of the multiset
+(viewed as a table whose columns are its members) separately, and then
+``zip'' rows together in pairs, for example by embedding the multiset of
+complex numbers $u + iv$ formed from two rows. \emph{This is not injective.} Two
+different tables can agree on every pairwise zip. In the smallest example below,
+the columns are the members:
+\[
+  T: \begin{array}{cccc} A & A & B & B \\ X & Y & X & Y \\ u & v & v & u \end{array}
+  \qquad\qquad
+  T': \begin{array}{cccc} A & A & B & B \\ X & Y & X & Y \\ v & u & u & v \end{array}
+\]
+Every pair of rows has the same multiset of column pairs in $T$ as in $T'$,
+but $(A, X, u)$ is a column of $T$ and not of $T'$. A less symmetric example is
+\[
+  T: \begin{array}{ccccccc} A & A & B & B & B & C & C \\ X & Y & X & Y & Z & Y & Z \\
+                              v & w & w & v & u & u & w \end{array}
+  \qquad
+  T': \begin{array}{ccccccc} A & A & B & B & B & C & C \\ X & Y & X & Y & Z & Y & Z \\
+                               w & v & v & u & w & w & u \end{array}
+\]
+This counterexample stopped the development of the ``lumped multiset zip''
+idea in the Set Encodings Redux notes.
+
+$\MS$ is not a general table: it is a $G$-orbit. In an orbit, the values of a
+slot orbit appear equally often, which neither example above respects. But on
+degenerate inputs, coinciding values merge those counts into unequal ones. So
+orbit structure cannot be assumed to rescue pairwise (or $r$-wise) zips. Any
+scheme built on partial zips needs a proof, valid on every input, that uses the
+orbit structure.
+
 \section{Code interface (draft for discussion)}
 
 This section specifies what code in Echinocoder should do, before any code is

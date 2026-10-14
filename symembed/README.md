@@ -61,6 +61,18 @@ meta.expanded_output(21)  # small cases: output 21 expanded in the d's and e's (
   buffers, and it acts on tensors of shape `(..., *input_shape)`. It does not depend on IWPC.
 - `embed.flattened()` takes input of shape `(..., n*k)` instead, with component `c` of vector `i` at position `i*k + c`.
 
+## Exploration
+
+`python -m symembed.explore.simple_cases` (run from the repo root, with the venv's Python) writes very simple cases
+out in full into `docs/explorations/`, for inspection by eye:
+
+- `simple_cases.pdf` shows the slots of `w`, the action of `G`, and every output expanded in the `d`'s and `e`'s,
+  marked kept or dropped, with the identity used to drop it. Expansions longer than 100 terms show only their term
+  count.
+- `simple_cases_full.txt` has every expansion, with no limit.
+
+The cases are S(2) on (a, b), S(3) on (a, b, c) and S(2) x S(1) on (a, b, p), each with k = 2 and with k = 1.
+
 ## Layout
 
 | file | contents |
@@ -72,6 +84,7 @@ meta.expanded_output(21)  # small cases: output 21 expanded in the d's and e's (
 | `module.py` | `InvariantEmbedding` (the evaluator) and its flattened variant |
 | `meta.py` | `EmbeddingMeta`: JSON, LaTeX, symbolic expansion, possible degrees in `L` |
 | `build.py` | `build_invariant_embedding` |
+| `explore/` | scripts that write cases out in full for inspection |
 
 ## Conventions
 
