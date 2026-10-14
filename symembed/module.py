@@ -92,10 +92,7 @@ class InvariantEmbedding(nn.Module):
         Tensor
             Shape (..., D).
         """
-        if isinstance(x, np.ndarray):
-            x = torch.as_tensor(x, dtype=self.g_sign.dtype, device=self.g_sign.device)
-        if tuple(x.shape[-2:]) != (self.n, self.k):
-            raise ValueError(f"expected input of shape (..., {self.n}, {self.k}), got {tuple(x.shape)}")
+        x = self._prepare(x)
         batch_shape = x.shape[:-2]
         w = self.w(x).reshape(-1, self.m)
         gw = w[:, self.g_index] * self.g_sign                                # (B, N, m)
@@ -107,6 +104,14 @@ class InvariantEmbedding(nn.Module):
         if not self.keeps_all:
             out = out[:, self.keep]
         return out.reshape(*batch_shape, out.shape[-1])
+
+    def _prepare(self, x) -> Tensor:
+        """Convert NumPy input to a tensor of the module's dtype, and check the trailing shape."""
+        if isinstance(x, np.ndarray):
+            x = torch.as_tensor(x, dtype=self.g_sign.dtype, device=self.g_sign.device)
+        if tuple(x.shape[-2:]) != (self.n, self.k):
+            raise ValueError(f"expected input of shape (..., {self.n}, {self.k}), got {tuple(x.shape)}")
+        return x
 
     def flattened(self) -> "FlattenedInvariantEmbedding":
         """A view of this embedding taking input of shape (..., n*k), component c of vector i at position i*k + c."""

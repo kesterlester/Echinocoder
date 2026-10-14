@@ -49,9 +49,11 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
         enumeration_spec = GroupSpec(group_spec.species, parity=False)
     N, m = enumeration_spec.order, len(slots)
 
-    # Guard before enumerating G: the packed embedding is at least half the size of the unpacked one.
+    # Guard before enumerating G: the packed embedding is at least half the size of the unpacked one; a graded one
+    # can be much smaller, so for it only the size of G is limited.
     D_unpacked = bursar_size(N, m)
-    estimate = D_unpacked if options.embedder == "bursar" else bursar_size(N, (m + 1) // 2)
+    estimate = {"bursar": D_unpacked, "bursar_involution": bursar_size(N, (m + 1) // 2), "bursar_graded": N}
+    estimate = estimate[options.embedder]
     if estimate > options.max_outputs:
         raise ValueError(f"the Bursarial embedding for a multiset of {N} vectors of length m = {m} has about "
                          f"{estimate} coefficients, more than max_outputs = {options.max_outputs}. The Bursarial "
@@ -60,6 +62,16 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
     elements = tuple(iter_group_elements(enumeration_spec))
     assert len(elements) == N and elements[0].is_identity()
     index, sign = signed_permutation_table(slots, elements)
+
+    if options.embedder == "bursar_graded":
+        from .graded import GradedEmbedding, GradedMeta, choose_packing
+        graded = choose_packing(index, sign, elements, enumeration_spec.species_index_blocks)
+        module = GradedEmbedding(group_spec.n, k, slots, index, sign, options.dtype, graded)
+        meta = GradedMeta(group_spec, k, options, slots, elements, index, sign, graded, e_dropped)
+        if meta.D > options.max_outputs:
+            raise ValueError(f"the graded embedding has {meta.D} outputs, more than max_outputs = {options.max_outputs}")
+        assert module.output_shape.item() == meta.D
+        return module, meta
 
     # Layer 2: plain Bursarial, or involution packing (Level 0, real coefficients of a complex Bursarial embedding).
     packing, involution = None, None

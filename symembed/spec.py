@@ -73,7 +73,7 @@ class GroupSpec:
 
 
 _SUPPORTED = {
-    "embedder": ("bursar", "bursar_involution"),
+    "embedder": ("bursar", "bursar_involution", "bursar_graded"),
     "reductions": ("none", "safe"),
     "field": ("real",),
 }
@@ -91,6 +91,10 @@ class EmbeddingOptions:
         ``"bursar_involution"``: involution packing (notes, Section 3.3). An involution g0 in G (the one with the
         smallest |trace| on w) is used to pack w into complex coordinates on which g0 acts as conjugation, so that
         the complex Bursarial polynomial has real coefficients; roughly halves the number of outputs. Level 0.
+        ``"bursar_graded"``: graded packing (notes, Section 3.4). A dihedral subgroup <h, s> of G is used: coordinates
+        placed at power x^j are scaled by exp(2 pi i j / r) under h (so every coefficient E_{c,j} with r not dividing
+        j vanishes) and conjugated by s (so the rest are real); G-invariant coordinates may be output directly. The
+        (h, s) with fewest outputs is chosen automatically. Subsumes "bursar_involution" (h = identity). Level 0.
     reductions
         ``"none"``: the unpruned baseline (Level 0). ``"safe"``: the reductions that need no judgement (Level 0/1):
         omit the determinants when parity is in G, and drop outputs that are exact linear combinations of kept
