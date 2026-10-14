@@ -830,6 +830,17 @@ The table gives the number of outputs in each case (all without parity).
     a useful bound on the $c$ needed in terms of the structure of $G$.
   \item Further simple cases for comparison: parity, $k = 3$, and two
     non-trivial species.
+  \item Complex packing of $w$: pair the real slots of $w$ into
+    $\lceil m/2 \rceil$ complex numbers, embed the multiset of packed vectors
+    with the complex Bursarial embedding, and write out real and imaginary
+    parts. The raw count changes very little, because the Bursarial size is
+    linear in $m$. For even $m$ it saves $|G|(|G|-1)/2$ reals (as already
+    noted in the legacy embedder's docstring), which is a fraction of
+    about $1/m$. For odd $m$, padding with zero costs $|G|$ reals. Any real
+    benefit would have to show up in what survives reduction, and that may
+    depend on the pairing (the order of the slots). A factor of~2 would need an
+    element of $G$ acting on the packed vector as complex conjugation, and
+    without parity no permutation other than the identity does so.
 \end{itemize}
 
 \end{document}
