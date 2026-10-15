@@ -100,6 +100,7 @@ class GradedPacking:
     weights: list = field(default_factory=list)   # h-weight of each position, None for padding
     L: int = 4                                      # coefficients of the exact packing lie in Z[zeta_L]
     exact: np.ndarray | None = None                 # (W, m, f) exact coordinates (see build_packing)
+    zeros: frozenset = frozenset()                  # (c, j) vanishing by character symmetry (symmetry_zeros)
 
     @property
     def real(self) -> bool:
@@ -121,7 +122,7 @@ class GradedPacking:
         for c in range(1, N + 1):
             reachable = {a + b for a in reachable for b in occupied}
             for j in range(c * (self.W - 1) + 1):
-                if j not in reachable:
+                if j not in reachable or (c, j) in self.zeros:
                     continue
                 if self.mode == "x" and j % self.r == 0:
                     out.append((c, j))
@@ -320,6 +321,7 @@ def choose_packing(index: list, sign: list, elements: tuple, species_blocks) -> 
                     best, best_count = packing, count
     check_packing(Ms, best)
     check_packing_exact(Ms, best)
+    best.zeros = symmetry_zeros(best, diagonal_characters(Ms, best), N)
     return best
 
 
@@ -729,3 +731,81 @@ def field_relations(index: list, sign: list, packing: GradedPacking, N: int, kep
                 lam.setdefault(ot, [Fraction(0)] * F.f)[a] += frac
             relations.append(FieldRelation(owners[o], tuple((owners[ot], tuple(v)) for ot, v in lam.items()), F.L))
     return relations, c_max
+
+
+# ----- exact zeros from sign (character) symmetries of individual coordinates ------------------------------------
+
+def diagonal_characters(Ms: list, packing: GradedPacking) -> dict:
+    """
+    For each group element t that multiplies some packed coordinate by a non-trivial scalar, the map
+    {position a: e}, meaning phi_a(t.v) = zeta_L^e phi_a(v) for all v. Found exactly in Z[zeta_L].
+    """
+    F = Cyclotomic(packing.L)
+    scaled = {}
+    for a, U in enumerate(packing.exact):
+        if packing.weights[a] is None:
+            continue
+        candidates = {e: U @ F.mul_matrix(F.zeta_power(e)).T for e in range(F.L)}
+        for t, M in enumerate(Ms):
+            V = _int_matrix(M).T @ U
+            for e, Z in candidates.items():
+                if np.array_equal(V, Z):
+                    scaled.setdefault(t, {})[a] = e
+                    break
+    return {t: chars for t, chars in scaled.items() if any(e for e in chars.values())}
+
+
+def _patterns(deficits: list, d: int, max_parts: int, start: int = 0):
+    """Multisets (as lists) of entries of ``deficits`` (positive, ascending) summing to d with at most max_parts parts."""
+    if d == 0:
+        yield []
+        return
+    if max_parts == 0:
+        return
+    for i in range(start, len(deficits)):
+        x = deficits[i]
+        if x > d:
+            break
+        for rest in _patterns(deficits, d - x, max_parts - 1, i):
+            yield [x] + rest
+
+
+def symmetry_zeros(packing: GradedPacking, characters: dict, N: int, max_deficit: int = 12) -> frozenset:
+    """
+    Coefficients E_{c,j} that vanish for every input because every position pattern contributing to them is killed by
+    a character symmetry (see the notes, Section 3.4). Only coefficients within ``max_deficit`` of the bottom or top
+    end are examined; there the patterns are few (most positions equal the end position).
+    """
+    if packing.W == 0 or not characters:
+        return frozenset()
+    occupied = [j for j, wt in enumerate(packing.weights) if wt is not None]
+    lo, hi = occupied[0], occupied[-1]
+    L = packing.L
+
+    def killed(multiplicity: dict) -> bool:
+        for chars in characters.values():
+            if all(a in chars for a in multiplicity) and sum(n * chars[a] for a, n in multiplicity.items()) % L:
+                return True
+        return False
+
+    def all_patterns_killed(c: int, end: int, d: int, deficit_of) -> bool:
+        """True if E_{c,j} (at deficit d from ``end``) has at least one pattern and every pattern is killed."""
+        by_deficit = {deficit_of(a): a for a in occupied if a != end}
+        deficits = sorted(x for x in by_deficit if 0 < x <= d)
+        found = False
+        for pattern in _patterns(deficits, d, c):
+            found = True
+            multiplicity = {end: c - len(pattern)} if c > len(pattern) else {}
+            for x in pattern:
+                multiplicity[by_deficit[x]] = multiplicity.get(by_deficit[x], 0) + 1
+            if not killed(multiplicity):
+                return False
+        return found
+
+    zeros = set()
+    for c, j in packing.surviving(N):
+        bottom, top = j - c * lo, c * hi - j
+        if (bottom <= max_deficit and all_patterns_killed(c, lo, bottom, lambda a: a - lo)) or \
+                (top <= max_deficit and all_patterns_killed(c, hi, top, lambda a: hi - a)):
+            zeros.add((c, j))
+    return frozenset(zeros)

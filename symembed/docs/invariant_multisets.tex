@@ -508,6 +508,49 @@ consecutively and the grading moves to $y$: from $q_{hv} = \zeta^\rho q_v$ it
 follows that $E_c = \zeta^{\rho c} E_c$, so whole blocks $E_c$ vanish unless $r$
 divides $\rho c$.
 
+\paragraph{Exact zeros from symmetries of single coordinates.}
+The grading is one instance of a more general argument, which also finds
+coefficients that vanish for subtler reasons. Expanding the product,
+\[
+  E_{c,j} = \sum_{J} F_J ,
+\]
+where $J$ runs over \emph{patterns}: multisets $\{a_1, \ldots, a_c\}$ of
+occupied positions with $a_1 + \cdots + a_c = j$. Here $F_J$ collects the
+products $\prod_{g \in S} \phi_{a_g}(g \cdot w)$ over all $c$-element subsets
+$S \subseteq G$ and assignments $g \mapsto a_g$ whose positions form the
+multiset~$J$. So $F_J$ depends only on the multiset of tuples
+$\{(\phi_a(g \cdot w))_{a \in J}\}_{g \in G}$, and it has degree $n_a$ in the
+$a$-th entries, where $n_a$ is the number of times $a$ occurs in $J$.
+
+Now suppose some $t \in G$ multiplies each coordinate in the pattern by a
+scalar: $\phi_a(t \cdot v) = \chi_a\, \phi_a(v)$ for every $a \in J$. Because
+$g \mapsto tg$ permutes $G$, that multiset of tuples is unchanged when every
+$a$-th entry is multiplied by $\chi_a$. So
+\[
+  F_J = \Bigl(\prod_{a} \chi_a^{\,n_a}\Bigr) F_J ,
+\]
+and $F_J = 0$ unless $\prod_a \chi_a^{n_a} = 1$. If every pattern of $E_{c,j}$
+is killed in this way, then $E_{c,j}$ vanishes for every input.
+\begin{itemize}
+  \item Taking $t = h$, which scales every coordinate, gives back the grading.
+  \item A coefficient with no patterns at all is an unreachable power.
+\end{itemize}
+The code finds, exactly in $\mathbb{Z}[\zeta_L]$, which group elements scale
+which coordinates. It then examines every coefficient within a small distance of
+either end of $E_c(x)$, where the patterns are few because most positions must
+equal the end position.
+
+\emph{Example:} for $S(3)\times S(2)$ with $k = 3$, position~0 holds the purely
+imaginary coordinate $i\,e_{abc}$. The reflection $s$ multiplies it by $-1$, so
+every pattern of $E_{c,0}$, which can only be $\{0, \ldots, 0\}$, picks up the
+factor $(-1)^c$. Hence $E_{c,0} = 0$ for every odd $c$. Equivalently, over the
+12 group elements the coordinate takes the values $\pm i\,e_{abc}$ six times
+each, and $E_{c,0}$ is a coefficient of $(y^2 + e_{abc}^2)^6$. Similar
+cancellations occur near the top power. In all, 12 coefficients vanish for this
+reason, taking that case from 203 to 191 outputs. These include four that the
+Level~1 searches had found individually. ($S(3)\times S(2)$ with $k = 4$ goes
+from 130 to 124.)
+
 \paragraph{Why this is Level 0.}
 The packing (together with any invariants output directly) is an injective
 linear map from $w$. The complex Bursarial embedding is injective on multisets
@@ -564,7 +607,8 @@ The table gives output counts before any reduction.
   $S(3)$, $k=2$            & $(abc)$, $(bc)$         & 174    & 90    & 32    & 5.4 \\
   $S(4)$, $k=2$            & $(bcd)$, $(cd)$         & 4524   &       & 718   & 6.3 \\
   $S(4)$, $k=3$            & $(abcd)$, $(bd)$        & 3924   &       & 469   & 8.4 \\
-  $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 203   & 9.3 \\
+  $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 191   & 9.9 \\
+  $S(3)\times S(2)$, $k=4$ & $(abc)(pq)$, $(bc)$     & 1494   &       & 124   & 12.0 \\
   $S(5)$, $k=4$            & $(abcde)$, $(be)(cd)$   & 138060 & 79980 & 13142 & 10.5
 \end{tabular}
 \end{center}
@@ -601,9 +645,9 @@ The table gives output counts before any reduction.
         the linear relations among the outputs with coefficients in
         $\mathbb{Q}(\zeta_L)$, so the integer relation search applies unchanged.
     \end{itemize}
-    As predicted, little is found: $S(3)\times S(2)$, $k=3$ goes from 203 to
-    199 (two $c=1$ identities, and two coefficients that cancel to zero at
-    $c = 3$), and $S(5)$, $k = 4$ from 13142 to 13139 ($c_{\max} = 3$).
+    As predicted, little is found beyond the symmetry zeros above:
+    $S(4)$, $k=2$ goes from 718 to 715 and $S(5)$, $k = 4$ from 13140 to 13139
+    ($c_{\max} = 3$).
   \item \emph{No further gain from substitutions.} Scaling $x$, scaling $y$,
     reversing $x \mapsto 1/x$, and conjugation appear to be the only
     substitutions compatible with $\prod (y + q)$. So beyond about $2r$
@@ -1140,6 +1184,28 @@ After full closure in $L$ the two agree in every case. Formally in $w$ the
 packed embedding is sometimes worse (58 against 32 for $S(3)$, $k=2$). Packing
 halves the raw count at no cost, but leaves unchanged what survives the
 polynomial closure, which is itself only feasible for small cases.
+
+\paragraph{Parity of graded outputs.}
+Each output can be classified by what happens under $e \mapsto -e$, the action
+of parity: even if unchanged, odd if it changes sign, mixed if neither. Testing
+numerically, as polynomials in $w$, with an exact cross-check for low $c$:
+\begin{center}
+\begin{tabular}{lrrrr}
+  case & outputs & even & odd & mixed \\ \hline
+  $S(3)\times S(2)$, $k = 3$ & 191 & 17 & 6 & 168 \\
+  $S(3)\times S(2)$, $k = 4$ & 124 & 19 & 1 & 104
+\end{tabular}
+\end{center}
+Most outputs are mixed, because the packing combines $d$'s and $e$'s. If
+outputs of definite parity are wanted, the simplest route is to split each
+mixed output $o$ afterwards into $\tfrac12(o(L) + o(pL))$ and
+$\tfrac12(o(L) - o(pL))$, at a cost of one extra output per mixed one. That
+gives $191 + 168 = 359$ and $124 + 104 = 228$. A ``parity-graded'' packing,
+using coordinates of pure parity placed so that the parity of each position
+matches the parity of its coordinate, makes every coefficient pure
+automatically: $E_{c,j}(p\cdot w) = (-1)^j E_{c,j}(w)$. But it does
+\emph{worse} here, 395 and 273. The parity condition rules out the best $h$,
+whose order $6$ is even and conflicts with it, and forces extra padding.
 
 \subsection{Possible lines of enquiry (unordered, not exhaustive)}
 

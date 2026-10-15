@@ -23,7 +23,7 @@ def gen():
     return torch.Generator().manual_seed(1357)
 
 
-@pytest.mark.parametrize("k,spec,D", [(2, S2, 4), (2, S2S1, 11), (2, S3, 32), (3, S3S2, 203), (2, S4, 718),
+@pytest.mark.parametrize("k,spec,D", [(2, S2, 4), (2, S2S1, 11), (2, S3, 32), (3, S3S2, 191), (2, S4, 718),
                                       (3, S4, 469)])
 def test_output_counts(k, spec, D):
     _, meta = build_invariant_embedding(k, spec, GRADED)
@@ -147,7 +147,7 @@ def test_unreachable_powers_are_omitted():
 SAFE_GRADED = EmbeddingOptions(embedder="bursar_graded", reductions="safe", dtype=torch.float64)
 
 
-@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 201), (3, S4, 468), (2, S3, 32)])
+@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 191), (3, S4, 468), (2, S3, 32)])
 def test_c1_reductions_counts(k, spec, D):
     options = EmbeddingOptions(embedder="bursar_graded", reductions="safe", linear_reduction_max_c=1,
                                dtype=torch.float64)
@@ -156,7 +156,7 @@ def test_c1_reductions_counts(k, spec, D):
     assert all(meta.all_names()[rel.dropped].startswith(("Re E_{1,", "Im E_{1,")) for rel in meta.relations)
 
 
-@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 199), (3, S4, 468), (2, S4, 715)])
+@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 191), (3, S4, 468), (2, S4, 715)])
 def test_exact_cyclotomic_reductions_counts(k, spec, D):
     # c >= 2 relations, found over Q(zeta_L) by restriction of scalars (the build also checks exactly, for every
     # c it reaches, that omitted coefficients vanish and kept ones are real).
@@ -187,3 +187,16 @@ def test_c1_reductions_replay(k, spec, gen):
         reference = full(X)
         torch.testing.assert_close(rebuilt, reference, rtol=1e-10, atol=1e-10 * reference.abs().max())
     assert meta.certification_level == (1 if meta.relations else 0)
+
+
+def test_character_symmetry_zeros(gen):
+    # For S(3) x S(2), k = 3, position 0 holds i e_abc, which some element negates: so E_{c,0} vanishes for odd c.
+    from symembed.graded import diagonal_characters
+    embed, meta = build_invariant_embedding(3, S3S2, GRADED)
+    p = meta.packing
+    chars = diagonal_characters(matrices(meta.index, meta.sign), p)
+    assert any(ch.get(0) == p.L // 2 for ch in chars.values())          # some t multiplies coordinate 0 by -1
+    assert {(c, 0) for c in range(1, meta.N + 1, 2)} <= set(p.zeros)
+    assert all(c % 2 == 0 for c, j in p.surviving(meta.N) if j == 0)
+    # Omitted coefficients (including these) vanish numerically: see test_omitted_coefficients_vanish...
+    assert meta.D == 191

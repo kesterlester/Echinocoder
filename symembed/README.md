@@ -48,6 +48,10 @@ Two levels are implemented (certification levels are defined in Section 4.3):
   - The `(h, s)` with the fewest outputs is found automatically, trying one `h` per conjugacy class.
   - Coefficients whose power of `x` is not a sum of `c` occupied positions (possible when some positions are
     empty padding) are also omitted, since they are zero for every input.
+  - So are coefficients killed by a sign (character) symmetry of individual coordinates (Section 3.4, "Exact zeros
+    from symmetries of single coordinates"). For example, when a group element multiplies the coordinate at
+    position 0 by -1, then `E_{c,0}` vanishes for every odd `c`. For `S(3) x S(2)`, `k = 3` this takes 203 outputs
+    to 191.
   - Typical sizes: 11 → 4 for `S(2)`, `k = 2` (your zip); 174 → 32 for `S(3)`, `k = 2`; 138060 → 13142 for
     `S(5)`, `k = 4`.
   - With `reductions="safe"`, the `c = 1` outputs are reduced exactly (Level 1): each is `(p_j S) w`, with
