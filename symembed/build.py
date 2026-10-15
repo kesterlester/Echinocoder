@@ -65,17 +65,30 @@ def _build(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = Non
     elements = tuple(iter_group_elements(enumeration_spec))
     assert len(elements) == N and elements[0].is_identity()
     index, sign = signed_permutation_table(slots, elements)
+    return _build_from_table(group_spec, k, options, slots, elements, index, sign, e_dropped,
+                             enumeration_spec.species_index_blocks)
+
+
+def _build_from_table(group_spec: GroupSpec, k: int, options: EmbeddingOptions, slots: tuple, elements: tuple,
+                      index: list, sign: list, e_dropped: bool, species_blocks: tuple, vector_w: bool = True):
+    """
+    The multiset stage, given the slots of w and the signed-permutation table of the group acting on them (for
+    any front end that computes w: the dots and determinants of vectors, or the beam frame). With vector_w=False
+    the module computes nothing from vectors and is used through its from_w method.
+    """
+    N, m = len(elements), len(slots)
+    safe = options.reductions == "safe"
 
     if options.embedder == "bursar_nested":
         from .graded import GradedMeta, choose_packing, matrices
         from .nested import NestedEmbedding, NestedMeta, choose_nested, right_coset_representatives
-        flat = choose_packing(index, sign, elements, enumeration_spec.species_index_blocks).output_count(N)
-        best = choose_nested(index, sign, elements, enumeration_spec.species_index_blocks)
+        flat = choose_packing(index, sign, elements, species_blocks).output_count(N)
+        best = choose_nested(index, sign, elements, species_blocks)
         if best is not None and best[0] < flat:
             _, H, inner_packing = best
             reps = right_coset_representatives(matrices(index, sign), H)
             module = NestedEmbedding(group_spec.n, k, slots, index, sign, options.dtype, H, reps, inner_packing,
-                                     metric=options.metric)
+                                     metric=options.metric, vector_w=vector_w)
             inner_meta = GradedMeta(group_spec, k, options, slots, tuple(elements[h] for h in H),
                                     [index[h] for h in H], [sign[h] for h in H], inner_packing, e_dropped)
             meta = NestedMeta(group_spec, k, options, slots, elements, H, reps, inner_meta, e_dropped)
@@ -86,7 +99,7 @@ def _build(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = Non
     if options.embedder == "bursar_graded":
         from .graded import GradedEmbedding, GradedMeta, choose_packing
         from .graded import c1_relations, field_relations, matrices, output_selection, verified_zeros
-        graded = choose_packing(index, sign, elements, enumeration_spec.species_index_blocks)
+        graded = choose_packing(index, sign, elements, species_blocks)
         total = len(graded.invariants) + len(output_selection(graded, N))
         relations, c_max = [], 1
         if safe:
@@ -106,7 +119,7 @@ def _build(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = Non
         dropped = {rel.dropped for rel in relations}
         kept = [i for i in range(total) if i not in dropped]
         module = GradedEmbedding(group_spec.n, k, slots, index, sign, options.dtype, graded, keep=kept,
-                                 metric=options.metric)
+                                 metric=options.metric, vector_w=vector_w)
         meta = GradedMeta(group_spec, k, options, slots, elements, index, sign, graded, e_dropped,
                           relations=relations, kept=kept, linear_reduction_max_c=c_max)
         if meta.D > options.max_outputs:
@@ -153,7 +166,7 @@ def _build(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = Non
     kept = [i for i in range(D_base) if i not in dropped]
 
     module = InvariantEmbedding(group_spec.n, k, slots, index, sign, options.dtype, keep=kept, packing=packing,
-                                metric=options.metric)
+                                metric=options.metric, vector_w=vector_w)
     meta = EmbeddingMeta(group_spec=group_spec, k=k, options=options, slots=slots, elements=elements,
                          index=index, sign=sign, kept=kept, relations=tuple(relations), e_dropped=e_dropped,
                          linear_reduction_max_c=c_max, packing=packing, involution=involution)

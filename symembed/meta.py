@@ -17,7 +17,7 @@ import numpy as np
 
 from .bursar import bursar_output_labels
 from .reductions import LinearRelation
-from .slots import GroupElement, Slot, slot_orbits
+from .slots import GroupElement, Slot, orbit_runs
 from .spec import EmbeddingOptions, GroupSpec
 
 SYMEMBED_VERSION = "0.1.0"
@@ -81,24 +81,25 @@ def possible_L_degrees(slots: tuple, k: int, N: int, position_kinds: list | None
     """
     if position_kinds is None:
         position_kinds = [{s.kind} for s in slots]
+    degree_of = {s.kind: s.L_degree(k) for s in slots}         # e.g. d -> 2, e -> k (other front ends: their own)
+    position_degrees = [{degree_of[kind] for kind in kinds} for kinds in position_kinds]
+    top = max((d for ds in position_degrees for d in ds), default=0)
     m = len(position_kinds)
     L = N * (m - 1) + 1
-    reach = np.zeros((L, N + 1), dtype=bool)        # reach[j, t] for the current c
-    for s, kinds in enumerate(position_kinds):
-        for kind in kinds:
-            reach[s, int(kind == "e")] = True
+    reach = np.zeros((L, N * top + 1), dtype=bool)  # reach[j, degree] for the current c
+    for s, degrees in enumerate(position_degrees):
+        for d in degrees:
+            reach[s, d] = True
     result = []
     for c in range(1, N + 1):
         if c > 1:
             new = np.zeros_like(reach)
-            for s, kinds in enumerate(position_kinds):
-                for kind in kinds:
-                    shift_t = int(kind == "e")
-                    new[s:, shift_t:] |= reach[:L - s, :N + 1 - shift_t]
+            for s, degrees in enumerate(position_degrees):
+                for d in degrees:
+                    new[s:, d:] |= reach[:L - s, :reach.shape[1] - d]
             reach = new
         for j in range(c * (m - 1) + 1):
-            ts = np.nonzero(reach[j])[0]
-            result.append(sorted({2 * c + (k - 2) * int(t) for t in ts}))
+            result.append([int(d) for d in np.nonzero(reach[j])[0]])
     return result
 
 
@@ -275,7 +276,7 @@ class EmbeddingMeta:
             "slots": [{"name": s.name(self.labels), "kind": s.kind,
                        "labels": [self.labels[i] for i in s.positions], "L_degree": s.L_degree(self.k)}
                       for s in self.slots],
-            "slot_orbits": [list(run) for run in slot_orbits(self.group_spec, self.slots)],
+            "slot_orbits": [list(run) for run in orbit_runs(self.index)],
             "group_elements": [{"cycles": g.cycle_notation(self.labels),
                                 "perm": [self.labels[p] for p in g.perm], "parity": g.parity}
                                for g in self.elements],
@@ -376,7 +377,7 @@ class EmbeddingMeta:
                      f"(of {len(self.base_output_labels)} Bursarial coefficients). "
                      f"Certification: {_latex_text(self.certification)}\n")
 
-        orbits = slot_orbits(self.group_spec, self.slots)
+        orbits = orbit_runs(self.index)
         orbit_end = {run[-1] for run in orbits}
         rows = []
         for j, s in enumerate(self.slots):

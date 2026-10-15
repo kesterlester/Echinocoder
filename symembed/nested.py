@@ -90,10 +90,11 @@ class NestedEmbedding(InvariantEmbedding):
     """Inner graded packing on each H-orbit H.(g.w) (one per right coset), outer plain Bursar over the cosets."""
 
     def __init__(self, n: int, k: int, slots: tuple, index: list, sign: list, dtype: torch.dtype, H: list,
-                 reps: list, inner_packing, metric: tuple | None = None):
-        super().__init__(n, k, slots, [index[g] for g in reps], [sign[g] for g in reps], dtype, metric=metric)
+                 reps: list, inner_packing, metric: tuple | None = None, vector_w: bool = True):
+        super().__init__(n, k, slots, [index[g] for g in reps], [sign[g] for g in reps], dtype, metric=metric,
+                         vector_w=vector_w)
         self.inner = GradedEmbedding(n, k, slots, [index[h] for h in H], [sign[h] for h in H], dtype,
-                                     inner_packing, metric=metric)
+                                     inner_packing, metric=metric, vector_w=vector_w)
         self.n_cosets = len(reps)
         self.inner_D = int(self.inner.output_shape.item())
         self.output_shape = torch.tensor([bursar_size(self.n_cosets, self.inner_D)], dtype=torch.int64)
@@ -101,12 +102,15 @@ class NestedEmbedding(InvariantEmbedding):
     def forward(self, x) -> torch.Tensor:
         x = self._prepare(x)
         batch_shape = x.shape[:-2]
-        w = self.w(x).reshape(-1, self.m)
+        out = self.from_w(self.w(x).reshape(-1, self.m))
+        return out.reshape(*batch_shape, out.shape[-1])
+
+    def from_w(self, w: torch.Tensor) -> torch.Tensor:
+        """The outputs for given slot values w, shape (B, m) -> (B, D)."""
         B = w.shape[0]
         w_reps = w[:, self.g_index] * self.g_sign                          # (B, cosets, m): g_rep . w
         inner = self.inner.from_w(w_reps.reshape(B * self.n_cosets, self.m)).reshape(B, self.n_cosets, self.inner_D)
-        out = bursar_coefficients(inner)
-        return out.reshape(*batch_shape, out.shape[-1])
+        return bursar_coefficients(inner)
 
 
 CERTIFICATION_NESTED = (

@@ -29,7 +29,7 @@ class InvariantEmbedding(nn.Module):
     """
 
     def __init__(self, n: int, k: int, slots: tuple, index: list, sign: list, dtype: torch.dtype,
-                 keep: list | None = None, packing=None, metric: tuple | None = None):
+                 keep: list | None = None, packing=None, metric: tuple | None = None, vector_w: bool = True):
         super().__init__()
         N, m = len(index), len(slots)
         width = m if packing is None else packing.r          # length of each polynomial q_g
@@ -38,12 +38,15 @@ class InvariantEmbedding(nn.Module):
         self.n, self.k, self.N, self.m = n, k, N, m
 
         # Raw quantities are computed as [all d_ij for i <= j (row-major)] + [all e for k-subsets (lexicographic)];
-        # slot_source maps each slot to its position in that raw list.
-        d_pairs = [(i, j) for i in range(n) for j in range(i, n)]
+        # slot_source maps each slot to its position in that raw list. With vector_w=False, w is supplied by the
+        # caller (see from_w), for example by the beam-frame front end, and none of this is needed.
+        d_pairs = [(i, j) for i in range(n) for j in range(i, n)] if vector_w else []
         # Determinants are computed only if w has any (they are omitted, for example, when parity is in G).
-        e_subsets = list(combinations(range(n), k)) if any(s.kind == "e" for s in slots) else []
+        e_subsets = list(combinations(range(n), k)) if vector_w and any(s.kind == "e" for s in slots) else []
         raw_position = {Slot("d", p): r for r, p in enumerate(d_pairs)}
         raw_position.update({Slot("e", c): len(d_pairs) + r for r, c in enumerate(e_subsets)})
+        if not vector_w:
+            raw_position = {s: 0 for s in slots}
 
         self.register_buffer("input_shape", torch.tensor([n, k], dtype=torch.int64))
         self.register_buffer("output_shape", torch.tensor([len(keep)], dtype=torch.int64))
@@ -95,7 +98,11 @@ class InvariantEmbedding(nn.Module):
         """
         x = self._prepare(x)
         batch_shape = x.shape[:-2]
-        w = self.w(x).reshape(-1, self.m)
+        out = self.from_w(self.w(x).reshape(-1, self.m))
+        return out.reshape(*batch_shape, out.shape[-1])
+
+    def from_w(self, w: Tensor) -> Tensor:
+        """The outputs for given slot values w, shape (B, m) -> (B, D)."""
         gw = w[:, self.g_index] * self.g_sign                                # (B, N, m)
         if self.packed:
             # Involution packing: the coefficients are real, so only the real parts are output.
@@ -104,7 +111,7 @@ class InvariantEmbedding(nn.Module):
             out = bursar_coefficients(gw)
         if not self.keeps_all:
             out = out[:, self.keep]
-        return out.reshape(*batch_shape, out.shape[-1])
+        return out
 
     def _prepare(self, x) -> Tensor:
         """Convert NumPy input to a tensor of the module's dtype, and check the trailing shape."""

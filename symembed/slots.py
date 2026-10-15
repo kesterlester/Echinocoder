@@ -179,6 +179,38 @@ def slot_orbits(spec: GroupSpec, slots: tuple) -> tuple:
     return tuple(runs)
 
 
+def orbit_runs(index: list) -> tuple:
+    """
+    Consecutive runs of slot indices forming single orbits, read off a signed-permutation table (index[g][s] is the
+    slot that element g moves to position s). Slots are built in orbit order, so each orbit is a run.
+    """
+    m = len(index[0]) if index else 0
+    parent = list(range(m))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for row in index:
+        for s, t in enumerate(row):
+            ra, rb = find(s), find(t)
+            if ra != rb:
+                parent[max(ra, rb)] = min(ra, rb)
+    runs, current, current_root = [], [], None
+    for idx in range(m):
+        root = find(idx)
+        if root != current_root and current:
+            runs.append(tuple(current))
+            current = []
+        current_root = root
+        current.append(idx)
+    if current:
+        runs.append(tuple(current))
+    return tuple(runs)
+
+
 def iter_group_elements(spec: GroupSpec) -> Iterator[GroupElement]:
     """All elements of G, identity first."""
     n = spec.n

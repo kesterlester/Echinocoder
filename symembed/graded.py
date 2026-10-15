@@ -563,8 +563,8 @@ class GradedEmbedding(InvariantEmbedding):
     """
 
     def __init__(self, n: int, k: int, slots: tuple, index: list, sign: list, dtype: torch.dtype,
-                 packing: GradedPacking, keep: list | None = None, metric: tuple | None = None):
-        super().__init__(n, k, slots, index, sign, dtype, metric=metric)
+                 packing: GradedPacking, keep: list | None = None, metric: tuple | None = None, vector_w: bool = True):
+        super().__init__(n, k, slots, index, sign, dtype, metric=metric, vector_w=vector_w)
         selection = output_selection(packing, len(index))
         total = len(packing.invariants) + len(selection)
         keep = list(range(total)) if keep is None else list(keep)
@@ -602,7 +602,7 @@ class GradedEmbedding(InvariantEmbedding):
 import json                                                              # noqa: E402
 
 from .meta import SYMEMBED_VERSION, CERTIFICATION_E_DROPPED, _echinocoder_commit, _latex_text, possible_L_degrees  # noqa: E402,E501
-from .slots import slot_orbits                                           # noqa: E402
+from .slots import orbit_runs                                            # noqa: E402
 
 CERTIFICATION_GRADED = (
     "Level 0 (by construction): graded packing. Packed coordinates p satisfy p(h.v) = zeta^j p(v) at power x^j "
@@ -754,7 +754,7 @@ class GradedMeta:
             "certification_level": self.certification_level, "certification": self.certification,
             "reductions": self.reductions_log(),
             "slots": [{"name": s.name(self.labels), "kind": s.kind, "L_degree": s.L_degree(self.k)} for s in self.slots],
-            "slot_orbits": [list(run) for run in slot_orbits(self.group_spec, self.slots)],
+            "slot_orbits": [list(run) for run in orbit_runs(self.index)],
             "graded": {"h": self.element_name(p.h), "s": self.element_name(p.s), "r": p.r, "mode": p.mode,
                        "rho": p.rho, "real_coefficients": p.real, "drop_trivial": p.drop_trivial,
                        "invariants": [_form(v, self.slot_names()) for v in p.invariants],
