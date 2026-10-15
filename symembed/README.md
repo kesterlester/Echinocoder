@@ -46,11 +46,16 @@ Two levels are implemented (certification levels are defined in Section 4.3):
   - `G`-invariant coordinates can be output directly. If `h` then multiplies every remaining coordinate by one
     scalar, the grading is by `c` instead (scalar mode).
   - The `(h, s)` with the fewest outputs is found automatically, trying one `h` per conjugacy class.
+  - Coefficients whose power of `x` is not a sum of `c` occupied positions (possible when some positions are
+    empty padding) are also omitted, since they are zero for every input.
   - Typical sizes: 11 → 4 for `S(2)`, `k = 2` (your zip); 174 → 32 for `S(3)`, `k = 2`; 138060 → 13142 for
     `S(5)`, `k = 4`.
-  - The packing involves `exp(2 pi i / r)`, so the exact Level 1 search is not yet available on top of it, and
-    `meta` shows packed coordinates with numerical coefficients. Their exact definition is a projection of slot
-    functionals onto weight spaces.
+  - With `reductions="safe"`, the `c = 1` outputs are reduced exactly (Level 1): each is `(p_j S) w`, with
+    integer coefficients, where `S` is the sum of the group matrices. Any that is a rational combination of the
+    invariant outputs or of earlier ones is dropped. For example `S(5)`, `k = 4` goes from 13142 to 13140.
+  - For `c >= 2` the coefficients involve `exp(2 pi i / r)`, so the exact Level 1 search does not yet reach them.
+    `meta` shows the complex packed coordinates with numerical coefficients. Their exact definition is a projection
+    of slot functionals onto weight spaces; the weight-0 coordinates and the invariants are exact integer rows.
   - `bursar_involution` is kept as the simpler special case (`h` the identity).
 
 `homogenise`, `root_normalise`, the complex field and Level 2 reductions are not implemented.

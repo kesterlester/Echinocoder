@@ -65,9 +65,15 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
 
     if options.embedder == "bursar_graded":
         from .graded import GradedEmbedding, GradedMeta, choose_packing
+        from .graded import c1_relations, matrices, output_selection
         graded = choose_packing(index, sign, elements, enumeration_spec.species_index_blocks)
-        module = GradedEmbedding(group_spec.n, k, slots, index, sign, options.dtype, graded)
-        meta = GradedMeta(group_spec, k, options, slots, elements, index, sign, graded, e_dropped)
+        relations = c1_relations(matrices(index, sign), graded, N) if safe else []
+        dropped = {rel.dropped for rel in relations}
+        total = len(graded.invariants) + len(output_selection(graded, N))
+        kept = [i for i in range(total) if i not in dropped]
+        module = GradedEmbedding(group_spec.n, k, slots, index, sign, options.dtype, graded, keep=kept)
+        meta = GradedMeta(group_spec, k, options, slots, elements, index, sign, graded, e_dropped,
+                          relations=relations, kept=kept)
         if meta.D > options.max_outputs:
             raise ValueError(f"the graded embedding has {meta.D} outputs, more than max_outputs = {options.max_outputs}")
         assert module.output_shape.item() == meta.D

@@ -110,8 +110,15 @@ class GradedPacking:
         out = []
         if self.W == 0:
             return out
+        # E_{c,j} is also zero, for every input, if j is not a sum of c occupied positions (one from each of c
+        # factors of B): the product of c polynomials q_g has no other powers of x.
+        occupied = [j for j, weight in enumerate(self.weights) if weight is not None]
+        reachable = {0}
         for c in range(1, N + 1):
+            reachable = {a + b for a in reachable for b in occupied}
             for j in range(c * (self.W - 1) + 1):
+                if j not in reachable:
+                    continue
                 if self.mode == "x" and j % self.r == 0:
                     out.append((c, j))
                 elif self.mode == "scalar" and (self.rho * c) % self.r == 0:
@@ -130,7 +137,8 @@ def build_packing(Ms: list, h: int, s: int | None, drop_trivial: bool) -> Graded
     r = _order(Mh)
     zeta = np.exp(2j * np.pi / r)
     powers = [np.linalg.matrix_power(Mh, t) for t in range(r)]
-    invariants = _greedy(list(sum(Ms) / len(Ms))) if drop_trivial else []
+    # Invariant functionals: rows of S = sum_g M_g (exact integers; S/N is the group average).
+    invariants = _greedy(list(np.rint(sum(Ms)))) if drop_trivial else []
 
     by_residue: dict[int, list] = {}
     for k in range(r):
@@ -138,14 +146,15 @@ def build_packing(Ms: list, h: int, s: int | None, drop_trivial: bool) -> Graded
             continue
         P = sum(zeta ** (-k * t) * powers[t] for t in range(r)) / r        # projector onto weight k (rows)
         if k == 0 or 2 * k == r:
-            P = P.real                                                    # real (rational) weight space
+            # Real weight space: use the exact integer matrix r P = sum_t (+-1)^t M_h^t (same row space).
+            P = np.rint(sum(((-1) ** t if k else 1) * powers[t] for t in range(r)))
             if Mss is None:
                 rows = _greedy(list(P), start=invariants if k == 0 else ())
                 half = (len(rows) + 1) // 2
                 even, odd = rows[:half], rows[half:]
             else:
-                even = _greedy(list(P @ (I + Mss) / 2), start=invariants if k == 0 else ())
-                odd = _greedy(list(P @ (I - Mss) / 2))
+                even = _greedy(list(P @ (I + Mss)), start=invariants if k == 0 else ())   # integer rows
+                odd = _greedy(list(P @ (I - Mss)))
             n = max(len(even), len(odd))
             even = even + [np.zeros(m)] * (n - len(even))
             odd = odd + [np.zeros(m)] * (n - len(odd))
@@ -280,14 +289,18 @@ class GradedEmbedding(InvariantEmbedding):
     """
 
     def __init__(self, n: int, k: int, slots: tuple, index: list, sign: list, dtype: torch.dtype,
-                 packing: GradedPacking):
+                 packing: GradedPacking, keep: list | None = None):
         super().__init__(n, k, slots, index, sign, dtype)
         selection = output_selection(packing, len(index))
+        total = len(packing.invariants) + len(selection)
+        keep = list(range(total)) if keep is None else list(keep)
         self.register_buffer("inv", torch.tensor(packing.invariants, dtype=dtype).reshape(-1, self.m))
         self.register_buffer("graded_plus", torch.tensor(packing.plus, dtype=dtype))
         self.register_buffer("graded_minus", torch.tensor(packing.minus, dtype=dtype))
         self.register_buffer("select", torch.tensor([t[3] for t in selection], dtype=torch.int64))
-        self.output_shape = torch.tensor([self.inv.shape[0] + len(selection)], dtype=torch.int64)
+        self.register_buffer("graded_keep", torch.tensor(keep, dtype=torch.int64))
+        self.graded_keeps_all = len(keep) == total
+        self.output_shape = torch.tensor([len(keep)], dtype=torch.int64)
 
     def forward(self, x) -> torch.Tensor:
         x = self._prepare(x)
@@ -301,6 +314,8 @@ class GradedEmbedding(InvariantEmbedding):
             out = torch.cat([re, im], -1)[:, self.select]
             if self.inv.shape[0]:
                 out = torch.cat([w @ self.inv.T, out], -1)
+        if not self.graded_keeps_all:
+            out = out[:, self.graded_keep]
         return out.reshape(*batch_shape, out.shape[-1])
 
 
@@ -337,17 +352,22 @@ def _form(row, names, digits: int = 4) -> str:
 class GradedMeta:
     """Metadata for embedder="bursar_graded" (same reading API as EmbeddingMeta: D, to_dict, to_json, latex)."""
 
-    def __init__(self, group_spec, k, options, slots, elements, index, sign, packing: GradedPacking, e_dropped: bool):
+    def __init__(self, group_spec, k, options, slots, elements, index, sign, packing: GradedPacking, e_dropped: bool,
+                 relations: tuple = (), kept: list | None = None):
         self.group_spec, self.k, self.options, self.slots = group_spec, k, options, slots
         self.elements, self.index, self.sign, self.packing, self.e_dropped = elements, index, sign, packing, e_dropped
-        self.relations = ()
+        self.relations = tuple(relations)          # LinearRelation, indices into the full output list
+        total = len(packing.invariants) + len(output_selection(packing, len(elements)))
+        self.kept = list(range(total)) if kept is None else list(kept)
         self.echinocoder_commit = _echinocoder_commit()
 
     labels = property(lambda self: self.group_spec.labels)
     n = property(lambda self: self.group_spec.n)
     m = property(lambda self: len(self.slots))
     N = property(lambda self: len(self.elements))
-    certification_level = 0
+    @property
+    def certification_level(self) -> int:
+        return 1 if self.relations else 0
 
     def slot_names(self) -> list[str]:
         return [s.name(self.labels) for s in self.slots]
@@ -357,16 +377,35 @@ class GradedMeta:
 
     @property
     def D(self) -> int:
-        return len(self.packing.invariants) + len(self.selection())
+        return len(self.kept)
 
-    def output_names(self) -> list[str]:
+    def all_names(self) -> list[str]:
+        """Names of the full output list (before any Level 1 reduction)."""
         names = [f"inv[{t}]" for t in range(len(self.packing.invariants))]
         names += [f"{'Re' if part == 're' else 'Im'} E_{{{c},{j}}}" for c, j, part, _ in self.selection()]
         return names
 
+    def output_names(self) -> list[str]:
+        names = self.all_names()
+        return [names[i] for i in self.kept]
+
+    def relation_summary(self, rel) -> str:
+        names = self.all_names()
+        if not rel.terms:
+            return f"{names[rel.dropped]} = 0"
+        pieces = []
+        for t, frac in rel.terms:
+            coefficient = "" if frac == 1 else ("-" if frac == -1 else f"{frac} ")
+            pieces.append(f"{coefficient}{names[t]}")
+        return f"{names[rel.dropped]} = " + " + ".join(pieces).replace("+ -", "- ")
+
     @property
     def certification(self) -> str:
-        return CERTIFICATION_GRADED + (" " + CERTIFICATION_E_DROPPED if self.e_dropped else "")
+        text = CERTIFICATION_GRADED + (" " + CERTIFICATION_E_DROPPED if self.e_dropped else "")
+        if self.relations:
+            text = ("Level 1 (explicit identity): each dropped c = 1 output is an exact rational linear combination "
+                    "of kept outputs, verified in exact integer arithmetic. " + text)
+        return text
 
     def element_name(self, g) -> str | None:
         return None if g is None else self.elements[g].cycle_notation(self.labels)
@@ -382,23 +421,40 @@ class GradedMeta:
             log.append({"type": "omit_determinants_with_parity", "level": 0, "reason": CERTIFICATION_E_DROPPED})
         if self.options.reductions == "safe":
             log.append({"type": "linear_scope", "level": 1,
-                        "reason": "not applied: the exact (integer) linear-dependency search does not yet support "
-                                  "graded packings, whose coefficients involve exp(2 pi i / r)"})
+                        "reason": "exact linear search applied to the c = 1 block only (integer coefficients); not "
+                                  "yet for c >= 2, whose coefficients involve exp(2 pi i / r)"})
+        names = self.all_names()
+        for rel in self.relations:
+            log.append({"type": "linear", "level": 1, "dropped": names[rel.dropped],
+                        "terms": [{"name": names[t], "coefficient": str(f)} for t, f in rel.terms],
+                        "summary": self.relation_summary(rel), "verified": "exact (integer arithmetic)"})
         return log
 
     def reconstruct_base(self, Y):
-        return Y
+        """The full output list (before Level 1 reduction), recomputed from the kept outputs Y."""
+        total = len(self.all_names())
+        columns = [None] * total
+        for out, b in enumerate(self.kept):
+            columns[b] = Y[..., out]
+        for rel in self.relations:
+            value = 0 * Y[..., 0]
+            for t, frac in rel.terms:
+                value = value + columns[t] * (frac.numerator / frac.denominator)
+            columns[rel.dropped] = value
+        stack = torch.stack if isinstance(Y, torch.Tensor) else np.stack
+        return stack(columns, -1)
 
     def possible_degrees(self) -> list[list[int]]:
         inv = [sorted({self.slots[t].L_degree(self.k) for t in range(self.m) if abs(v[t]) > 1e-12})
                for v in self.packing.invariants]
         if self.packing.W == 0:
-            return inv
+            return [inv[i] for i in self.kept]
         kinds = [{self.slots[t].kind for t in range(self.m) if abs(p[t]) > 1e-12 or abs(q[t]) > 1e-12}
                  for p, q in zip(self.packing.plus, self.packing.minus)]
         full = possible_L_degrees(self.slots, self.k, self.N, kinds)
         position = {lab: i for i, lab in enumerate(bursar_output_labels(self.N, self.packing.W))}
-        return inv + [full[position[(c, j)]] for c, j, _, _ in self.selection()]
+        alldeg = inv + [full[position[(c, j)]] for c, j, _, _ in self.selection()]
+        return [alldeg[i] for i in self.kept]
 
     def to_dict(self) -> dict:
         p = self.packing
@@ -406,8 +462,9 @@ class GradedMeta:
         return {
             "symembed_version": SYMEMBED_VERSION, "echinocoder_commit": self.echinocoder_commit,
             "group_spec": self.group_spec.to_dict(), "k": self.k, "options": self.options.to_dict(),
-            "n": self.n, "m": self.m, "multiset_size": self.N, "D": self.D,
-            "certification_level": 0, "certification": self.certification, "reductions": self.reductions_log(),
+            "n": self.n, "m": self.m, "multiset_size": self.N, "D": self.D, "base_D": len(self.all_names()),
+            "certification_level": self.certification_level, "certification": self.certification,
+            "reductions": self.reductions_log(),
             "slots": [{"name": s.name(self.labels), "kind": s.kind, "L_degree": s.L_degree(self.k)} for s in self.slots],
             "slot_orbits": [list(run) for run in slot_orbits(self.group_spec, self.slots)],
             "graded": {"h": self.element_name(p.h), "s": self.element_name(p.s), "r": p.r, "mode": p.mode,
@@ -454,3 +511,36 @@ class GradedMeta:
         parts.append("\\begin{longtable}{rll}\noutput & & possible degrees in $L$ \\\\ \\hline\n" + "\n".join(rows)
                      + "\n\\end{longtable}\n")
         return "\n".join(parts)
+
+
+# ----- exact Level 1 reduction of the c = 1 block ----------------------------------------------------------------
+
+from .reductions import LinearRelation, find_linear_relations          # noqa: E402
+
+
+def c1_relations(Ms: list, packing: GradedPacking, N: int) -> list:
+    """
+    Exact linear relations involving the c = 1 outputs.
+
+    E_{1,j} = sum_g p_j(g.w) = (p_j S) w with S = sum_g M_g, a linear function of w with integer coefficients
+    (kept powers j are multiples of r, which hold weight-0 coordinates, built from integer rows). The invariant
+    outputs are the integer rows of S. Any c = 1 output that is an exact rational combination of the invariant outputs
+    and earlier c = 1 outputs is dropped (Level 1). Indices refer to the full output list: invariants, then the
+    coefficients of ``output_selection``.
+    """
+    S = np.rint(sum(Ms))
+    n_inv = len(packing.invariants)
+    rows, owners = [np.rint(v) for v in packing.invariants], list(range(n_inv))
+    for t, (c, j, part, _) in enumerate(output_selection(packing, N)):
+        if c != 1:
+            continue
+        row = (packing.plus[j] if part == "re" else packing.minus[j]) @ S
+        if not np.allclose(row, np.rint(row)):
+            raise AssertionError("c = 1 output does not have integer coefficients")
+        rows.append(np.rint(row))
+        owners.append(n_inv + t)
+    if len(rows) == n_inv:
+        return []
+    matrix = np.array([[int(x) for x in row] for row in rows], dtype=object)
+    _, relations = find_linear_relations(matrix)
+    return [LinearRelation(owners[rel.dropped], tuple((owners[t], f) for t, f in rel.terms)) for rel in relations]

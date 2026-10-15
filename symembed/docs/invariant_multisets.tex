@@ -513,7 +513,11 @@ The packing (together with any invariants output directly) is an injective
 linear map from $w$. The complex Bursarial embedding is injective on multisets
 of complex vectors, by unique factorisation in $\mathbb{C}[x][y]$. The omitted
 coefficients are zero for every input, so they carry no information, and when
-$s$ is used the imaginary parts of the kept coefficients are zero too.
+$s$ is used the imaginary parts of the kept coefficients are zero too. (Besides
+the powers killed by the grading, the code also omits any $E_{c,j}$ whose $j$
+cannot be written as a sum of $c$ \emph{occupied} positions. When some positions
+are empty padding, these are zero for the simplest of reasons: the product of
+$c$ polynomials $q_g$ contains no other powers of~$x$.)
 Everything is exact. In practice the code tries one $h$ from each conjugacy
 class, every suitable $s$ (or none), and with or without taking the invariants
 out, and keeps whichever choice gives the fewest outputs. The choice $h = e$
@@ -559,8 +563,8 @@ The table gives output counts before any reduction.
   $S(2)\times S(1)$, $k=2$ & $(ab)$, scalar          & 26     & 14    & 11    & 2.4 \\
   $S(3)$, $k=2$            & $(abc)$, $(bc)$         & 174    & 90    & 32    & 5.4 \\
   $S(4)$, $k=2$            & $(bcd)$, $(cd)$         & 4524   &       & 718   & 6.3 \\
-  $S(4)$, $k=3$            & $(abcd)$, $(bd)$        & 3924   &       & 470   & 8.3 \\
-  $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 209   & 9.0 \\
+  $S(4)$, $k=3$            & $(abcd)$, $(bd)$        & 3924   &       & 469   & 8.4 \\
+  $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 203   & 9.3 \\
   $S(5)$, $k=4$            & $(abcde)$, $(be)(cd)$   & 138060 & 79980 & 13142 & 10.5
 \end{tabular}
 \end{center}
@@ -576,9 +580,13 @@ The table gives output counts before any reduction.
     unevenly spread over the residues, the busiest residue sets the length of
     $q$ (for example, $D_4$ gives $5.9\times$ rather than~8 for $S(4)$,
     $k = 2$).
-  \item \emph{Exactness of further reductions.} The packing coefficients lie
-    in $\mathbb{Q}(\zeta_r)$, so the exact (integer) Level~1 search of
-    Section~4 does not yet apply on top of graded packing.
+  \item \emph{Exactness of further reductions.} The coefficients of $E_{1,j}$
+    are integers. Each $E_{1,j}$ equals $(p_j S)\,w$, where $S = \sum_g M_g$
+    and $p_j$ is a weight-0 coordinate built from integer rows. So with
+    \texttt{reductions="safe"} the exact Level~1 search drops every $c = 1$
+    output that is a rational combination of the invariant outputs or of
+    earlier ones. For $c \ge 2$ the coefficients lie in $\mathbb{Q}(\zeta_r)$,
+    and that search does not yet apply.
   \item \emph{No further gain from substitutions.} Scaling $x$, scaling $y$,
     reversing $x \mapsto 1/x$, and conjugation appear to be the only
     substitutions compatible with $\prod (y + q)$. So beyond about $2r$

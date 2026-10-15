@@ -23,8 +23,8 @@ def gen():
     return torch.Generator().manual_seed(1357)
 
 
-@pytest.mark.parametrize("k,spec,D", [(2, S2, 4), (2, S2S1, 11), (2, S3, 32), (3, S3S2, 209), (2, S4, 718),
-                                      (3, S4, 470)])
+@pytest.mark.parametrize("k,spec,D", [(2, S2, 4), (2, S2S1, 11), (2, S3, 32), (3, S3S2, 203), (2, S4, 718),
+                                      (3, S4, 469)])
 def test_output_counts(k, spec, D):
     _, meta = build_invariant_embedding(k, spec, GRADED)
     assert meta.D == D
@@ -111,7 +111,7 @@ def test_parity_with_safe_reductions(gen):
     X = torch.randn(spec.n, 2, dtype=torch.float64, generator=gen)
     X_reflected = X * torch.tensor([1.0, -1.0], dtype=torch.float64)
     torch.testing.assert_close(embed(X_reflected), embed(X))
-    assert any("not applied" in r["reason"] for r in meta.reductions_log())
+    assert any("c = 1 block only" in r.get("reason", "") for r in meta.reductions_log())
 
 
 def test_gradients(gen):
@@ -127,3 +127,44 @@ def test_meta():
     assert d["graded"]["h"] == "(a b)" and d["graded"]["mode"] == "scalar"
     assert [o["name"] for o in d["outputs"]] == ["inv[0]", "inv[1]", "Re E_{2,0}", "Im E_{2,0}"]
     assert "Graded packing" in meta.latex()
+
+
+# ----- exact structural reductions (unreachable powers; the c = 1 block) -----------------------------------------
+
+def test_unreachable_powers_are_omitted():
+    # With padding (unused positions), some powers that are multiples of r are not sums of c occupied positions.
+    _, meta = build_invariant_embedding(3, S3S2, GRADED)
+    p = meta.packing
+    occupied = [j for j, wt in enumerate(p.weights) if wt is not None]
+    assert len(occupied) < p.W
+    reach = {0}
+    surviving = set(p.surviving(meta.N))
+    for c in range(1, meta.N + 1):
+        reach = {a + b for a in reach for b in occupied}
+        assert all(j in reach for cc, j in surviving if cc == c)
+
+
+SAFE_GRADED = EmbeddingOptions(embedder="bursar_graded", reductions="safe", dtype=torch.float64)
+
+
+@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 201), (3, S4, 468), (2, S3, 32)])
+def test_c1_reductions_counts(k, spec, D):
+    _, meta = build_invariant_embedding(k, spec, SAFE_GRADED)
+    assert meta.D == D
+    assert all(meta.all_names()[rel.dropped].startswith("Re E_{1,") or meta.all_names()[rel.dropped].startswith("Im E_{1,")
+               for rel in meta.relations)
+
+
+@pytest.mark.parametrize("k,spec", [(3, S3S2), (3, S4), (2, GroupSpec((("a", "b", "c"),), parity=True))])
+def test_c1_reductions_replay(k, spec, gen):
+    embed, meta = build_invariant_embedding(k, spec, SAFE_GRADED)
+    full, _ = build_invariant_embedding(k, spec, EmbeddingOptions(embedder="bursar_graded", dtype=torch.float64,
+                                                                   reductions="none")) if not spec.parity else (None, None)
+    X = torch.randn(10, spec.n, k, dtype=torch.float64, generator=gen)
+    Y = embed(X)
+    rebuilt = meta.reconstruct_base(Y)
+    assert rebuilt.shape[-1] == len(meta.all_names())
+    if full is not None:
+        reference = full(X)
+        torch.testing.assert_close(rebuilt, reference, rtol=1e-10, atol=1e-10 * reference.abs().max())
+    assert meta.certification_level == (1 if meta.relations else 0)
