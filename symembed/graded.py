@@ -296,16 +296,66 @@ def conjugacy_key(element, species_blocks) -> tuple:
     return tuple(key), element.parity
 
 
-def choose_packing(index: list, sign: list, elements: tuple, species_blocks) -> GradedPacking:
+def estimated_count(Ms: list, h: int, s: int | None, drop_trivial: bool, N: int, invariant_dim: int) -> int:
+    """
+    The output count of build_packing(Ms, h, s, drop_trivial), computed cheaply from traces (dimensions of the weight
+    spaces), ignoring unreachable powers and character-symmetry zeros. Mirrors build_packing's layout rules.
+    """
+    Mh = Ms[h]
+    r = _order(Mh)
+    zeta = np.exp(2j * np.pi / r)
+    traces = [np.trace(np.linalg.matrix_power(Mh, t)) for t in range(r)]
+    def dim(k):                                                    # complex dimension of the weight-k space
+        return int(round(np.real(sum(zeta ** (-k * t) * traces[t] for t in range(r)) / r)))
+    def split(k):                                                  # (s-even, s-odd) dimensions of a real weight space
+        M_s = Ms[s]
+        sign = (lambda t: (-1) ** t) if k else (lambda t: 1)
+        tr = sum(sign(t) * np.trace(np.linalg.matrix_power(Mh, t) @ M_s) for t in range(r)) / r
+        d = dim(k)
+        return int(round((d + tr) / 2)), int(round((d - tr) / 2))
+    counts: dict[int, int] = {}
+    for k in range(r):
+        if k > r - k:
+            continue
+        if k == 0 or 2 * k == r:
+            if s is None:
+                n = dim(k) - (invariant_dim if (k == 0 and drop_trivial) else 0)
+                n = (n + 1) // 2
+            else:
+                even, odd = split(k)
+                if k == 0 and drop_trivial:
+                    even -= invariant_dim
+                n = max(even, odd)
+            if n:
+                counts[k] = counts.get(k, 0) + n
+        else:
+            for t in range(dim(k)):                               # alternate between residues k and r - k
+                target = k if counts.get(k, 0) <= counts.get(r - k, 0) else r - k
+                counts[target] = counts.get(target, 0) + 1
+    used = sorted(res for res, c in counts.items() if c)
+    n_inv = invariant_dim if drop_trivial else 0
+    per = 1 if s is not None else 2
+    if not used:
+        return n_inv
+    if len(used) == 1 and used[0] != 0:
+        rho, W = used[0], counts[used[0]]
+        return n_inv + per * sum(c * (W - 1) + 1 for c in range(1, N + 1) if (rho * c) % r == 0)
+    W = max(res + r * (c - 1) for res, c in counts.items() if c) + 1
+    return n_inv + per * sum((c * (W - 1)) // r + 1 for c in range(1, N + 1))
+
+
+def choose_packing(index: list, sign: list, elements: tuple, species_blocks, finalists: int = 6) -> GradedPacking:
     """
     Search (h, s, drop_trivial) for the fewest outputs: one h per conjugacy class, every involution s with
-    s h s = h^-1 (and s = None). Ties go to the first found.
+    s h s = h^-1 (and s = None). Candidates are ranked cheaply from traces (``estimated_count``); the best few are
+    then built exactly and the one with fewest outputs is returned (ties to the first found).
     """
     Ms = matrices(index, sign)
     N, m = len(Ms), Ms[0].shape[0]
     I = np.eye(m)
     involutions = [g for g in range(N) if np.allclose(Ms[g] @ Ms[g], I)]
-    best, best_count, seen = None, None, set()
+    invariant_dim = int(round(np.trace(sum(Ms)) / N))
+    ranked, seen = [], set()
     for h, element in enumerate(elements):
         key = conjugacy_key(element, species_blocks)
         if key in seen:
@@ -315,10 +365,14 @@ def choose_packing(index: list, sign: list, elements: tuple, species_blocks) -> 
         partners = [s for s in involutions if np.allclose(Ms[s] @ Ms[h] @ Ms[s], Mh_inv)] + [None]
         for s in partners:
             for drop in (False, True):
-                packing = build_packing(Ms, h, s, drop)
-                count = packing.output_count(N)
-                if best_count is None or count < best_count:
-                    best, best_count = packing, count
+                ranked.append((estimated_count(Ms, h, s, drop, N, invariant_dim), len(ranked), h, s, drop))
+    ranked.sort()
+    best, best_count = None, None
+    for _, _, h, s, drop in ranked[:finalists]:
+        packing = build_packing(Ms, h, s, drop)
+        count = packing.output_count(N)
+        if best_count is None or count < best_count:
+            best, best_count = packing, count
     check_packing(Ms, best)
     check_packing_exact(Ms, best)
     best.zeros = symmetry_zeros(best, diagonal_characters(Ms, best), N)
