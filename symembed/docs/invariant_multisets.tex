@@ -1749,6 +1749,54 @@ recommends pinning for production use.
 \paragraph{Errors.} A combination that no method supports produces a message
 saying which part is unsupported and which nearby problems are supported.
 
+\subsection{First numbers from a prototype}
+
+A scratch prototype of \texttt{candidates} (methods built rather than
+estimated; degrees are degrees in $w$, as upper bounds) gives, for three jets
+whose masses vary and two leptons of a common mass, at the LHC:
+\begin{center}
+\small
+\begin{tabular}{lrrr}
+  method & outputs & max degree & mean degree \\ \hline
+  beam frame, cascade                      & 356  & 24 & 20.0 \\
+  beam frame, cascade, swap first          & 413  & 24 & 20.0 \\
+  beam frame, nested                       & 605  & 24 & 20.0 \\
+  beam frame, graded (safe)                & 760  & 24 & 16.2 \\
+  beam frame, bracket up to sign, plain    & 3600 & 24 & 16.7 \\
+  beam frame, plain                        & 9624 & 24 & 16.3
+\end{tabular}
+\end{center}
+Two things show. First, the cascade has the fewest outputs but a higher mean
+degree than graded packing, so ``smallest'' and ``lowest degree'' really can
+disagree, and both belong in the listing. Second, two visible species and the
+beam exchange make $|G| = 24$, and every orbit-based method grows like a power
+of $|G|$, which is factorial in the number of particles. (For comparison, the
+same five particles with full Lorentz invariance and no beams, a different and
+more forgiving problem, need 63.)
+
+For raw multisets (relabelling only) of $n$ points in $\mathbb{R}^d$, the orbit
+construction against embedding the points directly:
+\begin{center}
+\small
+\begin{tabular}{rrrrrrr}
+  $n$ & $d$ & orbit, graded & orbit, nested & orbit, cascade & direct Bursarial & direct simplex \\ \hline
+  2 & 4 & 10    & 10   & 10   & 11 & 13 \\
+  3 & 4 & 33    & 33   & 27   & 21 & 21 \\
+  4 & 4 & 891   & 364  & 304  & 34 & 29 \\
+  5 & 4 & 11643 & 7188 & 2815 & 50 & 37
+\end{tabular}
+\end{center}
+So routing raw multisets to the direct embedders is right from $n = 3$ on. It
+also points at a gap: with rotations about an axis there is so far no route
+whose size is polynomial in the number of particles. One candidate is
+``permutations first'': embed each species' multiset of records $(m, p_z,
+p_x + i p_y)$ directly, with the transverse momentum as a complex entry, so that
+a common rotation multiplies each coefficient by a phase fixed by how many
+transverse momenta enter it, and then embed the resulting vector up to that
+$U(1)$ action. The second step needs a separating set of $U(1)$-invariants that
+works for every input, including those where many coefficients vanish, which is
+a question still to be studied.
+
 \subsection{Questions for review}
 \begin{itemize}
   \item Scope: should this layer route raw multisets to Echinocoder's existing
