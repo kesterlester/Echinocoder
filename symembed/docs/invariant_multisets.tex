@@ -1379,6 +1379,86 @@ The quotient dimension is 14. Nonlinear (polynomial) identities and the Gram
 and Pl\"ucker relations have not yet been exploited on graded outputs. On the
 small cases those were the largest reductions of all.
 
+\subsection{Where further savings could come from (October 15--16)}
+
+These are observations from a night spent looking for further ways to exploit
+structure in the packing. As before, the possible next steps they suggest are
+unordered, and none is singled out.
+
+\paragraph{1. Within ``embed the whole orbit'', little is left.}
+Graded packing realises the symmetries that a single Bursarial polynomial
+$\prod(y + q)$ can carry: scaling $x$, scaling $y$, and conjugation. (Reversal
+$x \mapsto 1/x$ would add at most another factor of~2.) That caps the saving
+at roughly the order of a dihedral subgroup. Nesting over cosets
+(Section~\ref{sec:nested}) adds about a factor of~2 when there are many cosets
+($S(5)$, $k = 4$: $13141 \to 6775$), and about~2 per further level of nesting.
+Neither changes the $|G|^2$ growth.
+
+\paragraph{2. Graded packing already matches the formal polynomial closure.}
+On the simple cases, the graded counts are close to (sometimes below) what the
+exact polynomial closure leaves when the $d$'s and $e$'s are treated as
+independent variables. All the remaining gap comes from the geometry, that is
+from the Gram and Pl\"ucker relations, which hold only as functions of~$L$:
+\begin{center}
+\begin{tabular}{lrrr}
+  case & graded & closure in $w$ & closure in $L$ \\ \hline
+  $S(2)$, $k=2$            & 4  & 5  & 4 \\
+  $S(3)$, $k=2$            & 32 & 32 & 13 \\
+  $S(2)\times S(1)$, $k=2$ & 11 & 15 & 11 \\
+  $S(3)$, $k=1$            & 24 & 21 & 5
+\end{tabular}
+\end{center}
+So further large savings must use the geometry, not just the group.
+
+\paragraph{3. One geometric lever: dropping slots that are polynomials in other slots.}
+If some slots of $w$ are exact polynomial functions of the others (as
+functions of $L$), and the remaining slots are permuted among themselves by
+$G$, then the dropped slots can be dropped from $w$ itself. That is a Level~1
+reduction, and it shrinks the width of every member of $\MS$. For $k = 1$ it
+is dramatic, since $d_{ij} = e_i e_j$: keeping only the $e$'s gives graded
+counts of $2$, $3$ and $3$ for $S(2)$, $S(3)$ and $S(2)\times S(1)$, which are
+the quotient dimensions, and $20$ (from $181$) for $S(3)\times S(2)$. For
+$k \ge 2$, however, no slot is a polynomial in the others. The nearest thing is
+$d_{ij}^2 = d_{ii}d_{jj} - e_{ij}^2$ for $k=2$, which fixes $d_{ij}$ only up to
+sign. So this lever is specific to $k = 1$, and to the omission of the $e$'s
+when parity is in $G$, which uses the same idea.
+
+\paragraph{4. Parity: an even part plus an odd supplement.}
+Without parity in $G$, an alternative to splitting every mixed output is
+possible. Take any embedding that separates orbits of $G \times P$ (112 outputs
+for $S(3)\times S(2)$, $k=4$). Add the odd parts
+$\tfrac12(o(L) - o(pL))$ of the graded outputs $o$ (105 non-zero ones). If
+two configurations agree on the first and on the odd parts, they are either in
+the same $G$-orbit or mirror images. In the latter case the odd parts vanish,
+so the full graded outputs agree, and injectivity of the graded embedding puts
+them in the same $G$-orbit after all. That gives $217$ against $228$, a small
+saving. What is really needed is only a set of odd invariants whose common
+zero set (on $G\times P$-orbits) is exactly the set of configurations that are
+$G$-equivalent to their mirror image. Odd invariants vanish on hypersurfaces,
+so several are needed. The hand-crafted solution uses 28 \cite{LHG22}, against
+our 105, which suggests large slack. Certifying a small odd supplement for
+every input is a Level~2 problem.
+
+\paragraph{5. Beating $|G|^2$ needs something other than a generic multiset embedding.}
+A Bursarial embedding of $N$ points of width $W$ costs about $W N^2/2$,
+because it cannot know that the points form a single orbit. Two routes avoid
+this, and both need Level~2 arguments for degenerate inputs.
+\begin{itemize}
+  \item \emph{Invariant-theoretic separating sets.} These are orbit sums of
+    chosen monomials, whose number is governed by separating-set theory rather
+    than by $N^2$. Finding a small one is easy numerically; certifying it for
+    every input is hard.
+  \item \emph{Permutations first, with polynomial frames.} Embed each species'
+    multiset of raw vectors, for example by moment tensors
+    $T_d = \sum_i v_i^{\otimes d}$, $d \le n_{\text{species}}$, which are
+    rotation-covariant. Then make polynomial covariant frames, such as the
+    Krylov vectors $T_2^{\,a} T_1$, $a = 0, \ldots, k-1$, and record every
+    vector's components in that frame. The counts are polynomial in $n$, but
+    the frame degenerates on special configurations (for example when
+    $T_1 = 0$, or when $T_1$ lies in an eigenspace of $T_2$), and each such
+    stratum needs its own treatment.
+\end{itemize}
+
 \subsection{Possible lines of enquiry (unordered, not exhaustive)}
 
 \begin{itemize}
