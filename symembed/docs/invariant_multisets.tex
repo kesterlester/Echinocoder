@@ -1475,6 +1475,14 @@ this, and both need Level~2 arguments for degenerate inputs.
     the frame degenerates on special configurations (for example when
     $T_1 = 0$, or when $T_1$ lies in an eigenspace of $T_2$), and each such
     stratum needs its own treatment.
+  \item \emph{Theorems from the point-cloud literature (Level~2a).} Three
+    iterations of the $(d-1)$-dimensional Weisfeiler--Leman test separate all
+    non-isometric point clouds in Euclidean $\mathbb{R}^d$ \cite{DKRPB23}, and
+    simplex-wise distance distributions are complete isometry invariants
+    computable in polynomial time for fixed dimension \cite{WK23, K23}. Both
+    are Euclidean only. Making either polynomial, with an injective multiset
+    embedding at every step, makes the dimensions explode: a rough estimate is
+    $\sim 10^8$ outputs for $n = 5$, $k = 4$. So they win only for large~$n$.
 \end{itemize}
 
 \subsection{Possible lines of enquiry (unordered, not exhaustive)}
@@ -1561,6 +1569,14 @@ this, and both need Level~2 arguments for degenerate inputs.
   permutation invariants of particles III: constraining non-standard sources of
   parity violation}, Int.\ J.\ Mod.\ Phys.\ A \textbf{37} (2022) 2250093,
   arXiv:2008.05206.
+\bibitem{DKRPB23} V.~Delle Rose, A.~Kozachinskiy, C.~Rojas, M.~Petrache and
+  P.~Barcel\'o, \emph{Three iterations of $(d-1)$-WL test distinguish non
+  isometric clouds of $d$-dimensional points}, arXiv:2303.12853.
+\bibitem{WK23} D.~Widdowson and V.~Kurlin, \emph{Recognizing rigid patterns of
+  unlabeled point clouds by complete and continuous isometry invariants with no
+  false negatives and no false positives}, CVPR 2023.
+\bibitem{K23} V.~Kurlin, \emph{Simplexwise distance distributions for finite
+  spaces with metrics and measures}, arXiv:2303.14161.
 \end{thebibliography}
 
 \end{document}
