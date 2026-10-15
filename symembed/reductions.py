@@ -187,3 +187,45 @@ def _verify(coeffs: np.ndarray, i: int, terms: list) -> bool:
     for t, frac in terms:
         rhs = rhs + np.array(coeffs[t], dtype=object) * (frac.numerator * (denominator // frac.denominator))
     return bool(np.all(lhs == rhs))
+
+
+def exact_expansion_field(forms: list, m: int, c_max: int, field) -> list:
+    """
+    Like ``exact_expansion_forms``, but with coefficients in Z[zeta_L] (``field`` a ``cyclotomic.Cyclotomic``):
+    forms[g][jp] lists (slot s, a) with a an integer vector of length field.f, meaning coefficient jp of q_g is
+    sum a * w_s. Returns, for c = 1..c_max, (monos, coeffs) with coeffs of shape (powers of x, monomials, field.f).
+    Multiplication by each a is applied as its f x f integer matrix.
+    """
+    N = len(forms)
+    r = len(forms[0]) if forms else 0
+    f = field.f
+    matrices_cache: dict = {}
+
+    def mat(a):
+        key = tuple(int(x) for x in a)
+        if key not in matrices_cache:
+            matrices_cache[key] = np.array(field.mul_matrix(np.array(key, dtype=object)), dtype=np.int64)
+        return matrices_cache[key]
+
+    # |entries| <= C(N, c) (sum over a form of the l1 norm of its matrix)^c; use Python ints if that might overflow.
+    norm = max((sum(int(np.abs(mat(a)).sum()) for _, a in terms) for row in forms for terms in row), default=1)
+    big = any(comb(N, c) * norm ** c >= _INT64_SAFE for c in range(1, c_max + 1))
+    dtype = object if big else np.int64
+
+    monos = [monomials(m, c) for c in range(c_max + 1)]
+    where = [{mono: t for t, mono in enumerate(ms)} for ms in monos]
+    times = [None] + [np.array([[where[c][tuple(sorted(mono + (s,)))] for s in range(m)] for mono in monos[c - 1]],
+                               dtype=np.int64).reshape(len(monos[c - 1]), m)
+                      for c in range(1, c_max + 1)]
+    one = np.zeros((1, 1, f), dtype=dtype)
+    one[0, 0, 0] = 1
+    E = [one] + [np.zeros((len(monos[c]), c * (r - 1) + 1, f), dtype=dtype) for c in range(1, c_max + 1)]
+    for g in range(N):
+        for c in range(min(g + 1, c_max), 0, -1):          # downwards, so E[c-1] is still the old value
+            prev = E[c - 1]
+            Lp = prev.shape[1]
+            for jp in range(r):
+                for s, a in forms[g][jp]:
+                    A = mat(a).astype(dtype)
+                    E[c][times[c][:, s], jp:jp + Lp, :] += prev @ A.T
+    return [(monos[c], np.transpose(E[c], (1, 0, 2)).copy()) for c in range(1, c_max + 1)]

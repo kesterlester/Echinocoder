@@ -580,13 +580,30 @@ The table gives output counts before any reduction.
     unevenly spread over the residues, the busiest residue sets the length of
     $q$ (for example, $D_4$ gives $5.9\times$ rather than~8 for $S(4)$,
     $k = 2$).
-  \item \emph{Exactness of further reductions.} The coefficients of $E_{1,j}$
-    are integers. Each $E_{1,j}$ equals $(p_j S)\,w$, where $S = \sum_g M_g$
-    and $p_j$ is a weight-0 coordinate built from integer rows. So with
-    \texttt{reductions="safe"} the exact Level~1 search drops every $c = 1$
-    output that is a rational combination of the invariant outputs or of
-    earlier ones. For $c \ge 2$ the coefficients lie in $\mathbb{Q}(\zeta_r)$,
-    and that search does not yet apply.
+  \item \emph{Exact further reductions.} The packing is built exactly, with
+    coefficients in the cyclotomic integers $\mathbb{Z}[\zeta_L]$ for
+    $L = \operatorname{lcm}(r, 4)$, which contain both $\zeta_r$ and~$i$. Each
+    number is stored as a short integer vector (length $\phi(L)$: 2 for
+    $L = 4$, 4 for $L = 12$, 8 for $L = 20$), and the floating-point coordinates
+    used for evaluation are derived from these. With
+    \texttt{reductions="safe"} two exact Level~1 searches run.
+    \begin{itemize}
+      \item \emph{The $c = 1$ block.} Each $E_{1,j}$ equals $(p_j S)\,w$, where
+        $S = \sum_g M_g$ and $p_j$ is a weight-0 coordinate built from integer
+        rows. Any that is a rational combination of the invariant outputs or of
+        earlier ones is dropped.
+      \item \emph{$2 \le c \le c_{\max}$.} The outputs are expanded exactly in
+        $\mathbb{Z}[\zeta_L]$. As an exact check of the construction, every
+        omitted coefficient is verified to vanish and every kept one to be
+        real. Then each output $P$ contributes the rows
+        $P, \zeta P, \ldots, \zeta^{\phi(L)-1} P$ as integer vectors (``restriction
+        of scalars''). Rational linear relations among these rows are exactly
+        the linear relations among the outputs with coefficients in
+        $\mathbb{Q}(\zeta_L)$, so the integer relation search applies unchanged.
+    \end{itemize}
+    As predicted, little is found: $S(3)\times S(2)$, $k=3$ goes from 203 to
+    199 (two $c=1$ identities, and two coefficients that cancel to zero at
+    $c = 3$), and $S(5)$, $k = 4$ from 13142 to 13139 ($c_{\max} = 3$).
   \item \emph{No further gain from substitutions.} Scaling $x$, scaling $y$,
     reversing $x \mapsto 1/x$, and conjugation appear to be the only
     substitutions compatible with $\prod (y + q)$. So beyond about $2r$

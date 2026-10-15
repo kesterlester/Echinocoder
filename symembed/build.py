@@ -65,15 +65,26 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
 
     if options.embedder == "bursar_graded":
         from .graded import GradedEmbedding, GradedMeta, choose_packing
-        from .graded import c1_relations, matrices, output_selection
+        from .graded import c1_relations, field_relations, matrices, output_selection
         graded = choose_packing(index, sign, elements, enumeration_spec.species_index_blocks)
-        relations = c1_relations(matrices(index, sign), graded, N) if safe else []
-        dropped = {rel.dropped for rel in relations}
         total = len(graded.invariants) + len(output_selection(graded, N))
+        relations, c_max = [], 1
+        if safe:
+            relations = c1_relations(matrices(index, sign), graded, N)
+            kept = [i for i in range(total) if i not in {rel.dropped for rel in relations}]
+            if options.linear_reduction_max_c is None or options.linear_reduction_max_c >= 2:
+                budget = options.linear_reduction_budget
+                more, c_max = field_relations(index, sign, graded, N, kept, budget)
+                if options.linear_reduction_max_c is not None:
+                    more = [rel for rel in more if output_selection(graded, N)[rel.dropped - len(graded.invariants)][0]
+                            <= options.linear_reduction_max_c]
+                    c_max = min(c_max, options.linear_reduction_max_c)
+                relations += more
+        dropped = {rel.dropped for rel in relations}
         kept = [i for i in range(total) if i not in dropped]
         module = GradedEmbedding(group_spec.n, k, slots, index, sign, options.dtype, graded, keep=kept)
         meta = GradedMeta(group_spec, k, options, slots, elements, index, sign, graded, e_dropped,
-                          relations=relations, kept=kept)
+                          relations=relations, kept=kept, linear_reduction_max_c=c_max)
         if meta.D > options.max_outputs:
             raise ValueError(f"the graded embedding has {meta.D} outputs, more than max_outputs = {options.max_outputs}")
         assert module.output_shape.item() == meta.D

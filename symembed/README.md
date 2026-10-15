@@ -53,9 +53,16 @@ Two levels are implemented (certification levels are defined in Section 4.3):
   - With `reductions="safe"`, the `c = 1` outputs are reduced exactly (Level 1): each is `(p_j S) w`, with
     integer coefficients, where `S` is the sum of the group matrices. Any that is a rational combination of the
     invariant outputs or of earlier ones is dropped. For example `S(5)`, `k = 4` goes from 13142 to 13140.
-  - For `c >= 2` the coefficients involve `exp(2 pi i / r)`, so the exact Level 1 search does not yet reach them.
-    `meta` shows the complex packed coordinates with numerical coefficients. Their exact definition is a projection
-    of slot functionals onto weight spaces; the weight-0 coordinates and the invariants are exact integer rows.
+  - The packing is built exactly in the cyclotomic integers `Z[zeta_L]`, with `L = lcm(r, 4)`. These are handled
+    by `cyclotomic.py`, with each number stored as a short integer vector. The floating-point coordinates are derived
+    from the exact ones, and grading and reality are checked exactly at build time.
+  - For `2 <= c <= c_max` the outputs are also expanded exactly. The build verifies exactly that the omitted
+    coefficients vanish and the kept ones are real. It then drops outputs that are linear combinations of kept ones
+    with coefficients in `Q(zeta_L)`, found by "restriction of scalars": each output `P` contributes the integer
+    rows `P, zeta P, ...`, so the integer relation search applies unchanged. Gains are small, for example
+    `S(5)`, `k = 4` goes from 13142 to 13139.
+  - `meta` still shows the complex packed coordinates with numerical coefficients, although exact ones are now
+    available in `meta.packing.exact`.
   - `bursar_involution` is kept as the simpler special case (`h` the identity).
 
 `homogenise`, `root_normalise`, the complex field and Level 2 reductions are not implemented.
@@ -122,7 +129,8 @@ for both embedders it keeps only the outputs that are not exact polynomials in t
 | `slots.py` | slots of `w`, orbit grouping, group elements, signed-permutation table (pure Python, independent of symatom) |
 | `bursar.py` | Bursarial coefficients from `{g·w}` in torch, real and complex |
 | `involution.py` | involution packing: generic packing for any linear involution, slot-form packing, choice of `g0` |
-| `graded.py` | graded packing: weight-space packing for a dihedral `<h, s>`, search, evaluator, metadata |
+| `graded.py` | graded packing: weight-space packing for a dihedral `<h, s>`, search, evaluator, metadata, exact reductions |
+| `cyclotomic.py` | exact arithmetic in `Z[zeta_L]` (integer vectors in the power basis) |
 | `reductions.py` | exact (Gaussian-integer) expansion of low-`c` outputs, exact linear-dependency search (Level 1) |
 | `module.py` | `InvariantEmbedding` (the evaluator) and its flattened variant |
 | `meta.py` | `EmbeddingMeta`: JSON, LaTeX, symbolic expansion, possible degrees in `L` |

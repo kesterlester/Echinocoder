@@ -419,12 +419,13 @@ class GradedMeta:
     """Metadata for embedder="bursar_graded" (same reading API as EmbeddingMeta: D, to_dict, to_json, latex)."""
 
     def __init__(self, group_spec, k, options, slots, elements, index, sign, packing: GradedPacking, e_dropped: bool,
-                 relations: tuple = (), kept: list | None = None):
+                 relations: tuple = (), kept: list | None = None, linear_reduction_max_c: int = 1):
         self.group_spec, self.k, self.options, self.slots = group_spec, k, options, slots
         self.elements, self.index, self.sign, self.packing, self.e_dropped = elements, index, sign, packing, e_dropped
         self.relations = tuple(relations)          # LinearRelation, indices into the full output list
         total = len(packing.invariants) + len(output_selection(packing, len(elements)))
         self.kept = list(range(total)) if kept is None else list(kept)
+        self.linear_reduction_max_c = linear_reduction_max_c
         self.echinocoder_commit = _echinocoder_commit()
 
     labels = property(lambda self: self.group_spec.labels)
@@ -460,8 +461,10 @@ class GradedMeta:
         if not rel.terms:
             return f"{names[rel.dropped]} = 0"
         pieces = []
-        for t, frac in rel.terms:
-            coefficient = "" if frac == 1 else ("-" if frac == -1 else f"{frac} ")
+        for t, coeff in rel.terms:
+            text = coefficient_text(coeff, getattr(rel, "L", None))
+            compound = any(ch in text[1:] for ch in "+-") or " " in text
+            coefficient = "" if text == "1" else ("-" if text == "-1" else (f"({text}) " if compound else f"{text} "))
             pieces.append(f"{coefficient}{names[t]}")
         return f"{names[rel.dropped]} = " + " + ".join(pieces).replace("+ -", "- ")
 
@@ -469,8 +472,9 @@ class GradedMeta:
     def certification(self) -> str:
         text = CERTIFICATION_GRADED + (" " + CERTIFICATION_E_DROPPED if self.e_dropped else "")
         if self.relations:
-            text = ("Level 1 (explicit identity): each dropped c = 1 output is an exact rational linear combination "
-                    "of kept outputs, verified in exact integer arithmetic. " + text)
+            text = ("Level 1 (explicit identity): each dropped output is an exact linear combination of kept outputs, "
+                    "with rational coefficients (c = 1) or coefficients in Q(zeta_L) (c >= 2), verified in exact "
+                    "integer arithmetic. " + text)
         return text
 
     def element_name(self, g) -> str | None:
@@ -487,12 +491,14 @@ class GradedMeta:
             log.append({"type": "omit_determinants_with_parity", "level": 0, "reason": CERTIFICATION_E_DROPPED})
         if self.options.reductions == "safe":
             log.append({"type": "linear_scope", "level": 1,
-                        "reason": "exact linear search applied to the c = 1 block only (integer coefficients); not "
-                                  "yet for c >= 2, whose coefficients involve exp(2 pi i / r)"})
+                        "reason": f"exact linear search: the c = 1 block (integer coefficients), and 2 <= c <= "
+                                  f"{self.linear_reduction_max_c} over Q(zeta_{self.packing.L}) by restriction of "
+                                  f"scalars; outputs with larger c are all kept"})
         names = self.all_names()
         for rel in self.relations:
             log.append({"type": "linear", "level": 1, "dropped": names[rel.dropped],
-                        "terms": [{"name": names[t], "coefficient": str(f)} for t, f in rel.terms],
+                        "terms": [{"name": names[t], "coefficient": coefficient_text(f, getattr(rel, "L", None))}
+                                  for t, f in rel.terms],
                         "summary": self.relation_summary(rel), "verified": "exact (integer arithmetic)"})
         return log
 
@@ -504,8 +510,8 @@ class GradedMeta:
             columns[b] = Y[..., out]
         for rel in self.relations:
             value = 0 * Y[..., 0]
-            for t, frac in rel.terms:
-                value = value + columns[t] * (frac.numerator / frac.denominator)
+            for t, coeff in rel.terms:
+                value = value + columns[t] * coefficient_value(coeff, getattr(rel, "L", None))
             columns[rel.dropped] = value
         stack = torch.stack if isinstance(Y, torch.Tensor) else np.stack
         return stack(columns, -1)
@@ -610,3 +616,116 @@ def c1_relations(Ms: list, packing: GradedPacking, N: int) -> list:
     matrix = np.array([[int(x) for x in row] for row in rows], dtype=object)
     _, relations = find_linear_relations(matrix)
     return [LinearRelation(owners[rel.dropped], tuple((owners[t], f) for t, f in rel.terms)) for rel in relations]
+
+
+# ----- exact Level 1 reduction for c >= 2, over Z[zeta_L] --------------------------------------------------------
+
+from fractions import Fraction                                          # noqa: E402
+
+from .reductions import choose_c_max, exact_expansion_field             # noqa: E402
+
+
+def packed_field_forms(index: list, sign: list, packing: GradedPacking) -> list:
+    """forms[g][j]: coefficient j of q_g as (slot t, a in Z[zeta_L]) pairs, from the exact packing."""
+    f = packing.exact.shape[2]
+    forms = []
+    for row_index, row_sign in zip(index, sign):
+        row = []
+        for U in packing.exact:
+            terms: dict[int, np.ndarray] = {}
+            for s in range(U.shape[0]):
+                if np.any(U[s]):
+                    t = row_index[s]
+                    terms[t] = terms.get(t, np.zeros(f, dtype=object)) + row_sign[s] * U[s]
+            row.append([(t, a) for t, a in sorted(terms.items()) if np.any(a)])
+        forms.append(row)
+    return forms
+
+
+@dataclass(frozen=True)
+class FieldRelation:
+    """Output ``dropped`` = sum over terms (t, lam) of lam * output t, lam in Q(zeta_L) (power basis, Fractions)."""
+    dropped: int
+    terms: tuple
+    L: int
+
+
+def coefficient_value(coeff, L: int | None = None) -> float:
+    """Numerical value of a relation coefficient: a Fraction, or a power-basis tuple of Fractions in Q(zeta_L)."""
+    if isinstance(coeff, Fraction):
+        return coeff.numerator / coeff.denominator
+    value = sum((c.numerator / c.denominator) * np.exp(2j * np.pi * a / L) for a, c in enumerate(coeff))
+    return float(np.real(value))
+
+
+def coefficient_text(coeff, L: int | None = None) -> str:
+    if isinstance(coeff, Fraction):
+        return str(coeff)
+    import sympy
+    z = sympy.exp(2 * sympy.pi * sympy.I / L)
+    expr = sum(sympy.Rational(c.numerator, c.denominator) * z ** a for a, c in enumerate(coeff))
+    return str(sympy.nsimplify(sympy.re(sympy.expand_complex(expr))))
+
+
+def field_relations(index: list, sign: list, packing: GradedPacking, N: int, kept: list, budget: int):
+    """
+    Exact linear relations among kept outputs with 2 <= c <= c_max, with coefficients in Q(zeta_L).
+
+    The outputs are expanded exactly in Z[zeta_L] (c_max chosen from ``budget``). First, as an exact check of the
+    construction, every omitted coefficient is verified to vanish and (with s) every kept one to equal its conjugate.
+    Then, by "restriction of scalars", each kept output P contributes the rows P, zeta P, ..., zeta^(f-1) P (as integer
+    vectors). Q-linear relations among these rows are exactly Q(zeta_L)-linear relations among the outputs, so the
+    integer relation search applies unchanged: an output is dropped when its first row depends on rows of earlier
+    kept outputs. Returns (relations, c_max).
+    """
+    F = Cyclotomic(packing.L)
+    m = packing.exact.shape[1]
+    c_max = min(choose_c_max(N, m, max(1, budget // F.f), packing.W), N)
+    if c_max < 1 or packing.W == 0:
+        return [], c_max
+    expansions = exact_expansion_field(packed_field_forms(index, sign, packing), m, c_max, F)
+    conj = F.conj_matrix
+    minus_i = F.mul_matrix(F.conj(F.i)) if F.L % 4 == 0 else None
+    zeta = F.mul_matrix(F.zeta_power(1))
+    surviving = set(packing.surviving(N))
+    for c, (_, coeffs) in enumerate(expansions, start=1):
+        for j in range(coeffs.shape[0]):
+            V = coeffs[j].astype(object)
+            if (c, j) not in surviving:
+                assert not np.any(V), f"E_{{{c},{j}}} should vanish identically but does not"
+            elif packing.real:
+                assert np.array_equal(V @ conj.T, V), f"E_{{{c},{j}}} should be real but is not"
+    n_inv = len(packing.invariants)
+    selection = output_selection(packing, N)
+    relations = []
+    for c in range(2, c_max + 1):
+        owners, blocks = [], []
+        for idx in kept:
+            if idx < n_inv:
+                continue
+            cc, j, part, _ = selection[idx - n_inv]
+            if cc != c:
+                continue
+            V = expansions[c - 1][1][j].astype(object)
+            if not packing.real:
+                V = V + V @ conj.T if part == "re" else (V - V @ conj.T) @ minus_i.T     # 2 Re, 2 Im
+            rows, P = [], V
+            for _ in range(F.f):
+                rows.append(P.reshape(-1))
+                P = P @ zeta.T
+            owners.append(idx)
+            blocks.append(rows)
+        if len(owners) < 2:
+            continue
+        matrix = np.array([row for rows in blocks for row in rows], dtype=object)
+        _, rels = find_linear_relations(matrix)
+        for rel in rels:
+            o, a0 = divmod(rel.dropped, F.f)
+            if a0:
+                continue                                              # a multiple of a dropped output
+            lam: dict[int, list] = {}
+            for t, frac in rel.terms:
+                ot, a = divmod(t, F.f)
+                lam.setdefault(ot, [Fraction(0)] * F.f)[a] += frac
+            relations.append(FieldRelation(owners[o], tuple((owners[ot], tuple(v)) for ot, v in lam.items()), F.L))
+    return relations, c_max

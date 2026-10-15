@@ -111,7 +111,7 @@ def test_parity_with_safe_reductions(gen):
     X = torch.randn(spec.n, 2, dtype=torch.float64, generator=gen)
     X_reflected = X * torch.tensor([1.0, -1.0], dtype=torch.float64)
     torch.testing.assert_close(embed(X_reflected), embed(X))
-    assert any("c = 1 block only" in r.get("reason", "") for r in meta.reductions_log())
+    assert any("restriction of scalars" in r.get("reason", "") for r in meta.reductions_log())
 
 
 def test_gradients(gen):
@@ -149,10 +149,29 @@ SAFE_GRADED = EmbeddingOptions(embedder="bursar_graded", reductions="safe", dtyp
 
 @pytest.mark.parametrize("k,spec,D", [(3, S3S2, 201), (3, S4, 468), (2, S3, 32)])
 def test_c1_reductions_counts(k, spec, D):
-    _, meta = build_invariant_embedding(k, spec, SAFE_GRADED)
+    options = EmbeddingOptions(embedder="bursar_graded", reductions="safe", linear_reduction_max_c=1,
+                               dtype=torch.float64)
+    _, meta = build_invariant_embedding(k, spec, options)
     assert meta.D == D
-    assert all(meta.all_names()[rel.dropped].startswith("Re E_{1,") or meta.all_names()[rel.dropped].startswith("Im E_{1,")
-               for rel in meta.relations)
+    assert all(meta.all_names()[rel.dropped].startswith(("Re E_{1,", "Im E_{1,")) for rel in meta.relations)
+
+
+@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 199), (3, S4, 468), (2, S4, 715)])
+def test_exact_cyclotomic_reductions_counts(k, spec, D):
+    # c >= 2 relations, found over Q(zeta_L) by restriction of scalars (the build also checks exactly, for every
+    # c it reaches, that omitted coefficients vanish and kept ones are real).
+    _, meta = build_invariant_embedding(k, spec, SAFE_GRADED)
+    assert meta.D == D and meta.linear_reduction_max_c >= 2
+
+
+def test_coefficients_in_cyclotomic_fields():
+    from fractions import Fraction
+    from symembed.cyclotomic import Cyclotomic
+    from symembed.graded import coefficient_text, coefficient_value
+    F = Cyclotomic(12)
+    lam = tuple(Fraction(int(x)) for x in F.zeta_power(1) + F.zeta_power(-1))      # 2 cos(pi/6) = sqrt(3)
+    assert coefficient_text(lam, 12) == "sqrt(3)"
+    assert abs(coefficient_value(lam, 12) - 3 ** 0.5) < 1e-12
 
 
 @pytest.mark.parametrize("k,spec", [(3, S3S2), (3, S4), (2, GroupSpec((("a", "b", "c"),), parity=True))])
