@@ -233,3 +233,39 @@ def test_evaluation_modulo_p_matches_exact_expansion():
             value = sum(int(coeffs[j, t, u]) * pow(omega, u, prime) * int(np.prod([w[s] for s in mono]))
                         for t, mono in enumerate(monos) for u in range(F.f))
             assert value % prime == E[c, j]
+
+
+def test_layout_minimises_the_length_of_q():
+    # Brute force over every shift and every split of the conjugate pairs: none is shorter than choose_layout's.
+    import itertools
+    import random
+    from symembed.graded import choose_layout
+    rng = random.Random(7)
+    for _ in range(300):
+        r = rng.randint(2, 8)
+        real = {k: rng.randint(0, 3) for k in ({0, r // 2} if r % 2 == 0 else {0})}
+        pairs = {k: rng.randint(0, 4) for k in range(1, (r + 1) // 2)}
+        if not any(real.values()) and not any(pairs.values()):
+            continue
+
+        def length(shift, counts):
+            used = [(rho, n) for rho, n in counts.items() if n]
+            first = [(rho + shift) % r for rho, _ in used]
+            return max(f + r * (n - 1) for f, (_, n) in zip(first, used)) - min(first) + 1
+
+        best = min(length(shift, {**real, **{k: nk for k, nk in zip(pairs, split)},
+                                  **{r - k: pairs[k] - nk for k, nk in zip(pairs, split)}})
+                   for shift in range(r)
+                   for split in itertools.product(*[range(b + 1) for b in pairs.values()]))
+        shift, counts = choose_layout(r, real, pairs)
+        assert length(shift, counts) == best
+        assert min((rho + shift) % r for rho, n in counts.items() if n) == 0          # lowest position is 0
+
+
+def test_shifted_layout_rule(gen):
+    # Weight rho sits at positions congruent to rho + shift (mod r), and the kept powers satisfy j = shift c (mod r).
+    _, meta = build_invariant_embedding(4, S3S2, GRADED)
+    p = meta.packing
+    assert p.shift != 0 and p.W == 8
+    assert all((j - wt - p.shift) % p.r == 0 for j, wt in enumerate(p.weights) if wt is not None)
+    assert all((j - p.shift * c) % p.r == 0 for c, j in p.surviving(meta.N))
