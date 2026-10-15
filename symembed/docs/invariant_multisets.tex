@@ -1582,6 +1582,188 @@ or option on the main builder, so that they cannot be picked up by accident.
 Their \texttt{meta} states that they are uncertified (Level~3), and lists the
 evidence collected.
 
+\section{A needs-based interface (draft for discussion)}\label{sec:needs}
+
+This section proposes a user-facing layer on top of the builders of
+Section~6. Nothing in it is implemented yet. The builders stay as they are:
+they are the reference implementations, tested on their own, and the layer
+proposed here only describes, plans and routes.
+
+\subsection{Why}
+
+The library now serves quite different users:
+\begin{itemize}
+  \item collider physicists with exchangeable beams (the LHC), who want
+    invariance under rotations about the beam axis and under the exchange of
+    the beams;
+  \item collider physicists with distinct beams (HERA, or p--Pb at the LHC):
+    an axis, but no exchange;
+  \item users without beams, or who prefer the full treatment of
+    Section~1, which allows spacelike, timelike and null vectors alike;
+  \item users who want no geometric symmetry at all, only invariance under
+    relabelling: raw multisets;
+  \item the same, but whose records contain an angle, such as $(p_T, \eta, \phi,
+    m)$, which is not continuous as $\phi$ wraps round; they need something
+    equivalent to $(p_x, p_y, \eta, m)$.
+\end{itemize}
+At present each of them has to know which builder and which method name fits
+(\texttt{bursar\_cascade} means nothing to most of them), may have to reformat
+inputs outside the library (the last case), and has to find the relevant
+options. The proposal: users describe their problem; the library lists the
+methods that solve it, ranked, and builds the one they choose (by default the
+best).
+
+\subsection{What a user describes}
+
+A \emph{problem} has four parts, which can be chosen independently.
+\begin{enumerate}
+  \item \emph{Particles}: the species, how many particles of each, and
+    per-species declarations (for example, a common mass).
+  \item \emph{Context}: information about the event that is not one of the
+    exchangeable particles (Section~\ref{sec:context} below).
+  \item \emph{Symmetry}: what the encoding should be blind to. Relabelling
+    within each species is always included. On top of it, one of: nothing
+    else; rotations about an axis; rotations about an axis and the exchange of
+    the beams; Lorentz transformations; rotations in $k$ dimensions. Any of
+    these can be made blind to handedness as well.
+  \item \emph{Inputs}: the format of the user's tensors, for example
+    four-momenta $(E, p_x, p_y, p_z)$, detector coordinates $(p_T, \eta, \phi,
+    m)$, $(p_x, p_y, \eta, m)$, raw features with declared column types, or
+    four-momenta in any frame together with the beams.
+\end{enumerate}
+Names are neutral, with physics aliases (``axial with beam exchange'' is also
+\texttt{LHC}). A sketch, in Python:
+\begin{verbatim}
+problem = Problem(
+    particles=[Species("jet", 3), Species("lepton", 2, common_mass=True)],
+    context=[Context.sqrt_s()],              # the lepton mass is context too
+    symmetry=symmetry.axial(beam_exchange=True),        # alias: symmetry.LHC
+    inputs=inputs.pt_eta_phi_m)
+
+for c in candidates(problem):                # every method that solves it,
+    print(c)                                 # best first: size, degree, level
+encoder = candidates(problem)[0].build()     # or simply encoder(problem)
+print(encoder.explain())
+Y = encoder(particles, context)              # (..., D)
+\end{verbatim}
+Other users change one part only: \texttt{symmetry.axial(beam\_exchange=False)}
+(distinct beams), \texttt{symmetry.lorentz()} (no beams), \texttt{symmetry.none()}
+(raw multisets; with \texttt{inputs.pt\_eta\_phi\_m} the library itself works
+with $(p_T\cos\phi, p_T\sin\phi, \eta, m)$, so no $\phi$-wrap discontinuity
+can arise, and nothing breaks at $p_T = 0$ either).
+
+\subsection{Three kinds of information}\label{sec:context}
+
+Every piece of information about an event is of one of three kinds.
+\begin{enumerate}
+  \item \emph{Constants}: the same for every event, ever (for example the
+    proton mass in $p^2 = q^2$). They are declared once, recorded in the
+    metadata, and are neither inputs nor outputs.
+  \item \emph{Context}: information that can change from event to event (or
+    from run to run) but is not one of the exchangeable particles: $\sqrt{s}$,
+    the common mass of a species, the beam energies, the beams themselves.
+    Context is an input. It may also be used, for example to define the frame
+    (the beams do this) or to stand in for per-particle slots (a common mass
+    replaces the mass slots of its species). And it is \emph{passed through} to
+    the output, so that a change (a new $\sqrt{s}$, three muons instead of three
+    electrons) shows in the encoding instead of passing silently.
+  \item \emph{Particles}: acted on by relabelling and by the geometric
+    symmetries, and embedded.
+\end{enumerate}
+
+\paragraph{The pass-through rule.}
+Context can be passed through \emph{unaltered} only if the symmetries leave it
+alone. $\sqrt{s}$ and a common mass are unaffected by every symmetry, so they
+pass through as they are. But if the symmetries act on some context, what is
+output must be an invariant of it. For example, if the beam exchange is a
+symmetry and the beam energies may differ, then exchanging the beams exchanges
+$E_p$ and $E_q$, and the output must be the unordered pair $\{E_p, E_q\}$ (say,
+$E_p + E_q$ and $E_pE_q$), not $(E_p, E_q)$. In general the output holds the
+invariants of the context under whatever the symmetries do to it. Each kind of
+context therefore declares how the symmetries act on it (invariant by
+default), and the library chooses the pass-through accordingly. Strictly, the
+encoding then determines the pair (context, particles) up to the symmetries,
+which is what is wanted.
+
+\paragraph{Distinct beams.} For distinct beams the invariants $(m_e^2, m_p^2,
+s)$ do not fix the frame: the two beam energies (equivalently, $p^\mu$ and
+$q^\mu$ in the frame in which the particles are given) are needed as well, and
+which frame is meant (the beams' centre-of-mass frame, or the laboratory frame)
+is part of the description. This case is not a priority, but the design should
+not exclude it.
+
+\subsection{What the library does}
+
+\paragraph{Planning.} The symmetry and the inputs determine a \emph{front end}:
+how the particle data become a vector $w$ and how the group acts on it.
+\begin{center}
+\small
+\begin{tabular}{p{0.38\textwidth}p{0.52\textwidth}}
+  symmetry & front end \\ \hline
+  none (relabelling only) & the features themselves (after continuity-safe
+    conversion) \\
+  rotations about an axis (with or without exchange) & per-particle scalars and
+    transverse dots and wedges (Section~\ref{sec:beam}) \\
+  Lorentz, or rotations in $k$ dimensions & dots and determinants
+    (Section~1) \\
+  blind to handedness & as above, dropping wedges or determinants where proved
+\end{tabular}
+\end{center}
+Every front end ends with $w$ and a signed-permutation action on it, so every
+\emph{back end} (plain, involution, graded, nested, cascade) applies. One case
+is different: with relabelling only, the data already \emph{are} multisets of
+points, one per species, and embedding them directly involves $n$ points rather
+than an orbit of $n!$ copies of $w$. (For three points in $\mathbb{R}^4$, a
+plain Bursarial embedding needs 21 outputs.) So that case is routed to
+Echinocoder's existing multiset embedders, one per species, concatenated.
+
+\paragraph{A registry of methods.} Each method registers what it can do:
+which front ends and group structures it accepts, a cheap estimate of its
+output count and degree made without building it, its certification level,
+and a rough build cost. The planner keeps every method that fits, estimates,
+and ranks. A new method is added by implementing and registering it; users then
+see it among their candidates without any change to their code.
+
+\paragraph{Candidates.} \texttt{candidates(problem)} returns every method that
+meets the stated needs, best first, each with its predicted output count,
+maximum degree, certification level and build cost, and a \texttt{build()}.
+Nothing is built until asked. The default ordering is by output count, among
+methods at Level~1 or below; degree is reported so that users can trade size
+against it, and they can try several, since some may suit their use better for
+reasons that are hard to predict. \texttt{encoder(problem)} builds the first.
+Level~3 candidates never appear here (Section~\ref{sec:levels}).
+
+\paragraph{The encoder.} The result is a \texttt{torch.nn.Module} following
+IWPC's conventions, whose outputs are the passed-through context invariants
+followed by the embedding. Its metadata record the problem description, the
+method chosen, the library version, the certification, the output names, and
+an \texttt{explain()} text: what was chosen and why, what is context, what
+is a constant.
+
+\paragraph{Reproducibility.} If the best method changes (because a better one
+is added), the outputs change, and anything trained on them silently breaks.
+So the metadata record a method identifier, \texttt{encoder(problem,
+method=meta.method\_id)} rebuilds exactly that method, and \texttt{explain()}
+recommends pinning for production use.
+
+\paragraph{Errors.} A combination that no method supports produces a message
+saying which part is unsupported and which nearby problems are supported.
+
+\subsection{Questions for review}
+\begin{itemize}
+  \item Scope: should this layer route raw multisets to Echinocoder's existing
+    embedders (proposed above), and so live at the level of Echinocoder rather
+    than inside \texttt{symembed}?
+  \item Inputs: IWPC's \texttt{Encoding} takes one tensor. Should context
+    arrive as a second argument, as extra columns, or either (with an adapter
+    that flattens)?
+  \item Context declarations: is ``invariant unless declared otherwise'' the
+    right default? Which context kinds are needed now (for the LHC: $\sqrt{s}$,
+    common masses; perhaps beam energies for asymmetric runs)?
+  \item Should a common mass always be passed through, or only on request?
+  \item Ranking: output count first, degree as a tie-break or a user choice?
+\end{itemize}
+
 \section{Exploration log}\label{sec:exploration}
 
 This section records what has been observed by running the code on very simple
