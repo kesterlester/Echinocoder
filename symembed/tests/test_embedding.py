@@ -165,7 +165,7 @@ def test_gradients(gen):
 
 def test_unsupported_options():
     for kwargs in ({"embedder": "other"}, {"reductions": "aggressive"}, {"homogenise": True},
-                   {"root_normalise": True}, {"field": "complex"}):
+                   {"field": "complex"}):
         with pytest.raises(NotImplementedError):
             EmbeddingOptions(**kwargs)
 

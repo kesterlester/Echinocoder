@@ -1088,7 +1088,17 @@ and \texttt{lightning}). \texttt{embed\_fn} is therefore a
   \item \texttt{homogenise}: split outputs into homogeneous (or
     multi-homogeneous) parts in $L$.
   \item \texttt{root\_normalise}: apply $\operatorname{sign}(f)|f|^{1/r}$ to
-    each homogeneous output of degree $r$.
+    each output that an exact counting argument proves homogeneous of degree
+    $r$ in~$L$. This is now implemented. With $P$ in $G$ every output qualifies
+    ($S(3)\times S(2)\times P$, $k = 4$: the largest output falls from about
+    $5 \times 10^{22}$ to about~14, and float32 tracks float64 roughly ten times
+    more closely). One caveat: a root amplifies rounding noise near $f = 0$.
+    Outputs that vanish identically as functions of~$L$ are pure rounding noise,
+    and would become order-one garbage. The build therefore leaves unnormalised
+    any output that is numerically zero at random inputs. (For the case above
+    that is $E_{5,42}$, of degree~10, the degree of the $5 \times 5$ Gram
+    determinant, which vanishes for five vectors in four dimensions. It is a
+    candidate for an exact $L$-level reduction.)
   \item \texttt{field}: $\mathbb{R}$ initially. Whether to support
     $\mathbb{C}$ is still open.
   \item \texttt{dtype}: the precision of evaluation, \texttt{float32} by

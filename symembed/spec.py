@@ -105,7 +105,8 @@ class EmbeddingOptions:
     homogenise
         Split outputs into parts homogeneous in L. Not implemented yet.
     root_normalise
-        Replace each homogeneous output f of degree r by sign(f)|f|^(1/r). Not implemented yet.
+        Replace each output f that is provably homogeneous of degree r in L by sign(f)|f|^(1/r), a bijection of R,
+        so that it scales linearly with L. Other outputs are unchanged. Not available for "bursar_nested".
     field
         Only ``"real"`` is supported.
     dtype
@@ -147,8 +148,6 @@ class EmbeddingOptions:
                 raise NotImplementedError(f"{name}={value!r} is not implemented; supported: {allowed}")
         if self.homogenise:
             raise NotImplementedError("homogenise=True is not implemented yet")
-        if self.root_normalise:
-            raise NotImplementedError("root_normalise=True is not implemented yet")
         if self.linear_reduction_max_c is not None and self.linear_reduction_max_c < 0:
             raise ValueError(f"linear_reduction_max_c must be non-negative, got {self.linear_reduction_max_c}")
         if self.metric is not None and (not isinstance(self.metric, tuple) or any(x not in (1, -1) for x in self.metric)):

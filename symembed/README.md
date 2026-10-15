@@ -77,7 +77,13 @@ Two levels are implemented (certification levels are defined in Section 4.3):
   - It is used only when it wins; otherwise the graded embedding is returned. The exact Level 1 searches are not
     applied to it.
 
-`homogenise`, `root_normalise`, the complex field and Level 2 reductions are not implemented.
+- `EmbeddingOptions(root_normalise=True)` replaces each output that is provably homogeneous of degree `r` in `L` by
+  `sign(f)|f|^(1/r)`, which scales linearly with `L` and tames the dynamic range for float32. Outputs that are
+  numerically zero at random inputs (typically identically zero through the Gram relations) are left as they are,
+  because a root would amplify their rounding noise. It is not available for `bursar_nested`, and it combines with
+  `parity_split`.
+
+`homogenise`, the complex field and Level 2 reductions are not implemented.
 
 Exact linear dependencies are rare, so the safe reductions remove very little. For `n = 5`, `k = 4`, `G = S(5)`:
 
@@ -157,6 +163,7 @@ for both embedders it keeps only the outputs that are not exact polynomials in t
 | `graded.py` | graded packing: weight-space packing for a dihedral `<h, s>`, search, evaluator, metadata, exact reductions |
 | `nested.py` | nested coset packing: subgroup and coset search, evaluator, metadata |
 | `parity.py` | option `parity_split`: exact purity check, even/odd parts |
+| `rootnorm.py` | option `root_normalise`: exact homogeneity check, signed roots with finite gradient at 0 |
 | `cyclotomic.py` | exact arithmetic in `Z[zeta_L]` (integer vectors in the power basis) |
 | `reductions.py` | exact (Gaussian-integer) expansion of low-`c` outputs, exact linear-dependency search (Level 1) |
 | `module.py` | `InvariantEmbedding` (the evaluator) and its flattened variant |

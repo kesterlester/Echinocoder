@@ -181,6 +181,12 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
     if options is None:
         options = EmbeddingOptions()
     module, meta = _build(k, group_spec, options)
+    if options.root_normalise:
+        from .rootnorm import RootNormaliseEmbedding, RootNormaliseMeta, numerically_zero, output_degrees
+        degrees = output_degrees(meta)
+        skip = numerically_zero(module, degrees, group_spec.n, k)
+        module = RootNormaliseEmbedding(module, degrees, skip)
+        meta = RootNormaliseMeta(meta, degrees, skip)
     if options.parity_split and not group_spec.parity:
         from .parity import ParitySplitEmbedding, ParitySplitMeta, output_parities
         parities = output_parities(meta)

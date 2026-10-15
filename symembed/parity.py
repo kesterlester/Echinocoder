@@ -50,6 +50,9 @@ def possible_e_parities(position_kinds: list, N: int) -> list[set]:
 def output_parities(meta) -> list[set]:
     """The possible e-parities of each output of a plain, involution or graded embedding (exact, combinatorial)."""
     from .graded import GradedMeta
+    from .rootnorm import RootNormaliseMeta
+    if isinstance(meta, RootNormaliseMeta):          # sign(f)|f|^(1/r) is odd in f: parities are unchanged
+        return output_parities(meta.inner)
     if isinstance(meta, GradedMeta):
         p = meta.packing
         kinds = [{meta.slots[t].kind for t in range(meta.m) if abs(a[t]) > 1e-12 or abs(b[t]) > 1e-12}
@@ -110,8 +113,9 @@ class ParitySplitMeta:
         return self.inner.certification_level
 
     def _inner_names(self) -> list[str]:
-        if hasattr(type(self.inner), "output_names"):
-            return self.inner.output_names()
+        names = getattr(self.inner, "output_names", None)       # also found through wrapper delegation
+        if callable(names):
+            return names()
         return [self.inner.base_name(b) for b in self.inner.kept_base_indices]     # EmbeddingMeta
 
     def output_names(self) -> list[str]:
