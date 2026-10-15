@@ -86,6 +86,16 @@ Two levels are implemented (certification levels are defined in Section 4.3):
   - It is used only when it wins; otherwise the graded embedding is returned. The exact Level 1 searches are not
     applied to it.
 
+- **`embedder="bursar_cascade"`**: cascaded graded embedding (Section 3.6), which is Level 0.
+  - For a dihedral (or cyclic) subgroup `D = <h, s>`, the packed coordinates `z(w)` determine the whole `D`-orbit
+    (roots of unity and conjugation), so no group element is ever applied to `w`. The orbit is embedded in stages
+    along a chain of cyclic subgroups of `<h>`: each stage is the graded Bursarial polynomial of `p` points (a
+    small prime or factor `p`), with positions `= weight + shift (mod the remaining order)` so that its outputs are
+    again eigen-coordinates; a final stage embeds `{Y, conj Y}` by `Re Y` and `Q conj(Q)`.
+  - When `D` is smaller than `G`, the `D`-orbits over right cosets are nested under a plain Bursarial embedding.
+  - Sizes: `S(3) x S(2)`, `k = 4`: 63 (graded 100; hand-crafted 54); with `P`: 52; `S(4)`, `k = 4`: 153;
+    `S(5)`, `k = 4`: 3420 (nested graded 5455).
+
 - `EmbeddingOptions(root_normalise=True)` replaces each output that is provably homogeneous of degree `r` in `L` by
   `sign(f)|f|^(1/r)`, which scales linearly with `L` and tames the dynamic range for float32. Outputs that are
   numerically zero at random inputs (typically identically zero through the Gram relations) are left as they are,
@@ -143,6 +153,32 @@ meta2.packed_coordinates()   # [(real part, imaginary part), ...] of each packed
     So the step back from the multiset to `L` holds only up to orbit closures. No continuous map can do better, and
     continuous invariant functions need no more. See Remark "Indefinite metrics" in Section 1 of the notes.
 
+### Collider events: the beam frame (`build_beam_embedding`, Section 6 of the notes)
+
+```python
+from symembed import BeamSpec, EmbeddingOptions, build_beam_embedding
+from symembed.beam import beam_inputs_from_lab, beam_inputs_from_beams, beam_inputs_from_pt_eta_phi_m
+
+spec = BeamSpec(species=(("j1", "j2", "j3"),),     # three exchangeable visible particles
+                masses=(None,),                    # per species: None (masses vary) or a fixed common mass
+                parity=False, met=False, mass_variable="m")
+embed, meta = build_beam_embedding(spec, EmbeddingOptions(embedder="bursar_cascade"))   # 47 outputs
+Y = embed(beam_inputs_from_lab(four_momenta))      # (..., 3, 4) lab (E, px, py, pz) -> (..., meta.D)
+```
+
+- The beams `p, q` fix a frame: `w = (m_i, pt_i, transverse dots | pz_i, transverse wedges)`. What is left of the
+  Lorentz group is rotations about the beam axis (removed by `w`) and the swap of the beams, which negates exactly
+  the bracket (`pz`'s and wedges); identical particles act by signed permutations. `sqrt(s)` and fixed masses are
+  parameters, not outputs.
+- `parity=True` makes the embedding blind to handedness; with `reductions="safe"` the wedges are then omitted (the
+  transverse Gram matrix fixes the transverse momenta up to `O(2)`). `met=True` adds a transverse-only object.
+- `swap="group"` (default) treats the swap as a group element, so every embedder can use it; `swap="projective"`
+  stores the bracket up to sign with Echinocoder's RP embedder, either before a plain Bursarial embedding
+  (`embedder="bursar"`, a baseline) or as the first stage of a cascade (`embedder="bursar_cascade"`).
+- Input: beam-frame `(m, px, py, pz)` per object, shape `(..., n_objects, 4)`. Front ends convert lab four-momenta,
+  `(pt, eta, phi, m)`, or four-momenta in any frame together with the beams (crossing angles; also returns
+  `sqrt(s)`).
+
 ## Exploration
 
 `python -m symembed.explore.simple_cases` (run from the repo root, with the venv's Python) writes very simple cases
@@ -173,6 +209,8 @@ for both embedders it keeps only the outputs that are not exact polynomials in t
 | `involution.py` | involution packing: generic packing for any linear involution, slot-form packing, choice of `g0` |
 | `graded.py` | graded packing: weight-space packing for a dihedral `<h, s>`, search, evaluator, metadata, exact reductions |
 | `nested.py` | nested coset packing: subgroup and coset search, evaluator, metadata |
+| `cascade.py` | cascaded graded embedding: stage planning along chains of cyclic subgroups, search, evaluator, metadata |
+| `beam.py` | beam-frame front end for collider events: `BeamSpec`, slots and signed permutations, front ends, builder |
 | `parity.py` | option `parity_split`: exact purity check, even/odd parts |
 | `rootnorm.py` | option `root_normalise`: exact homogeneity check, signed roots with finite gradient at 0 |
 | `cyclotomic.py` | exact arithmetic in `Z[zeta_L]` (integer vectors in the power basis) |
