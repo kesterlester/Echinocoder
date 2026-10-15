@@ -39,10 +39,14 @@ Two levels are implemented (certification levels are defined in Section 4.3):
     `docs/explorations/polynomial_closure.txt`).
 
 - **`embedder="bursar_graded"`**: graded packing (Section 3.4), which is Level 0 and subsumes involution packing.
-  - It uses a dihedral subgroup `<h, s>` of `G`, where `s h s = h^-1`. Each packed coordinate placed at power
-    `x^j` is multiplied by `exp(2 pi i j / r)` under `h`. So `B(zeta x, y) = B(x, y)`, and every coefficient
-    `E_{c,j}` whose `j` is not a multiple of `r` vanishes identically. `s` acts as complex conjugation, so the
-    remaining coefficients are real.
+  - It uses a dihedral subgroup `<h, s>` of `G`, where `s h s = h^-1`. A packed coordinate of weight `k` (multiplied
+    by `zeta^k`, `zeta = exp(2 pi i / r)`, under `h`) is placed at a power `x^j` with `j = k + shift (mod r)`. Then
+    `B(x, y)` and `B(zeta x, zeta^shift y)` agree up to a constant, and every coefficient `E_{c,j}` with
+    `j != shift * c (mod r)` vanishes identically. `s` acts as complex conjugation, so the remaining coefficients
+    are real.
+  - The shift, and the choice of weight `k` or `r - k` for each conjugate pair of coordinates, minimise the length
+    `W` of `q` (the number of coefficients is about `sum_c c (W - 1) / r`). For `S(3) x S(2)`, `k = 4` this takes
+    `W` from 10 to 8 and the output count from 124 to 100.
   - `G`-invariant coordinates can be output directly. If `h` then multiplies every remaining coordinate by one
     scalar, the grading is by `c` instead (scalar mode).
   - The `(h, s)` with the fewest outputs is found automatically, trying one `h` per conjugacy class.
@@ -50,13 +54,14 @@ Two levels are implemented (certification levels are defined in Section 4.3):
     empty padding) are also omitted, since they are zero for every input.
   - So are coefficients killed by a sign (character) symmetry of individual coordinates (Section 3.4, "Exact zeros
     from symmetries of single coordinates"). For example, when a group element multiplies the coordinate at
-    position 0 by -1, then `E_{c,0}` vanishes for every odd `c`. For `S(3) x S(2)`, `k = 3` this takes 203 outputs
-    to 191.
-  - Typical sizes: 11 → 4 for `S(2)`, `k = 2` (your zip); 174 → 32 for `S(3)`, `k = 2`; 138060 → 13141 for
-    `S(5)`, `k = 4`.
+    position 0 by -1, then `E_{c,0}` vanishes for every odd `c` (`S(3)`, `k = 3`: 20 → 17 outputs). Among the
+    shortest layouts, the coordinates placed at the two ends are chosen to maximise these zeros (`S(5)`, `k = 4`:
+    60 of them).
+  - Typical sizes: 11 → 4 for `S(2)`, `k = 2` (your zip); 174 → 24 for `S(3)`, `k = 2`; 1494 → 100 for
+    `S(3) x S(2)`, `k = 4`; 138060 → 13082 for `S(5)`, `k = 4`.
   - With `reductions="safe"`, the `c = 1` outputs are reduced exactly (Level 1): each is `(p_j S) w`, with
     integer coefficients, where `S` is the sum of the group matrices. Any that is a rational combination of the
-    invariant outputs or of earlier ones is dropped. For example `S(5)`, `k = 4` goes from 13141 to 13140.
+    invariant outputs or of earlier ones is dropped. For example `S(5)`, `k = 4` goes from 13082 to 13081.
   - The packing is built exactly in the cyclotomic integers `Z[zeta_L]`, with `L = lcm(r, 4)`. These are handled
     by `cyclotomic.py`, with each number stored as a short integer vector. The floating-point coordinates are derived
     from the exact ones, and grading and reality are checked exactly at build time.
@@ -64,12 +69,11 @@ Two levels are implemented (certification levels are defined in Section 4.3):
     coefficients vanish and the kept ones are real. It then drops outputs that are linear combinations of kept ones
     with coefficients in `Q(zeta_L)`, found by "restriction of scalars": each output `P` contributes the integer
     rows `P, zeta P, ...`, so the integer relation search applies unchanged. Gains are small, for example
-    `S(5)`, `k = 4` goes from 13141 to 13139.
+    `S(4)`, `k = 2` goes from 613 to 612.
   - Beyond `c_max` (unless `linear_reduction_max_c` is set), outputs that vanish identically are dropped too. They
     are proposed by exact evaluation modulo two primes at random points, and each is then verified by an exact
     expansion of that one coefficient, restricted to the positions that can contribute to it (cheap near the ends
-    of the range of `j`). For example `S(3) x S(2) x P`, `k = 4` goes from 112 to 111 and `S(5)`, `k = 4` from 13139
-    to 13137.
+    of the range of `j`). For example `S(3) x S(2) x P`, `k = 4` goes from 100 to 99 (`Re E_{5,32} = 0`).
   - `meta` still shows the complex packed coordinates with numerical coefficients, although exact ones are now
     available in `meta.packing.exact`.
   - `bursar_involution` is kept as the simpler special case (`h` the identity).
@@ -77,8 +81,8 @@ Two levels are implemented (certification levels are defined in Section 4.3):
 - **`embedder="bursar_nested"`**: nested coset packing (Section 3.5), which is Level 0.
   - `MS` is the disjoint union, over right cosets `Hg`, of the `H`-orbits of `g.w`. Each `H`-orbit is embedded
     by graded packing for `H`, and the multiset of those vectors by a plain Bursarial embedding.
-  - It is roughly 2x smaller than flat graded packing when there are many cosets: for `S(5)`, `k = 4`, 13141 →
-    6775, with `H = S(2) x S(3)` and 10 cosets.
+  - It is roughly 2x smaller than flat graded packing when there are many cosets: for `S(5)`, `k = 4`, 13082 →
+    5455, with `H = S(2) x S(3)` and 10 cosets.
   - It is used only when it wins; otherwise the graded embedding is returned. The exact Level 1 searches are not
     applied to it.
 

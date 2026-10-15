@@ -557,9 +557,44 @@ They are real when $\zeta^k = \pm 1$, and complex otherwise. Put each coordinate
 of weight $k$ at a position $j \equiv k \pmod r$, and leave unused positions
 empty (zero). A complex eigen-coordinate of weight $k$ and its conjugate
 (weight $-k$) carry the same information, so only one of each pair is kept. It
-can go at residue $k$ or at residue $r-k$, whichever keeps the residues
-balanced. Balance matters, because the length of $q$ is set by the busiest
-residue.
+can be used with weight $k$ or, conjugated, with weight $r-k$.
+
+\paragraph{Shifting the residues.}
+The positions need not be congruent to the weights themselves. Put every
+coordinate of weight $k$ at a position $j \equiv k + \delta \pmod r$, for one
+fixed \emph{shift} $\delta$. Then $\zeta^k = \zeta^{j-\delta}$ at every occupied
+position, so $q_{hv}(x) = \zeta^{-\delta} q_v(\zeta x)$, and
+\[
+  B(x, y) = \prod_{v} \bigl(y + \zeta^{-\delta} q_v(\zeta x)\bigr)
+          = \zeta^{-\delta |M|} B(\zeta x, \zeta^{\delta} y) .
+\]
+Comparing coefficients of $y^{|M|-c}x^j$ gives
+$E_{c,j} = \zeta^{\,j - \delta c} E_{c,j}$, so
+\[
+  E_{c,j} = 0 \quad \text{unless } j \equiv \delta c \pmod r .
+\]
+Still about one coefficient in $r$ survives, but the shift changes where the
+coordinates sit. That matters, because the number of coefficients of $E_c(x)$
+is $c(W-1)+1$, where $W$ is the length of $q$ (the highest occupied position
+plus one, taking the lowest to be 0). So the total is about
+$\sum_c c(W-1)/r$, and $W$ should be as small as possible. If the busiest
+weight has $M$ coordinates, they need positions $j_0, j_0 + r, \ldots,
+j_0 + (M-1)r$, so $W \ge (M-1)r + 1$. Equality needs all the busiest weights to
+sit at the very start of the first block of $r$ positions: in general
+$W = (M-1)r + t$, where $t$ is the length of the shortest run of consecutive
+residues (cyclically) containing the shifted residues of all the weights with
+$M$ coordinates. The shift $\delta$ is chosen to achieve this, and the
+weight-$k$ or weight-$(r-k)$ choice for each conjugate pair is made to keep
+the busiest weights few and adjacent. For a fixed shift the pairs do not
+interact, so the code tries every shift and splits each pair to minimise its
+own last position; every layout is a translate of one found this way.
+
+\emph{Example:} for $S(3)\times S(2)$ with $k = 4$ ($r = 6$), without a
+shift the weights 2 and 3 had two coordinates each, with the second copies at
+positions 8 and 9, so $W = 10$. The code now uses weight 4 rather than 2 for
+one conjugate pair, so that the busiest weights are 3 and 4, and the shift
+$\delta = 3$ puts them at positions 0 and 1 (and 6 and 7). Then $W = 8$, and
+the count falls from 124 to 100.
 
 \paragraph{Making the coefficients real.}
 The surviving coefficients are complex in general, and would cost two reals
@@ -619,16 +654,22 @@ which coordinates. It then examines every coefficient within a small distance of
 either end of $E_c(x)$, where the patterns are few because most positions must
 equal the end position.
 
-\emph{Example:} for $S(3)\times S(2)$ with $k = 3$, position~0 holds the purely
-imaginary coordinate $i\,e_{abc}$. The reflection $s$ multiplies it by $-1$, so
-every pattern of $E_{c,0}$, which can only be $\{0, \ldots, 0\}$, picks up the
-factor $(-1)^c$. Hence $E_{c,0} = 0$ for every odd $c$. Equivalently, over the
-12 group elements the coordinate takes the values $\pm i\,e_{abc}$ six times
-each, and $E_{c,0}$ is a coefficient of $(y^2 + e_{abc}^2)^6$. Similar
-cancellations occur near the top power. In all, 12 coefficients vanish for this
-reason, taking that case from 203 to 191 outputs. These include four that the
-Level~1 searches had found individually. ($S(3)\times S(2)$ with $k = 4$ goes
-from 130 to 124.)
+\emph{Example:} for $S(3)$ with $k = 3$, position~0 holds the purely
+imaginary coordinate $6i\,e_{abc}$. The reflection $s$ multiplies it by $-1$,
+so every pattern of $E_{c,0}$, which can only be $\{0, \ldots, 0\}$, picks up
+the factor $(-1)^c$. Hence $E_{c,0} = 0$ for every odd $c$. Equivalently, over
+the 6 group elements the coordinate takes the values $\pm 6i\,e_{abc}$ three
+times each, and $E_{c,0}$ is a coefficient of $(y^2 + 36e_{abc}^2)^3$. That
+takes the case from 20 to 17 outputs.
+
+Since only the coordinates at the two ends matter here, the code also chooses
+which coordinate of the lowest weight goes first and which of the highest goes
+last: among the shortest layouts, every choice involving coordinates with
+non-trivial characters is tried, and the one with fewest outputs kept. For
+$S(5)$ with $k = 4$ that gives 60 zeros ($13141 \to 13082$). (With the shifted
+layout the ends of the $S(3)\times S(2)$ cases hold coordinates without such
+characters. Without the shift, $i\,e_{abc}$ sat at position~0 for $k = 3$ and
+12 coefficients vanished, but the longer $q$ cost far more.)
 
 \paragraph{Why this is Level 0.}
 The packing (together with any invariants output directly) is an injective
@@ -694,12 +735,12 @@ optional exact Level~1 reductions (\texttt{reductions="safe"}).
   case & $(h, s)$ & plain & involution & graded & factor & ${}+{}$safe \\ \hline
   $S(2)$, $k=2$            & $(ab)$, scalar          & 11     & 5     & 4     & 2.8  & 4 \\
   $S(2)\times S(1)$, $k=2$ & $(ab)$, scalar          & 26     & 14    & 11    & 2.4  & 11 \\
-  $S(3)$, $k=2$            & $(abc)$, $(bc)$         & 174    & 90    & 32    & 5.4  & 32 \\
-  $S(4)$, $k=2$            & $(bcd)$, $(cd)$         & 4524   &       & 718   & 6.3  & 715 \\
-  $S(4)$, $k=3$            & $(abcd)$, $(bd)$        & 3924   &       & 469   & 8.4  & 468 \\
-  $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 191   & 9.9  & 191 \\
-  $S(3)\times S(2)$, $k=4$ & $(abc)(pq)$, $(bc)$     & 1494   &       & 124   & 12.0 & 124 \\
-  $S(5)$, $k=4$            & $(abcde)$, $(be)(cd)$   & 138060 & 79980 & 13141 & 10.5 & 13137
+  $S(3)$, $k=2$            & $(abc)$, $(bc)$         & 174    & 90    & 24    & 7.2  & 24 \\
+  $S(4)$, $k=2$            & $(abcd)$, $(bd)$        & 4524   & 2124  & 613   & 7.4  & 612 \\
+  $S(4)$, $k=3$            & $(abcd)$, $(bd)$        & 3924   & 2124  & 386   & 10.2 & 385 \\
+  $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 165   & 11.4 & 164 \\
+  $S(3)\times S(2)$, $k=4$ & $(abc)(pq)$, $(bc)$     & 1494   & 870   & 100   & 14.9 & 100 \\
+  $S(5)$, $k=4$            & $(abcde)$, $(be)(cd)$   & 138060 & 79980 & 13082 & 10.6 & 13081
 \end{tabular}
 \end{center}
 
@@ -712,8 +753,8 @@ optional exact Level~1 reductions (\texttt{reductions="safe"}).
     $n$, not a change in the $|G|^2$ growth of any Bursarial construction.
   \item \emph{Unbalanced weights cost some of the gain.} When the weights are
     unevenly spread over the residues, the busiest residue sets the length of
-    $q$ (for example, $D_4$ gives $5.9\times$ rather than~8 for $S(4)$,
-    $k = 2$).
+    $q$, even after the best shift (for example, $D_4$ gives $7.4\times$ rather
+    than~8 for $S(4)$, $k = 2$).
   \item \emph{Exact further reductions.} The packing is built exactly, with
     coefficients in the cyclotomic integers $\mathbb{Z}[\zeta_L]$ for
     $L = \operatorname{lcm}(r, 4)$, which contain both $\zeta_r$ and~$i$. Each
@@ -736,7 +777,7 @@ optional exact Level~1 reductions (\texttt{reductions="safe"}).
         $\mathbb{Q}(\zeta_L)$, so the integer relation search applies unchanged.
     \end{itemize}
     As predicted, little is found beyond the symmetry zeros above:
-    $S(4)$, $k=2$ goes from 718 to 715 and $S(5)$, $k = 4$ from 13141 to 13139
+    $S(4)$, $k=2$ goes from 613 to 612 and $S(5)$, $k = 4$ from 13082 to 13081
     ($c_{\max} = 3$).
   \item \emph{Zeros beyond $c_{\max}$.} The work budget stops the search above
     at a modest $c_{\max}$ (3 or 4 in the cases above), but a few outputs with
@@ -762,17 +803,20 @@ optional exact Level~1 reductions (\texttt{reductions="safe"}).
         their product exceeds twice a bound on the size of the integer
         coefficients, which makes it exact.)
     \end{itemize}
-    This drops $\operatorname{Re} E_{5,42}$ for $S(3)\times S(2)\times P$,
-    $k=4$ (112 to 111), $\operatorname{Re} E_{5,84}$ for $S(3)\times S(2)$,
-    $k=2$ (264 to 263), and $\operatorname{Re} E_{5,45}$ and
-    $\operatorname{Re} E_{9,80}$ for $S(5)$, $k = 4$ (13139 to 13137; both
-    involve only the five $e$'s). The other cases in the table have no such
-    zeros. Exact evaluation also shows that the many outputs at large $c$ which
+    This drops $\operatorname{Re} E_{5,32}$ for $S(3)\times S(2)\times P$,
+    $k=4$ (100 to 99), $\operatorname{Re} E_{5,57}$ for $S(3)\times S(2)$,
+    $k=3$ (165 to 164), and $\operatorname{Re} E_{5,75}$ for
+    $S(3)\times S(2)$, $k=2$ (233 to 232). The other cases in the table have
+    no such zeros. (Before the shift was introduced it also dropped two
+    outputs for $S(5)$; with the present choice of end coordinates those are
+    among the character-symmetry zeros.) Exact evaluation also shows that the many outputs at large $c$ which
     merely \emph{look} zero in floating point (for $S(4)$ and $S(5)$) are not
     zero. They are tiny compared with the largest output with the same $c$, and
     a relative threshold mistakes them for zero.
 
-    Why $E_{5,42}$ vanishes illustrates a cancellation that the character
+    Why such zeros occur is illustrated by $E_{5,42}$ for
+    $S(3)\times S(2)\times P$, $k = 4$, in the layout without shift (positions
+    congruent to weights). It shows a cancellation that the character
     argument above cannot see. Only positions 8 and 9 contribute, with
     $z_9 = 2\sum_i (d_{ip} - d_{iq})$ and $z_8$ the weight-2 combination
     $2[(d_{ap}+d_{aq}) + \omega (d_{bp}+d_{bq}) + \omega^2 (d_{cp}+d_{cq})]$,
@@ -834,10 +878,10 @@ if it beats the flat graded packing; otherwise it returns the latter.
 \small
 \begin{tabular}{lrrl}
   case & flat graded & nested & best $H$ \\ \hline
-  $S(3)$, $k = 2$                                & 32    & (44)  & flat used \\
-  $S(3)\times S(2)$, $k = 3$                     & 191   & (212) & flat used \\
-  $S(3)\times S(2)\times P$, $k = 4$, $e$'s kept & 460   & 371   & order 12, 2 cosets \\
-  $S(5)$, $k = 4$                                & 13141 & 6775  & $S(2)\times S(3)$, 10 cosets
+  $S(3)$, $k = 2$                                & 24    & (44)  & flat used \\
+  $S(3)\times S(2)$, $k = 3$                     & 165   & (209) & flat used \\
+  $S(3)\times S(2)\times P$, $k = 4$, $e$'s kept & 364   & 299   & order 12, 2 cosets \\
+  $S(5)$, $k = 4$                                & 13082 & 5455  & $S(2)\times S(3)$, 10 cosets
 \end{tabular}
 \end{center}
 
@@ -1149,8 +1193,9 @@ and \texttt{lightning}). \texttt{embed\_fn} is therefore a
     and would become order-one garbage. The build therefore leaves unnormalised
     any output that is numerically zero at random inputs. (For the case above
     that used to be $E_{5,42}$. It is \emph{formally} zero, and is now dropped
-    by the search for zeros beyond $c_{\max}$ in Section~\ref{sec:graded},
-    giving $111$ outputs, none of them left unnormalised.)
+    by the search for zeros beyond $c_{\max}$ in Section~\ref{sec:graded}.
+    With the shifted layout of that section the case has 99 outputs, none of
+    them left unnormalised.)
   \item \texttt{field}: $\mathbb{R}$ initially. Whether to support
     $\mathbb{C}$ is still open.
   \item \texttt{dtype}: the precision of evaluation, \texttt{float32} by
@@ -1410,15 +1455,18 @@ numerically, as polynomials in $w$, with an exact cross-check for low $c$:
 \begin{center}
 \begin{tabular}{lrrrr}
   case & outputs & even & odd & mixed \\ \hline
-  $S(3)\times S(2)$, $k = 3$ & 191 & 17 & 6 & 168 \\
-  $S(3)\times S(2)$, $k = 4$ & 124 & 19 & 1 & 104
+  $S(3)\times S(2)$, $k = 3$ & 164 & 21 & 1 & 142 \\
+  $S(3)\times S(2)$, $k = 4$ & 100 & 16 & 0 & 84
 \end{tabular}
 \end{center}
 Most outputs are mixed, because the packing combines $d$'s and $e$'s. If
 outputs of definite parity are wanted, the simplest route is to split each
 mixed output $o$ afterwards into $\tfrac12(o(L) + o(pL))$ and
 $\tfrac12(o(L) - o(pL))$, at a cost of one extra output per mixed one. That
-gives $191 + 168 = 359$ and $124 + 104 = 228$. A ``parity-graded'' packing,
+gives $164 + 142 = 306$ and $100 + 84 = 184$. (The counts in this paragraph
+before ``Splitting is implemented'' were made with the earlier layout, without
+the shift of Section~\ref{sec:graded}: then the totals were $191 + 168 = 359$
+and $124 + 104 = 228$.) A ``parity-graded'' packing,
 using coordinates of pure parity placed so that the parity of each position
 matches the parity of its coordinate, makes every coefficient pure
 automatically: $E_{c,j}(p\cdot w) = (-1)^j E_{c,j}(w)$. But it does
@@ -1428,10 +1476,10 @@ whose order $6$ is even and conflicts with it, and forces extra padding.
 Splitting is implemented as the option \texttt{parity\_split}. An output is
 kept as it is when an exact counting argument proves it pure: every way of
 reaching its power of $x$ uses the same number of $e$ factors modulo~2.
-Otherwise it is replaced by its even and odd parts. For $k = 3$ this gives
-exactly $191 + 168 = 359$. For $k = 4$ it gives $236$ rather than $228$, because
-8 outputs are pure only through cancellations that the counting argument
-cannot see; each contributes a part that is zero for every input.
+Otherwise it is replaced by its even and odd parts. This gives $317$ for
+$k = 3$ and $191$ for $k = 4$, rather than $306$ and $184$, because 11 and 7
+outputs respectively are pure only through cancellations that the counting
+argument cannot see; each contributes a part that is zero for every input.
 
 \paragraph{Comparison with hand-crafted separating sets.}
 For five Lorentz vectors with $G = S(3) \times S(2)$ ($k = 4$),
@@ -1445,9 +1493,9 @@ flatters the crafted sets somewhat. The fully automatic graded construction
 \begin{center}
 \begin{tabular}{lrrr}
   & crafted & here & ratio \\ \hline
-  with $P$ in $G$ (parity-even only; nested)  & 26 & 107 & 4.1 \\
-  without $P$, outputs as they come             & 54 & 124 & 2.3 \\
-  without $P$, split into definite parity       & 54 & 228 & 4.2
+  with $P$ in $G$ (parity-even only)           & 26 & 99  & 3.8 \\
+  without $P$, outputs as they come             & 54 & 100 & 1.9 \\
+  without $P$, split into definite parity       & 54 & 191 & 3.5
 \end{tabular}
 \end{center}
 The quotient dimension is 14. Nonlinear (polynomial) identities and the Gram
@@ -1466,12 +1514,15 @@ $\prod(y + q)$ can carry: scaling $x$, scaling $y$, and conjugation. (Reversal
 $x \mapsto 1/x$ would add at most another factor of~2.) That caps the saving
 at roughly the order of a dihedral subgroup. Nesting over cosets
 (Section~\ref{sec:nested}) adds about a factor of~2 when there are many cosets
-($S(5)$, $k = 4$: $13141 \to 6775$). A second level helps only a little: for
-$S(5)$ the chain $D_5 \subset A_5 \subset S(5)$ gives $5813$ (and
+($S(5)$, $k = 4$: $13082 \to 5455$). A second level does not help there: the
+chain $D_5 \subset A_5 \subset S(5)$ gives $5813$ (and
 $D_5 \subset F_{20} \subset S(5)$ gives $5823$), because the middle level has only
-2 cosets. Neither changes the $|G|^2$ growth. One size up, $S(6)$ with $k = 4$
+2 cosets. Neither changes the $|G|^2$ growth. (Within that cap the layout of
+the coordinates in $q$ still mattered: choosing the residue shift of
+Section~\ref{sec:graded} gained 12--25\% for $S(3)$, $S(3)\times S(2)$ and $S(4)$, for
+free.) One size up, $S(6)$ with $k = 4$
 ($|G| = 720$, $m = 36$, quotient dimension 18), the plain embedding has
-$9\,085\,320$ outputs, graded packing $865\,682$ and nesting $477\,690$. So for
+$9\,085\,320$ outputs, graded packing $865\,682$ and nesting $433\,770$. So for
 $n \gtrsim 6$ this family cannot be made small, whatever symmetry is exploited.
 
 \paragraph{2. Graded packing already matches the formal polynomial closure.}
@@ -1483,12 +1534,17 @@ from the Gram and Pl\"ucker relations, which hold only as functions of~$L$:
 \begin{tabular}{lrrr}
   case & graded & closure in $w$ & closure in $L$ \\ \hline
   $S(2)$, $k=2$            & 4  & 5  & 4 \\
-  $S(3)$, $k=2$            & 32 & 32 & 13 \\
+  $S(3)$, $k=2$            & 24 & 32 & 13 \\
   $S(2)\times S(1)$, $k=2$ & 11 & 15 & 11 \\
   $S(3)$, $k=1$            & 24 & 21 & 5
 \end{tabular}
 \end{center}
-So further large savings must use the geometry, not just the group.
+So further large savings must use the geometry, not just the group. They
+will have to be nonlinear: in every case of the sizes table up to $S(4)$, the
+graded outputs that survive the safe reductions, evaluated modulo a large prime
+at $D + 10$ random configurations~$L$ (rather than random $w$), have full
+rank~$D$. So no output is a linear combination of the others even as a
+function of~$L$.
 
 \paragraph{3. One geometric lever: dropping slots that are polynomials in other slots.}
 If some slots of $w$ are exact polynomial functions of the others (as
@@ -1505,18 +1561,18 @@ when parity is in $G$, which uses the same idea.
 
 \paragraph{4. Parity: an even part plus an odd supplement.}
 Without parity in $G$, an alternative to splitting every mixed output is
-possible. Take any embedding that separates orbits of $G \times P$ (111 outputs
+possible. Take any embedding that separates orbits of $G \times P$ (99 outputs
 for $S(3)\times S(2)$, $k=4$). Add the odd parts
-$\tfrac12(o(L) - o(pL))$ of the graded outputs $o$ (105 non-zero ones). If
+$\tfrac12(o(L) - o(pL))$ of the graded outputs $o$ (84 non-zero ones). If
 two configurations agree on the first and on the odd parts, they are either in
 the same $G$-orbit or mirror images. In the latter case the odd parts vanish,
 so the full graded outputs agree, and injectivity of the graded embedding puts
-them in the same $G$-orbit after all. That gives $216$ against $228$, a small
+them in the same $G$-orbit after all. That gives $183$ against $184$, a small
 saving. What is really needed is only a set of odd invariants whose common
 zero set (on $G\times P$-orbits) is exactly the set of configurations that are
 $G$-equivalent to their mirror image. Odd invariants vanish on hypersurfaces,
 so several are needed. The hand-crafted solution uses 28 \cite{LHG22}, against
-our 105, which suggests large slack. Certifying a small odd supplement for
+our 84, which suggests large slack. Certifying a small odd supplement for
 every input is a Level~2 problem.
 
 \paragraph{5. Beating $|G|^2$ needs something other than a generic multiset embedding.}
@@ -1610,8 +1666,8 @@ this, and both need Level~2 arguments for degenerate inputs.
     \end{itemize}
   \item Graded packing (Section~\ref{sec:graded}, embedder
     \texttt{bursar\_graded}): a dihedral subgroup acting on $x$ by roots of
-    unity and on the coefficients by conjugation. It gives $5$--$10\times$ on
-    the cases tried ($S(5)$, $k = 4$: $138060 \to 13141$). Open questions:
+    unity and on the coefficients by conjugation. It gives $7$--$15\times$ on
+    the cases tried ($S(5)$, $k = 4$: $138060 \to 13082$). Open questions:
     \begin{itemize}
       \item what survives polynomial closure;
       \item exact Level~1 reductions over $\mathbb{Q}(\zeta_r)$;
