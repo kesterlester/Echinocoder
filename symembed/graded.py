@@ -26,6 +26,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from .cyclotomic import Cyclotomic, field_for
+
 TOL = 1e-9
 
 
@@ -96,6 +98,8 @@ class GradedPacking:
     plus: np.ndarray            # (W, m) real
     minus: np.ndarray           # (W, m) real
     weights: list = field(default_factory=list)   # h-weight of each position, None for padding
+    L: int = 4                                      # coefficients of the exact packing lie in Z[zeta_L]
+    exact: np.ndarray | None = None                 # (W, m, f) exact coordinates (see build_packing)
 
     @property
     def real(self) -> bool:
@@ -129,69 +133,130 @@ class GradedPacking:
         return len(self.invariants) + (1 if self.real else 2) * len(self.surviving(N))
 
 
+def _int_matrix(M) -> np.ndarray:
+    return np.array(np.rint(M).astype(int), dtype=object)
+
+
 def build_packing(Ms: list, h: int, s: int | None, drop_trivial: bool) -> GradedPacking:
+    """
+    Build the packing exactly, with coefficients in Z[zeta_L] (L = lcm(r, 4)); the floating-point coordinates used
+    for evaluation are derived from the exact ones. An exact row is an object array of shape (m, f): entry t is the
+    coefficient of w_t, as an integer vector in the power basis of Z[zeta_L]. Rank decisions (which candidates to
+    keep) use floating point; the rows kept are exact.
+    """
     m = Ms[0].shape[0]
     I = np.eye(m)
     Mh = Ms[h]
     Mss = None if s is None else Ms[s]
     r = _order(Mh)
-    zeta = np.exp(2j * np.pi / r)
+    F = field_for(r)
+    step = F.L // r                                                   # zeta_r = zeta_L^step
     powers = [np.linalg.matrix_power(Mh, t) for t in range(r)]
+    int_powers = [_int_matrix(P) for P in powers]
+
+    def embed(row) -> np.ndarray:                                     # integer row -> exact row
+        U = np.zeros((m, F.f), dtype=object)
+        U[:, 0] = [int(round(x)) for x in row]
+        return U
+
+    def field_map(A, U) -> np.ndarray:                                # apply a field-linear map to every entry
+        return U @ A.T
+
+    def times_matrix(U, M) -> np.ndarray:                             # the row (functional) U M
+        return _int_matrix(M).T @ U
+
+    def tau(U) -> np.ndarray:                                         # tau(p) = conj(p M_s)
+        return field_map(F.conj_matrix, times_matrix(U, Mss))
+
+    def greedy(exact_rows, start=(), rank=_real_rank) -> list:
+        floats = [F.to_complex(U) for U in exact_rows]
+        chosen, current = [], [np.asarray(x, dtype=complex) for x in start]
+        base = rank(current)
+        for U, x in zip(exact_rows, floats):
+            if rank(current + [x]) > base:
+                chosen.append(U)
+                current.append(x)
+                base += 1
+        return chosen
+
     # Invariant functionals: rows of S = sum_g M_g (exact integers; S/N is the group average).
     invariants = _greedy(list(np.rint(sum(Ms)))) if drop_trivial else []
+    i_matrix = F.mul_matrix(F.i)
 
     by_residue: dict[int, list] = {}
     for k in range(r):
         if k > r - k:
             continue
-        P = sum(zeta ** (-k * t) * powers[t] for t in range(r)) / r        # projector onto weight k (rows)
         if k == 0 or 2 * k == r:
-            # Real weight space: use the exact integer matrix r P = sum_t (+-1)^t M_h^t (same row space).
+            # Real weight space: the exact integer matrix r P_k = sum_t (+-1)^t M_h^t has the right row space.
             P = np.rint(sum(((-1) ** t if k else 1) * powers[t] for t in range(r)))
             if Mss is None:
-                rows = _greedy(list(P), start=invariants if k == 0 else ())
+                rows = [embed(x) for x in _greedy(list(P), start=invariants if k == 0 else ())]
                 half = (len(rows) + 1) // 2
                 even, odd = rows[:half], rows[half:]
             else:
-                even = _greedy(list(P @ (I + Mss)), start=invariants if k == 0 else ())   # integer rows
-                odd = _greedy(list(P @ (I - Mss)))
+                even = [embed(x) for x in _greedy(list(P @ (I + Mss)), start=invariants if k == 0 else ())]
+                odd = [embed(x) for x in _greedy(list(P @ (I - Mss)))]
             n = max(len(even), len(odd))
-            even = even + [np.zeros(m)] * (n - len(even))
-            odd = odd + [np.zeros(m)] * (n - len(odd))
-            by_residue.setdefault(k, []).extend(a + 1j * b for a, b in zip(even, odd))
+            zero = np.zeros((m, F.f), dtype=object)
+            even = even + [zero] * (n - len(even))
+            odd = odd + [zero] * (n - len(odd))
+            by_residue.setdefault(k, []).extend(a + field_map(i_matrix, b) for a, b in zip(even, odd))
         else:
-            rows = list(P)
+            # Complex weight space: rows of r P_k = sum_t zeta_r^(-k t) M_h^t, exactly.
+            rows = []
+            for slot in range(m):
+                U = np.zeros((m, F.f), dtype=object)
+                for t in range(r):
+                    U = U + np.outer(int_powers[t][slot], F.zeta_power(-k * t * step))
+                rows.append(U)
             if Mss is None:
-                basis = _greedy(rows, rank=_complex_rank)
+                basis = greedy(rows, rank=_complex_rank)
             else:
-                tau = [np.conj(u @ Mss) for u in rows]                     # tau(p) = conj(p M_s)
-                candidates = [x for u, t in zip(rows, tau) for x in (u + t, 1j * (u - t))]
-                basis = _greedy(candidates)
-            for p in basis:                                               # balance residues k and r - k
+                candidates = [x for U in rows for x in (U + tau(U), field_map(i_matrix, U - tau(U)))]
+                basis = greedy(candidates)
+            for U in basis:                                               # balance residues k and r - k
                 if len(by_residue.get(k, [])) <= len(by_residue.get(r - k, [])):
-                    by_residue.setdefault(k, []).append(p)
+                    by_residue.setdefault(k, []).append(U)
                 else:
-                    by_residue.setdefault(r - k, []).append(np.conj(p))
+                    by_residue.setdefault(r - k, []).append(field_map(F.conj_matrix, U))
 
     used = sorted(rho for rho, coords in by_residue.items() if coords)
     if not used:                                                      # everything is invariant: nothing to pack
-        mode, rho, weights, Phi = "none", None, [], np.zeros((0, m), dtype=complex)
+        mode, rho, weights, exact = "none", None, [], np.zeros((0, m, F.f), dtype=object)
     elif len(used) == 1 and used[0] != 0:
         mode, rho = "scalar", used[0]
         coords = by_residue[rho]
         weights = [rho] * len(coords)
-        Phi = np.array(coords)
+        exact = np.array(coords, dtype=object).reshape(len(coords), m, F.f)
     else:
         mode, rho = "x", None
         W = max(res + r * (len(coords) - 1) for res, coords in by_residue.items() if coords) + 1
-        Phi = np.zeros((W, m), dtype=complex)
+        exact = np.zeros((W, m, F.f), dtype=object)
         weights = [None] * W
         for res, coords in by_residue.items():
-            for t, p in enumerate(coords):
-                Phi[res + r * t] = p
+            for t, U in enumerate(coords):
+                exact[res + r * t] = U
                 weights[res + r * t] = res
+    Phi = F.to_complex(exact) if len(exact) else np.zeros((0, m), dtype=complex)
     inv = np.array(invariants).reshape(len(invariants), m)
-    return GradedPacking(h, s, r, mode, rho, drop_trivial, inv, Phi.real.copy(), Phi.imag.copy(), weights)
+    return GradedPacking(h, s, r, mode, rho, drop_trivial, inv, Phi.real.copy(), Phi.imag.copy(), weights,
+                         L=F.L, exact=exact)
+
+
+def check_packing_exact(Ms: list, packing: GradedPacking) -> None:
+    """Exact check, in Z[zeta_L], of the grading and reality properties of every packed coordinate."""
+    F = Cyclotomic(packing.L)
+    step = F.L // packing.r
+    for U, weight in zip(packing.exact, packing.weights):
+        if weight is None:
+            assert not np.any(U)
+            continue
+        lhs = _int_matrix(Ms[packing.h]).T @ U
+        rhs = U @ F.mul_matrix(F.zeta_power(weight * step)).T
+        assert np.array_equal(lhs, rhs), "grading fails exactly"
+        if packing.s is not None:
+            assert np.array_equal((_int_matrix(Ms[packing.s]).T @ U) @ F.conj_matrix.T, U), "reality fails exactly"
 
 
 def check_packing(Ms: list, packing: GradedPacking) -> None:
@@ -254,6 +319,7 @@ def choose_packing(index: list, sign: list, elements: tuple, species_blocks) -> 
                 if best_count is None or count < best_count:
                     best, best_count = packing, count
     check_packing(Ms, best)
+    check_packing_exact(Ms, best)
     return best
 
 
