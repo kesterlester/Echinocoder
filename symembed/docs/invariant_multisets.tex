@@ -598,18 +598,23 @@ $c = 1, \ldots, 6$, that is $2 + 3 + 5 + 6 + 7 + 9 = 32$, against 174 for the
 plain embedding.
 
 \paragraph{Sizes.}
-The table gives output counts before any reduction.
+In the table below, the ``plain'' and ``involution'' columns count every
+coefficient of those constructions. The ``graded'' column counts the outputs of
+the graded construction itself. Coefficients that vanish identically (by the
+grading, as unreachable powers, or by character symmetries) are part of that
+construction, and are already omitted. The last column also applies the
+optional exact Level~1 reductions (\texttt{reductions="safe"}).
 \begin{center}
-\begin{tabular}{llrrrr}
-  case & $(h, s)$ & plain & involution & graded & factor \\ \hline
-  $S(2)$, $k=2$            & $(ab)$, scalar          & 11     & 5     & 4     & 2.8 \\
-  $S(2)\times S(1)$, $k=2$ & $(ab)$, scalar          & 26     & 14    & 11    & 2.4 \\
-  $S(3)$, $k=2$            & $(abc)$, $(bc)$         & 174    & 90    & 32    & 5.4 \\
-  $S(4)$, $k=2$            & $(bcd)$, $(cd)$         & 4524   &       & 718   & 6.3 \\
-  $S(4)$, $k=3$            & $(abcd)$, $(bd)$        & 3924   &       & 469   & 8.4 \\
-  $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 191   & 9.9 \\
-  $S(3)\times S(2)$, $k=4$ & $(abc)(pq)$, $(bc)$     & 1494   &       & 124   & 12.0 \\
-  $S(5)$, $k=4$            & $(abcde)$, $(be)(cd)$   & 138060 & 79980 & 13142 & 10.5
+\begin{tabular}{llrrrrr}
+  case & $(h, s)$ & plain & involution & graded & factor & graded${}+{}$safe \\ \hline
+  $S(2)$, $k=2$            & $(ab)$, scalar          & 11     & 5     & 4     & 2.8  & 4 \\
+  $S(2)\times S(1)$, $k=2$ & $(ab)$, scalar          & 26     & 14    & 11    & 2.4  & 11 \\
+  $S(3)$, $k=2$            & $(abc)$, $(bc)$         & 174    & 90    & 32    & 5.4  & 32 \\
+  $S(4)$, $k=2$            & $(bcd)$, $(cd)$         & 4524   &       & 718   & 6.3  & 715 \\
+  $S(4)$, $k=3$            & $(abcd)$, $(bd)$        & 3924   &       & 469   & 8.4  & 468 \\
+  $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 191   & 9.9  & 191 \\
+  $S(3)\times S(2)$, $k=4$ & $(abc)(pq)$, $(bc)$     & 1494   &       & 124   & 12.0 & 124 \\
+  $S(5)$, $k=4$            & $(abcde)$, $(be)(cd)$   & 138060 & 79980 & 13141 & 10.5 & 13139
 \end{tabular}
 \end{center}
 
@@ -646,7 +651,7 @@ The table gives output counts before any reduction.
         $\mathbb{Q}(\zeta_L)$, so the integer relation search applies unchanged.
     \end{itemize}
     As predicted, little is found beyond the symmetry zeros above:
-    $S(4)$, $k=2$ goes from 718 to 715 and $S(5)$, $k = 4$ from 13140 to 13139
+    $S(4)$, $k=2$ goes from 718 to 715 and $S(5)$, $k = 4$ from 13141 to 13139
     ($c_{\max} = 3$).
   \item \emph{No further gain from substitutions.} Scaling $x$, scaling $y$,
     reversing $x \mapsto 1/x$, and conjugation appear to be the only
@@ -1271,7 +1276,7 @@ whose order $6$ is even and conflicts with it, and forces extra padding.
   \item Graded packing (Section~\ref{sec:graded}, embedder
     \texttt{bursar\_graded}): a dihedral subgroup acting on $x$ by roots of
     unity and on the coefficients by conjugation. It gives $5$--$10\times$ on
-    the cases tried ($S(5)$, $k = 4$: $138060 \to 13142$). Open questions:
+    the cases tried ($S(5)$, $k = 4$: $138060 \to 13141$). Open questions:
     \begin{itemize}
       \item what survives polynomial closure;
       \item exact Level~1 reductions over $\mathbb{Q}(\zeta_r)$;

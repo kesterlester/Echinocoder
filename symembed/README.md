@@ -52,11 +52,11 @@ Two levels are implemented (certification levels are defined in Section 4.3):
     from symmetries of single coordinates"). For example, when a group element multiplies the coordinate at
     position 0 by -1, then `E_{c,0}` vanishes for every odd `c`. For `S(3) x S(2)`, `k = 3` this takes 203 outputs
     to 191.
-  - Typical sizes: 11 → 4 for `S(2)`, `k = 2` (your zip); 174 → 32 for `S(3)`, `k = 2`; 138060 → 13142 for
+  - Typical sizes: 11 → 4 for `S(2)`, `k = 2` (your zip); 174 → 32 for `S(3)`, `k = 2`; 138060 → 13141 for
     `S(5)`, `k = 4`.
   - With `reductions="safe"`, the `c = 1` outputs are reduced exactly (Level 1): each is `(p_j S) w`, with
     integer coefficients, where `S` is the sum of the group matrices. Any that is a rational combination of the
-    invariant outputs or of earlier ones is dropped. For example `S(5)`, `k = 4` goes from 13142 to 13140.
+    invariant outputs or of earlier ones is dropped. For example `S(5)`, `k = 4` goes from 13141 to 13140.
   - The packing is built exactly in the cyclotomic integers `Z[zeta_L]`, with `L = lcm(r, 4)`. These are handled
     by `cyclotomic.py`, with each number stored as a short integer vector. The floating-point coordinates are derived
     from the exact ones, and grading and reality are checked exactly at build time.
@@ -64,7 +64,7 @@ Two levels are implemented (certification levels are defined in Section 4.3):
     coefficients vanish and the kept ones are real. It then drops outputs that are linear combinations of kept ones
     with coefficients in `Q(zeta_L)`, found by "restriction of scalars": each output `P` contributes the integer
     rows `P, zeta P, ...`, so the integer relation search applies unchanged. Gains are small, for example
-    `S(5)`, `k = 4` goes from 13142 to 13139.
+    `S(5)`, `k = 4` goes from 13141 to 13139.
   - `meta` still shows the complex packed coordinates with numerical coefficients, although exact ones are now
     available in `meta.packing.exact`.
   - `bursar_involution` is kept as the simpler special case (`h` the identity).
