@@ -660,6 +660,11 @@ conjugation. The four outputs are
 \]
 This is the hand-made zip of Section~\ref{sec:exploration}, and it equals the
 count left by the full polynomial closure. The plain embedding has 11 outputs.
+(The code builds its coordinates from integer rows, here
+$z = (d_{aa} - d_{bb}) + 2i\,e_{ab}$, and outputs the coefficient $-z^2$. That
+carries the same information. The explorer
+\texttt{symembed/explore/simple\_cases\_graded.py} writes the graded embeddings
+of the simple cases out in full, with exact coefficients.)
 
 \paragraph{Example: $S(3)$, $(a, b, c)$, $k = 2$.}
 Take $h = (abc)$ ($r = 3$) and $s = (bc)$. The 9 slots of $w$ give three

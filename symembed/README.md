@@ -138,6 +138,10 @@ out in full into `docs/explorations/`, for inspection by eye:
 
 The cases are S(2) on (a, b), S(3) on (a, b, c) and S(2) x S(1) on (a, b, p), each with k = 2 and with k = 1.
 
+`python -m symembed.explore.simple_cases_graded` writes the graded embeddings of the same cases out in full
+(`docs/explorations/simple_cases_graded.pdf` and `simple_cases_graded_full.txt`). Each shows the chosen `(h, s)`,
+the invariants, the packed coordinates and every output, all with exact coefficients such as `sqrt(3)/2`.
+
 `python -m symembed.explore.polynomial_closure` writes `docs/explorations/polynomial_closure.txt`. For each case and
 for both embedders it keeps only the outputs that are not exact polynomials in those already kept, both formally in
 `w` and as functions of `L` (where the Gram and Plücker relations hold). Every identity is verified exactly.

@@ -813,3 +813,48 @@ def symmetry_zeros(packing: GradedPacking, characters: dict, N: int, max_deficit
                 (top <= max_deficit and all_patterns_killed(c, hi, top, lambda a: hi - a)):
             zeros.add((c, j))
     return frozenset(zeros)
+
+
+# ----- exact symbolic expansion of graded outputs (small cases) --------------------------------------------------
+
+def _graded_expanded_outputs(meta, max_group_order: int = 24) -> list:
+    """
+    Every (kept) output of a graded embedding, fully expanded as a polynomial in the d's and e's, with exact
+    coefficients (radicals where possible). Feasible only for small groups.
+    """
+    import sympy
+    if meta.N > max_group_order:
+        raise ValueError(f"multiset size {meta.N} exceeds max_group_order = {max_group_order}")
+    p = meta.packing
+    w = [sympy.Symbol(nm) for nm in meta.slot_names()]
+    out_all = [sum((int(round(c)) * wi for c, wi in zip(row, w) if abs(c) > 1e-12), sympy.Integer(0))
+               for row in p.invariants]
+    if p.W:
+        F = Cyclotomic(p.L)
+        expansions = exact_expansion_field(packed_field_forms(meta.index, meta.sign, p), meta.m, meta.N, F)
+        conj = F.conj_matrix
+        minus_i = F.mul_matrix(F.conj(F.i))
+        cache: dict = {}
+
+        def value(vec) -> sympy.Expr:
+            key = tuple(int(x) for x in vec)
+            if key not in cache:
+                cache[key] = F.to_sympy(np.array(key, dtype=object))
+            return cache[key]
+
+        for c, j, part, _ in output_selection(p, meta.N):
+            monos, coeffs = expansions[c - 1]
+            V = coeffs[j].astype(object)
+            scale = sympy.Integer(1)
+            if not p.real:
+                V = V + V @ conj.T if part == "re" else (V - V @ conj.T) @ minus_i.T
+                scale = sympy.Rational(1, 2)
+            expr = sympy.Integer(0)
+            for mono, vec in zip(monos, V):
+                if np.any(vec):
+                    expr += value(vec) * sympy.Mul(*[w[s] for s in mono])
+            out_all.append(sympy.expand(scale * expr))
+    return [out_all[i] for i in meta.kept]
+
+
+GradedMeta.expanded_outputs = _graded_expanded_outputs
