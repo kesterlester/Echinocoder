@@ -124,6 +124,27 @@ spans, and Witt's theorem extends it to the whole space. (The $e$'s fix the
 determinant, as before.) The step fails for degenerate spans, which need null
 vectors. The simplest case is a null vector $n$ and the zero vector, which have
 the same (zero) Gram matrix.
+
+\emph{Example.} In $1+1$ dimensions, with $P$ in $G$ so that only dot products
+are needed, take
+\[
+  L_1 = \bigl((3,3), (2,2)\bigr), \qquad L_2 = \bigl((3,3), (1,1)\bigr), \qquad
+  L_3 = \bigl((3,3), (0,0)\bigr), \qquad L_0 = \bigl((0,0), (0,0)\bigr).
+\]
+Every dot product vanishes in all four. In light-cone coordinates $u = t + x$,
+$v = t - x$, the non-zero vectors lie on the ray $v = 0$, with
+$u = (6,4)$, $(6,2)$ and $(6,0)$. A boost multiplies every $u$ by the same
+factor $e^\eta$, so the ratio $u_1 : u_2$ is invariant. Parity exchanges $u$
+and $v$, time reversal makes vectors past-pointing, and relabelling only swaps
+the ratio. So $L_1$, $L_2$, $L_3$ and $L_0$ lie in four different orbits, even
+up to~$G$. Yet boosting with $\eta \to -\infty$ shrinks every vector towards
+zero, so all four orbit closures contain $L_0$, and every continuous invariant
+takes the same value on all four. The quantity that does tell $L_1$ from $L_2$,
+the momentum fraction $z = u_1/(u_1+u_2)$ ($0.6$ against $0.75$), is
+Lorentz-invariant on exactly-collinear massless pairs but cannot be extended
+continuously. Near $L_0$, which both orbits approach, it takes every value.
+This rhymes with collinear safety in physics: collinear-safe observables are
+precisely those that do not depend on such splitting fractions.
 \begin{itemize}
   \item \emph{No continuous invariant can do better.} The Lorentz group is not
     compact, and its orbits need not be closed. Boosts carry $n$ arbitrarily
