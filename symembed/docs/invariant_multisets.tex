@@ -1096,9 +1096,12 @@ and \texttt{lightning}). \texttt{embed\_fn} is therefore a
     Outputs that vanish identically as functions of~$L$ are pure rounding noise,
     and would become order-one garbage. The build therefore leaves unnormalised
     any output that is numerically zero at random inputs. (For the case above
-    that is $E_{5,42}$, of degree~10, the degree of the $5 \times 5$ Gram
-    determinant, which vanishes for five vectors in four dimensions. It is a
-    candidate for an exact $L$-level reduction.)
+    that is $E_{5,42}$. An exact expansion shows it is \emph{formally} zero: a
+    cancellation in the $d$'s that the exact searches miss only because, with
+    the default work budget, they stop at $c = 4$ there. A ten-times larger
+    budget, \texttt{linear\_reduction\_budget=20\_000\_000}, reaches $c = 6$ and
+    drops it, giving $111$ outputs, at the cost of a slower build for large
+    groups.)
   \item \texttt{field}: $\mathbb{R}$ initially. Whether to support
     $\mathbb{C}$ is still open.
   \item \texttt{dtype}: the precision of evaluation, \texttt{float32} by
