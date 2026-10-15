@@ -110,6 +110,10 @@ class EmbeddingOptions:
     max_outputs
         Refuse to build an embedding whose unpruned Bursarial stage has more outputs than this. A guard against
         accidentally requesting an embedding that could never be evaluated.
+    metric
+        The diagonal of the metric used for the dot products d, as a tuple of k entries +1 or -1; None (the default)
+        means Euclidean. For example (1, -1, -1, -1) for Minkowski space. The determinants e do not depend on it, and
+        nothing downstream of w does either (see the notes, Section 1, on indefinite metrics).
     linear_reduction_max_c
         With ``reductions="safe"``: the largest c for which the E_{c,j} are expanded exactly and checked for linear
         dependencies. ``None`` chooses it automatically from ``linear_reduction_budget``.
@@ -124,6 +128,7 @@ class EmbeddingOptions:
     field: str = "real"
     dtype: torch.dtype = torch.float32
     max_outputs: int = 10_000_000
+    metric: tuple | None = None
     linear_reduction_max_c: int | None = None
     linear_reduction_budget: int = 2_000_000
 
@@ -138,6 +143,8 @@ class EmbeddingOptions:
             raise NotImplementedError("root_normalise=True is not implemented yet")
         if self.linear_reduction_max_c is not None and self.linear_reduction_max_c < 0:
             raise ValueError(f"linear_reduction_max_c must be non-negative, got {self.linear_reduction_max_c}")
+        if self.metric is not None and (not isinstance(self.metric, tuple) or any(x not in (1, -1) for x in self.metric)):
+            raise ValueError(f"metric must be a tuple of +1/-1 entries, got {self.metric!r}")
         if self.dtype not in (torch.float32, torch.float64):
             raise ValueError(f"dtype must be torch.float32 or torch.float64, got {self.dtype!r}")
 

@@ -38,6 +38,8 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
     if not isinstance(k, int) or k < 1:
         raise ValueError(f"k must be a positive integer, got {k!r}")
     safe = options.reductions == "safe"
+    if options.metric is not None and len(options.metric) != k:
+        raise ValueError(f"metric has {len(options.metric)} entries but k = {k}")
 
     # Safe reduction (Level 0 for the smaller w): with parity in G, omit the determinants. Parity then acts trivially
     # on w, so the multiset is taken over the permutation part of G only.
@@ -82,7 +84,8 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
                 relations += more
         dropped = {rel.dropped for rel in relations}
         kept = [i for i in range(total) if i not in dropped]
-        module = GradedEmbedding(group_spec.n, k, slots, index, sign, options.dtype, graded, keep=kept)
+        module = GradedEmbedding(group_spec.n, k, slots, index, sign, options.dtype, graded, keep=kept,
+                                 metric=options.metric)
         meta = GradedMeta(group_spec, k, options, slots, elements, index, sign, graded, e_dropped,
                           relations=relations, kept=kept, linear_reduction_max_c=c_max)
         if meta.D > options.max_outputs:
@@ -128,7 +131,8 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
     dropped = {r.dropped for r in relations}
     kept = [i for i in range(D_base) if i not in dropped]
 
-    module = InvariantEmbedding(group_spec.n, k, slots, index, sign, options.dtype, keep=kept, packing=packing)
+    module = InvariantEmbedding(group_spec.n, k, slots, index, sign, options.dtype, keep=kept, packing=packing,
+                                metric=options.metric)
     meta = EmbeddingMeta(group_spec=group_spec, k=k, options=options, slots=slots, elements=elements,
                          index=index, sign=sign, kept=kept, relations=tuple(relations), e_dropped=e_dropped,
                          linear_reduction_max_c=c_max, packing=packing, involution=involution)

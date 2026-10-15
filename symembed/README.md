@@ -108,6 +108,12 @@ meta2.packed_coordinates()   # [(real part, imaginary part), ...] of each packed
 - `embed` is a `torch.nn.Module` following IWPC's `Encoding` conventions: `input_shape` and `output_shape` are integer
   buffers, and it acts on tensors of shape `(..., *input_shape)`. It does not depend on IWPC.
 - `embed.flattened()` takes input of shape `(..., n*k)` instead, with component `c` of vector `i` at position `i*k + c`.
+- `EmbeddingOptions(metric=(1, -1, -1, -1))` uses Minkowski dot products. Any diagonal metric of `+1`/`-1` entries
+  works; the default is Euclidean. Only the dot products change. Every construction and count downstream of `w` is
+  identical, and injectivity on the multiset is unaffected.
+  - For indefinite metrics some orbits are not closed, for example that of a null vector, whose closure contains 0.
+    So the step back from the multiset to `L` holds only up to orbit closures. No continuous map can do better, and
+    continuous invariant functions need no more. See Remark "Indefinite metrics" in Section 1 of the notes.
 
 ## Exploration
 

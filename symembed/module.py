@@ -29,7 +29,7 @@ class InvariantEmbedding(nn.Module):
     """
 
     def __init__(self, n: int, k: int, slots: tuple, index: list, sign: list, dtype: torch.dtype,
-                 keep: list | None = None, packing=None):
+                 keep: list | None = None, packing=None, metric: tuple | None = None):
         super().__init__()
         N, m = len(index), len(slots)
         width = m if packing is None else packing.r          # length of each polynomial q_g
@@ -53,6 +53,7 @@ class InvariantEmbedding(nn.Module):
         self.register_buffer("slot_source", torch.tensor([raw_position[s] for s in slots], dtype=torch.int64))
         self.register_buffer("g_index", torch.tensor(index, dtype=torch.int64))
         self.register_buffer("g_sign", torch.tensor(sign, dtype=dtype))
+        self.register_buffer("metric_diag", torch.tensor(metric if metric is not None else (1,) * k, dtype=dtype))
         self.register_buffer("keep", torch.tensor(keep, dtype=torch.int64))
         self.keeps_all = len(keep) == bursar_size(N, width)
         self.packed = packing is not None
@@ -70,7 +71,7 @@ class InvariantEmbedding(nn.Module):
 
     def w(self, x: Tensor) -> Tensor:
         """The slots of w, shape (..., m)."""
-        gram = x @ x.transpose(-1, -2)
+        gram = (x * self.metric_diag) @ x.transpose(-1, -2)               # d_ij = v_i . eta . v_j
         d_vals = gram[..., self.d_rows, self.d_cols]
         if self.e_subsets.shape[0] > 0:
             e_vals = torch.linalg.det(x[..., self.e_subsets, :])

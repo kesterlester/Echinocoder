@@ -357,8 +357,8 @@ class GradedEmbedding(InvariantEmbedding):
     """
 
     def __init__(self, n: int, k: int, slots: tuple, index: list, sign: list, dtype: torch.dtype,
-                 packing: GradedPacking, keep: list | None = None):
-        super().__init__(n, k, slots, index, sign, dtype)
+                 packing: GradedPacking, keep: list | None = None, metric: tuple | None = None):
+        super().__init__(n, k, slots, index, sign, dtype, metric=metric)
         selection = output_selection(packing, len(index))
         total = len(packing.invariants) + len(selection)
         keep = list(range(total)) if keep is None else list(keep)

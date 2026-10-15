@@ -202,3 +202,41 @@ def test_latex_mentions_everything():
     text = meta.latex(expanded=True)
     assert "d_{aa}" in text and "E_{2,12}" in text and "(a b)" in text
     assert "Level 0" in text
+
+
+# ----- metric ----------------------------------------------------------------------------------------------------
+
+def boost(rapidity, dtype=torch.float64):
+    c, s = np.cosh(rapidity), np.sinh(rapidity)
+    B = torch.eye(4, dtype=dtype)
+    B[0, 0], B[0, 1], B[1, 0], B[1, 1] = c, s, s, c
+    return B
+
+
+@pytest.mark.parametrize("embedder", ["bursar", "bursar_involution", "bursar_graded"])
+@pytest.mark.parametrize("parity", [False, True])
+def test_minkowski_metric_invariance(embedder, parity, gen):
+    # Four vectors in four dimensions, so that there is a determinant (pseudoscalar) to detect reflections.
+    spec = GroupSpec((("a", "b"), ("p", "q")), parity=parity)
+    options = EmbeddingOptions(embedder=embedder, metric=(1, -1, -1, -1), dtype=torch.float64)
+    embed, meta = build_invariant_embedding(4, spec, options)
+    X = torch.randn(spec.n, 4, dtype=torch.float64, generator=gen)
+    Y = embed(X)
+    scale = Y.abs().max()
+    torch.testing.assert_close(embed(X @ boost(0.7).T), Y, rtol=1e-9, atol=1e-9 * scale)       # Lorentz boost
+    torch.testing.assert_close(embed(X[[1, 0, 3, 2]]), Y, rtol=1e-9, atol=1e-9 * scale)       # relabelling
+    reflected = embed(X * torch.tensor([1.0, -1.0, 1.0, 1.0], dtype=torch.float64))            # parity (det -1)
+    if parity:
+        torch.testing.assert_close(reflected, Y, rtol=1e-9, atol=1e-9 * scale)
+    else:
+        assert (reflected - Y).abs().max() > 1e-6 * scale
+    # A Euclidean embedding is not boost invariant.
+    euclid, _ = build_invariant_embedding(4, spec, EmbeddingOptions(embedder=embedder, dtype=torch.float64))
+    assert (euclid(X @ boost(0.7).T) - euclid(X)).abs().max() > 1e-6 * euclid(X).abs().max()
+
+
+def test_metric_validation():
+    with pytest.raises(ValueError):
+        EmbeddingOptions(metric=(1, 2))
+    with pytest.raises(ValueError):
+        build_invariant_embedding(3, GroupSpec((("a", "b"),)), EmbeddingOptions(metric=(1, -1)))
