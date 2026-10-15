@@ -550,10 +550,14 @@ class GradedMeta:
         if self.e_dropped:
             log.append({"type": "omit_determinants_with_parity", "level": 0, "reason": CERTIFICATION_E_DROPPED})
         if self.options.reductions == "safe":
+            beyond = ("outputs with larger c are kept unless they vanish identically: an output that is zero modulo "
+                      "primes at random points is expanded exactly (only the coordinates able to contribute to it) "
+                      "and dropped if that expansion is zero" if self.options.linear_reduction_max_c is None
+                      else "outputs with larger c are all kept")
             log.append({"type": "linear_scope", "level": 1,
                         "reason": f"exact linear search: the c = 1 block (integer coefficients), and 2 <= c <= "
                                   f"{self.linear_reduction_max_c} over Q(zeta_{self.packing.L}) by restriction of "
-                                  f"scalars; outputs with larger c are all kept"})
+                                  f"scalars; {beyond}"})
         names = self.all_names()
         for rel in self.relations:
             log.append({"type": "linear", "level": 1, "dropped": names[rel.dropped],
@@ -682,7 +686,7 @@ def c1_relations(Ms: list, packing: GradedPacking, N: int) -> list:
 
 from fractions import Fraction                                          # noqa: E402
 
-from .reductions import choose_c_max, exact_expansion_field             # noqa: E402
+from .reductions import choose_c_max, exact_expansion_field, expansion_cost, expansion_entry_bound  # noqa: E402
 
 
 def packed_field_forms(index: list, sign: list, packing: GradedPacking) -> list:
@@ -790,6 +794,118 @@ def field_relations(index: list, sign: list, packing: GradedPacking, N: int, kep
             relations.append(FieldRelation(owners[o], tuple((owners[ot], tuple(v)) for ot, v in lam.items()), F.L))
     return relations, c_max
 
+
+
+# ----- zeros beyond c_max: proposed by exact evaluation modulo primes, verified by restricted exact expansion -----
+
+def _prime_with_root(L: int, start: int) -> tuple[int, int]:
+    """The first prime p > start with L | p - 1, and a primitive L-th root of unity modulo p."""
+    import sympy
+    p = start
+    while True:
+        p = int(sympy.nextprime(p))
+        if (p - 1) % L == 0:
+            return p, pow(int(sympy.primitive_root(p)), (p - 1) // L, p)
+
+
+def coefficients_mod_p(forms: list, w: list, p: int, omega: int, f: int, W: int) -> np.ndarray:
+    """
+    E[c, j] modulo p (c = 0..N) of prod_g (y + q_g(x)) at the point w, with zeta_L mapped to omega (a primitive L-th
+    root of unity modulo p; this is a ring homomorphism Z[zeta_L] -> F_p). Requires p < 2^31.
+    """
+    N = len(forms)
+    powers = [pow(omega, u, p) for u in range(f)]
+    length = N * (W - 1) + 1
+    E = np.zeros((N + 1, length), dtype=np.int64)
+    E[0, 0] = 1
+    for row in forms:
+        new = E.copy()
+        for jp, terms in enumerate(row):
+            value = sum(sum(int(a[u]) * powers[u] for u in range(f)) * w[t] for t, a in terms) % p
+            if value:
+                new[1:, jp:] = (new[1:, jp:] + E[:-1, :length - jp] * value) % p
+        E = new
+    return E
+
+
+def contributing_positions(packing: GradedPacking, c: int, j: int) -> list[int]:
+    """Positions occurring in some choice of c occupied positions (with repetition) summing to j."""
+    occupied = [a for a, weight in enumerate(packing.weights) if weight is not None]
+    reach = [{0}]
+    for _ in range(c - 1):
+        reach.append({x + a for x in reach[-1] for a in occupied})
+    return [a for a in occupied if j - a in reach[c - 1]]
+
+
+def verified_zeros(index: list, sign: list, packing: GradedPacking, N: int, kept: list, c_min: int, budget: int,
+                   points: int = 2, max_work: int = 10 ** 10) -> list:
+    """
+    Kept outputs with c >= c_min that vanish identically, each verified exactly. Numerics only propose: an output is a
+    suspect if it is exactly zero modulo p at ``points`` random points (a nonzero polynomial of degree c vanishes
+    there with probability at most c/p each). A suspect is then expanded exactly, but only E_{c,j} itself and only
+    from the coordinates at positions that can contribute to it (contributing_positions): restricting each q_g to
+    those positions leaves E_{c,j} unchanged and involves few slots when j is near either end of its range. Suspects
+    whose restricted expansion exceeds ``budget`` are kept. Returns FieldRelation(dropped, (), L) for each zero.
+    """
+    import random
+    import sympy
+    F = Cyclotomic(packing.L)
+    W = packing.W
+    n_inv = len(packing.invariants)
+    selection = output_selection(packing, N)
+    candidates = [i for i in kept if i >= n_inv and selection[i - n_inv][0] >= c_min]
+    if not candidates or W == 0 or N * W * (N + 1) * (N * (W - 1) + 1) * points > max_work:
+        return []
+    forms = packed_field_forms(index, sign, packing)
+    m = packing.exact.shape[1]
+    rng = random.Random(0)
+    suspects = set(candidates)
+    for _ in range(points):
+        p, omega = _prime_with_root(F.L, 2 ** 30 + rng.randrange(2 ** 29))
+        w = [rng.randrange(p) for _ in range(m)]
+        E = coefficients_mod_p(forms, w, p, omega, F.f, W)
+        E_conj = None if packing.real else coefficients_mod_p(forms, w, p, pow(omega, -1, p), F.f, W)
+        for i in list(suspects):
+            c, j, part, _ = selection[i - n_inv]
+            if packing.real:
+                value = E[c, j]
+            else:                                   # 2 Re E -> E + conj(E); 2i Im E -> E - conj(E)
+                value = (E[c, j] + E_conj[c, j]) % p if part == "re" else (E[c, j] - E_conj[c, j]) % p
+            if value:
+                suspects.discard(i)
+    conj = F.conj_matrix
+    conj_norm = max(sum(abs(int(x)) for x in row) for row in conj)
+    zeros = []
+    for i in sorted(suspects):
+        c, j, part, _ = selection[i - n_inv]
+        positions = set(contributing_positions(packing, c, j))
+        slots = sorted({t for row in forms for a, terms in enumerate(row) if a in positions for t, _ in terms})
+        if sum(expansion_cost(len(slots), cc, max(positions) - min(positions) + 1)
+               for cc in range(1, c + 1)) * F.f > budget:
+            continue
+        # Shift the positions down by p0 = min(positions): every term of E_{c,j} uses c positions, so it becomes the
+        # coefficient of x^(j - c p0) for polynomials of width max(positions) - p0 + 1.
+        compact = {t: u for u, t in enumerate(slots)}
+        p0, width = min(positions), max(positions) - min(positions) + 1
+        restricted = [[[(compact[t], a) for t, a in row[p0 + jp]] if p0 + jp in positions else []
+                       for jp in range(width)] for row in forms]
+        # Exact, in modular arithmetic: every entry is an integer of size at most B (expansion_entry_bound; times
+        # 1 + the largest row sum of |conj| for the real/imaginary combinations), so vanishing modulo primes whose
+        # product exceeds twice that means it vanishes.
+        bound = expansion_entry_bound(restricted, F, c) * (1 if packing.real else 1 + conj_norm)
+        modulus, primes = 1, []
+        while modulus <= 2 * bound:
+            primes.append(int(sympy.prevprime(primes[-1] if primes else 2 ** 31)))
+            modulus *= primes[-1]
+        for prime in primes:
+            V = exact_expansion_field(restricted, len(slots), c, F, modulus=prime)[c - 1][1][j - c * p0]
+            if not packing.real:
+                V = V + V @ conj.T if part == "re" else V - V @ conj.T
+            if np.any(V % prime):
+                break
+        else:
+            zeros.append(FieldRelation(i, (), F.L))
+    return zeros
 
 # ----- exact zeros from sign (character) symmetries of individual coordinates ------------------------------------
 

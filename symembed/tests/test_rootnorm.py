@@ -16,9 +16,9 @@ def gen():
 def test_all_outputs_normalised_and_linear_in_scale(gen):
     embed, meta = build_invariant_embedding(4, P_CASE, EmbeddingOptions(embedder="bursar_graded", reductions="safe",
                                                                          root_normalise=True, dtype=torch.float64))
-    assert isinstance(meta, RootNormaliseMeta) and meta.D == 112
+    assert isinstance(meta, RootNormaliseMeta) and meta.D == 111
     zero = [i for i, z in enumerate(meta.skip) if z]
-    assert len(meta.normalised) == 112 - len(zero)
+    assert len(meta.normalised) == 111 - len(zero)
     X = torch.randn(4, 5, 4, dtype=torch.float64, generator=gen)
     keep = meta.normalised
     torch.testing.assert_close(embed(2.5 * X)[:, keep], 2.5 * embed(X)[:, keep])

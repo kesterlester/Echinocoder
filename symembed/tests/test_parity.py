@@ -63,7 +63,7 @@ def test_counts():
 def test_noop_with_parity_in_g():
     spec = GroupSpec(S3S2.species, parity=True)
     _, meta = build_invariant_embedding(4, spec, options(embedder="bursar_graded", reductions="safe"))
-    assert not isinstance(meta, ParitySplitMeta) and meta.D == 112
+    assert not isinstance(meta, ParitySplitMeta) and meta.D == 111
 
 
 def test_not_available_for_nested():

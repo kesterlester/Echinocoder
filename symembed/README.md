@@ -65,6 +65,11 @@ Two levels are implemented (certification levels are defined in Section 4.3):
     with coefficients in `Q(zeta_L)`, found by "restriction of scalars": each output `P` contributes the integer
     rows `P, zeta P, ...`, so the integer relation search applies unchanged. Gains are small, for example
     `S(5)`, `k = 4` goes from 13141 to 13139.
+  - Beyond `c_max` (unless `linear_reduction_max_c` is set), outputs that vanish identically are dropped too. They
+    are proposed by exact evaluation modulo two primes at random points, and each is then verified by an exact
+    expansion of that one coefficient, restricted to the positions that can contribute to it (cheap near the ends
+    of the range of `j`). For example `S(3) x S(2) x P`, `k = 4` goes from 112 to 111 and `S(5)`, `k = 4` from 13139
+    to 13137.
   - `meta` still shows the complex packed coordinates with numerical coefficients, although exact ones are now
     available in `meta.packing.exact`.
   - `bursar_involution` is kept as the simpler special case (`h` the identity).

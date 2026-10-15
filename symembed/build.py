@@ -85,7 +85,7 @@ def _build(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = Non
 
     if options.embedder == "bursar_graded":
         from .graded import GradedEmbedding, GradedMeta, choose_packing
-        from .graded import c1_relations, field_relations, matrices, output_selection
+        from .graded import c1_relations, field_relations, matrices, output_selection, verified_zeros
         graded = choose_packing(index, sign, elements, enumeration_spec.species_index_blocks)
         total = len(graded.invariants) + len(output_selection(graded, N))
         relations, c_max = [], 1
@@ -95,6 +95,9 @@ def _build(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = Non
             if options.linear_reduction_max_c is None or options.linear_reduction_max_c >= 2:
                 budget = options.linear_reduction_budget
                 more, c_max = field_relations(index, sign, graded, N, kept, budget)
+                if options.linear_reduction_max_c is None:      # exact zeros beyond c_max (each verified exactly)
+                    remaining = [i for i in kept if i not in {rel.dropped for rel in more}]
+                    more += verified_zeros(index, sign, graded, N, remaining, c_max + 1, budget)
                 if options.linear_reduction_max_c is not None:
                     more = [rel for rel in more if output_selection(graded, N)[rel.dropped - len(graded.invariants)][0]
                             <= options.linear_reduction_max_c]

@@ -699,7 +699,7 @@ optional exact Level~1 reductions (\texttt{reductions="safe"}).
   $S(4)$, $k=3$            & $(abcd)$, $(bd)$        & 3924   &       & 469   & 8.4  & 468 \\
   $S(3)\times S(2)$, $k=3$ & $(abc)(pq)$, $(bc)$     & 1884   & 948   & 191   & 9.9  & 191 \\
   $S(3)\times S(2)$, $k=4$ & $(abc)(pq)$, $(bc)$     & 1494   &       & 124   & 12.0 & 124 \\
-  $S(5)$, $k=4$            & $(abcde)$, $(be)(cd)$   & 138060 & 79980 & 13141 & 10.5 & 13139
+  $S(5)$, $k=4$            & $(abcde)$, $(be)(cd)$   & 138060 & 79980 & 13141 & 10.5 & 13137
 \end{tabular}
 \end{center}
 
@@ -738,6 +738,58 @@ optional exact Level~1 reductions (\texttt{reductions="safe"}).
     As predicted, little is found beyond the symmetry zeros above:
     $S(4)$, $k=2$ goes from 718 to 715 and $S(5)$, $k = 4$ from 13141 to 13139
     ($c_{\max} = 3$).
+  \item \emph{Zeros beyond $c_{\max}$.} The work budget stops the search above
+    at a modest $c_{\max}$ (3 or 4 in the cases above), but a few outputs with
+    larger $c$ vanish identically. They are found in two steps: numerics
+    propose, exact arithmetic decides.
+    \begin{itemize}
+      \item \emph{Proposal.} Each kept output with $c > c_{\max}$ is evaluated
+        exactly modulo two large primes $p \equiv 1 \pmod L$, at random points
+        $w$, with $\zeta_L$ replaced by a primitive $L$-th root of unity modulo
+        $p$. That replacement is a ring homomorphism from $\mathbb{Z}[\zeta_L]$
+        to the integers modulo $p$, so an output that is identically zero
+        evaluates to zero. A nonzero polynomial of degree $c$ vanishes at a
+        random point with probability at most $c/p$, so the outputs that
+        evaluate to zero at both points are very likely zero. That is not a
+        proof.
+      \item \emph{Proof.} The proof is an exact expansion of that one
+        coefficient $E_{c,j}$. Only positions that occur in some choice of $c$
+        occupied positions (repetition allowed) summing to $j$ can contribute
+        to it. Restricting every $q_g$ to those positions therefore leaves
+        $E_{c,j}$ unchanged, and near either end of the range of $j$ there are
+        only one or two such positions, involving few slots. So the expansion
+        is cheap even when $c$ is large. (It is done modulo enough primes that
+        their product exceeds twice a bound on the size of the integer
+        coefficients, which makes it exact.)
+    \end{itemize}
+    This drops $\operatorname{Re} E_{5,42}$ for $S(3)\times S(2)\times P$,
+    $k=4$ (112 to 111), $\operatorname{Re} E_{5,84}$ for $S(3)\times S(2)$,
+    $k=2$ (264 to 263), and $\operatorname{Re} E_{5,45}$ and
+    $\operatorname{Re} E_{9,80}$ for $S(5)$, $k = 4$ (13139 to 13137; both
+    involve only the five $e$'s). The other cases in the table have no such
+    zeros. Exact evaluation also shows that the many outputs at large $c$ which
+    merely \emph{look} zero in floating point (for $S(4)$ and $S(5)$) are not
+    zero. They are tiny compared with the largest output with the same $c$, and
+    a relative threshold mistakes them for zero.
+
+    Why $E_{5,42}$ vanishes illustrates a cancellation that the character
+    argument above cannot see. Only positions 8 and 9 contribute, with
+    $z_9 = 2\sum_i (d_{ip} - d_{iq})$ and $z_8$ the weight-2 combination
+    $2[(d_{ap}+d_{aq}) + \omega (d_{bp}+d_{bq}) + \omega^2 (d_{cp}+d_{cq})]$,
+    $\omega = e^{-2\pi i/3}$. For $g = (\sigma,\tau) \in S(3)\times S(2)$,
+    $z_9(g) = \pm u$ depends only on $\tau$, and $z_8(g) = \beta_\sigma$ only
+    on $\sigma$, taking the values $\omega^k\beta$ ($\sigma$ even) and
+    $\omega^k\gamma$ ($\sigma$ odd). Then $E_{5,42}$ is the coefficient of
+    $s^2t^3$ in
+    \[
+      \prod_g \bigl(1 + s z_9(g) + t z_8(g)\bigr)
+      = \prod_\sigma \bigl((1 + t\beta_\sigma)^2 - s^2u^2\bigr),
+    \]
+    namely $-u^2$ times the $t^3$ coefficient of
+    $\prod_\sigma (1+t\beta_\sigma)^2 \cdot \sum_\sigma (1+t\beta_\sigma)^{-2}
+    = \bigl(1 + 2t^3(\beta^3+\gamma^3) + \cdots\bigr)
+      \bigl(6 - 12t^3(\beta^3+\gamma^3) + \cdots\bigr)$,
+    which is $12(\beta^3+\gamma^3) - 12(\beta^3+\gamma^3) = 0$.
   \item \emph{No further gain from substitutions.} Scaling $x$, scaling $y$,
     reversing $x \mapsto 1/x$, and conjugation appear to be the only
     substitutions compatible with $\prod (y + q)$. So beyond about $2r$
@@ -1096,12 +1148,9 @@ and \texttt{lightning}). \texttt{embed\_fn} is therefore a
     Outputs that vanish identically as functions of~$L$ are pure rounding noise,
     and would become order-one garbage. The build therefore leaves unnormalised
     any output that is numerically zero at random inputs. (For the case above
-    that is $E_{5,42}$. An exact expansion shows it is \emph{formally} zero: a
-    cancellation in the $d$'s that the exact searches miss only because, with
-    the default work budget, they stop at $c = 4$ there. A ten-times larger
-    budget, \texttt{linear\_reduction\_budget=20\_000\_000}, reaches $c = 6$ and
-    drops it, giving $111$ outputs, at the cost of a slower build for large
-    groups.)
+    that used to be $E_{5,42}$. It is \emph{formally} zero, and is now dropped
+    by the search for zeros beyond $c_{\max}$ in Section~\ref{sec:graded},
+    giving $111$ outputs, none of them left unnormalised.)
   \item \texttt{field}: $\mathbb{R}$ initially. Whether to support
     $\mathbb{C}$ is still open.
   \item \texttt{dtype}: the precision of evaluation, \texttt{float32} by
@@ -1456,13 +1505,13 @@ when parity is in $G$, which uses the same idea.
 
 \paragraph{4. Parity: an even part plus an odd supplement.}
 Without parity in $G$, an alternative to splitting every mixed output is
-possible. Take any embedding that separates orbits of $G \times P$ (112 outputs
+possible. Take any embedding that separates orbits of $G \times P$ (111 outputs
 for $S(3)\times S(2)$, $k=4$). Add the odd parts
 $\tfrac12(o(L) - o(pL))$ of the graded outputs $o$ (105 non-zero ones). If
 two configurations agree on the first and on the odd parts, they are either in
 the same $G$-orbit or mirror images. In the latter case the odd parts vanish,
 so the full graded outputs agree, and injectivity of the graded embedding puts
-them in the same $G$-orbit after all. That gives $217$ against $228$, a small
+them in the same $G$-orbit after all. That gives $216$ against $228$, a small
 saving. What is really needed is only a set of odd invariants whose common
 zero set (on $G\times P$-orbits) is exactly the set of configurations that are
 $G$-equivalent to their mirror image. Odd invariants vanish on hypersurfaces,

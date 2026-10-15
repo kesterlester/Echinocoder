@@ -189,12 +189,25 @@ def _verify(coeffs: np.ndarray, i: int, terms: list) -> bool:
     return bool(np.all(lhs == rhs))
 
 
-def exact_expansion_field(forms: list, m: int, c_max: int, field) -> list:
+def expansion_entry_bound(forms: list, field, c: int) -> int:
+    """
+    A bound on |entries| of the expansion of E_c (see exact_expansion_field): the c-fold products from one c-subset
+    of G have entries of total size at most (sum over a form of the l1 norm of its matrix)^c, and there are C(N, c)
+    subsets.
+    """
+    norm = max((sum(int(np.abs(np.array(field.mul_matrix(np.array([int(x) for x in a], dtype=object)),
+                                         dtype=object)).sum()) for _, a in terms)
+                for row in forms for terms in row), default=1)
+    return comb(len(forms), c) * norm ** c
+
+
+def exact_expansion_field(forms: list, m: int, c_max: int, field, modulus: int | None = None) -> list:
     """
     Like ``exact_expansion_forms``, but with coefficients in Z[zeta_L] (``field`` a ``cyclotomic.Cyclotomic``):
     forms[g][jp] lists (slot s, a) with a an integer vector of length field.f, meaning coefficient jp of q_g is
     sum a * w_s. Returns, for c = 1..c_max, (monos, coeffs) with coeffs of shape (powers of x, monomials, field.f).
-    Multiplication by each a is applied as its f x f integer matrix.
+    Multiplication by each a is applied as its f x f integer matrix. With ``modulus`` (< 2^31) every entry is
+    reduced modulo it (int64 arithmetic throughout).
     """
     N = len(forms)
     r = len(forms[0]) if forms else 0
@@ -209,7 +222,7 @@ def exact_expansion_field(forms: list, m: int, c_max: int, field) -> list:
 
     # |entries| <= C(N, c) (sum over a form of the l1 norm of its matrix)^c; use Python ints if that might overflow.
     norm = max((sum(int(np.abs(mat(a)).sum()) for _, a in terms) for row in forms for terms in row), default=1)
-    big = any(comb(N, c) * norm ** c >= _INT64_SAFE for c in range(1, c_max + 1))
+    big = modulus is None and any(comb(N, c) * norm ** c >= _INT64_SAFE for c in range(1, c_max + 1))
     dtype = object if big else np.int64
 
     monos = [monomials(m, c) for c in range(c_max + 1)]
@@ -228,4 +241,6 @@ def exact_expansion_field(forms: list, m: int, c_max: int, field) -> list:
                 for s, a in forms[g][jp]:
                     A = mat(a).astype(dtype)
                     E[c][times[c][:, s], jp:jp + Lp, :] += prev @ A.T
+                    if modulus is not None:
+                        E[c] %= modulus
     return [(monos[c], np.transpose(E[c], (1, 0, 2)).copy()) for c in range(1, c_max + 1)]
