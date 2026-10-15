@@ -73,7 +73,7 @@ class GroupSpec:
 
 
 _SUPPORTED = {
-    "embedder": ("bursar", "bursar_involution", "bursar_graded", "bursar_nested"),
+    "embedder": ("bursar", "bursar_involution", "bursar_graded", "bursar_nested", "bursar_cascade"),
     "reductions": ("none", "safe"),
     "field": ("real",),
 }

@@ -51,6 +51,10 @@ def close(a, b):
     (MIXED, EmbeddingOptions(embedder="bursar_nested", **F64), "group"),
     (BeamSpec((("a", "b"),), met=True), EmbeddingOptions(embedder="bursar_graded", **F64), "group"),
     (BeamSpec((("a", "b", "c"),), masses=(0.0,)), EmbeddingOptions(embedder="bursar_graded", **F64), "group"),
+    (THREE, EmbeddingOptions(embedder="bursar_cascade", **F64), "group"),
+    (THREE, EmbeddingOptions(embedder="bursar_cascade", **F64), "projective"),
+    (MIXED, EmbeddingOptions(embedder="bursar_cascade", **F64), "group"),
+    (BeamSpec((("a", "b"),), met=True), EmbeddingOptions(embedder="bursar_cascade", **F64), "projective"),
 ])
 def test_symmetries_and_non_symmetries(spec, options, swap, gen):
     embed, meta = build_beam_embedding(spec, options, swap=swap)
@@ -101,9 +105,9 @@ def test_fixed_masses_are_parameters(gen):
 def test_local_injectivity(spec, expected, gen):
     # Generic evidence only (the proof is in the certification): the Jacobian with respect to the inputs that matter
     # has rank 4 per particle (3 if its mass is fixed) + 2 for the missing transverse momentum - 1 (the azimuth).
-    for swap in ("group", "projective"):
-        options = EmbeddingOptions(embedder="bursar_graded" if swap == "group" else "bursar", **F64)
-        embed, _ = build_beam_embedding(spec, options, swap=swap)
+    for swap, embedder in (("group", "bursar_graded"), ("projective", "bursar"), ("group", "bursar_cascade"),
+                           ("projective", "bursar_cascade")):
+        embed, _ = build_beam_embedding(spec, EmbeddingOptions(embedder=embedder, **F64), swap=swap)
         x = events(gen, spec.n_objects, batch=1)[0]
         J = torch.autograd.functional.jacobian(embed, x).reshape(-1, spec.n_objects * 4)
         J = J / J.norm(dim=1, keepdim=True).clamp_min(1e-300)       # outputs differ in scale by many orders
@@ -168,3 +172,11 @@ def test_orbit_runs_matches_slot_orbits():
         slots = build_slots(spec, 3)
         index, _ = signed_permutation_table(slots, tuple(iter_group_elements(spec)))
         assert orbit_runs(index) == slot_orbits(spec, slots)
+
+
+def test_counts_by_mode():
+    counts = {}
+    for label, embedder, swap in (("graded", "bursar_graded", "group"), ("cascade", "bursar_cascade", "group"),
+                                  ("swap first", "bursar_cascade", "projective"), ("plain RP", "bursar", "projective")):
+        counts[label] = build_beam_embedding(THREE, EmbeddingOptions(embedder=embedder), swap=swap)[1].D
+    assert counts == {"graded": 84, "cascade": 47, "swap first": 47, "plain RP": 405}

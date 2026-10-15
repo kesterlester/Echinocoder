@@ -55,7 +55,7 @@ def _build(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = Non
     # can be much smaller, so for it only the size of G is limited.
     D_unpacked = bursar_size(N, m)
     estimate = {"bursar": D_unpacked, "bursar_involution": bursar_size(N, (m + 1) // 2), "bursar_graded": N,
-                "bursar_nested": N}
+                "bursar_nested": N, "bursar_cascade": N}
     estimate = estimate[options.embedder]
     if estimate > options.max_outputs:
         raise ValueError(f"the Bursarial embedding for a multiset of {N} vectors of length m = {m} has about "
@@ -70,7 +70,8 @@ def _build(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = Non
 
 
 def _build_from_table(group_spec: GroupSpec, k: int, options: EmbeddingOptions, slots: tuple, elements: tuple,
-                      index: list, sign: list, e_dropped: bool, species_blocks: tuple, vector_w: bool = True):
+                      index: list, sign: list, e_dropped: bool, species_blocks: tuple, vector_w: bool = True,
+                      cascade_first: int | None = None):
     """
     The multiset stage, given the slots of w and the signed-permutation table of the group acting on them (for
     any front end that computes w: the dots and determinants of vectors, or the beam frame). With vector_w=False
@@ -78,6 +79,20 @@ def _build_from_table(group_spec: GroupSpec, k: int, options: EmbeddingOptions, 
     """
     N, m = len(elements), len(slots)
     safe = options.reductions == "safe"
+
+    if options.embedder == "bursar_cascade":
+        from .cascade import CascadeEmbedding, CascadeMeta, choose_cascade
+        from .graded import matrices
+        from .nested import right_coset_representatives
+        plan = choose_cascade(index, sign, elements, species_blocks, first=cascade_first)
+        if plan is None:
+            raise ValueError("no cascade found (with cascade_first, no element of order 2r has it as its r-th power)")
+        reps = right_coset_representatives(matrices(index, sign), plan.D)
+        module = CascadeEmbedding(group_spec.n, k, slots, index, sign, options.dtype, plan, reps,
+                                  metric=options.metric, vector_w=vector_w)
+        meta = CascadeMeta(group_spec, k, options, slots, elements, plan, reps, e_dropped)
+        assert module.output_shape.item() == meta.D
+        return module, meta
 
     if options.embedder == "bursar_nested":
         from .graded import GradedMeta, choose_packing, matrices
