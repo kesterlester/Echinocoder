@@ -1543,6 +1543,43 @@ free.) One size up, $S(6)$ with $k = 4$
 $9\,085\,320$ outputs, graded packing $865\,682$ and nesting $433\,770$. So for
 $n \gtrsim 6$ this family cannot be made small, whatever symmetry is exploited.
 
+\paragraph{1a. Cascading along a chain of normal subgroups (counted, not yet implemented).}
+When $G$ is itself dihedral, $G = \langle h, s\rangle$ (as $S(3)\times S(2)
+\cong D_6$ is), the whole orbit of the packed coordinates $z(w)$ follows from
+$z(w)$ alone: $z(h^t w)$ multiplies each coordinate by $\zeta^{kt}$, and
+$z(s w) = \overline{z(w)}$. So the orbit can be embedded in stages along a chain
+such as $\langle h^3\rangle \subset \langle h\rangle \subset G$. A stage embeds
+the orbit of the current coordinates $Y$ under a small cyclic group $Z_p$ (the
+Bursarial polynomial of only $p$ points, graded): coordinates fixed by $Z_p$
+are passed on, and the others are placed at positions congruent to their
+weights plus a shift \emph{modulo the order of the remaining rotation group}.
+Then the next generator acts on the stage's outputs by the substitution
+$x \mapsto \zeta x$, $y \mapsto \zeta^\delta y$, that is, diagonally, so its
+outputs are again eigen-coordinates and the next stage is graded too; and $s$
+still acts by conjugation. The last stage embeds the pair
+$\{Y, \overline{Y}\}$ by $\operatorname{Re} Y$ and the real polynomial
+$Q\overline{Q}$, $Q(x) = \sum_i Y_i x^i$. Each stage is injective on its orbits
+by unique factorisation, so the construction is Level~0, and its degree is
+still at most $|G|$. Exact counts (outputs, including the invariants), against
+the flat graded counts:
+\begin{center}
+\begin{tabular}{lrrr}
+  case & flat graded & chain $2\cdot3$ & chain $3\cdot2$ \\ \hline
+  $S(3)\times S(2)$, $k = 4$                 & 100 & 64  & 64 \\
+  $S(3)\times S(2)\times P$, $k = 4$ ($e$'s omitted) & 99 & 52 & 55 \\
+  $S(3)\times S(2)$, $k = 3$                 & 165 & 103 & 97 \\
+  $S(3)\times S(2)$, $k = 2$                 & 233 & 122 & 110
+\end{tabular}
+\end{center}
+(The crafted sets have 54 and 26.) These counts may be slightly high, because
+coordinates that are purely imaginary (or real) need only half of the last
+stage. Each stage costs about $(p+1)/2$ times its input, so along a chain of
+small primes the size grows like $|G|^{0.6}$ rather than $|G|^2$; but only for
+chains whose quotients act by such substitutions, which holds inside a cyclic
+group, plus one conjugation. For larger $G$ the dihedral (or cyclic) part
+could be cascaded inside nested coset packing: for $S(5)$, $k = 4$, inner
+$S(3)\times S(2)$ at 64 would give $10 + 63\cdot 55 = 3475$ against 5455.
+
 \paragraph{2. Graded packing already matches the formal polynomial closure.}
 On the simple cases, the graded counts are close to (sometimes below) what the
 exact polynomial closure leaves when the $d$'s and $e$'s are treated as
