@@ -739,6 +739,66 @@ optional exact Level~1 reductions (\texttt{reductions="safe"}).
     (perhaps $4r$), this route offers nothing more.
 \end{itemize}
 
+\subsection{Nested coset packing}\label{sec:nested}
+
+Every Bursarial construction so far treats $\MS$ as one multiset of $|G|$
+vectors, and its cost grows like $|G|^2$. Part of that growth can be removed by
+splitting $\MS$ along a subgroup.
+
+\paragraph{The construction.}
+Let $H$ be a subgroup of $G$. Every $g \in G$ can be written uniquely as $hg'$,
+with $h \in H$ and $g'$ a fixed representative of the right coset $Hg$. So $\MS$
+is the disjoint union, over the $M = |G|/|H|$ right cosets, of the
+$H$-orbits
+\[
+  H \cdot (g' \cdot w) = \{\, h g' \cdot w : h \in H \,\} .
+\]
+Each $H$-orbit is itself a multiset, of $|H|$ vectors, invariant under~$H$. It
+can therefore be embedded by graded packing for $H$ (Section~\ref{sec:graded}),
+giving one vector of some length $D_H$ per coset. The multiset of these $M$
+vectors is then embedded by a plain Bursarial embedding. The outputs do not
+depend on which coset representatives are chosen, and they are $G$-invariant,
+since replacing $w$ by $g \cdot w$ only permutes the cosets.
+
+\paragraph{Why this is Level 0.}
+The outer Bursarial embedding is injective on multisets of vectors, so it
+determines the multiset of inner vectors. The inner embedding is injective on
+$H$-orbits, so that determines the multiset of $H$-orbits. Their union is $\MS$.
+
+\paragraph{When it helps.}
+The outer stage costs about $D_H M^2 / 2$. For a dihedral $H$ of order $2r$,
+graded packing gives $D_H \approx m |H| / 2$, so the total is about
+$m |G|^2 / (4|H|)$: roughly half of the flat graded count, but only when there
+are many cosets. With few cosets the generic outer stage, and the loss of
+$G$'s structure inside each coset, make it worse. The code (embedder
+\texttt{bursar\_nested}) searches dihedral subgroups $H$ and uses nesting only
+if it beats the flat graded packing; otherwise it returns the latter.
+\begin{center}
+\small
+\begin{tabular}{lrrl}
+  case & flat graded & nested & best $H$ \\ \hline
+  $S(3)$, $k = 2$                                & 32    & (44)  & flat used \\
+  $S(3)\times S(2)$, $k = 3$                     & 191   & (212) & flat used \\
+  $S(3)\times S(2)\times P$, $k = 4$, $e$'s kept & 460   & 371   & order 12, 2 cosets \\
+  $S(5)$, $k = 4$                                & 13141 & 6775  & $S(2)\times S(3)$, 10 cosets
+\end{tabular}
+\end{center}
+
+\paragraph{Limits.}
+\begin{itemize}
+  \item The outer stage is a plain Bursarial embedding. Grading it as well
+    would need some element normalising $H$ to act \emph{linearly} on the
+    inner outputs. In general it acts by relabelling packed coordinates, which
+    changes the inner coefficients non-linearly.
+  \item Nesting again, along a chain of subgroups, gains only about a further
+    factor of~2 per level, and only when each level has many cosets.
+  \item The degrees are no lower: inner outputs have degree up to $|H|$ in
+    $w$, and the outer stage multiplies up to $M$ of them, giving degree up to
+    $|G|$, as before. For $S(3)\times S(2)\times P$ with $k = 4$, unit-scale inputs
+    already give Jacobian entries near $10^{46}$.
+  \item The exact Level~1 searches are not applied to nested embeddings.
+\end{itemize}
+
 \section{Layer 3: removing redundancy}
 
 There is no obviously best method for removing the redundancy in $\Phi$.
@@ -1007,7 +1067,10 @@ and \texttt{lightning}). \texttt{embed\_fn} is therefore a
     \texttt{"bursar"} (Section~3.1), \texttt{"bursar\_involution"} (involution
     packing, Section~\ref{sec:involution}) and \texttt{"bursar\_graded"} (graded
     packing, Section~\ref{sec:graded}), all Level~0. Graded packing subsumes
-    involution packing, which is kept as the simpler illustration.
+    involution packing, which is kept as the simpler illustration. There is also
+    \texttt{"bursar\_nested"} (Section~\ref{sec:nested}), which nests graded
+    packing over the cosets of a subgroup when that is smaller, and otherwise
+    returns the graded embedding.
   \item \texttt{reductions}: which reductions to apply, as an ordered list or
     a level. Early versions may support only \texttt{none}. Next would come
     the safe reductions of Section~4 (zero, duplicate, scalar multiple, linear

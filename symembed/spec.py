@@ -73,7 +73,7 @@ class GroupSpec:
 
 
 _SUPPORTED = {
-    "embedder": ("bursar", "bursar_involution", "bursar_graded"),
+    "embedder": ("bursar", "bursar_involution", "bursar_graded", "bursar_nested"),
     "reductions": ("none", "safe"),
     "field": ("real",),
 }
@@ -95,6 +95,9 @@ class EmbeddingOptions:
         placed at power x^j are scaled by exp(2 pi i j / r) under h (so every coefficient E_{c,j} with r not dividing
         j vanishes) and conjugated by s (so the rest are real); G-invariant coordinates may be output directly. The
         (h, s) with fewest outputs is chosen automatically. Subsumes "bursar_involution" (h = identity). Level 0.
+        ``"bursar_nested"``: nested coset packing (notes, Section 3.5): graded packing on each H-orbit for a dihedral
+        subgroup H, then a Bursarial embedding over the cosets. Used only if it beats "bursar_graded" (roughly by 2
+        when there are many cosets, e.g. S(5)); otherwise the graded embedding is returned. Level 0.
     reductions
         ``"none"``: the unpruned baseline (Level 0). ``"safe"``: the reductions that need no judgement (Level 0/1):
         omit the determinants when parity is in G, and drop outputs that are exact linear combinations of kept

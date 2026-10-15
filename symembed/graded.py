@@ -373,7 +373,11 @@ class GradedEmbedding(InvariantEmbedding):
     def forward(self, x) -> torch.Tensor:
         x = self._prepare(x)
         batch_shape = x.shape[:-2]
-        w = self.w(x).reshape(-1, self.m)
+        out = self.from_w(self.w(x).reshape(-1, self.m))
+        return out.reshape(*batch_shape, out.shape[-1])
+
+    def from_w(self, w: torch.Tensor) -> torch.Tensor:
+        """The outputs for given slot values w, shape (B, m) -> (B, D)."""
         if self.graded_plus.shape[0] == 0:
             out = w @ self.inv.T
         else:
@@ -384,7 +388,7 @@ class GradedEmbedding(InvariantEmbedding):
                 out = torch.cat([w @ self.inv.T, out], -1)
         if not self.graded_keeps_all:
             out = out[:, self.graded_keep]
-        return out.reshape(*batch_shape, out.shape[-1])
+        return out
 
 
 # ----- metadata --------------------------------------------------------------------------------------------------

@@ -69,6 +69,14 @@ Two levels are implemented (certification levels are defined in Section 4.3):
     available in `meta.packing.exact`.
   - `bursar_involution` is kept as the simpler special case (`h` the identity).
 
+- **`embedder="bursar_nested"`**: nested coset packing (Section 3.5), which is Level 0.
+  - `MS` is the disjoint union, over right cosets `Hg`, of the `H`-orbits of `g.w`. Each `H`-orbit is embedded
+    by graded packing for `H`, and the multiset of those vectors by a plain Bursarial embedding.
+  - It is roughly 2x smaller than flat graded packing when there are many cosets: for `S(5)`, `k = 4`, 13141 →
+    6775, with `H = S(2) x S(3)` and 10 cosets.
+  - It is used only when it wins; otherwise the graded embedding is returned. The exact Level 1 searches are not
+    applied to it.
+
 `homogenise`, `root_normalise`, the complex field and Level 2 reductions are not implemented.
 
 Exact linear dependencies are rare, so the safe reductions remove very little. For `n = 5`, `k = 4`, `G = S(5)`:
@@ -140,6 +148,7 @@ for both embedders it keeps only the outputs that are not exact polynomials in t
 | `bursar.py` | Bursarial coefficients from `{g·w}` in torch, real and complex |
 | `involution.py` | involution packing: generic packing for any linear involution, slot-form packing, choice of `g0` |
 | `graded.py` | graded packing: weight-space packing for a dihedral `<h, s>`, search, evaluator, metadata, exact reductions |
+| `nested.py` | nested coset packing: subgroup and coset search, evaluator, metadata |
 | `cyclotomic.py` | exact arithmetic in `Z[zeta_L]` (integer vectors in the power basis) |
 | `reductions.py` | exact (Gaussian-integer) expansion of low-`c` outputs, exact linear-dependency search (Level 1) |
 | `module.py` | `InvariantEmbedding` (the evaluator) and its flattened variant |

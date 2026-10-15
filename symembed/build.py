@@ -54,7 +54,8 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
     # Guard before enumerating G: the packed embedding is at least half the size of the unpacked one; a graded one
     # can be much smaller, so for it only the size of G is limited.
     D_unpacked = bursar_size(N, m)
-    estimate = {"bursar": D_unpacked, "bursar_involution": bursar_size(N, (m + 1) // 2), "bursar_graded": N}
+    estimate = {"bursar": D_unpacked, "bursar_involution": bursar_size(N, (m + 1) // 2), "bursar_graded": N,
+                "bursar_nested": N}
     estimate = estimate[options.embedder]
     if estimate > options.max_outputs:
         raise ValueError(f"the Bursarial embedding for a multiset of {N} vectors of length m = {m} has about "
@@ -64,6 +65,23 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
     elements = tuple(iter_group_elements(enumeration_spec))
     assert len(elements) == N and elements[0].is_identity()
     index, sign = signed_permutation_table(slots, elements)
+
+    if options.embedder == "bursar_nested":
+        from .graded import GradedMeta, choose_packing, matrices
+        from .nested import NestedEmbedding, NestedMeta, choose_nested, right_coset_representatives
+        flat = choose_packing(index, sign, elements, enumeration_spec.species_index_blocks).output_count(N)
+        best = choose_nested(index, sign, elements, enumeration_spec.species_index_blocks)
+        if best is not None and best[0] < flat:
+            _, H, inner_packing = best
+            reps = right_coset_representatives(matrices(index, sign), H)
+            module = NestedEmbedding(group_spec.n, k, slots, index, sign, options.dtype, H, reps, inner_packing,
+                                     metric=options.metric)
+            inner_meta = GradedMeta(group_spec, k, options, slots, tuple(elements[h] for h in H),
+                                    [index[h] for h in H], [sign[h] for h in H], inner_packing, e_dropped)
+            meta = NestedMeta(group_spec, k, options, slots, elements, H, reps, inner_meta, e_dropped)
+            assert module.output_shape.item() == meta.D
+            return module, meta
+        options = EmbeddingOptions(**{**options.__dict__, "embedder": "bursar_graded"})
 
     if options.embedder == "bursar_graded":
         from .graded import GradedEmbedding, GradedMeta, choose_packing
