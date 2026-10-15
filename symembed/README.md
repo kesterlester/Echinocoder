@@ -116,6 +116,9 @@ meta2.packed_coordinates()   # [(real part, imaginary part), ...] of each packed
 - `embed` is a `torch.nn.Module` following IWPC's `Encoding` conventions: `input_shape` and `output_shape` are integer
   buffers, and it acts on tensors of shape `(..., *input_shape)`. It does not depend on IWPC.
 - `embed.flattened()` takes input of shape `(..., n*k)` instead, with component `c` of vector `i` at position `i*k + c`.
+- `EmbeddingOptions(parity_split=True)` gives every output definite parity under reflections. Outputs that an
+  exact counting argument proves pure are kept; every other output `o` becomes `(o(L) + o(pL))/2` and
+  `(o(L) - o(pL))/2`. It does nothing when parity is in `G`, and is not available for `bursar_nested`.
 - `EmbeddingOptions(metric=(1, -1, -1, -1))` uses Minkowski dot products. Any diagonal metric of `+1`/`-1` entries
   works; the default is Euclidean. Only the dot products change. Every construction and count downstream of `w` is
   identical, and injectivity on the multiset is unaffected.
@@ -149,6 +152,7 @@ for both embedders it keeps only the outputs that are not exact polynomials in t
 | `involution.py` | involution packing: generic packing for any linear involution, slot-form packing, choice of `g0` |
 | `graded.py` | graded packing: weight-space packing for a dihedral `<h, s>`, search, evaluator, metadata, exact reductions |
 | `nested.py` | nested coset packing: subgroup and coset search, evaluator, metadata |
+| `parity.py` | option `parity_split`: exact purity check, even/odd parts |
 | `cyclotomic.py` | exact arithmetic in `Z[zeta_L]` (integer vectors in the power basis) |
 | `reductions.py` | exact (Gaussian-integer) expansion of low-`c` outputs, exact linear-dependency search (Level 1) |
 | `module.py` | `InvariantEmbedding` (the evaluator) and its flattened variant |

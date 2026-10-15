@@ -13,7 +13,7 @@ from .slots import build_slots, iter_group_elements, signed_permutation_table
 from .spec import EmbeddingOptions, GroupSpec
 
 
-def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = None):
+def _build(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = None):
     """
     Build an embedding of n vectors in k dimensions that is invariant under G (and rotations) and separates orbits on
     every input.
@@ -155,4 +155,36 @@ def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingO
                          index=index, sign=sign, kept=kept, relations=tuple(relations), e_dropped=e_dropped,
                          linear_reduction_max_c=c_max, packing=packing, involution=involution)
     assert module.output_shape.item() == meta.D == len(kept)
+    return module, meta
+
+
+def build_invariant_embedding(k: int, group_spec: GroupSpec, options: EmbeddingOptions | None = None):
+    """
+    Build an embedding of n vectors in k dimensions that is invariant under G (and rotations) and separates orbits on
+    every input (up to orbit closures for indefinite metrics).
+
+    Parameters
+    ----------
+    k
+        The dimension of each vector.
+    group_spec
+        The labelling group G (species, and whether parity is included). Also fixes n and the order of the vectors
+        along the input's n axis.
+    options
+        Build options. Defaults to ``EmbeddingOptions()``: the unpruned Bursarial baseline evaluated in float32.
+
+    Returns
+    -------
+    (module, meta)
+        The evaluator, mapping tensors of shape (..., n, k) to (..., D), and its metadata.
+    """
+    if options is None:
+        options = EmbeddingOptions()
+    module, meta = _build(k, group_spec, options)
+    if options.parity_split and not group_spec.parity:
+        from .parity import ParitySplitEmbedding, ParitySplitMeta, output_parities
+        parities = output_parities(meta)
+        module = ParitySplitEmbedding(module, parities, k)
+        meta = ParitySplitMeta(meta, parities)
+        assert module.output_shape.item() == meta.D
     return module, meta

@@ -113,6 +113,10 @@ class EmbeddingOptions:
     max_outputs
         Refuse to build an embedding whose unpruned Bursarial stage has more outputs than this. A guard against
         accidentally requesting an embedding that could never be evaluated.
+    parity_split
+        Give every output definite parity: outputs that are provably pure (an exact counting argument on the
+        number of determinant factors) are kept, and every other output o is replaced by its even and odd parts,
+        (o(L) + o(pL))/2 and (o(L) - o(pL))/2. Not available for "bursar_nested"; does nothing if parity is in G.
     metric
         The diagonal of the metric used for the dot products d, as a tuple of k entries +1 or -1; None (the default)
         means Euclidean. For example (1, -1, -1, -1) for Minkowski space. The determinants e do not depend on it, and
@@ -134,6 +138,7 @@ class EmbeddingOptions:
     metric: tuple | None = None
     linear_reduction_max_c: int | None = None
     linear_reduction_budget: int = 2_000_000
+    parity_split: bool = False
 
     def __post_init__(self):
         for name, allowed in _SUPPORTED.items():

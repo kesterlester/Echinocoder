@@ -1358,6 +1358,14 @@ automatically: $E_{c,j}(p\cdot w) = (-1)^j E_{c,j}(w)$. But it does
 \emph{worse} here, 395 and 273. The parity condition rules out the best $h$,
 whose order $6$ is even and conflicts with it, and forces extra padding.
 
+Splitting is implemented as the option \texttt{parity\_split}. An output is
+kept as it is when an exact counting argument proves it pure: every way of
+reaching its power of $x$ uses the same number of $e$ factors modulo~2.
+Otherwise it is replaced by its even and odd parts. For $k = 3$ this gives
+exactly $191 + 168 = 359$. For $k = 4$ it gives $236$ rather than $228$, because
+8 outputs are pure only through cancellations that the counting argument
+cannot see; each contributes a part that is zero for every input.
+
 \paragraph{Comparison with hand-crafted separating sets.}
 For five Lorentz vectors with $G = S(3) \times S(2)$ ($k = 4$),
 \cite{GHL20} (Table~3) gives 26 parity-even variables and \cite{LHG22}
