@@ -101,6 +101,7 @@ class GradedPacking:
     L: int = 4                                      # coefficients of the exact packing lie in Z[zeta_L]
     exact: np.ndarray | None = None                 # (W, m, f) exact coordinates (see build_packing)
     zeros: frozenset = frozenset()                  # (c, j) vanishing by character symmetry (symmetry_zeros)
+    shift: int = 0                                  # weight rho sits at positions = rho + shift (mod r)
 
     @property
     def real(self) -> bool:
@@ -124,7 +125,7 @@ class GradedPacking:
             for j in range(c * (self.W - 1) + 1):
                 if j not in reachable or (c, j) in self.zeros:
                     continue
-                if self.mode == "x" and j % self.r == 0:
+                if self.mode == "x" and (j - self.shift * c) % self.r == 0:
                     out.append((c, j))
                 elif self.mode == "scalar" and (self.rho * c) % self.r == 0:
                     out.append((c, j))
@@ -138,12 +139,63 @@ def _int_matrix(M) -> np.ndarray:
     return np.array(np.rint(M).astype(int), dtype=object)
 
 
+def choose_layout(r: int, real: dict, pairs: dict) -> tuple[int, dict]:
+    """
+    Where the packed coordinates go. A coordinate of weight rho sits at a position congruent to rho + shift (mod r),
+    the copies of one weight at successive such positions, starting from the smallest; then E_{c,j} vanishes unless
+    j = shift * c (mod r). ``real`` gives the number of coordinates of each self-conjugate weight (0 and r/2),
+    ``pairs`` the number for each pair {k, r - k}, 0 < k < r/2: each of those can be used with weight k or,
+    conjugated, with weight r - k. Returns (shift, number of coordinates of each weight), chosen to minimise the
+    length W of q (the number of coefficients is about sum_c c(W - 1)/r), with the lowest position 0.
+
+    For a fixed shift the pairs do not interact, so each pair is split to minimise its own last position; every
+    layout whose lowest position is not 0 is a translate of one found with another shift.
+    """
+    candidates = layout_candidates(r, real, pairs)
+    return candidates[0] if candidates else (0, {})
+
+
+def layout_candidates(r: int, real: dict, pairs: dict) -> list[tuple[int, dict]]:
+    """
+    One layout (shift, counts) for each shift (see choose_layout), without duplicates, ordered by length W and then by
+    the other last positions (shortest first).
+    """
+    found = {}
+    for shift in range(r):
+        pos = lambda rho: (rho + shift) % r
+        counts = {k: n for k, n in real.items() if n}
+        for k, b in pairs.items():
+            if b:
+                last = lambda nk: max([pos(k) + r * (nk - 1)] * (nk > 0) + [pos(r - k) + r * (b - nk - 1)] * (nk < b))
+                nk = min(range(b + 1), key=lambda nk: (last(nk), abs(2 * nk - b)))
+                counts.update({k: nk, r - k: b - nk})
+        counts = {rho: n for rho, n in counts.items() if n}
+        if not counts:
+            continue
+        lo = min(pos(rho) for rho in counts)
+        lasts = sorted((pos(rho) - lo + r * (n - 1) for rho, n in counts.items()), reverse=True)
+        layout = ((shift - lo) % r, tuple(sorted(counts.items())))
+        found.setdefault(layout, (lasts, layout[0]))
+    return [(shift, dict(counts)) for (shift, counts), _ in sorted(found.items(), key=lambda item: item[1])]
+
+
 def build_packing(Ms: list, h: int, s: int | None, drop_trivial: bool) -> GradedPacking:
     """
     Build the packing exactly, with coefficients in Z[zeta_L] (L = lcm(r, 4)); the floating-point coordinates used
     for evaluation are derived from the exact ones. An exact row is an object array of shape (m, f): entry t is the
     coefficient of w_t, as an integer vector in the power basis of Z[zeta_L]. Rank decisions (which candidates to
-    keep) use floating point; the rows kept are exact.
+    keep) use floating point; the rows kept are exact. The layout is the one of choose_layout.
+    """
+    coords = packing_coordinates(Ms, h, s, drop_trivial)
+    return lay_out(coords, *choose_layout(coords["r"], {k: len(v) for k, v in coords["real"].items()},
+                                          {k: len(v) for k, v in coords["pairs"].items()}))
+
+
+def packing_coordinates(Ms: list, h: int, s: int | None, drop_trivial: bool) -> dict:
+    """
+    The exact coordinates of a graded packing, before they are given positions: the invariants, the coordinates of
+    each self-conjugate weight ("real", weights 0 and r/2) and, for each pair {k, r - k}, coordinates of weight k
+    whose conjugates have weight r - k ("pairs").
     """
     m = Ms[0].shape[0]
     I = np.eye(m)
@@ -185,6 +237,7 @@ def build_packing(Ms: list, h: int, s: int | None, drop_trivial: bool) -> Graded
     i_matrix = F.mul_matrix(F.i)
 
     by_residue: dict[int, list] = {}
+    pair_bases: dict[int, list] = {}
     for k in range(r):
         if k > r - k:
             continue
@@ -216,33 +269,50 @@ def build_packing(Ms: list, h: int, s: int | None, drop_trivial: bool) -> Graded
             else:
                 candidates = [x for U in rows for x in (U + tau(U), field_map(i_matrix, U - tau(U)))]
                 basis = greedy(candidates)
-            for U in basis:                                               # balance residues k and r - k
-                if len(by_residue.get(k, [])) <= len(by_residue.get(r - k, [])):
-                    by_residue.setdefault(k, []).append(U)
-                else:
-                    by_residue.setdefault(r - k, []).append(field_map(F.conj_matrix, U))
+            pair_bases[k] = basis
+    return {"h": h, "s": s, "drop_trivial": drop_trivial, "r": r, "L": F.L, "m": m, "invariants": invariants,
+            "real": by_residue, "pairs": pair_bases}
+
+
+def lay_out(coords: dict, shift: int, counts: dict, order: dict | None = None) -> GradedPacking:
+    """
+    Give the coordinates positions (see choose_layout): ``counts[k]`` of the pair {k, r - k} coordinates are used
+    with weight k, the rest conjugated with weight r - k. Within each weight the coordinates take successive
+    positions in order, or in the order ``order[weight]`` (a permutation of their indices) where given.
+    """
+    r, m, h, s, drop_trivial, invariants = (coords[key] for key in ("r", "m", "h", "s", "drop_trivial", "invariants"))
+    F = Cyclotomic(coords["L"])
+    by_residue = {k: list(v) for k, v in coords["real"].items()}
+    for k, basis in coords["pairs"].items():                         # weight k, or conjugated weight r - k
+        by_residue[k] = basis[:counts.get(k, 0)]
+        by_residue[r - k] = [U @ F.conj_matrix.T for U in basis[counts.get(k, 0):]]
+    for rho, perm in (order or {}).items():
+        by_residue[rho] = [by_residue[rho][i] for i in perm]
 
     used = sorted(rho for rho, coords in by_residue.items() if coords)
     if not used:                                                      # everything is invariant: nothing to pack
         mode, rho, weights, exact = "none", None, [], np.zeros((0, m, F.f), dtype=object)
     elif len(used) == 1 and used[0] != 0:
         mode, rho = "scalar", used[0]
-        coords = by_residue[rho]
-        weights = [rho] * len(coords)
-        exact = np.array(coords, dtype=object).reshape(len(coords), m, F.f)
+        cs = by_residue[rho]
+        weights = [rho] * len(cs)
+        exact = np.array(cs, dtype=object).reshape(len(cs), m, F.f)
     else:
         mode, rho = "x", None
-        W = max(res + r * (len(coords) - 1) for res, coords in by_residue.items() if coords) + 1
+        start = lambda res: (res + shift) % r                            # see choose_layout
+        W = max(start(res) + r * (len(cs) - 1) for res, cs in by_residue.items() if cs) + 1
         exact = np.zeros((W, m, F.f), dtype=object)
         weights = [None] * W
-        for res, coords in by_residue.items():
-            for t, U in enumerate(coords):
-                exact[res + r * t] = U
-                weights[res + r * t] = res
+        for res, cs in by_residue.items():
+            for t, U in enumerate(cs):
+                exact[start(res) + r * t] = U
+                weights[start(res) + r * t] = res
+    if mode != "x":
+        shift = 0
     Phi = F.to_complex(exact) if len(exact) else np.zeros((0, m), dtype=complex)
     inv = np.array(invariants).reshape(len(invariants), m)
     return GradedPacking(h, s, r, mode, rho, drop_trivial, inv, Phi.real.copy(), Phi.imag.copy(), weights,
-                         L=F.L, exact=exact)
+                         L=F.L, exact=exact, shift=shift)
 
 
 def check_packing_exact(Ms: list, packing: GradedPacking) -> None:
@@ -313,7 +383,7 @@ def estimated_count(Ms: list, h: int, s: int | None, drop_trivial: bool, N: int,
         tr = sum(sign(t) * np.trace(np.linalg.matrix_power(Mh, t) @ M_s) for t in range(r)) / r
         d = dim(k)
         return int(round((d + tr) / 2)), int(round((d - tr) / 2))
-    counts: dict[int, int] = {}
+    real, pairs = {}, {}
     for k in range(r):
         if k > r - k:
             continue
@@ -326,12 +396,10 @@ def estimated_count(Ms: list, h: int, s: int | None, drop_trivial: bool, N: int,
                 if k == 0 and drop_trivial:
                     even -= invariant_dim
                 n = max(even, odd)
-            if n:
-                counts[k] = counts.get(k, 0) + n
+            real[k] = n
         else:
-            for t in range(dim(k)):                               # alternate between residues k and r - k
-                target = k if counts.get(k, 0) <= counts.get(r - k, 0) else r - k
-                counts[target] = counts.get(target, 0) + 1
+            pairs[k] = dim(k)
+    shift, counts = choose_layout(r, real, pairs)
     used = sorted(res for res, c in counts.items() if c)
     n_inv = invariant_dim if drop_trivial else 0
     per = 1 if s is not None else 2
@@ -340,8 +408,9 @@ def estimated_count(Ms: list, h: int, s: int | None, drop_trivial: bool, N: int,
     if len(used) == 1 and used[0] != 0:
         rho, W = used[0], counts[used[0]]
         return n_inv + per * sum(c * (W - 1) + 1 for c in range(1, N + 1) if (rho * c) % r == 0)
-    W = max(res + r * (c - 1) for res, c in counts.items() if c) + 1
-    return n_inv + per * sum((c * (W - 1)) // r + 1 for c in range(1, N + 1))
+    W = max((res + shift) % r + r * (c - 1) for res, c in counts.items() if c) + 1
+    return n_inv + per * sum((c * (W - 1) - (shift * c) % r) // r + 1 for c in range(1, N + 1)
+                             if (shift * c) % r <= c * (W - 1))
 
 
 def choose_packing(index: list, sign: list, elements: tuple, species_blocks, finalists: int = 6) -> GradedPacking:
@@ -369,14 +438,97 @@ def choose_packing(index: list, sign: list, elements: tuple, species_blocks, fin
     ranked.sort()
     best, best_count = None, None
     for _, _, h, s, drop in ranked[:finalists]:
-        packing = build_packing(Ms, h, s, drop)
-        count = packing.output_count(N)
-        if best_count is None or count < best_count:
-            best, best_count = packing, count
+        for packing in candidate_packings(Ms, packing_coordinates(Ms, h, s, drop), N):
+            count = packing.output_count(N)
+            if best_count is None or count < best_count:
+                best, best_count = packing, count
     check_packing(Ms, best)
     check_packing_exact(Ms, best)
-    best.zeros = symmetry_zeros(best, diagonal_characters(Ms, best), N)
     return best
+
+
+def coordinate_characters(Ms: list, U: np.ndarray, F: Cyclotomic) -> dict:
+    """{t: e} for every group element t with phi(t.v) = zeta_L^e phi(v) for all v, phi the coordinate U (exactly)."""
+    candidates = {e: U @ F.mul_matrix(F.zeta_power(e)).T for e in range(F.L)}
+    out = {}
+    for t, M in enumerate(Ms):
+        V = _int_matrix(M).T @ U
+        for e, Z in candidates.items():
+            if np.array_equal(V, Z):
+                out[t] = e
+                break
+    return out
+
+
+def candidate_packings(Ms: list, coords: dict, N: int):
+    """
+    Packings with the shortest layout (choose_layout), with their character-symmetry zeros set. For each, every
+    choice of which coordinate goes to the lowest position and which to the highest is tried when that can matter,
+    that is when the coordinates there have non-trivial characters: the zeros near the ends come from those.
+    """
+    r = coords["r"]
+    F = Cyclotomic(coords["L"])
+    layouts = layout_candidates(r, {k: len(v) for k, v in coords["real"].items()},
+                                {k: len(v) for k, v in coords["pairs"].items()})
+    if not layouts:
+        packing = lay_out(coords, 0, {})
+        yield packing
+        return
+    # characters of every coordinate, as used with weight k (conjugated coordinates have conjugate characters)
+    chars = {k: [coordinate_characters(Ms, U, F) for U in v] for k, v in coords["real"].items()}
+    for k, basis in coords["pairs"].items():
+        chars[k] = [coordinate_characters(Ms, U, F) for U in basis]
+        chars[r - k] = [{t: (-e) % F.L for t, e in ch.items()} for ch in chars[k]]
+
+    def characters_of(counts: dict, order: dict) -> list:          # by position, as laid out
+        lists = {k: list(v) for k, v in chars.items() if k in coords["real"]}
+        for k in coords["pairs"]:
+            lists[k] = chars[k][:counts.get(k, 0)]
+            lists[r - k] = chars[r - k][counts.get(k, 0):]
+        for rho, perm in order.items():
+            lists[rho] = [lists[rho][i] for i in perm]
+        return lists
+
+    first = lay_out(coords, *layouts[0])
+    shortest = [lay for lay in layouts if lay_out(coords, *lay).W == first.W]
+    for shift, counts in shortest:
+        base = lay_out(coords, shift, counts)
+        if base.mode != "x":
+            base.zeros = symmetry_zeros(base, diagonal_characters(Ms, base), N)
+            yield base
+            continue
+        lists = characters_of(counts, {})
+        bottom, top = base.weights[0], base.weights[-1]
+        nontrivial = lambda rho: [i for i, ch in enumerate(lists[rho]) if any(ch.values())]
+        bottoms = nontrivial(bottom) or [0]
+        tops = nontrivial(top) or [len(lists[top]) - 1]
+        orders = [{}]                                    # the default order first, so that ties keep it
+        for b in bottoms:
+            for t in tops:
+                if bottom == top and (b == t) != (len(lists[top]) == 1):
+                    continue
+                order = {}
+                rest = [i for i in range(len(lists[bottom])) if i != b and not (bottom == top and i == t)]
+                if bottom == top:
+                    order[bottom] = [b] + rest + ([t] if t != b else [])
+                else:
+                    order[bottom] = [b] + rest
+                    order[top] = [i for i in range(len(lists[top])) if i != t] + [t]
+                orders.append(order)
+        for order in orders:
+            packing = lay_out(coords, shift, counts, order)
+            by_position = characters_of(counts, order)
+            positions = {}
+            start = lambda res: (res + shift) % r
+            for rho, cl in by_position.items():
+                for t_idx, ch in enumerate(cl):
+                    positions[start(rho) + r * t_idx] = ch
+            table: dict = {}
+            for a, ch in positions.items():
+                for g, e in ch.items():
+                    table.setdefault(g, {})[a] = e
+            packing.zeros = symmetry_zeros(packing, {g: c for g, c in table.items() if any(c.values())}, N)
+            yield packing
 
 
 # ----- the evaluator ---------------------------------------------------------------------------------------------
@@ -659,7 +811,7 @@ def c1_relations(Ms: list, packing: GradedPacking, N: int) -> list:
     Exact linear relations involving the c = 1 outputs.
 
     E_{1,j} = sum_g p_j(g.w) = (p_j S) w with S = sum_g M_g, a linear function of w with integer coefficients
-    (kept powers j are multiples of r, which hold weight-0 coordinates, built from integer rows). The invariant
+    (kept powers j are congruent to the shift modulo r, which hold weight-0 coordinates, built from integer rows). The invariant
     outputs are the integer rows of S. Any c = 1 output that is an exact rational combination of the invariant outputs
     and earlier c = 1 outputs is dropped (Level 1). Indices refer to the full output list: invariants, then the
     coefficients of ``output_selection``.

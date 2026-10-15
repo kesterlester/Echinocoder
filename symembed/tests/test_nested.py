@@ -23,12 +23,12 @@ def test_nested_used_when_it_wins():
     k, spec = SMALL_WIN
     _, meta = build_invariant_embedding(k, spec, NESTED)
     flat = build_invariant_embedding(k, spec, EmbeddingOptions(embedder="bursar_graded"))[1].D
-    assert isinstance(meta, NestedMeta) and meta.D == 371 < flat == 460
+    assert isinstance(meta, NestedMeta) and meta.D == 299 < flat == 364
 
 
 def test_falls_back_to_graded_when_nesting_loses():
     _, meta = build_invariant_embedding(2, GroupSpec((("a", "b", "c"),)), NESTED)
-    assert isinstance(meta, GradedMeta) and meta.D == 32
+    assert isinstance(meta, GradedMeta) and meta.D == 24
 
 
 def test_outer_bursar_of_inner_outputs(gen):
@@ -83,10 +83,10 @@ def test_meta():
     k, spec = SMALL_WIN
     _, meta = build_invariant_embedding(k, spec, NESTED)
     d = json.loads(meta.to_json())
-    assert d["D"] == 371 and d["nested"]["order_H"] * len(d["nested"]["coset_representatives"]) == meta.N
+    assert d["D"] == 299 and d["nested"]["order_H"] * len(d["nested"]["coset_representatives"]) == meta.N
     assert d["certification"].startswith("Level 0") and "Nested coset packing" in meta.latex()
 
 
 def test_s5_count():
     _, meta = build_invariant_embedding(4, GroupSpec((tuple("abcde"),)), EmbeddingOptions(embedder="bursar_nested"))
-    assert isinstance(meta, NestedMeta) and meta.D == 6775
+    assert isinstance(meta, NestedMeta) and meta.D == 5455

@@ -23,8 +23,8 @@ def gen():
     return torch.Generator().manual_seed(1357)
 
 
-@pytest.mark.parametrize("k,spec,D", [(2, S2, 4), (2, S2S1, 11), (2, S3, 32), (3, S3S2, 191), (2, S4, 718),
-                                      (3, S4, 469)])
+@pytest.mark.parametrize("k,spec,D", [(2, S2, 4), (2, S2S1, 11), (2, S3, 24), (3, S3S2, 165), (2, S4, 613),
+                                      (3, S4, 386)])
 def test_output_counts(k, spec, D):
     _, meta = build_invariant_embedding(k, spec, GRADED)
     assert meta.D == D
@@ -147,7 +147,7 @@ def test_unreachable_powers_are_omitted():
 SAFE_GRADED = EmbeddingOptions(embedder="bursar_graded", reductions="safe", dtype=torch.float64)
 
 
-@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 191), (3, S4, 468), (2, S3, 32)])
+@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 165), (3, S4, 385), (2, S3, 24)])
 def test_c1_reductions_counts(k, spec, D):
     options = EmbeddingOptions(embedder="bursar_graded", reductions="safe", linear_reduction_max_c=1,
                                dtype=torch.float64)
@@ -156,7 +156,7 @@ def test_c1_reductions_counts(k, spec, D):
     assert all(meta.all_names()[rel.dropped].startswith(("Re E_{1,", "Im E_{1,")) for rel in meta.relations)
 
 
-@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 191), (3, S4, 468), (2, S4, 715)])
+@pytest.mark.parametrize("k,spec,D", [(3, S3S2, 164), (3, S4, 385), (2, S4, 612)])
 def test_exact_cyclotomic_reductions_counts(k, spec, D):
     # c >= 2 relations, found over Q(zeta_L) by restriction of scalars (the build also checks exactly, for every
     # c it reaches, that omitted coefficients vanish and kept ones are real).
@@ -190,30 +190,29 @@ def test_c1_reductions_replay(k, spec, gen):
 
 
 def test_character_symmetry_zeros(gen):
-    # For S(3) x S(2), k = 3, position 0 holds i e_abc, which some element negates: so E_{c,0} vanishes for odd c.
+    # For S(3), k = 3, position 0 holds i e_abc, which some element negates: so E_{c,0} vanishes for odd c.
     from symembed.graded import diagonal_characters
-    embed, meta = build_invariant_embedding(3, S3S2, GRADED)
+    embed, meta = build_invariant_embedding(3, S3, GRADED)
     p = meta.packing
     chars = diagonal_characters(matrices(meta.index, meta.sign), p)
     assert any(ch.get(0) == p.L // 2 for ch in chars.values())          # some t multiplies coordinate 0 by -1
     assert {(c, 0) for c in range(1, meta.N + 1, 2)} <= set(p.zeros)
     assert all(c % 2 == 0 for c, j in p.surviving(meta.N) if j == 0)
     # Omitted coefficients (including these) vanish numerically: see test_omitted_coefficients_vanish...
-    assert meta.D == 191
+    assert meta.D == 17
 
 
 def test_zeros_beyond_c_max_are_found_and_verified():
-    # With P in G, Re E_{5,42} vanishes identically but lies beyond the budgeted linear search (c <= 4); it is
-    # proposed by evaluation modulo primes and verified by an exact expansion restricted to positions 8 and 9.
-    spec = GroupSpec((("a", "b", "c"), ("p", "q")), parity=True)
-    _, meta = build_invariant_embedding(4, spec, SAFE_GRADED)
-    assert meta.linear_reduction_max_c == 4 and meta.D == 111
-    assert "Re E_{5,42} = 0" in [meta.relation_summary(rel) for rel in meta.relations]
+    # For S(3) x S(2), k = 2, Re E_{5,75} vanishes identically but lies beyond the budgeted linear search (c <= 3);
+    # it is proposed by evaluation modulo primes and verified by an exact expansion restricted to positions 3, 13, 18.
+    _, meta = build_invariant_embedding(2, S3S2, SAFE_GRADED)
+    assert meta.linear_reduction_max_c == 3 and meta.D == 232
+    assert "Re E_{5,75} = 0" in [meta.relation_summary(rel) for rel in meta.relations]
     from symembed.graded import contributing_positions
-    assert contributing_positions(meta.packing, 5, 42) == [8, 9]
-    capped = EmbeddingOptions(embedder="bursar_graded", reductions="safe", linear_reduction_max_c=4,
+    assert contributing_positions(meta.packing, 5, 75) == [3, 13, 18]
+    capped = EmbeddingOptions(embedder="bursar_graded", reductions="safe", linear_reduction_max_c=3,
                               dtype=torch.float64)
-    assert build_invariant_embedding(4, spec, capped)[1].D == 112           # an explicit cap keeps everything beyond
+    assert build_invariant_embedding(2, S3S2, capped)[1].D == 233           # an explicit cap keeps everything beyond
 
 
 def test_evaluation_modulo_p_matches_exact_expansion():

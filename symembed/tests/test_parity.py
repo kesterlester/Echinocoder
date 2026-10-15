@@ -50,20 +50,20 @@ def test_parts_add_up_to_the_original(gen):
         else:
             torch.testing.assert_close(Ys[:, position] + Ys[:, position + 1], Yo[:, i])
             position += 2
-    assert position == meta.D == 359
+    assert position == meta.D == 317
 
 
 def test_counts():
     _, m3 = build_invariant_embedding(3, S3S2, options(embedder="bursar_graded", reductions="safe"))
     _, m4 = build_invariant_embedding(4, S3S2, options(embedder="bursar_graded", reductions="safe"))
-    assert m3.to_dict()["parity_split"] == {"split": 168, "pure_even": 17, "pure_odd": 6}
-    assert m4.D == 236
+    assert m3.to_dict()["parity_split"] == {"split": 153, "pure_even": 11, "pure_odd": 0}
+    assert m4.D == 191
 
 
 def test_noop_with_parity_in_g():
     spec = GroupSpec(S3S2.species, parity=True)
     _, meta = build_invariant_embedding(4, spec, options(embedder="bursar_graded", reductions="safe"))
-    assert not isinstance(meta, ParitySplitMeta) and meta.D == 111
+    assert not isinstance(meta, ParitySplitMeta) and meta.D == 99
 
 
 def test_not_available_for_nested():
