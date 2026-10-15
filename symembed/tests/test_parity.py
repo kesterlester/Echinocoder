@@ -50,14 +50,14 @@ def test_parts_add_up_to_the_original(gen):
         else:
             torch.testing.assert_close(Ys[:, position] + Ys[:, position + 1], Yo[:, i])
             position += 2
-    assert position == meta.D == 317
+    assert position == meta.D == 307
 
 
 def test_counts():
     _, m3 = build_invariant_embedding(3, S3S2, options(embedder="bursar_graded", reductions="safe"))
     _, m4 = build_invariant_embedding(4, S3S2, options(embedder="bursar_graded", reductions="safe"))
-    assert m3.to_dict()["parity_split"] == {"split": 153, "pure_even": 11, "pure_odd": 0}
-    assert m4.D == 191
+    assert m3.to_dict()["parity_split"] == {"split": 143, "pure_even": 21, "pure_odd": 0}
+    assert m4.D == 184                     # = 100 + 84: every mixed output is split, no pure one
 
 
 def test_noop_with_parity_in_g():
@@ -71,3 +71,24 @@ def test_not_available_for_nested():
     with pytest.raises(NotImplementedError):
         build_invariant_embedding(4, GroupSpec((tuple("abcde"),)), options(embedder="bursar_nested"))
     assert spec is not None
+
+
+@pytest.mark.parametrize("k", [2, 3, 4])
+def test_declared_purity_holds_output_by_output(k, gen):
+    # Includes the outputs found pure through the conjugation mode (e.g. E_{c,0} when position 0 holds
+    # (d's) + i (e's), on which parity acts as complex conjugation).
+    from symembed.parity import output_parities
+    embed, meta = build_invariant_embedding(k, S3S2, EmbeddingOptions(embedder="bursar_graded", reductions="safe",
+                                                                      dtype=torch.float64))
+    parities = output_parities(meta)
+    X = torch.randn(6, 5, k, dtype=torch.float64, generator=gen)
+    reflection = torch.ones(k, dtype=torch.float64)
+    reflection[-1] = -1.0
+    Y, Yr = embed(X), embed(X * reflection)
+    scale = Y.abs().max(dim=0).values
+    for i, ps in enumerate(parities):
+        if len(ps) == 1:
+            sign = 1.0 if ps == {0} else -1.0
+            assert (Yr[:, i] - sign * Y[:, i]).abs().max() <= 1e-9 * scale[i]
+    if k == 4:
+        assert sum(len(ps) == 1 for ps in parities) == 16

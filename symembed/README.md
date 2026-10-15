@@ -133,7 +133,9 @@ meta2.packed_coordinates()   # [(real part, imaginary part), ...] of each packed
 - `embed.flattened()` takes input of shape `(..., n*k)` instead, with component `c` of vector `i` at position `i*k + c`.
 - `EmbeddingOptions(parity_split=True)` gives every output definite parity under reflections. Outputs that an
   exact counting argument proves pure are kept; every other output `o` becomes `(o(L) + o(pL))/2` and
-  `(o(L) - o(pL))/2`. It does nothing when parity is in `G`, and is not available for `bursar_nested`.
+  `(o(L) - o(pL))/2`. For graded embeddings the argument also uses coordinates on which parity acts as complex
+  conjugation (`(d's) + i (e's)`), so for `S(3) x S(2)`, `k = 4` exactly the mixed outputs are split (100 → 184).
+  It does nothing when parity is in `G`, and is not available for `bursar_nested`.
 - `EmbeddingOptions(metric=(1, -1, -1, -1))` uses Minkowski dot products. Any diagonal metric of `+1`/`-1` entries
   works; the default is Euclidean. Only the dot products change. Every construction and count downstream of `w` is
   identical, and injectivity on the multiset is unaffected.

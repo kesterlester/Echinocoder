@@ -1476,10 +1476,28 @@ whose order $6$ is even and conflicts with it, and forces extra padding.
 Splitting is implemented as the option \texttt{parity\_split}. An output is
 kept as it is when an exact counting argument proves it pure: every way of
 reaching its power of $x$ uses the same number of $e$ factors modulo~2.
-Otherwise it is replaced by its even and odd parts. This gives $317$ for
-$k = 3$ and $191$ for $k = 4$, rather than $306$ and $184$, because 11 and 7
-outputs respectively are pure only through cancellations that the counting
-argument cannot see; each contributes a part that is zero for every input.
+Otherwise it is replaced by its even and odd parts.
+
+For graded embeddings the counting argument is refined, using the patterns of
+Section~\ref{sec:graded}: $E_{c,j} = \sum_J F_J$. Parity acts on the
+coordinate at position $a$ either as a sign (only $d$'s: $+1$; only $e$'s:
+$-1$), or, more usefully, as a sign times complex conjugation:
+$\phi_a(p v) = \pm\overline{\phi_a(v)}$. The latter happens for a coordinate
+(combination of $d$'s)${}+i\,$(combination of $e$'s), which is common, since the
+real weight spaces pair an $s$-even coordinate with an $s$-odd one. If every
+coordinate of a pattern $J$ is of the first kind, $F_J$ has the product of the
+signs as its parity, as before. If every coordinate of $J$ is of the second
+kind, so does $F_J$: replacing $w$ by $p\cdot w$ conjugates every entry
+$\phi_a(g\cdot w)$ (up to the signs), and since $\phi_a(s v) =
+\overline{\phi_a(v)}$ for every packed coordinate, that is the same as relabelling
+$g \mapsto sg$, which leaves $F_J$ unchanged. So $E_{c,j}$ is pure if all its
+patterns are determined in one of these two ways with the same parity. For
+example, when position 0 holds such a coordinate, every $E_{c,0}$ is even.
+With this refinement \texttt{parity\_split} gives $184 = 100 + 84$ for $k = 4$,
+splitting exactly the mixed outputs, and $307$ for $k = 3$, against $306$:
+one output, $\operatorname{Re} E_{5,51}$, is odd only through a cancellation
+that neither argument sees, and contributes an even part that is zero for every
+input.
 
 \paragraph{Comparison with hand-crafted separating sets.}
 For five Lorentz vectors with $G = S(3) \times S(2)$ ($k = 4$),
@@ -1495,7 +1513,7 @@ flatters the crafted sets somewhat. The fully automatic graded construction
   & crafted & here & ratio \\ \hline
   with $P$ in $G$ (parity-even only)           & 26 & 99  & 3.8 \\
   without $P$, outputs as they come             & 54 & 100 & 1.9 \\
-  without $P$, split into definite parity       & 54 & 191 & 3.5
+  without $P$, split into definite parity       & 54 & 184 & 3.4
 \end{tabular}
 \end{center}
 The quotient dimension is 14. Nonlinear (polynomial) identities and the Gram

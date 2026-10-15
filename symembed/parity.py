@@ -47,6 +47,57 @@ def possible_e_parities(position_kinds: list, N: int) -> list[set]:
     return out
 
 
+def graded_parities(packing, slots, N: int) -> list[set]:
+    """
+    Possible e-parities of each graded coefficient E_{c,j} (in the order of packing.surviving(N)), by a refinement
+    of the counting argument. E_{c,j} is a sum over patterns J (multisets of c occupied positions summing to j) of
+    pieces F_J. Parity p acts on the coordinate at position a either as a sign (``S`` mode: only d's, sign +1, or
+    only e's, sign -1), or, when s is used, as a sign times complex conjugation (``C`` mode: phi_a(pv) =
+    +-conj(phi_a(v))). If every coordinate of J has S mode, F_J has the product of their signs as its parity. If
+    every coordinate of J has C mode, so does F_J: since phi_a(s v) = conj(phi_a(v)) for every packed coordinate,
+    replacing w by pw conjugates every entry, which is the same as relabelling g -> s g. Patterns mixing the modes
+    (or using a coordinate with neither) are undetermined, and so is any E_{c,j} that has one.
+    """
+    import numpy as np
+    from .cyclotomic import Cyclotomic
+    F = Cyclotomic(packing.L)
+    flip = np.array([1 if slot.kind == "d" else -1 for slot in slots], dtype=object)
+    modes = {}
+    for a, (U, weight) in enumerate(zip(packing.exact, packing.weights)):
+        if weight is None:
+            continue
+        kinds = {slots[t].kind for t in range(len(slots)) if np.any(U[t])}
+        s_mode = 0 if kinds == {"d"} else (1 if kinds == {"e"} else None)
+        c_mode = None
+        if packing.real:
+            UP, Uc = U * flip[:, None], U @ F.conj_matrix.T
+            c_mode = 0 if np.array_equal(UP, Uc) else (1 if np.array_equal(UP, -Uc) else None)
+        modes[a] = (s_mode, c_mode)
+    add = lambda x, y: None if x is None or y is None else (x + y) % 2
+    reach = {0: {(0, 0)}}
+    by_c = {}
+    for c in range(1, N + 1):
+        new: dict[int, set] = {}
+        for j, states in reach.items():
+            for a, (ms, mc) in modes.items():
+                bucket = new.setdefault(j + a, set())
+                for ss, sc in states:
+                    bucket.add((add(ss, ms), add(sc, mc)))
+        reach = new
+        by_c[c] = reach
+    out = []
+    for c, j in packing.surviving(N):
+        parities = set()
+        for ss, sc in by_c[c].get(j, set()):
+            if ss is None and sc is None:
+                parities = {0, 1}
+                break
+            if ss is None or sc is None or ss == sc:
+                parities.add(ss if sc is None else sc)
+        out.append(parities)
+    return out
+
+
 def output_parities(meta) -> list[set]:
     """The possible e-parities of each output of a plain, involution or graded embedding (exact, combinatorial)."""
     from .graded import GradedMeta
@@ -62,8 +113,8 @@ def output_parities(meta) -> list[set]:
         if p.W == 0:
             full = invariants
         else:
-            by_label = dict(zip(bursar_output_labels(meta.N, p.W), possible_e_parities(kinds, meta.N)))
-            full = invariants + [by_label[(c, j)] for c, j, _, _ in meta.selection()]
+            by_cj = dict(zip(p.surviving(meta.N), graded_parities(p, meta.slots, meta.N)))
+            full = invariants + [by_cj[(c, j)] for c, j, _, _ in meta.selection()]
         return [full[i] for i in meta.kept]
     if hasattr(meta, "base_output_labels") and hasattr(meta, "position_kinds"):
         by_label = dict(zip(meta.base_output_labels, possible_e_parities(meta.position_kinds(), meta.N)))
