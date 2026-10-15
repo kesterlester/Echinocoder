@@ -153,7 +153,7 @@ meta2.packed_coordinates()   # [(real part, imaginary part), ...] of each packed
     So the step back from the multiset to `L` holds only up to orbit closures. No continuous map can do better, and
     continuous invariant functions need no more. See Remark "Indefinite metrics" in Section 1 of the notes.
 
-### Collider events: the beam frame (`build_beam_embedding`, Section 6 of the notes)
+### Collider events: the beam frame (`build_beam_embedding`, Section 5 of the notes)
 
 ```python
 from symembed import BeamSpec, EmbeddingOptions, build_beam_embedding

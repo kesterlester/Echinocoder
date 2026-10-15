@@ -1,7 +1,7 @@
 """
 User-facing specification objects: which group, and which build options.
 
-See Section 5 of the invariant_multisets notes for the interface these
+See Section 6 of the invariant_multisets notes for the interface these
 implement.
 """
 from __future__ import annotations
