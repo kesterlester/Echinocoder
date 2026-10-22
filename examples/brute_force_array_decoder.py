@@ -6,6 +6,9 @@ The purpose of this script is to provide a method that will attempt a brute forc
 Note that this is not a true decoder, as it does not confirm that the encoding could generate the ascending_data. However, any encoder could pacakge ascending_data alongside any other encoding without increasing its order beyond (nk) if already (nk) .... 
 """
 
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # the repository root, for its modules
+
 import numpy as np
 import C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset as simplex2
 import tools

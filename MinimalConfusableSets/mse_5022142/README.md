@@ -12,7 +12,7 @@ external links break.
   product, linked under the figure (`hep.phy.cam.ac.uk/~lester/37_points_data.txt`).
 
 The red and blue sets have the same sorted scalar products in all 7 directions, so 7 bats in the plane
-are fooled by 37 moths. The figure was drawn by `plot.py` at the top of the repository (which writes
+are fooled by 37 moths. The figure was drawn by `examples/plot.py` (which writes
 `example.svg`). In the figure, the origin is at the top left and y increases downwards.
 
 Each file is byte-identical to the copy that was online on 2026-10-22.

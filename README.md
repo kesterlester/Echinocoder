@@ -75,7 +75,7 @@ In principle the method could be re-written to embed into just $2 n k + 1$ reals
 
 [example.py](example.py) is a simple example script showing how some of the embedders could be used. These examples use the old-style monolithic calculators listed in the table above.
 
-[nice_examples.sh](nice_examples.sh) is a short script which exercises [play_simplex_encoders_via_EncDec.py](play_simplex_encoders_via_EncDec.py) in a few different ways. It uses [EncDec.py](EncDec.py) directly, which covers Steps A–E (pre-processing and canonicalisation) but stops before Step F (hashing). For the full embedding pipeline including Step F, use [_2b_](C0HomDeg1_simplicialComplex_embedder_2b_for_array_of_reals_as_multiset.py) (or the [_2_ wrapper](C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py)) which wraps EncDec and adds Step F.
+[examples/nice_examples.sh](examples/nice_examples.sh) is a short script which exercises [examples/play_simplex_encoders_via_EncDec.py](examples/play_simplex_encoders_via_EncDec.py) in a few different ways. It uses [EncDec.py](EncDec.py) directly, which covers Steps A–E (pre-processing and canonicalisation) but stops before Step F (hashing). For the full embedding pipeline including Step F, use [_2b_](C0HomDeg1_simplicialComplex_embedder_2b_for_array_of_reals_as_multiset.py) (or the [_2_ wrapper](C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py)) which wraps EncDec and adds Step F.
 
 ## Testing
 
