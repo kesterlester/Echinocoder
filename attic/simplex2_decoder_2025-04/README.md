@@ -11,9 +11,9 @@ of it in April 2025. They were never committed at the time; they are kept here a
   bijectivity. The decoder relies on `Eji_LinComb._index` being used in the encoder's hash.
 - `simplexClass_v2.py`: the updated version, exactly as sent, with comments and much shorter
   runtimes (the expensive removal of equivalent simplices is replaced by a cutoff).
-- `simplexClass_v1_lester.py`: v1 with small edits by Christopher Lester: a `#!` line, input read
+- `simplexClass_v1_lester.py`: v1 with small edits by Lester: a `#!` line, input read
   from the command line, `debug=False`.
-- `simplexClass_v2_lester.py`: v2 with small edits by Christopher Lester: debug prints commented out,
+- `simplexClass_v2_lester.py`: v2 with small edits by Lester: debug prints commented out,
   `debug=False`.
 
 The imports assume the files sit in the top folder of the repository. The code predates the
