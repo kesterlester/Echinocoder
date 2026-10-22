@@ -7,7 +7,7 @@
 ## Background: what NULL_COMP compression is
 
 The original user called this "Step 4 compression" before we named it NULL_COMP.
-The full derivation is in `DOCS/encoder.tex` §4.3 ("Dropping the Largest Remaining
+The full derivation is in `symcoder/docs/encoder.tex` §4.3 ("Dropping the Largest Remaining
 Association").
 
 An **overlap block** groups all PairFlavours that share `(op_u, flavour_u, op_v, flavour_v)`

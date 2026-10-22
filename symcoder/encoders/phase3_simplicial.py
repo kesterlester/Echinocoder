@@ -106,7 +106,7 @@ class Phase3SimplicialEncoder:
     would repeat the same mistake: rows that look ``duplicative'' at the
     pair-marginal level may carry distinct information once we look at the
     full alignment table.  See
-    ``DOCS/parity_blindness_and_repS_concern.pdf`` for the full history.
+    ``symcoder/docs/parity_blindness_and_repS_concern.pdf`` for the full history.
     """
 
     def __init__(self, plan) -> None:

@@ -231,7 +231,7 @@ atom labels — NOT by the `argument_symmetry` of the operations.
 **σ-compression (self-pairing blocks):** For blocks where `op_u == op_v` and
 `F_u == F_v`, the swap symmetry `(u_k, v_j) ↔ (v_j, u_k)` makes the z-value
 multiset σ-closed (`z → i·conj(z)` for TYPE_11; `{z²}` τ-closed for TYPE_NEG),
-halving storage from 2n to n reals.  See `DOCS/sigma_symmetry_analysis.md`.
+halving storage from 2n to n reals.  See `symcoder/docs/sigma_symmetry_analysis.md`.
 
 **Never use SS/SA/AS/AA** terminology for orbit types — those describe
 ArgumentSymmetry of the two operations and do not determine the orbit type.

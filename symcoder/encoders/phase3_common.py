@@ -23,7 +23,7 @@ This module provides:
 Why the rep atom list lives here
 --------------------------------
 The pruning from ``rep`` → ``repS`` is unsafe for whole-table encoders (see
-``DOCS/parity_blindness_and_repS_concern.pdf``).  Every Phase 3 encoder must
+``symcoder/docs/parity_blindness_and_repS_concern.pdf``).  Every Phase 3 encoder must
 therefore use ``rep`` (the unpruned set).  Centralising the choice here makes
 it impossible for a future Phase 3 implementation to accidentally reach for
 ``repS`` instead.

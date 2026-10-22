@@ -38,7 +38,7 @@ Type11 as the sole offer.
 In a self-pairing block (op_u == op_v, F_u == F_v), the swap symmetry forces the
 multiset of z-values to be σ-closed (σ: z → i·conj(z)).  This halves storage
 from 2n to n reals for TYPE_11 and TYPE_NEG self-pairing orbits.  See
-DOCS/sigma_symmetry_analysis.md and DOCS/sigma_encoder_design.md for the proofs.
+symcoder/docs/sigma_symmetry_analysis.md and symcoder/docs/sigma_encoder_design.md for the proofs.
 
 Physical partition
 ------------------

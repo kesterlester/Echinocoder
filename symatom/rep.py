@@ -343,7 +343,7 @@ def rep(context: Context, operations) -> list:
     Phase 1 + Phase 2 marginals are sufficient for faithful encoding —
     an assumption now known to be false on certain structured (chirality-
     degenerate) inputs.  See
-    ``DOCS/parity_blindness_and_repS_concern.pdf`` for the full history.
+    ``symcoder/docs/parity_blindness_and_repS_concern.pdf`` for the full history.
 
     The Phase 3 simplicial-complex multiset encoder
     (``symcoder/encoders/phase3_simplicial.py``) builds its alignment

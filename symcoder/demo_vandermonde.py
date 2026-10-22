@@ -108,10 +108,10 @@ def _intro_cb(out, mode: str, scale):
     out.kv("Scale (lambda)", scale_str,
            tex=rf"\textbf{{Scale ($\lambda$):}} \texttt{{{scale_str}}}\\")
     out.line(
-        "See DOCS/phase3_vandermonde.pdf for the mathematical derivation "
+        "See symcoder/docs/phase3_vandermonde.pdf for the mathematical derivation "
         "(DFT-node power sums, conjugate-pair compression, optional "
         "dimensional rescaling).",
-        tex=(r"See \texttt{DOCS/phase3\_vandermonde.pdf} for the "
+        tex=(r"See \texttt{symcoder/docs/phase3\_vandermonde.pdf} for the "
              r"mathematical derivation (DFT-node power sums, conjugate-pair "
              r"compression, optional dimensional rescaling).\\[1ex]"),
     )

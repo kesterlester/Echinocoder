@@ -7,7 +7,7 @@ sorted-projection cousin) to the full alignment table T of shape
 whole-table encoder that produces a permutation-invariant embedding of T
 viewed as a multiset of |G| tuples in R^{|rep|}.
 
-See ``DOCS/phase3_vandermonde.pdf`` for a worked-through derivation of the
+See ``symcoder/docs/phase3_vandermonde.pdf`` for a worked-through derivation of the
 mathematics; the summary below is just enough to read the code.
 
 Mathematics (summary)
