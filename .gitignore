@@ -2,3 +2,7 @@
 venv
 .DS_Store
 .idea/
+# plot.py output; the copies posted on math.stackexchange are kept in MinimalConfusableSets/mse_5022142/
+example*.svg
+example*.png
+actual_data.txt
