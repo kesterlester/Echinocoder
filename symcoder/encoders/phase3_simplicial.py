@@ -51,15 +51,16 @@ from symcoder.encoders._base import EncodingResult
 from symcoder.encoders.phase3_common import build_alignment_table, rep_atoms_for
 
 # ---------------------------------------------------------------------------
-# Lazy-import the top-level simplicial embedder (it lives outside any package).
+# Lazy-import the simplicial embedder from echinocoder/ (it lives outside any package).
 # ---------------------------------------------------------------------------
-_REPO_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_LIBRARY_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "echinocoder",
 )
-if _REPO_ROOT not in sys.path:
-    sys.path.insert(0, _REPO_ROOT)
+if _LIBRARY_DIR not in sys.path:
+    sys.path.insert(0, _LIBRARY_DIR)
 
-# Two interchangeable implementations exist at the repo root; embedder 2 has
+# Two interchangeable implementations exist in echinocoder/; embedder 2 has
 # a tighter output dim and is otherwise indistinguishable from embedder 1.
 from C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset import (  # type: ignore
     Embedder as _SimplicialEmbedder,

@@ -14,8 +14,7 @@ hierarchy.
   `FlavouredOperator`, `PairFlavour`.
 - **numpy** — all numerical output is `np.ndarray` of dtype `float64`.
 - **Echinocoder polynomial embedder** — loaded at import from
-  `Cinf_numpy_polynomial_embedder_for_list_of_reals_as_multiset.py` in the
-  repo root.  Not a package; located relative to `symcoder/`.
+  `echinocoder/Cinf_numpy_polynomial_embedder_for_list_of_reals_as_multiset.py`.  Not a package; located relative to `symcoder/`.
 
 ---
 

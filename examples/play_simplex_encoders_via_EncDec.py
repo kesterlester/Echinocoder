@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os, sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # the repository root, for its modules
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "echinocoder"))  # the library modules
 
 import EncDec
 import numpy as np

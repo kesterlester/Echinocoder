@@ -13,6 +13,7 @@ from pathlib import Path
 
 _EMBEDDER_PATH = (
     Path(__file__).resolve().parent.parent.parent
+    / "echinocoder"
     / "Cinf_numpy_polynomial_embedder_for_list_of_reals_as_multiset.py"
 )
 _spec = importlib.util.spec_from_file_location("_echinocoder", _EMBEDDER_PATH)

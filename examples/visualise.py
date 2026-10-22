@@ -1,3 +1,6 @@
+import os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "echinocoder"))  # the library modules
+
 import numpy as np
 from bokeh.io import curdoc
 from iwpc.scalars.scalar import Scalar

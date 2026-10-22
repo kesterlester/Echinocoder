@@ -7,7 +7,7 @@ Note that this is not a true decoder, as it does not confirm that the encoding c
 """
 
 import os, sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # the repository root, for its modules
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "echinocoder"))  # the library modules
 
 import numpy as np
 import C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset as simplex2
