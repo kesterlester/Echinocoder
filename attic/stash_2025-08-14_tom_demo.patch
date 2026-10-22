@@ -1,0 +1,48 @@
+# Saved from git stash 7d88e08e003d4f1cdca337e56f9f985834a8b4cf ("WIP on main: c21493c Moving Tom Demo into separate file", 2025-08-14).
+# An unfinished experiment on MinimalConfusableSets/tom_demo.py; it contains an incomplete 'from' line.
+# Apply with: git apply attic/stash_2025-08-14_tom_demo.patch  (against c21493c)
+diff --git a/MinimalConfusableSets/tom_demo.py b/MinimalConfusableSets/tom_demo.py
+index 64efaa5..a9cda4d 100644
+--- a/MinimalConfusableSets/tom_demo.py
++++ b/MinimalConfusableSets/tom_demo.py
+@@ -1,4 +1,5 @@
+ import sympy as sp
++from 
+ from vertex_matches import generate_viable_vertex_match_matrices
+ 
+ def demo():
+@@ -7,21 +8,29 @@ def demo():
+     def max_row_requirement(mat, max_rows):
+         return sp.shape(mat)[0] <= max_rows
+ 
+-    def f(mat):
+-        return sp.shape(mat)[0] <= 4 # True if mat has 4 or fewer rows.
++    def f(mat: sp.Matrix):
++        return sp.shape(mat)[0] <= 5 # True if mat has 4 or fewer rows.
++
++
++
++    def rre(mat: sp.Matrix, M: int, k:int):
++        rre, _ = mat.rref()
++        print(rre)
++        return True
++
+ 
+     mat_gen = generate_viable_vertex_match_matrices(
+         M=5,
+-        k=2,
++        k=4,
+         # All of the next three lines have the same effect, but different pros/cons.
+         # Try changing which one(s) is(are) commented out.
+         #yield_matrix = partial(max_row_requirement, max_rows=4),
+         #go_deeper = partial(max_row_requirement, max_rows=3), # fastest option, where possible
+-        yield_matrix = f,
++        yield_matrix = partial(rre, M=M, k=k),
+         ) 
+ 
+     for i, mat in enumerate(mat_gen):
+-        print(i, mat)
++        print(i, mat.rref())
+ 
+ if __name__ == "__main__":
+     demo()
