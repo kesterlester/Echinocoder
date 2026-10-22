@@ -4,9 +4,7 @@ PYTHON   := ../../venv/bin/python
 .PHONY: regenerate_pdfs clean tables
 
 # All locally-buildable PDFs in this directory.  Add new entries here when
-# new .tex sources are introduced.  (Third-party PDFs that are checked in
-# but not built from .tex sources — e.g. Davis-Boletin-... — are NOT
-# listed and are left untouched by this Makefile.)
+# new .tex sources are introduced.
 regenerate_pdfs: main.pdf
 
 # ─── Generic .tex → .pdf rule ─────────────────────────────────────────────
