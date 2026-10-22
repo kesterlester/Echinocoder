@@ -41,7 +41,7 @@ The orders (i.e. encoding sizes) quoted in the table above are for $n>1$ and $k>
 
 ### Further details:
 
-* The [Simplicial Complex](https://en.wikipedia.org/wiki/Simplicial_complex) embedder works for any $n$ and $k$.  Algorithm 1 embeds into $2nk+1$ reals ([source](echinocoder/C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py)); Algorithm 2 embeds into $2nk+1-k$ reals and has two interchangeable implementations — [2a](echinocoder/C0HomDeg1_simplicialComplex_embedder_2a_for_array_of_reals_as_multiset.py) (direct, the original) and [2b](echinocoder/C0HomDeg1_simplicialComplex_embedder_2b_for_array_of_reals_as_multiset.py) (backed by [EncDec.py](echinocoder/EncDec.py)) — selected by the [_2_ wrapper](echinocoder/C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py).  A parity test ([test_simplex2_ab_parity.py](test_simplex2_ab_parity.py)) verifies that both produce bit-identical embeddings under the default configuration.
+* The [Simplicial Complex](https://en.wikipedia.org/wiki/Simplicial_complex) embedder works for any $n$ and $k$.  Algorithm 1 embeds into $2nk+1$ reals ([source](echinocoder/C0HomDeg1_simplicialComplex_embedder_1_for_array_of_reals_as_multiset.py)); Algorithm 2 embeds into $2nk+1-k$ reals and has two interchangeable implementations — [2a](echinocoder/C0HomDeg1_simplicialComplex_embedder_2a_for_array_of_reals_as_multiset.py) (direct, the original) and [2b](echinocoder/C0HomDeg1_simplicialComplex_embedder_2b_for_array_of_reals_as_multiset.py) (backed by [EncDec.py](echinocoder/EncDec.py)) — selected by the [_2_ wrapper](echinocoder/C0HomDeg1_simplicialComplex_embedder_2_for_array_of_reals_as_multiset.py).  A parity test ([test_simplex2_ab_parity.py](tests/test_simplex2_ab_parity.py)) verifies that both produce bit-identical embeddings under the default configuration.
 * The [conjectured dotting embedder](echinocoder/C0HomDeg1_conjectured_dotting_embedder_for_array_of_reals_as_multiset.py) is based on the [dotting encoder](echinocoder/C0HomDeg1_dotting_encoder_for_array_of_reals_as_multiset.py). It is CONJECTURED (but not proved) to be an embedder. It has order $O(n k \log n)$. 
 * The [polynomial encoder](echinocoder/Cinf_numpy_polynomial_encoder_for_array_of_reals_as_multiset.py)
 has order $O(n k^2)$ in general, but happens to be optimal (i.e. encodes into $nk$ reals) for $k=1$ or $k=2$.
@@ -82,12 +82,12 @@ In principle the method could be re-written to embed into just $2 n k + 1$ reals
 Various unit tests can be run with [pytest](https://docs.pytest.org).  pytest runs all functions beginning `test_` in files with names matching `test_XXXX.py`.  Run with `pytest -s` to see stdout.
 
 Notable test files:
-* [test_simplex2.py](test_simplex2.py) — regression tests for the Simplex 2 embedder (via the `_2_` wrapper).
-* [test_simplex2_ab_parity.py](test_simplex2_ab_parity.py) — verifies that `_2a_` and `_2b_` produce identical embeddings under the default configuration, and that non-default `_2b_` configurations run without error and produce expected differences.
+* [test_simplex2.py](tests/test_simplex2.py) — regression tests for the Simplex 2 embedder (via the `_2_` wrapper).
+* [test_simplex2_ab_parity.py](tests/test_simplex2_ab_parity.py) — verifies that `_2a_` and `_2b_` produce identical embeddings under the default configuration, and that non-default `_2b_` configurations run without error and produce expected differences.
 
 ## References:
 
-Neither the [Don Davis papers](https://www.lehigh.edu/~dmd1/toppapers.html) nor [Don Davis immersion list](https://www.lehigh.edu/~dmd1/imms.html) has been used to create this library. Both may, however, be useful references and sources of other references, so some are cached in the [DOCS](DOCS) directory.
+Neither the [Don Davis papers](https://www.lehigh.edu/~dmd1/toppapers.html) nor [Don Davis immersion list](https://www.lehigh.edu/~dmd1/imms.html) has been used to create this library. Both may, however, be useful references and sources of other references, so some are cached in the [DOCS/references](DOCS/references) directory.
 
 ## Notes to self
 
