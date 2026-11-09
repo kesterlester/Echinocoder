@@ -23,7 +23,7 @@ class Encoder(MultisetEncoder):
 
         rng = np.random.Generator(np.random.PCG64(0))
 
-        self.matrix = np.concatenate((np.identity(k), rng.standard_normal((self.extra_dots, self.k))), axis=0) # Technically this matrix should then be checked -- to see that none of its kxk minors have zero determinant. But for now we "assume" that that is true.
+        self.matrix = np.concatenate((np.identity(k), rng.standard_normal((extra_dots, k))), axis=0) # Technically this matrix should then be checked -- to see that none of its kxk minors have zero determinant. But for now we "assume" that that is true.
 
     def encode(self, data: np.ndarray, debug=False) -> (np.ndarray, (int, int), Any):
         if debug:
